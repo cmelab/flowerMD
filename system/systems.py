@@ -7,13 +7,21 @@ class System:
         self.density = density
         self.n_mols = n_mols
         self.chain_lengths = chain_lengths
+        self.target_box = None
         self.chains = []
         for n, l in zip(n_mols, chain_lengths):
             for i in range(n):
                 self.chains.append(PolyEthylene(length=l))
 
-    def pack(self, expand_factor):
-        pass
+    def pack(self, expand_factor=5):
+        pack_box = mb.Box.box(self.target_box * expand_factor)
+        self.system = mb.packing.fill_box(
+                compound=self.chains,
+                n_compounds=[1 for i in self.chains],
+                density=self.density/(expand_factor**3),
+                overlap=0.2,
+                edge=0.2
+        )
 
     def stack(self):
         pass
