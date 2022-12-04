@@ -3,7 +3,7 @@ import numpy as np
 from molecules import PolyEthylene
 
 class System:
-    def __init__(self, density, n_mols, chain_lengths):
+    def __init__(self, molecule, density, n_mols, chain_lengths):
         self.density = density
         self.n_mols = n_mols
         self.chain_lengths = chain_lengths
@@ -11,10 +11,9 @@ class System:
         self.chains = []
         for n, l in zip(n_mols, chain_lengths):
             for i in range(n):
-                self.chains.append(PolyEthylene(length=l))
+                self.chains.append(molecule(length=l))
 
     def pack(self, expand_factor=5):
-        pack_box = mb.Box.box(self.target_box * expand_factor)
         self.system = mb.packing.fill_box(
                 compound=self.chains,
                 n_compounds=[1 for i in self.chains],
@@ -30,10 +29,7 @@ class System:
         pass
     
     def set_target_box(
-            self,
-            x_constraint=None,
-            y_constraint=None,
-            z_constraint=None
+            self, x_constraint=None, y_constraint=None, z_constraint=None
     ):
         """Set the target volume of the system during
         the initial shrink step.
@@ -80,7 +76,7 @@ class System:
             when solving for L
 
         """
-        M = self.system_mass * units["amu_to_g"]  # grams
+        M = self.system.mass * units["amu_to_g"]  # grams
         vol = (M / self.density) # cm^3
         if fixed_L is None:
             L = vol**(1/3)
@@ -90,4 +86,3 @@ class System:
                 L = L**(1/2)
         L *= units["cm_to_nm"]  # convert cm to nm
         return L
-
