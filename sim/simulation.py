@@ -125,12 +125,76 @@ class Simulation:
             integrator_kwargs={"dt": self.dt}
     ):
         self.integrator = hoomd.md.Integrator(**integrator_kwargs)
+        self.integrator.forces = self.forcefield
+        self.sim.operations.add(self.integrator)
         self.method = integrator_method(**integrator_kwargs) 
+        self.sim.operations.integrator.methods = [self.method]
 
-    def update_integrator(self, integrator_method, integrator_kwargs):
+    def update_integrator_method(self, integrator_method, integrator_kwargs):
+        self.integrator.methods.remove(self.method)
+        self.method = integrator_method(**kwargs)
+        self.integrator.methods.append(self.method)
+        #self.sim.operations.integrator.methods.append(self.method)
+
+    def shrink_box(self, n_steps, period, kT_start, kT_finish):
+        kT_ramp = hoomd.variant.Ramp(
+                A=kT_init,
+                B=kT_final,
+                t_start=self.sim.timestep,
+                t_ramp=int(n_steps)
+        )
+        self.sim.state.thermalize_particle_momenta(
+                filter=self._all, kT=kT_init
+        )
+        resize_trigger = hoomd.trigger.Periodic(period)
+        box_ramp = hoomd.variant.Ramp(
+                A=0, B=1, t_start=self.sim.timestep, t_ramp=int(n_steps)
+        )
+        initial_box = self.sim.state.box
+        final_box = hoomd.Box(
+                Lx=self.target_box[0],
+                Ly=self.target_box[1],
+                Lz=self.target_box[2]
+        )
+        box_resize = hoomd.update.BoxResize(
+                box1=initial_box,
+                box2=final_box
+                variant=box_ramp,
+                trigger=resize_trigger
+        )
+        self.sim.operations.updaters.append(box_resize)
+        self.sim.run(n_steps)
+
+    def quench_nvt(self, n_steps, kT, tau_kt):
         pass
 
+    def quench_npt(self, n_steps, kT, pressure, tau_kt, tau_p):
+        pass
 
+    def temperature_ramp(
+            self,
+            n_steps,
+            kT_start,
+            kT_final,
+            period,
+    ):
+        kT_ramp = hoomd.variant.Ramp(
+                A=kT_init,
+                B=kT_final,
+                t_start=self.sim.timestep,
+                t_ramp=int(n_steps)
+        )
+
+
+
+
+
+
+
+
+
+
+        
 
 
 
