@@ -130,23 +130,14 @@ class Simulation:
         self.method = integrator_method(**integrator_kwargs) 
         self.sim.operations.integrator.methods = [self.method]
 
-    def update_integrator_method(self, integrator_method, integrator_kwargs):
+    def update_integrator_method(self, integrator_method, method_kwargs):
         self.integrator.methods.remove(self.method)
         self.method = integrator_method(**kwargs)
         self.integrator.methods.append(self.method)
         #self.sim.operations.integrator.methods.append(self.method)
 
-    def shrink_box(self, n_steps, period, kT_start, kT_finish):
-        kT_ramp = hoomd.variant.Ramp(
-                A=kT_init,
-                B=kT_final,
-                t_start=self.sim.timestep,
-                t_ramp=int(n_steps)
-        )
-        self.sim.state.thermalize_particle_momenta(
-                filter=self._all, kT=kT_init
-        )
-        resize_trigger = hoomd.trigger.Periodic(period)
+    def add_box_resizer(self, n_steps, resize_period):
+        resize_trigger = hoomd.trigger.Periodic(resize_period)
         box_ramp = hoomd.variant.Ramp(
                 A=0, B=1, t_start=self.sim.timestep, t_ramp=int(n_steps)
         )
@@ -163,12 +154,45 @@ class Simulation:
                 trigger=resize_trigger
         )
         self.sim.operations.updaters.append(box_resize)
-        self.sim.run(n_steps)
 
-    def quench_nvt(self, n_steps, kT, tau_kt):
+    def shrink_box(self, n_steps, period, kT_start, kT_finish):
+        kT_ramp = hoomd.variant.Ramp(
+                A=kT_init,
+                B=kT_final,
+                t_start=self.sim.timestep,
+                t_ramp=int(n_steps)
+        )
+        self.sim.state.thermalize_particle_momenta(
+                filter=self._all, kT=kT_init
+        )
+        self.add_box_resizer(n_steps, period)
+        self.sim.run(n_steps)
+    
+    def run_langevin_dynamics(
+            self,
+            n_steps,
+            kT,
+            tally_reservoir_energy=False,
+            default_gamma=1.0,
+            default_gamma_r=(1.0, 1.0, 1.0)
+    ):
         pass
 
-    def quench_npt(self, n_steps, kT, pressure, tau_kt, tau_p):
+    def run_nvt(self, n_steps, kT, tau_kt):
+        pass
+
+    def run_npt(
+            self,
+            n_steps,
+            kT,
+            pressure,
+            tau_kt,
+            tau_pressure,
+            couple,
+            box_dof=[True, True, True, False, False, False],
+            rescale_all=False,
+            gamma=0.0
+    ):
         pass
 
     def temperature_ramp(
@@ -178,7 +202,7 @@ class Simulation:
             kT_final,
             period,
     ):
-        kT_ramp = hoomd.variant.Ramp(
+        return hoomd.variant.Ramp(
                 A=kT_init,
                 B=kT_final,
                 t_start=self.sim.timestep,
