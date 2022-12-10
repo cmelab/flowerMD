@@ -65,16 +65,16 @@ class Simulation:
         self,
         system,
         r_cut=2.5,
-        tau_kt=0.1,
-        tau_p=None,
-        nlist="Cell",
+        nlist="hoomd.md.nlist.Cell",
         dt=0.0003,
         auto_scale=True,
         gsd_write=1e4,
         log_write=1e3,
         seed=42,
         restart=None,
+        pppm_kwargs={"Nx": 16, "Ny": 16, "Nz": 16}
     ):
+        self.r_cut = r_cut
         self.ref_mass = max([atom.mass for atom in self.system.atoms])
         pair_coeffs = list(set(
             (atom.type, atom.epsilon, atom.sigma)for atom in self.system.atoms
@@ -83,6 +83,8 @@ class Simulation:
         self.ref_energy = max(pair_coeffs, key=operator.itemgetter(1))[1]
         self.ref_distance = max(pair_coeffs, key=operator.itemgetter(2))[2]
         self.target_box = system.target_box * 10 / self.ref_distance
+        self.restart = restart
+        self.pppm_kwargs = pppm_kwargs
         self.log_quantities = [
             "kinetic_temperature",
             "potential_energy",
@@ -92,7 +94,8 @@ class Simulation:
             "pressure_tensor",
         ]
         self.device = hoomd.device.auto_select()
-        self.sim = hoomd.Simulation(device=self.device, seed=self.seed)
+        self.sim = hoomd.Simulation(device=self.device, seed=seed)
+        self.integrator = None
         if self.restart:
             self.sim.create_state_from_gsd(self.restart)
         else:
@@ -100,7 +103,7 @@ class Simulation:
                     structure=self.system,
                     r_cut=self.r_cut,
                     auto_scale=self.auto_scale,
-                    pppm_kwargs = {"Nx": 16, "Ny": 16, "Nz": 16}
+                    pppm_kwargs=self.pppm_kwargs 
             )
             self.sim.create_state_from_snapshot(self.init_snap)
 
@@ -124,13 +127,20 @@ class Simulation:
             method_kwargs,
             integrator_kwargs={"dt": self.dt}
     ):
-        self.integrator = hoomd.md.Integrator(**integrator_kwargs)
-        self.integrator.forces = self.forcefield
-        self.sim.operations.add(self.integrator)
-        self.method = integrator_method(**integrator_kwargs) 
-        self.sim.operations.integrator.methods = [self.method]
+        # No integrator and method has been created yet
+        if not self.integrator:
+            self.integrator = hoomd.md.Integrator(**integrator_kwargs)
+            self.integrator.forces = self.forcefield
+            self.sim.operations.add(self.integrator)
+            self.method = integrator_method(**method_kwargs) 
+            self.sim.operations.integrator.methods = [self.method]
+        # Update the existing integrator and method
+        else:
+            self._update_integrator_method(
+                    self, integrator_method, method_kwargs
+            )
 
-    def update_integrator_method(self, integrator_method, method_kwargs):
+    def _update_integrator_method(self, integrator_method, method_kwargs):
         self.integrator.methods.remove(self.method)
         self.method = integrator_method(**kwargs)
         self.integrator.methods.append(self.method)
@@ -155,12 +165,28 @@ class Simulation:
         )
         self.sim.operations.updaters.append(box_resize)
 
-    def shrink_box(self, n_steps, period, kT_start, kT_finish):
-        kT_ramp = hoomd.variant.Ramp(
-                A=kT_init,
-                B=kT_final,
-                t_start=self.sim.timestep,
-                t_ramp=int(n_steps)
+    def shrink_box(
+            self,
+            n_steps,
+            period,
+            kT_start,
+            kT_finish,
+            dt,
+            tau_kt
+    ):
+        if kT_start != kT_finish:
+            kT = hoomd.variant.Ramp(
+                    A=kT_init,
+                    B=kT_final,
+                    t_start=self.sim.timestep,
+                    t_ramp=int(n_steps)
+            )
+        else:
+            kT = kT_start
+        self.set_integrator(
+                integrator_method="hoomd.md.methods.NVT",
+                integrator_kwargs={"dt": dt},
+                method_kwargs={"tau": tau_kt, "filter": self._all, "kT": kT},
         )
         self.sim.state.thermalize_particle_momenta(
                 filter=self._all, kT=kT_init
@@ -179,7 +205,12 @@ class Simulation:
         pass
 
     def run_nvt(self, n_steps, kT, tau_kt):
-        pass
+        self.set_integrator(
+                integrator_method="hoomd.md.methods.NVT",
+                integrator_kwargs={"dt": dt},
+                method_kwargs={"tau": tau_kt, "filter": self._all, "kT": kT},
+        )
+        sim.run(n_steps)
 
     def run_npt(
             self,
@@ -188,12 +219,27 @@ class Simulation:
             pressure,
             tau_kt,
             tau_pressure,
-            couple,
+            couple="xyz",
             box_dof=[True, True, True, False, False, False],
             rescale_all=False,
             gamma=0.0
     ):
-        pass
+        self.set_integrator(
+                integrator_method="hoomd.md.methods.NPT",
+                integrator_kwargs={"dt": dt},
+                method_kwargs={
+                    "kT": kT,
+                    "S": pressure,
+                    "tau": tau_kt,
+                    "tauS": tau_pressure,
+                    "couple": couple,
+                    "box_dof": box_dof,
+                    "rescale_all": rescale_all,
+                    "gamma": gamma,
+                    "filter": self._all, "kT": kT
+                }
+        )
+        sim.run(n_steps)
 
     def temperature_ramp(
             self,
