@@ -96,6 +96,7 @@ class Simulation:
         self.device = hoomd.device.auto_select()
         self.sim = hoomd.Simulation(device=self.device, seed=seed)
         self.integrator = None
+
         if self.restart:
             self.sim.create_state_from_gsd(self.restart)
         else:
@@ -115,7 +116,7 @@ class Simulation:
 
         # Set up remaining hoomd objects 
         self._all = hoomd.filter.All()
-        gsd_writer, table_file, = hoomd_writers(
+        gsd_writer, table_file = hoomd_writers(
                 group=self._all, sim=self.sim, forcefield=self.forcefield
         )
         self.sim.operations.writers.append(gsd_writer)
@@ -165,7 +166,7 @@ class Simulation:
         )
         self.sim.operations.updaters.append(box_resize)
 
-    def shrink_box(
+    def run_shrink_box(
             self,
             n_steps,
             period,
@@ -198,19 +199,22 @@ class Simulation:
             self,
             n_steps,
             kT,
+            alpha,
             tally_reservoir_energy=False,
             default_gamma=1.0,
             default_gamma_r=(1.0, 1.0, 1.0)
     ):
-        pass
-
-    def run_nvt(self, n_steps, kT, tau_kt):
         self.set_integrator(
-                integrator_method="hoomd.md.methods.NVT",
+                integrator_method="hoomd.md.methods.Langevin",
                 integrator_kwargs={"dt": dt},
-                method_kwargs={"tau": tau_kt, "filter": self._all, "kT": kT},
+                method_kwargs={
+                        "alpha": alpha,
+                        "tally_reservoir_energy": tally_resivoir_energy,
+                        "default_gamma": default_gamma,
+                        "default_gamma_r": default_gamma_r,
+                    }
         )
-        sim.run(n_steps)
+        self.run(n_steps)
 
     def run_npt(
             self,
@@ -238,6 +242,14 @@ class Simulation:
                     "gamma": gamma,
                     "filter": self._all, "kT": kT
                 }
+        )
+        sim.run(n_steps)
+
+    def run_nvt(self, n_steps, kT, tau_kt):
+        self.set_integrator(
+                integrator_method="hoomd.md.methods.NVT",
+                integrator_kwargs={"dt": dt},
+                method_kwargs={"tau": tau_kt, "filter": self._all, "kT": kT},
         )
         sim.run(n_steps)
 
