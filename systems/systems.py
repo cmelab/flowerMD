@@ -3,15 +3,22 @@ import numpy as np
 from molecules import PolyEthylene
 
 class System:
-    def __init__(self, molecule, density, n_mols, chain_lengths):
+    def __init__(self, molecule, density, n_mols, chain_lengths, mol_kwargs=None):
         self.density = density
         self.n_mols = n_mols
         self.chain_lengths = chain_lengths
         self.target_box = None
+        self.system = None
         self.chains = []
         for n, l in zip(n_mols, chain_lengths):
             for i in range(n):
-                self.chains.append(molecule(length=l))
+                self.chains.append(molecule(length=l, **mol_kwargs))
+    @property
+    def mass(self):
+        if not self.system:
+            return sum(i.mass for i in self.chains)
+        else:
+            return self.system.mass
 
     def pack(self, expand_factor=5):
         self.system = mb.packing.fill_box(
