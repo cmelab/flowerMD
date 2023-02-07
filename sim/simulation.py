@@ -19,26 +19,23 @@ class Simulation:
     Parameters
     ----------
     system : Parmed Structure 
-        The system created in system.py 
+        The typed system created in system.py 
     r_cut : float, default 2.5
         Cutoff radius for potentials (in simulation distance units)
-    tau_kt : float, default 0.1
-        Thermostat coupling period (in simulation time units)
-    tau_p : float, default None
-        Barostat coupling period (in simulation time units)
-    nlist : str, default `Cell`
-        Type of neighborlist to use. Options are "Cell", "Tree", and "Stencil".
-        See https://hoomd-blue.readthedocs.io/en/latest/module-md-nlist.html
     dt : float, default 0.0001
-        Size of simulation timestep (in simulation time units)
+        Initial value for dt, the ize of simulation timestep
     auto_scale : bool, default True
         Set to true to use reduced simulation units.
         distance, mass, and energy are scaled by the largest value
         present in the system for each.
     gsd_write : int, default 1e4
         Period to write simulation snapshots to gsd file.
+    gsd_file_name : str, default "trajectory.gsd"
+        The file name to use for the GSD file
     log_write : int, default 1e3
         Period to write simulation data to the log file.
+    log_file_name : str, default "sim_data.txt"
+        The file name to use for the .txt log file
     seed : int, default 42
         Seed passed to integrator when randomizing velocities.
     restart : str, default None
@@ -46,45 +43,29 @@ class Simulation:
     
     Methods
     -------
-    shrink: Runs a hoomd simulation
-        Shrinks the simulation volume to the target box set in
-        polybinder.system.System()
-    quench: Runs a hoomd simulation
-        Run a simulation at a single temperature in NVT or a single
-        temperature and pressure in NPT
-    anneal: Runs a hoomd simulation
-        Define a schedule of temperature and steps to follow over the
-        course of the simulation. Can be used in NVT or NPT at a single
-        pressure.
-    tensile: Runs a hoomd simulation
-        Use this simulation method to perform a tensile test on the 
-        simulation volume. 
 
     """
     def __init__(
         self,
-        system,
+        initial_state,
+        forcefield,
         r_cut=2.5,
-        nlist="hoomd.md.nlist.Cell",
         dt=0.0003,
-        auto_scale=True,
-        gsd_write=1e4,
-        log_write=1e3,
         seed=42,
         restart=None,
-        pppm_kwargs={"Nx": 16, "Ny": 16, "Nz": 16}
+        gsd_write_freq=1e4,
+        gsd_file_name="trajectory.gsd",
+        log_write_freq=1e3,
+        log_file_name="sim_data.txt"
     ):
+        self.system = system
+        self.forcefield = forcefield
         self.r_cut = r_cut
-        self.ref_mass = max([atom.mass for atom in self.system.atoms])
-        pair_coeffs = list(set(
-            (atom.type, atom.epsilon, atom.sigma)for atom in self.system.atoms
-                        )
-        )
-        self.ref_energy = max(pair_coeffs, key=operator.itemgetter(1))[1]
-        self.ref_distance = max(pair_coeffs, key=operator.itemgetter(2))[2]
-        self.target_box = system.target_box * 10 / self.ref_distance
-        self.restart = restart
-        self.pppm_kwargs = pppm_kwargs
+        self._dt = dt
+        self.gsd_write_freq = gsd_write_freq
+        self.log_write_freq = log_write_freq
+        self.gsd_file_name = gsd_file_name
+        self.log_file_name = log_file_name
         self.log_quantities = [
             "kinetic_temperature",
             "potential_energy",
@@ -95,128 +76,189 @@ class Simulation:
         ]
         self.device = hoomd.device.auto_select()
         self.sim = hoomd.Simulation(device=self.device, seed=seed)
+        self._integrate_group = hoomd.filter.All()
         self.integrator = None
+        if isinstance(self.system, str): # Load a GSD file
+            self.sim.create_state_from_gsd(self.system)
+        elif isinstance(self.system, gsd.hoomd.Snapshot()):
+            self.sim.create_state_from_snapshot(self.system)
+        # Add a gsd and thermo props logger to sim operations
+        self._add_hoomd_writers()
 
-        if self.restart:
-            self.sim.create_state_from_gsd(self.restart)
+    @property
+    def atom_types(self):
+        snap = self.sim.get_snapshot()
+        return snap.particles.types
+
+    @property
+    def nlist(self):
+        return self.forcefield[0].nlist
+
+    @nlist.setter
+    def nlist(self, hoomd_nlist, buffer=0.4):
+        self.forcefield[0].nlist = hoomd_nlist(buffer)
+
+    @property
+    def dt(self):
+        return self._dt
+    
+    @dt.setter
+    def dt(self, value):
+        self._dt = value
+        if self.integrator:
+            self.sim.operations.integrator.dt = self.dt
+
+    @property
+    def method(self):
+        if self.integrator:
+            return self.sim.operations.integrator.methods[0]
         else:
-            self.init_snap, self.forcefield, refs = create_hoomd_forcefield(
-                    structure=self.system,
-                    r_cut=self.r_cut,
-                    auto_scale=self.auto_scale,
-                    pppm_kwargs=self.pppm_kwargs 
+            raise RuntimeError(
+                    "No integrator, or method has been set yet. "
+                    "These will be set once one of the run functions "
+                    "have been called for the first time."
             )
-            self.sim.create_state_from_snapshot(self.init_snap)
 
-        # Default nlist is Cell, change to Tree if needed
-        if isinstance(self.nlist, hoomd.md.nlist.Tree):
-            exclusions = self.forcefield[0].nlist.exclusions
-            self.forcefield[0].nlist = self.nlist(buffer=0.4)
-            self.forcefield[0].nlist.exclusions = exclusions
+    def set_integrator_method(self, integrator_method, method_kwargs):
+        """Creates an initial (or updates the existing) method used by
+        Hoomd's integrator. This doesn't need to be called directly;
+        instead the various run functions use this method to update
+        the integrator method as needed.
 
-        # Set up remaining hoomd objects 
-        self._all = hoomd.filter.All()
-        gsd_writer, table_file = hoomd_writers(
-                group=self._all, sim=self.sim, forcefield=self.forcefield
-        )
-        self.sim.operations.writers.append(gsd_writer)
-        self.sim.operations.writers.append(table_file)
+        Parameters:
+        -----------
+        integrrator_method : hoomd.md.method; required
+            Instance of one of the hoomd.md.method options
+        method_kwargs : dict; required
+            A diction of parameter:value for the integrator method used
 
-    def set_integrator(
-            self,
-            integrator_method,
-            method_kwargs,
-            integrator_kwargs={"dt": self.dt}
-    ):
-        # No integrator and method has been created yet
-        if not self.integrator:
-            self.integrator = hoomd.md.Integrator(**integrator_kwargs)
+        """
+        if not self.integrator: # Integrator and method not yet created
+            self.integrator = hoomd.md.Integrator(dt=self.dt)
             self.integrator.forces = self.forcefield
             self.sim.operations.add(self.integrator)
-            self.method = integrator_method(**method_kwargs) 
-            self.sim.operations.integrator.methods = [self.method]
-        # Update the existing integrator and method
-        else:
-            self._update_integrator_method(
-                    self, integrator_method, method_kwargs
-            )
+            new_method = integrator_method(**method_kwargs) 
+            self.sim.operations.integrator.methods = [new_method]
+        else: # Replace the existing integrator method
+            self.integrator.methods.remove(self.method)
+            new_method = integrator_method(**method_kwargs)
+            self.integrator.methods.append(new_method)
 
-    def _update_integrator_method(self, integrator_method, method_kwargs):
-        self.integrator.methods.remove(self.method)
-        self.method = integrator_method(**kwargs)
-        self.integrator.methods.append(self.method)
-        #self.sim.operations.integrator.methods.append(self.method)
+    @property
+    def integrate_group(self):
+        return self._integrate_group
 
-    def add_box_resizer(self, n_steps, resize_period):
-        resize_trigger = hoomd.trigger.Periodic(resize_period)
+    @integrate_group.setter
+    def integrate_group(self, group):
+        self._integrate_group = group
+
+    def add_walls(self, wall_axis, sigma, epsilon, r_cut, r_extrap=0):
+        box = self.sim.state.box
+        wall_origin = -wall_axis * np.array(box.Lx/2, box.Ly/2, box.Lz/2)
+        wall_normal = -wall_origin
+        wall_origin2 = -wall_origin
+        wall_normal2 = -wall_normal
+        wall1 = hoomd.wall.Plane(origin=wall_origin, normal=wall_normal)
+        wall2 = hoomd.wall.Plane(origin=wall_origin2, normal=wall_normal2)
+        lj_walls = hoomd.md.external.wall.LJ(walls=[wall1, wall2])
+        lj_walls.params[self.atom_types] = {
+                "epsilon": epsilon,
+                "sigma": sigma,
+                "r_cut": r_cut,
+                "r_extrap": r_extrap 
+        }
+        self.forcefield.append(lj_walls)
+
+    def update_walls
+
+
+    def run_shrink(
+            self,
+            n_steps,
+            period,
+            kT,
+            tau_kt,
+            final_box_lengths,
+            thermalize_particles=True
+    ):
+        """Runs an NVT simulation while shrinking the simulation volume
+        to a desired final volume.
+
+        Note:
+        -----
+        When determining final box lengths, make sure to acount for
+        the reference distance (Simulation.ref_distance)
+        if auto scaling was used
+
+        Parameters:
+        -----------
+        n_steps : int, required
+            Number of steps to run during shrinking
+        period : int, required
+            The number of steps ran between box updates
+        kT : int or hoomd.variant.Ramp; required
+            The temperature to use during shrinking. 
+        tau_kt : float; required
+            Thermostat coupling period (in simulation time units)
+        final_box_lengths : np.ndarray, shape=(3,), dtype=float; required
+            The final box edge lengths in (x, y z) order
+
+        """
+        # Set up box resizer
+        resize_trigger = hoomd.trigger.Periodic(period)
         box_ramp = hoomd.variant.Ramp(
                 A=0, B=1, t_start=self.sim.timestep, t_ramp=int(n_steps)
         )
         initial_box = self.sim.state.box
         final_box = hoomd.Box(
-                Lx=self.target_box[0],
-                Ly=self.target_box[1],
-                Lz=self.target_box[2]
+                Lx=final_box_lengths[0],
+                Ly=final_box_lengths[1],
+                Lz=final_box_lengths[2]
         )
-        box_resize = hoomd.update.BoxResize(
+        box_resizer = hoomd.update.BoxResize(
                 box1=initial_box,
-                box2=final_box
+                box2=final_box,
                 variant=box_ramp,
                 trigger=resize_trigger
         )
-        self.sim.operations.updaters.append(box_resize)
-
-    def run_shrink_box(
-            self,
-            n_steps,
-            period,
-            kT_start,
-            kT_finish,
-            dt,
-            tau_kt
-    ):
-        if kT_start != kT_finish:
-            kT = hoomd.variant.Ramp(
-                    A=kT_init,
-                    B=kT_final,
-                    t_start=self.sim.timestep,
-                    t_ramp=int(n_steps)
-            )
-        else:
-            kT = kT_start
-        self.set_integrator(
-                integrator_method="hoomd.md.methods.NVT",
-                integrator_kwargs={"dt": dt},
-                method_kwargs={"tau": tau_kt, "filter": self._all, "kT": kT},
+        self.sim.operations.updaters.append(box_resizer)
+        self.set_integrator_method(
+                integrator_method=hoomd.md.methods.NVT,
+                method_kwargs={
+                    "tau": tau_kt, "filter": self.integrate_group, "kT": kT
+                },
         )
-        self.sim.state.thermalize_particle_momenta(
-                filter=self._all, kT=kT_init
-        )
-        self.add_box_resizer(n_steps, period)
+        if thermalize_particles:
+            self._thermalize_system(kT)
         self.sim.run(n_steps)
     
-    def run_langevin_dynamics(
+    def run_langevin(
             self,
             n_steps,
             kT,
             alpha,
             tally_reservoir_energy=False,
             default_gamma=1.0,
-            default_gamma_r=(1.0, 1.0, 1.0)
+            default_gamma_r=(1.0, 1.0, 1.0),
+            thermalize_particles=True
     ):
-        self.set_integrator(
-                integrator_method="hoomd.md.methods.Langevin",
-                integrator_kwargs={"dt": dt},
+        """"""
+        self.set_integrator_method(
+                integrator_method=hoomd.md.methods.Langevin,
                 method_kwargs={
+                        "filter": self.integrate_group,
+                        "kT": kT,
                         "alpha": alpha,
                         "tally_reservoir_energy": tally_resivoir_energy,
                         "default_gamma": default_gamma,
                         "default_gamma_r": default_gamma_r,
                     }
         )
+        if thermalize_particles:
+            self._thermalize_system(kT)
         self.run(n_steps)
 
-    def run_npt(
+    def run_NPT(
             self,
             n_steps,
             kT,
@@ -226,11 +268,12 @@ class Simulation:
             couple="xyz",
             box_dof=[True, True, True, False, False, False],
             rescale_all=False,
-            gamma=0.0
+            gamma=0.0,
+            thermalize_particles=True
     ):
-        self.set_integrator(
-                integrator_method="hoomd.md.methods.NPT",
-                integrator_kwargs={"dt": dt},
+        """"""
+        self.set_integrator_method(
+                integrator_method=hoomd.md.methods.NPT,
                 method_kwargs={
                     "kT": kT,
                     "S": pressure,
@@ -240,43 +283,83 @@ class Simulation:
                     "box_dof": box_dof,
                     "rescale_all": rescale_all,
                     "gamma": gamma,
-                    "filter": self._all, "kT": kT
+                    "filter": self.integrate_group,
+                    "kT": kT
                 }
         )
-        sim.run(n_steps)
+        if thermalize_particles:
+            self._thermalize_system(kT)
+        self.sim.run(n_steps)
 
-    def run_nvt(self, n_steps, kT, tau_kt):
-        self.set_integrator(
-                integrator_method="hoomd.md.methods.NVT",
-                integrator_kwargs={"dt": dt},
-                method_kwargs={"tau": tau_kt, "filter": self._all, "kT": kT},
+    def run_NVT(self, n_steps, kT, tau_kt, thermalize_particles=True):
+        """"""
+        self.set_integrator_method(
+                integrator_method=hoomd.md.methods.NVT,
+                method_kwargs={"tau": tau_kt, "filter": self.integrate_group, "kT": kT},
         )
-        sim.run(n_steps)
+        if thermalize_particles:
+            self._thermalize_system(kT)
+        self.sim.run(n_steps)
 
-    def temperature_ramp(
-            self,
-            n_steps,
-            kT_start,
-            kT_final,
-            period,
-    ):
+    def run_NVE(self, n_steps):
+        """"""
+        self.set_integrator_method(
+                integrator_method=hoomd.md.methods.NVE,
+                method_kwargs={"filter": self.integrate_group}
+        )
+        self.sim.run(n_steps)
+
+    def temperature_ramp(self, n_steps, kT_start, kT_final):
         return hoomd.variant.Ramp(
-                A=kT_init,
+                A=kT_start,
                 B=kT_final,
                 t_start=self.sim.timestep,
                 t_ramp=int(n_steps)
         )
 
+    def _thermalize_system(self, kT):
+        if isinstance(kT, hoomd.variant.Ramp):
+            self.sim.state.thermalize_particle_momenta(
+                    filter=self.integrate_group, kT=kT.range[0]
+            )
+        else:
+            self.sim.state.thermalize_particle_momenta(
+                    filter=self.integrate_group, kT=kT
+            )
 
+    def _add_hoomd_writers(self):
+        """Creates gsd and log writers"""
+        gsd_writer = hoomd.write.GSD(
+                filename=self.gsd_file_name,
+                trigger=hoomd.trigger.Periodic(int(self.gsd_write_freq)),
+                mode="wb",
+                dynamic=["momentum"]
+        )
 
+        logger = hoomd.logging.Logger(categories=["scalar", "string"])
+        logger.add(self.sim, quantities=["timestep", "tps"])
+        thermo_props = hoomd.md.compute.ThermodynamicQuantities(
+                filter=self.integrate_group
+        )
+        self.sim.operations.computes.append(thermo_props)
+        logger.add(thermo_props, quantities=self.log_quantities)
 
+        for f in self.forcefield:
+            logger.add(f, quantities=["energy"])
 
+        table_file = hoomd.write.Table(
+            output=open(self.log_file_name, mode="w", newline="\n"),
+            trigger=hoomd.trigger.Periodic(period=int(self.log_write_freq)),
+            logger=logger,
+            max_header_len=None,
+        )
+        self.sim.operations.writers.append(gsd_writer)
+        self.sim.operations.writers.append(table_file)
 
+    def update_epsilon(self, e_factor):
+        lj_force = self.forcefield[0]
+        assert type(lj_force) == hoomd.md.pair.pair.LJ
 
-
-
-
-        
-
-
-
+        for k in lj_force.params.keys():
+            epsilon = lj_force.params[k]['epsilon']
+            lj_force.params[k]['epsilon'] = epsilon * e_factor
