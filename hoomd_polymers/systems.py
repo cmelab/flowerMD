@@ -1,6 +1,6 @@
 import mbuild as mb
 import numpy as np
-from molecules import PolyEthylene
+
 
 class System:
     def __init__(self, molecule, density, n_mols, chain_lengths, mol_kwargs=None):

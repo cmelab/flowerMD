@@ -78,6 +78,7 @@ class Simulation:
         self.sim = hoomd.Simulation(device=self.device, seed=seed)
         self._integrate_group = hoomd.filter.All()
         self.integrator = None
+        self._wall_forces = dict() 
         if isinstance(self.system, str): # Load a GSD file
             self.sim.create_state_from_gsd(self.system)
         elif isinstance(self.system, gsd.hoomd.Snapshot()):
@@ -168,8 +169,17 @@ class Simulation:
                 "r_extrap": r_extrap 
         }
         self.forcefield.append(lj_walls)
+        self._wall_forces[wall_axis] = lj_walls
 
-    def update_walls
+    def _update_walls(self):
+        for wall_axis in self._wall_forces:
+            wall_force = self._wall_forces[wall_axis]
+            self.sim.operations.integrator.forces.remove(
+                    self._wall_forces[wall_axis]
+            )
+            self.add_walls(wall_axis)
+
+        pass
 
 
     def run_shrink(
