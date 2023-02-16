@@ -3,7 +3,7 @@ import numpy as np
 
 
 class System:
-    def __init__(self, molecule, density, n_mols, chain_lengths, mol_kwargs=None):
+    def __init__(self, molecule, density, n_mols, chain_lengths, mol_kwargs={}):
         self.density = density
         self.n_mols = n_mols
         self.chain_lengths = chain_lengths
