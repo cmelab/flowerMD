@@ -56,15 +56,6 @@ class System:
         else:
             return self._hoomd_objects[2]
 
-    def pack(self, expand_factor=5):
-        self.system = mb.packing.fill_box(
-                compound=self.chains,
-                n_compounds=[1 for i in self.chains],
-                density=self.density/(expand_factor**3),
-                overlap=0.2,
-                edge=0.2
-        )
-
     def apply_forcefield(
             self, forcefield, remove_hydrogens=False, scale_parameters=True
     ):
@@ -144,3 +135,27 @@ class System:
                 L = L**(1/2)
         L *= units["cm_to_nm"]  # convert cm to nm
         return L
+
+
+class Pack(System):
+    def __init__(
+            self,
+            molecule,
+            density,
+            n_mols,
+            chain_lengths,
+            mol_kwargs={},
+            packing_expand_factor=5
+    ):
+        super(Pack, self).__init__(molecule, density, n_mols, chain_lengths, mol_kwargs)
+        self.packing_expand_factor = packing_expand_factor
+        self._build()
+
+    def _build(self):
+        self.system = mb.packing.fill_box(
+                compound=self.chains,
+                n_compounds=[1 for i in self.chains],
+                density=self.density/(self.packing_expand_factor**3),
+                overlap=0.2,
+                edge=0.2
+        )
