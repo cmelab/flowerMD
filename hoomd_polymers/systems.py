@@ -24,6 +24,10 @@ class System:
             return self.system.mass
 
     @property
+    def box(self):
+        return self.system.box 
+
+    @property
     def hoomd_snapshot(self):
         if not self._hoomd_objects:
             raise ValueError(
@@ -102,7 +106,7 @@ class System:
             constraints = np.array([x_constraint, y_constraint, z_constraint])
             fixed_L = constraints[np.where(constraints!=None)]
             #Conv from nm to cm for _calculate_L
-            fixed_L /= units["cm_to_nm"]
+            fixed_L *= 1e-7
             L = self._calculate_L(fixed_L = fixed_L)
             constraints[np.where(constraints==None)] = L
             Lx, Ly, Lz = constraints
@@ -125,7 +129,8 @@ class System:
             when solving for L
 
         """
-        M = self.system.mass * units["amu_to_g"]  # grams
+        # Convert from amu to grams
+        M = self.mass * 1.66054e-24
         vol = (M / self.density) # cm^3
         if fixed_L is None:
             L = vol**(1/3)
@@ -133,7 +138,8 @@ class System:
             L = vol / np.prod(fixed_L)
             if len(fixed_L) == 1: # L is cm^2
                 L = L**(1/2)
-        L *= units["cm_to_nm"]  # convert cm to nm
+        # Convert from cm back to nm
+        L *= 1e7
         return L
 
 
@@ -159,3 +165,4 @@ class Pack(System):
                 overlap=0.2,
                 edge=0.2
         )
+        self.set_target_box()
