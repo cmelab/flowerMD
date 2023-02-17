@@ -83,15 +83,17 @@ class Simulation:
         self.integrator = None
         self._wall_forces = dict() 
         if isinstance(self.initial_state, str): # Load a GSD file
+            print("Initializing simulation state from a GSD file.")
             self.sim.create_state_from_gsd(self.initial_state)
-        elif isinstance(self.initial_state, gsd.hoomd.Snapshot):
+        elif isinstance(self.initial_state, hoomd.snapshot.Snapshot):
+            print("Initializing simulation state from a snapshot.")
             self.sim.create_state_from_snapshot(self.initial_state)
         # Add a gsd and thermo props logger to sim operations
         self._add_hoomd_writers()
 
     @property
     def atom_types(self):
-        snap = self.sim.get_snapshot()
+        snap = self.sim.state.get_snapshot()
         return snap.particles.types
 
     @property
@@ -157,8 +159,9 @@ class Simulation:
         self._integrate_group = group
 
     def add_walls(self, wall_axis, sigma, epsilon, r_cut, r_extrap=0):
+        wall_axis = np.asarray(wall_axis)
         box = self.sim.state.box
-        wall_origin = -wall_axis * np.array(box.Lx/2, box.Ly/2, box.Lz/2)
+        wall_origin = -wall_axis * np.array([box.Lx/2, box.Ly/2, box.Lz/2])
         wall_normal = -wall_origin
         wall_origin2 = -wall_origin
         wall_normal2 = -wall_normal
@@ -172,7 +175,7 @@ class Simulation:
                 "r_extrap": r_extrap 
         }
         self.forcefield.append(lj_walls)
-        self._wall_forces[wall_axis] = lj_walls
+        self._wall_forces[tuple(wall_axis)] = lj_walls
 
     def _update_walls(self):
         for wall_axis in self._wall_forces:
@@ -181,9 +184,6 @@ class Simulation:
                     self._wall_forces[wall_axis]
             )
             self.add_walls(wall_axis)
-
-        pass
-
 
     def run_shrink(
             self,
