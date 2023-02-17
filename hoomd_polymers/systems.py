@@ -188,7 +188,7 @@ class Lattice(System):
         self.n = n
         self.basis_vector = basis_vector
         self._build()
-
+    #TODO: Set target box for lattice
     def _build(self):
         next_idx = 0
         self.system = mb.Compound()

@@ -129,3 +129,17 @@ class PEKK_meta(Polymer):
                 orientation=self.bond_orientation
         )
         self.build(n=length, sequence="A")
+
+class LJ_chain(mb.Compound):
+    def __init__(self, length, bond_length, bead_name="A", bead_mass=1.0):
+        super(LJ_chain, self).__init__()
+        bead = mb.Compound(mass=bead_mass, name=bead_name)
+        last_bead = None
+        for i in range(length):
+            next_bead = mb.clone(bead)
+            next_bead.translate((0, 0, bond_length*i))
+            self.add(next_bead)
+            if i != 0:
+                self.add_bond([next_bead, last_bead])
+            last_bead = next_bead
+
