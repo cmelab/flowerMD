@@ -101,7 +101,7 @@ class Simulation:
         """"""
         snap = self.sim.state.get_snapshot()
         return snap.particles.types
-
+    #TODO: Fix nlist functions
     @property
     def nlist(self):
         """"""
@@ -142,6 +142,16 @@ class Simulation:
     def integrate_group(self, group):
         """"""
         self._integrate_group = group
+    
+    #TODO: Anytime self.forcefield is changed, sync to integrator.forcefield?
+    def add_force(self, hoomd_force):
+        self.forcefield.append(hoomd_force)
+        if self.integrator:
+            self.integrator.forces.append(hoomd_force)
+
+    def remove_force(self, hoomd_force):
+        self.forcefield.remove(hoomd_force)
+        self.sim.integrate.forces.remove(hoomd_force)
 
     def scale_epsilon(self, scale_factor):
         """"""
@@ -192,7 +202,7 @@ class Simulation:
                 "r_cut": r_cut,
                 "r_extrap": r_extrap 
         }
-        self.forcefield.append(lj_walls)
+        self.add_force(lj_walls)
         self._wall_forces[tuple(wall_axis)] = (
                 lj_walls,
                 {"sigma": sigma,
@@ -208,6 +218,7 @@ class Simulation:
             self.sim.operations.integrator.forces.remove(wall_force)
             self.add_walls(wall_axis, **wall_kwargs)
 
+    #TODO: Better way to access this
     def _lj_pair_force(self):
         lj_force = [
                 f for f in self.forcefield if
