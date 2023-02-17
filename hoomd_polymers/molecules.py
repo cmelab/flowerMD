@@ -2,7 +2,7 @@ import os
 import random
 
 import mbuild as mb
-from mbuild.coordinate_transform import x_axis_transform
+from mbuild.coordinate_transform import x_axis_transform, z_axis_transform
 from mbuild.lib.recipes import Polymer
 from hoomd_polymers.library import MON_DIR
 
@@ -27,13 +27,13 @@ class CoPolymer(Polymer):
             self.sequence = sequence
         
         self.add_monomer(
-                self.monomer_A,
+                self.monomer_A.monomer,
                 indices=self.monomer_A.bond_indices,
                 orientation=self.monomer_A.bond_orientation,
                 separation=self.monomer_A.bond_length
         )
         self.add_monomer(
-                self.monomer_B,
+                self.monomer_B.monomer,
                 indices=self.monomer_B.bond_indices,
                 orientation=self.monomer_B.bond_orientation,
                 separation=self.monomer_B.bond_length
@@ -62,15 +62,15 @@ class PPS(Polymer):
         super(PPS, self).__init__()
         self.smiles_str = "c1ccc(S)cc1"
         self.monomer = mb.load(self.smiles_str, smiles=True)
-        # Need to align monomer along xy plane due to orientation of S-H bond
-        x_axis_transform(
+        # Need to align monomer along zx plane due to orientation of S-H bond
+        z_axis_transform(
                 self.monomer,
-                point_on_x_axis=self.monomer[7],
-                point_on_xy_plane=self.monomer[4]
+                point_on_z_axis=self.monomer[7],
+                point_on_zx_plane=self.monomer[4]
         )
         self.bond_indices = [7, 10]
         self.bond_length = 0.176
-        self.bond_orientation = [[1, 0, 0], [-1, 0, 0]]
+        self.bond_orientation = [[0, 0, 1], [0, 0, -1]]
         self.add_monomer(
                 self.monomer,
                 indices=self.bond_indices,
