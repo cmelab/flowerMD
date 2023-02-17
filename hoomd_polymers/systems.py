@@ -166,3 +166,44 @@ class Pack(System):
                 edge=0.2
         )
         self.set_target_box()
+
+
+class Lattice(System):
+    def __init__(
+            self,
+            molecule,
+            density,
+            n_mols,
+            chain_lengths,
+            x,
+            y,
+            n,
+            mol_kwargs={},
+            basis_vector=[0.5, 0.5, 0],
+            z_adjust=1.0,
+    ):
+        super(Lattice, self).__init__(molecule, density, n_mols, chain_lengths, mol_kwargs)
+        self.x = x
+        self.y = y
+        self.n = n
+        self.basis_vector = basis_vector
+        self._build()
+
+    def _build(self):
+        next_idx = 0
+        self.system = mb.Compound()
+        for i in range(self.n):
+            layer = mb.Compound()
+            for j in range(self.n):
+                try:
+                    comp1 = self.chains[next_idx]
+                    comp2 = self.chains[next_idx + 1]
+                    comp2.translate(self.basis_vector)
+                    unit_cell = mb.Compound(subcompounds=[comp1, comp2])
+                    unit_cell.translate((0, self.y*j, 0))
+                    layer.add(unit_cell)
+                    next_idx += 2
+                except IndexError:
+                    pass
+            layer.translate((self.x*i, 0, 0))
+            self.system.add(layer)
