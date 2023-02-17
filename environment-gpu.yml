@@ -5,7 +5,7 @@ dependencies:
   - foyer
   - freud
   - gsd
-  - hoomd=*gpu*
+  - hoomd>3.0=*gpu*
   - mbuild
   - numpy
   - pip
