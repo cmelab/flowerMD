@@ -96,10 +96,9 @@ setup(
     # },
     package_data={"hoomd_polymers": [
         "sim/*",
-        "systems/*",
-        "recipes/*",
-        "modules/*"
-        ]},
+        "library/*",
+        "library/forcefields/*",
+    ]},
     install_requires=REQUIRED,
     include_package_data=True,
     license='MIT',

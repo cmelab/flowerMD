@@ -9,6 +9,7 @@ class System:
         self.chain_lengths = chain_lengths
         self.target_box = None
         self.system = None
+        self.typed_system = None
         self.chains = []
         for n, l in zip(n_mols, chain_lengths):
             for i in range(n):
@@ -29,11 +30,18 @@ class System:
                 edge=0.2
         )
 
-    def stack(self):
-        pass
-
-    def lattice(self, n, x, y):
-        pass
+    def apply_forcefield(self, forcefield, remove_hydrogens=False):
+        self.typed_system = forcefield.apply(self.system)
+        if remove_hydrogens:
+            print("Removing hydrogen atoms and adjusting heavy atoms")
+            hydrogens = [a for a in self.typed_system.atoms if a.element == 1]
+            for h in hydrogens:
+                bonded_atom = h.bond_partners[0]
+                bonded_atom.mass += h.mass
+                bonded_atom.charge += h.charge
+            self.typed_system.strip(
+                    [a.atomic_number == 1 for a in self.typed_system.atoms]
+            )
     
     def set_target_box(
             self, x_constraint=None, y_constraint=None, z_constraint=None
