@@ -18,8 +18,11 @@ class Simulation:
 
     Parameters
     ----------
-    system : Parmed Structure 
-        The typed system created in system.py 
+    initial_state : gsd.hoomd.Snapshot or str 
+        A snapshot to initialize a simulation from, or a path
+        to a GSD file to initialize a simulation from.
+    forcefield : list
+        List of hoomd force objects to add to the integrator.
     r_cut : float, default 2.5
         Cutoff radius for potentials (in simulation distance units)
     dt : float, default 0.0001
@@ -58,7 +61,7 @@ class Simulation:
         log_write_freq=1e3,
         log_file_name="sim_data.txt"
     ):
-        self.system = system
+        self.initial_state = initial_state 
         self.forcefield = forcefield
         self.r_cut = r_cut
         self._dt = dt
@@ -79,10 +82,10 @@ class Simulation:
         self._integrate_group = hoomd.filter.All()
         self.integrator = None
         self._wall_forces = dict() 
-        if isinstance(self.system, str): # Load a GSD file
-            self.sim.create_state_from_gsd(self.system)
-        elif isinstance(self.system, gsd.hoomd.Snapshot()):
-            self.sim.create_state_from_snapshot(self.system)
+        if isinstance(self.initial_state, str): # Load a GSD file
+            self.sim.create_state_from_gsd(self.initial_state)
+        elif isinstance(self.initial_state, gsd.hoomd.Snapshot):
+            self.sim.create_state_from_snapshot(self.initial_state)
         # Add a gsd and thermo props logger to sim operations
         self._add_hoomd_writers()
 
