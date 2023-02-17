@@ -1,4 +1,5 @@
 import mbuild as mb
+from mbuild.formats.hoomd_forcefield import create_hoomd_forcefield
 import numpy as np
 
 
@@ -10,6 +11,7 @@ class System:
         self.target_box = None
         self.system = None
         self.typed_system = None
+        self._hoomd_objects = None
         self.chains = []
         for n, l in zip(n_mols, chain_lengths):
             for i in range(n):
@@ -21,6 +23,39 @@ class System:
         else:
             return self.system.mass
 
+    @property
+    def hoomd_snapshot(self):
+        if not self._hoomd_objects:
+            raise ValueError(
+                    "The hoomd snapshot has not yet been created. "
+                    "Create a Hoomd snapshot and forcefield by applying "
+                    "a forcefield using System.apply_forcefield()."
+            )
+        else:
+            return self._hoomd_objects[0]
+
+    @property
+    def hoomd_forcefield(self):
+        if not self._hoomd_objects:
+            raise ValueError(
+                    "The hoomd forcefield has not yet been created. "
+                    "Create a Hoomd snapshot and forcefield by applying "
+                    "a forcefield using System.apply_forcefield()."
+            )
+        else:
+            return self._hoomd_objects[1]
+
+    @property
+    def reference_values(self):
+        if not self._hoomd_objects:
+            raise ValueError(
+                    "The hoomd objects have not yet been created. "
+                    "Create a Hoomd snapshot and forcefield by applying "
+                    "a forcefield using System.apply_forcefield()."
+            )
+        else:
+            return self._hoomd_objects[2]
+
     def pack(self, expand_factor=5):
         self.system = mb.packing.fill_box(
                 compound=self.chains,
@@ -30,7 +65,9 @@ class System:
                 edge=0.2
         )
 
-    def apply_forcefield(self, forcefield, remove_hydrogens=False):
+    def apply_forcefield(
+            self, forcefield, remove_hydrogens=False, scale_parameters=True
+    ):
         self.typed_system = forcefield.apply(self.system)
         if remove_hydrogens:
             print("Removing hydrogen atoms and adjusting heavy atoms")
@@ -42,6 +79,12 @@ class System:
             self.typed_system.strip(
                     [a.atomic_number == 1 for a in self.typed_system.atoms]
             )
+        init_snap, forcefield, refs = create_hoomd_forcefield(
+                structure=self.typed_system,
+                r_cut=2.5,
+                auto_scale=scale_parameters
+        )
+        self._hoomd_objects = [init_snap, forcefield, refs]
     
     def set_target_box(
             self, x_constraint=None, y_constraint=None, z_constraint=None
