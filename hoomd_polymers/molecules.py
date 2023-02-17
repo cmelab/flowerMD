@@ -6,6 +6,7 @@ from mbuild.coordinate_transform import x_axis_transform, z_axis_transform
 from mbuild.lib.recipes import Polymer
 from hoomd_polymers.library import MON_DIR
 
+#TODO: Add description attributes to each monomer class
 
 class CoPolymer(Polymer):
     def __init__(
@@ -22,9 +23,13 @@ class CoPolymer(Polymer):
         self.monomer_A = monomer_A(length=1)
         self.monomer_B = monomer_B(length=1)
         if random_sequence:
+            random.seed(seed)
             self.sequence = random.choices(["A", "B"], [AB_ratio, 1-AB_ratio], k=length)
+            length = 1
         else:
             self.sequence = sequence
+        self.A_ratio = self.sequence.count("A")/len(self.sequence)
+        self.B_ratio = self.sequence.count("B")/len(self.sequence)
         
         self.add_monomer(
                 self.monomer_A.monomer,
@@ -55,6 +60,11 @@ class PolyEthylene(Polymer):
                 separation=self.bond_length
         )
         self.build(n=length, sequence="A")
+        z_axis_transform(
+                self,
+                point_on_z_axis=self[-2],
+                point_on_zx_plane=self[-1]
+        )
 
 
 class PPS(Polymer):
