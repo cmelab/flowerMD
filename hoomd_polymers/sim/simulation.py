@@ -101,6 +101,12 @@ class Simulation:
         """"""
         snap = self.sim.state.get_snapshot()
         return snap.particles.types
+
+    @property
+    def box_lengths(self):
+        box = self.sim.state.box
+        return np.array([box.Lx, box.Ly, box.Lz]) 
+
     #TODO: Fix nlist functions
     @property
     def nlist(self):
@@ -185,7 +191,6 @@ class Simulation:
             new_method = integrator_method(**method_kwargs)
             self.integrator.methods.append(new_method)
 
-
     def add_walls(self, wall_axis, sigma, epsilon, r_cut, r_extrap=0):
         wall_axis = np.asarray(wall_axis)
         box = self.sim.state.box
@@ -230,7 +235,7 @@ class Simulation:
             )
         return lj_force
 
-    def run_shrink(
+    def run_update_volume(
             self,
             n_steps,
             period,
