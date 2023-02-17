@@ -92,16 +92,24 @@ class Simulation:
         self._add_hoomd_writers()
 
     @property
+    def timestep(self):
+        """"""
+        return self.sim.timestep
+
+    @property
     def atom_types(self):
+        """"""
         snap = self.sim.state.get_snapshot()
         return snap.particles.types
 
     @property
     def nlist(self):
+        """"""
         return self.forcefield[0].nlist
 
     @nlist.setter
     def nlist(self, hoomd_nlist, buffer=0.4):
+        """"""
         self.forcefield[0].nlist = hoomd_nlist(buffer)
 
     @property
@@ -124,6 +132,23 @@ class Simulation:
                     "These will be set once one of the run functions "
                     "have been called for the first time."
             )
+
+    @property
+    def integrate_group(self):
+        """"""
+        return self._integrate_group
+
+    @integrate_group.setter
+    def integrate_group(self, group):
+        """"""
+        self._integrate_group = group
+
+    def scale_epsilon(self, scale_factor):
+        """"""
+        lj_forces = self._lj_pair_force()
+        for k in lj_forces.params.keys():
+            epsilon = lj_forces.params[k]['epsilon']
+            lj_forces.params[k]['epsilon'] = epsilon * scale_factor
 
     def set_integrator_method(self, integrator_method, method_kwargs):
         """Creates an initial (or updates the existing) method used by
@@ -150,13 +175,6 @@ class Simulation:
             new_method = integrator_method(**method_kwargs)
             self.integrator.methods.append(new_method)
 
-    @property
-    def integrate_group(self):
-        return self._integrate_group
-
-    @integrate_group.setter
-    def integrate_group(self, group):
-        self._integrate_group = group
 
     def add_walls(self, wall_axis, sigma, epsilon, r_cut, r_extrap=0):
         wall_axis = np.asarray(wall_axis)
@@ -175,15 +193,31 @@ class Simulation:
                 "r_extrap": r_extrap 
         }
         self.forcefield.append(lj_walls)
-        self._wall_forces[tuple(wall_axis)] = lj_walls
+        self._wall_forces[tuple(wall_axis)] = (
+                lj_walls,
+                {"sigma": sigma,
+                 "epsilon": epsilon,
+                 "r_cut": r_cut,
+                 "r_extrap": r_extrap}
+        ) 
 
     def _update_walls(self):
         for wall_axis in self._wall_forces:
-            wall_force = self._wall_forces[wall_axis]
-            self.sim.operations.integrator.forces.remove(
-                    self._wall_forces[wall_axis]
+            wall_force = self._wall_forces[wall_axis][0]
+            wall_kwargs = self._wall_forces[wall_axis][1]
+            self.sim.operations.integrator.forces.remove(wall_force)
+            self.add_walls(wall_axis, **wall_kwargs)
+
+    def _lj_pair_force(self):
+        lj_force = [
+                f for f in self.forcefield if
+                isinstance(f, hoomd.md.pair.pair.LJ)][0]
+        if lj_force is None:
+            raise ValueError(
+                    "The current hoomd forcefield does not contain "
+                    "LJ pair forces"
             )
-            self.add_walls(wall_axis)
+        return lj_force
 
     def run_shrink(
             self,
@@ -243,7 +277,14 @@ class Simulation:
         )
         if thermalize_particles:
             self._thermalize_system(kT)
-        self.sim.run(n_steps)
+        if not self._wall_forces:
+            self.sim.run(n_steps)
+        else:
+            start_timestep = self.sim.timestep
+            while self.sim.timestep < box_ramp.t_start + box_ramp.t_ramp:
+                self.sim.run(period)
+                self._update_walls()
+            assert self.sim.timestep - start_timestep == n_steps
     
     def run_langevin(
             self,
@@ -369,10 +410,3 @@ class Simulation:
         self.sim.operations.writers.append(gsd_writer)
         self.sim.operations.writers.append(table_file)
 
-    def update_epsilon(self, e_factor):
-        lj_force = self.forcefield[0]
-        assert type(lj_force) == hoomd.md.pair.pair.LJ
-
-        for k in lj_force.params.keys():
-            epsilon = lj_force.params[k]['epsilon']
-            lj_force.params[k]['epsilon'] = epsilon * e_factor
