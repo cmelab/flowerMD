@@ -2,8 +2,9 @@ import os
 import random
 
 import mbuild as mb
-from mbuild.coordinate_transform import x_axis_transform, z_axis_transform
+from mbuild.coordinate_transform import z_axis_transform
 from mbuild.lib.recipes import Polymer
+
 from hoomd_polymers.library import MON_DIR
 
 #TODO: Add description attributes to each monomer class
@@ -24,7 +25,9 @@ class CoPolymer(Polymer):
         self.monomer_B = monomer_B(length=1)
         if random_sequence:
             random.seed(seed)
-            self.sequence = random.choices(["A", "B"], [AB_ratio, 1-AB_ratio], k=length)
+            self.sequence = random.choices(
+                    ["A", "B"], [AB_ratio, 1-AB_ratio], k=length
+            )
             length = 1
         else:
             self.sequence = sequence
@@ -50,6 +53,7 @@ class PolyEthylene(Polymer):
     def __init__(self, length):
         super(PolyEthylene, self).__init__()
         self.smiles_str = "CC"
+        self.file = None
         self.monomer = mb.load(self.smiles_str, smiles=True)
         self.bond_indices = [2,6]
         self.bond_length = 0.145
@@ -71,6 +75,8 @@ class PPS(Polymer):
     def __init__(self, length):
         super(PPS, self).__init__()
         self.smiles_str = "c1ccc(S)cc1"
+        self.file = None
+        self.description = "Poly(phenylene-sulfide)"
         self.monomer = mb.load(self.smiles_str, smiles=True)
         # Need to align monomer along zx plane due to orientation of S-H bond
         z_axis_transform(
@@ -100,6 +106,9 @@ class PEKK_para(Polymer):
         super(PEKK_para, self).__init__()
         self.smiles_str = "c1ccc(Oc2ccc(C(=O)c3ccc(C(=O))cc3)cc2)cc1"
         self.file = os.path.join(MON_DIR, "pekk_para.mol2")
+        self.description = ("Poly(ether-ether-ketone) with para bonding "
+                            "configuration between consectuvie "
+                            "ketone linkage groups")
         self.monomer = mb.load(self.file)
         self.bond_indices = [35, 36]
         self.bond_length = 0.148
@@ -118,6 +127,9 @@ class PEKK_meta(Polymer):
         super(PEKK_meta, self).__init__()
         self.smiles_str = "c1cc(Oc2ccc(C(=O)c3cc(C(=O))ccc3)cc2)ccc1"
         self.file = os.path.join(MON_DIR, "pekk_meta.mol2")
+        self.description = ("Poly(ether-ether-ketone) with meta bonding "
+                            "configuration between consectuvie "
+                            "ketone linkage groups")
         self.monomer = mb.load(self.file)
         self.bond_indices = [35, 36]
         self.bond_length = 0.148
@@ -129,6 +141,7 @@ class PEKK_meta(Polymer):
                 orientation=self.bond_orientation
         )
         self.build(n=length, sequence="A")
+
 
 class LJ_chain(mb.Compound):
     def __init__(self, length, bond_length, bead_name="A", bead_mass=1.0):
@@ -142,4 +155,3 @@ class LJ_chain(mb.Compound):
             if i != 0:
                 self.add_bond([next_bead, last_bead])
             last_bead = next_bead
-

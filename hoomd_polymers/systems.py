@@ -113,6 +113,14 @@ class System:
 
         self.target_box = np.array([Lx, Ly, Lz])
 
+    def visualize(self):
+        if self.system:
+            self.system.visualize()
+        else:
+            raise ValueError(
+                    "The initial configuraiton has not been created yet."
+            )
+
     def _calculate_L(self, fixed_L=None):
         """Calculates the required box length(s) given the
         mass of a sytem and the target density.
