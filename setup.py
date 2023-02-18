@@ -98,6 +98,7 @@ setup(
         "sim/*",
         "library/*",
         "library/forcefields/*",
+        "library/monomers/*",
     ]},
     install_requires=REQUIRED,
     include_package_data=True,
