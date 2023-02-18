@@ -55,7 +55,7 @@ class PolyEthylene(Polymer):
         self.smiles_str = "CC"
         self.file = None
         self.monomer = mb.load(self.smiles_str, smiles=True)
-        self.bond_indices = [2,6]
+        self.bond_indices = [2, 6]
         self.bond_length = 0.145
         self.bond_orientation = [None, None]
         self.add_monomer(
@@ -64,6 +64,7 @@ class PolyEthylene(Polymer):
                 separation=self.bond_length
         )
         self.build(n=length, sequence="A")
+        # Align the chain along the z-axis
         z_axis_transform(
                 self,
                 point_on_z_axis=self[-2],

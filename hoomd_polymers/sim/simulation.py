@@ -285,7 +285,7 @@ class Simulation:
                 self.sim.run(period)
                 self._update_walls()
             assert self.sim.timestep - start_timestep == n_steps
-            assert self.box_lengths == final_box_lengths 
+            assert np.arrayequal(self.box_lengths, final_box_lengths)
     
     def run_langevin(
             self,

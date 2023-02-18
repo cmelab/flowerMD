@@ -27,6 +27,12 @@ class OPLS_AA_PPS(foyer.Forcefield):
                 "Trimmed down to include only PPS parameters. "
                 "One missing parameter was added manually: "
                 "<Angle class1=CA class2=S class3=CA angle=1.805 k=627.6/> "
-                "The equilibrium angle was determined from experimental PPS papers. "
-                "The spring constant was used for the equivalent angle in GAFF. "
+                "The equilibrium angle was determined from "
+                "experimental PPS papers. The spring constant was used "
+                "from the equivalent angle in GAFF."
 		)
+
+
+class FF_from_file(foyer.Forcefield):
+    def __init__(self, xml_file):
+        super(OPLS_AA_PPS, self).__init__(forcefield_files=xml_file)
