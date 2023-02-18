@@ -51,11 +51,11 @@ class Simulation:
     def __init__(
         self,
         initial_state,
-        forcefield,
+        forcefield=None,
         r_cut=2.5,
-        dt=0.0003,
+        dt=0.0001,
         seed=42,
-        restart=None,
+        restart=None,  #TODO: Restart logic
         gsd_write_freq=1e4,
         gsd_file_name="trajectory.gsd",
         log_write_freq=1e3,
@@ -82,7 +82,7 @@ class Simulation:
         self._integrate_group = hoomd.filter.All()
         self.integrator = None
         self._wall_forces = dict() 
-        if isinstance(self.initial_state, str): # Load a GSD file
+        if isinstance(self.initial_state, str): # Load from a GSD file
             print("Initializing simulation state from a GSD file.")
             self.sim.create_state_from_gsd(self.initial_state)
         elif isinstance(self.initial_state, hoomd.snapshot.Snapshot):
@@ -128,16 +128,6 @@ class Simulation:
         if self.integrator:
             self.sim.operations.integrator.dt = self.dt
 
-    @property
-    def method(self):
-        if self.integrator:
-            return self.sim.operations.integrator.methods[0]
-        else:
-            raise RuntimeError(
-                    "No integrator, or method has been set yet. "
-                    "These will be set once one of the run functions "
-                    "have been called for the first time."
-            )
 
     @property
     def integrate_group(self):
@@ -148,16 +138,29 @@ class Simulation:
     def integrate_group(self, group):
         """"""
         self._integrate_group = group
+
+    @property
+    def method(self):
+        if self.integrator:
+            return self.sim.operations.integrator.methods[0]
+        else:
+            raise RuntimeError(
+                    "No integrator, or method has been set yet. "
+                    "These will be set once one of the run functions "
+                    "have been called for the first time."
+            )
     
-    #TODO: Anytime self.forcefield is changed, sync to integrator.forcefield?
     def add_force(self, hoomd_force):
+        """"""
         self.forcefield.append(hoomd_force)
         if self.integrator:
             self.integrator.forces.append(hoomd_force)
 
     def remove_force(self, hoomd_force):
+        """"""
         self.forcefield.remove(hoomd_force)
-        self.sim.integrate.forces.remove(hoomd_force)
+        if self.integrator:
+            self.integrator.forces.remove(hoomd_force)
 
     def scale_epsilon(self, scale_factor):
         """"""
@@ -192,9 +195,10 @@ class Simulation:
             self.integrator.methods.append(new_method)
 
     def add_walls(self, wall_axis, sigma, epsilon, r_cut, r_extrap=0):
+        """"""
         wall_axis = np.asarray(wall_axis)
         box = self.sim.state.box
-        wall_origin = -wall_axis * np.array([box.Lx/2, box.Ly/2, box.Lz/2])
+        wall_origin = wall_axis * np.array([box.Lx/2, box.Ly/2, box.Lz/2])
         wall_normal = -wall_origin
         wall_origin2 = -wall_origin
         wall_normal2 = -wall_normal
@@ -216,24 +220,11 @@ class Simulation:
                  "r_extrap": r_extrap}
         ) 
 
-    def _update_walls(self):
-        for wall_axis in self._wall_forces:
-            wall_force = self._wall_forces[wall_axis][0]
-            wall_kwargs = self._wall_forces[wall_axis][1]
-            self.sim.operations.integrator.forces.remove(wall_force)
-            self.add_walls(wall_axis, **wall_kwargs)
+    def remove_walls(self, wall_axis):
+        """"""
+        wall_force = self._wall_forces[wall_axis][0]
+        self.remove_force(wall_force)
 
-    #TODO: Better way to access this
-    def _lj_pair_force(self):
-        lj_force = [
-                f for f in self.forcefield if
-                isinstance(f, hoomd.md.pair.pair.LJ)][0]
-        if lj_force is None:
-            raise ValueError(
-                    "The current hoomd forcefield does not contain "
-                    "LJ pair forces"
-            )
-        return lj_force
 
     def run_update_volume(
             self,
@@ -244,14 +235,8 @@ class Simulation:
             final_box_lengths,
             thermalize_particles=True
     ):
-        """Runs an NVT simulation while shrinking the simulation volume
-        to a desired final volume.
-
-        Note:
-        -----
-        When determining final box lengths, make sure to acount for
-        the reference distance (Simulation.ref_distance)
-        if auto scaling was used
+        """Runs an NVT simulation while shrinking or expanding 
+        the simulation volume to the given final volume.
 
         Parameters:
         -----------
@@ -264,10 +249,9 @@ class Simulation:
         tau_kt : float; required
             Thermostat coupling period (in simulation time units)
         final_box_lengths : np.ndarray, shape=(3,), dtype=float; required
-            The final box edge lengths in (x, y z) order
+            The final box edge lengths in (x, y, z) order
 
         """
-        # Set up box resizer
         resize_trigger = hoomd.trigger.Periodic(period)
         box_ramp = hoomd.variant.Ramp(
                 A=0, B=1, t_start=self.sim.timestep, t_ramp=int(n_steps)
@@ -301,6 +285,7 @@ class Simulation:
                 self.sim.run(period)
                 self._update_walls()
             assert self.sim.timestep - start_timestep == n_steps
+            assert self.box_lengths == final_box_length 
     
     def run_langevin(
             self,
@@ -365,7 +350,9 @@ class Simulation:
         """"""
         self.set_integrator_method(
                 integrator_method=hoomd.md.methods.NVT,
-                method_kwargs={"tau": tau_kt, "filter": self.integrate_group, "kT": kT},
+                method_kwargs={
+                    "tau": tau_kt, "filter": self.integrate_group, "kT": kT
+                }
         )
         if thermalize_particles:
             self._thermalize_system(kT)
@@ -387,6 +374,14 @@ class Simulation:
                 t_ramp=int(n_steps)
         )
 
+    def _update_walls(self):
+        for wall_axis in self._wall_forces:
+            wall_force = self._wall_forces[wall_axis][0]
+            wall_kwargs = self._wall_forces[wall_axis][1]
+            self.remove_force(wall_force)
+            #self.sim.operations.integrator.forces.remove(wall_force)
+            self.add_walls(wall_axis, **wall_kwargs)
+
     def _thermalize_system(self, kT):
         if isinstance(kT, hoomd.variant.Ramp):
             self.sim.state.thermalize_particle_momenta(
@@ -396,6 +391,18 @@ class Simulation:
             self.sim.state.thermalize_particle_momenta(
                     filter=self.integrate_group, kT=kT
             )
+
+    #TODO: Better way to access this
+    def _lj_pair_force(self):
+        lj_force = [
+                f for f in self.forcefield if
+                isinstance(f, hoomd.md.pair.pair.LJ)][0]
+        if lj_force is None:
+            raise ValueError(
+                    "The current hoomd forcefield does not contain "
+                    "LJ pair forces"
+            )
+        return lj_force
 
     def _add_hoomd_writers(self):
         """Creates gsd and log writers"""
@@ -425,4 +432,3 @@ class Simulation:
         )
         self.sim.operations.writers.append(gsd_writer)
         self.sim.operations.writers.append(table_file)
-
