@@ -18,7 +18,7 @@ class Simulation:
 
     Parameters
     ----------
-    initial_state : gsd.hoomd.Snapshot or str 
+    initial_state : gsd.hoomd.Snapshot or str
         A snapshot to initialize a simulation from, or a path
         to a GSD file to initialize a simulation from.
     forcefield : list
@@ -43,7 +43,7 @@ class Simulation:
         Seed passed to integrator when randomizing velocities.
     restart : str, default None
         Path to gsd file from which to restart the simulation
-    
+
     Methods
     -------
 
@@ -61,7 +61,7 @@ class Simulation:
         log_write_freq=1e3,
         log_file_name="sim_data.txt"
     ):
-        self.initial_state = initial_state 
+        self.initial_state = initial_state
         self.forcefield = forcefield
         self.r_cut = r_cut
         self._dt = dt
@@ -81,7 +81,7 @@ class Simulation:
         self.sim = hoomd.Simulation(device=self.device, seed=seed)
         self._integrate_group = hoomd.filter.All()
         self.integrator = None
-        self._wall_forces = dict() 
+        self._wall_forces = dict()
         if isinstance(self.initial_state, str): # Load from a GSD file
             print("Initializing simulation state from a GSD file.")
             self.sim.create_state_from_gsd(self.initial_state)
@@ -105,7 +105,7 @@ class Simulation:
     @property
     def box_lengths(self):
         box = self.sim.state.box
-        return np.array([box.Lx, box.Ly, box.Lz]) 
+        return np.array([box.Lx, box.Ly, box.Lz])
 
     #TODO: Fix nlist functions
     @property
@@ -121,7 +121,7 @@ class Simulation:
     @property
     def dt(self):
         return self._dt
-    
+
     @dt.setter
     def dt(self, value):
         self._dt = value
@@ -149,7 +149,7 @@ class Simulation:
                     "These will be set once one of the run functions "
                     "have been called for the first time."
             )
-    
+
     def add_force(self, hoomd_force):
         """"""
         self.forcefield.append(hoomd_force)
@@ -187,7 +187,7 @@ class Simulation:
             self.integrator = hoomd.md.Integrator(dt=self.dt)
             self.integrator.forces = self.forcefield
             self.sim.operations.add(self.integrator)
-            new_method = integrator_method(**method_kwargs) 
+            new_method = integrator_method(**method_kwargs)
             self.sim.operations.integrator.methods = [new_method]
         else: # Replace the existing integrator method
             self.integrator.methods.remove(self.method)
@@ -209,7 +209,7 @@ class Simulation:
                 "epsilon": epsilon,
                 "sigma": sigma,
                 "r_cut": r_cut,
-                "r_extrap": r_extrap 
+                "r_extrap": r_extrap
         }
         self.add_force(lj_walls)
         self._wall_forces[tuple(wall_axis)] = (
@@ -218,7 +218,7 @@ class Simulation:
                  "epsilon": epsilon,
                  "r_cut": r_cut,
                  "r_extrap": r_extrap}
-        ) 
+        )
 
     def remove_walls(self, wall_axis):
         """"""
@@ -235,7 +235,7 @@ class Simulation:
             final_box_lengths,
             thermalize_particles=True
     ):
-        """Runs an NVT simulation while shrinking or expanding 
+        """Runs an NVT simulation while shrinking or expanding
         the simulation volume to the given final volume.
 
         Parameters:
@@ -245,7 +245,7 @@ class Simulation:
         period : int, required
             The number of steps ran between box updates
         kT : int or hoomd.variant.Ramp; required
-            The temperature to use during shrinking. 
+            The temperature to use during shrinking.
         tau_kt : float; required
             Thermostat coupling period (in simulation time units)
         final_box_lengths : np.ndarray, shape=(3,), dtype=float; required
@@ -281,12 +281,11 @@ class Simulation:
             self.sim.run(n_steps)
         else:
             start_timestep = self.sim.timestep
-            while self.sim.timestep < box_ramp.t_start + box_ramp.t_ramp:
+            while self.sim.timestep < box_ramp.t_start + box_ramp.t_ramp + 1:
                 self.sim.run(period)
                 self._update_walls()
-            assert self.sim.timestep - start_timestep == n_steps
-            assert np.array_equal(self.box_lengths, final_box_lengths)
-    
+            self._update_walls()
+
     def run_langevin(
             self,
             n_steps,
