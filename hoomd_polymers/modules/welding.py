@@ -1,6 +1,8 @@
 import numpy as np
 import gsd.hoomd
 
+from hoomd_polymers.sim.simulation import Simulation
+
 
 class Interface:
     def __init__(self, gsd_file, interface_axis, gap, wall_sigma=1.0):
@@ -11,11 +13,7 @@ class Interface:
         self.hoomd_snapshot = self._build()
 
     def _build(self):
-        axis_dict = {
-            "x": 0,
-            "y": 1,
-            "z": 2,
-        }
+        axis_dict = {"x": 0, "y": 1, "z": 2}
         gsd_file = gsd.hoomd.open(self.gsd_file)
         snap = gsd_file[-1]
         gsd_file.close()
@@ -29,6 +27,7 @@ class Interface:
         interface.angles.M = snap.angles.M
         interface.dihedrals.N = snap.dihedrals.N * 2
         interface.dihedrals.M = snap.dihedrals.M
+        interface.pairs.N = snap.pairs.N * 2
 
         # Set up box. Box edge is doubled along the interface axis direction, plus the gap
         interface.configuration.box = np.copy(snap.configuration.box)
@@ -50,7 +49,7 @@ class Interface:
         )
         interface.particles.position = pos
         interface.particles.mass = mass
-        interface.particles.types = np.copy(snap.particles.types)
+        interface.particles.types = snap.particles.types
         interface.particles.typeid = type_ids
         
         # Set up bonds:
@@ -62,7 +61,7 @@ class Interface:
         )
         interface.bonds.group = bond_group
         interface.bonds.typeid = bond_type_ids
-        interface.bonds.types = np.copy(snap.bonds.types)
+        interface.bonds.types = snap.bonds.types
         
         # Set up angles:
         angle_group_left = np.copy(snap.angles.group)
@@ -75,7 +74,7 @@ class Interface:
         )
         interface.angles.group = angle_group
         interface.angles.typeid = angle_type_ids
-        interface.angles.types = np.copy(snap.angles.types)
+        interface.angles.types = snap.angles.types
         
         # Set up dihedrals:
         dihedral_group_left = np.copy(snap.dihedrals.group)
@@ -88,5 +87,58 @@ class Interface:
         )
         interface.dihedrals.group = dihedral_group
         interface.dihedrals.typeid = dihedral_type_ids
-        interface.dihedrals.types = np.copy(snap.dihedrals.types)
+        interface.dihedrals.types = snap.dihedrals.types
+
+        # Set up pairs:
+        if snap.pairs.N > 0:
+            pair_group_left = np.copy(snap.pairs.group)
+            pair_group_right = np.copy(snap.pairs.group) + snap.particles.N
+            pair_group = np.concatenate((pair_group_left, pair_group_right))
+            pair_type_ids = np.concatenate(
+                    (snap.pairs.typeid, snap.pairs.typeid), axis=None
+            )
+            interface.pairs.group = pair_group
+            interface.pairs.typeid = pair_type_ids
+            interface.pairs.types = snap.pairs.types
         return interface
+
+
+class WeldSimulation(Simulation):
+    def __init__(
+            self,
+            initial_state,
+            forcefield,
+            interface_axis="x",
+            wall_sigma=1.0,
+            wall_epsilon=1.0,
+            wall_r_cut=2.5,
+            wall_r_extrap=0,
+            r_cut=2.5,
+            seed=42,
+            restart=None,
+            gsd_write_freq=1e4,
+            gsd_file_name="weld.gsd",
+            log_write_freq=1e3,
+            log_file_name="sim_data.txt"
+    ):
+        super(WeldSimulation, self).__init__(
+                initial_state=initial_state,
+                forcefield=forcefield,
+                r_cut=r_cut,
+                seed=seed,
+                restart=restart,
+                gsd_write_freq=gsd_write_freq,
+                gsd_file_name=gsd_file_name,
+                log_write_freq=log_write_freq,
+                log_file_name=log_file_name
+        )
+        axis_dict = {"x": (1,0,0), "y": (0, 1, 0), "z": (0, 0, 1)}
+        self.interface_axis = interface_axis.lower()
+        self.wall_axis = axis_dict[self.interface_axis]
+        self.add_walls(
+                self.wall_axis,
+                wall_sigma,
+                wall_epsilon,
+                wall_r_cut,
+                wall_r_extrap
+        )
