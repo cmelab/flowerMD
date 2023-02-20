@@ -1,4 +1,4 @@
-from hoomd_polymers import Simulation
+from hoomd_polymers.sim.simulation import Simulation
 
 def Tensile(Simulation):
     def __init__(
