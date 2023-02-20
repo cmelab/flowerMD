@@ -281,10 +281,9 @@ class Simulation:
             self.sim.run(n_steps)
         else:
             start_timestep = self.sim.timestep
-            while self.sim.timestep < box_ramp.t_start + box_ramp.t_ramp + 1:
+            while self.sim.timestep < box_ramp.t_start + box_ramp.t_ramp:
                 self.sim.run(period)
                 self._update_walls()
-            self._update_walls()
 
     def run_langevin(
             self,
