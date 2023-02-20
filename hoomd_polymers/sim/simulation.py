@@ -88,6 +88,9 @@ class Simulation:
         elif isinstance(self.initial_state, hoomd.snapshot.Snapshot):
             print("Initializing simulation state from a snapshot.")
             self.sim.create_state_from_snapshot(self.initial_state)
+        elif isinstance(self.initial_state, gsd.hoomd.Snapshot):
+            print("Initializing simulation state from a snapshot.")
+            self.sim.create_state_from_snapshot(self.initial_state)
         # Add a gsd and thermo props logger to sim operations
         self._add_hoomd_writers()
 

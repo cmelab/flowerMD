@@ -95,6 +95,7 @@ setup(
     #     'console_scripts': ['mycli=mymodule:cli'],
     # },
     package_data={"hoomd_polymers": [
+        "modules/*",
         "sim/*",
         "library/*",
         "library/forcefields/*",
