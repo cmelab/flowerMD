@@ -1,12 +1,15 @@
+import hoomd
+import numpy as np
+
 from hoomd_polymers.sim.simulation import Simulation
 
-def Tensile(Simulation):
+
+class Tensile(Simulation):
     def __init__(
             self,
             initial_state,
             forcefield,
             tensile_axis,
-            strain,
             fix_ratio=0.20,
             r_cut=2.5,
             dt=0.0001,
@@ -20,17 +23,16 @@ def Tensile(Simulation):
         super(Tensile, self).__init__(
                 initial_state=initial_state,
                 forcefield=forcefield,
-                r_cut=rcut,
+                r_cut=r_cut,
                 dt=dt,
                 seed=seed,
-                restart=resart,
+                restart=restart,
                 gsd_write_freq=gsd_write_freq,
                 gsd_file_name=gsd_file_name,
                 log_write_freq=log_write_freq,
         )
         self.tensile_axis=tensile_axis.lower()
         self.fix_ratio = fix_ratio
-        self.strain = strain
         axis_array_dict = {
                 "x": np.array([1,0,0]),
                 "y": np.array([0,1,0]),
@@ -42,22 +44,23 @@ def Tensile(Simulation):
         # Set up final box length after tensile test
         self.initial_box = self.box_lengths
         self.initial_length = self.initial_box[self._axis_index]
-        self.final_length = self.initial_length * (1+strain)
-        self.final_box = np.copy(self.initial_box)
-        self.final_box[self._axis_index] = self.final_length
+        #self.final_length = self.initial_length * (1+strain)
+        #self.final_box = np.copy(self.initial_box)
+        #self.final_box[self._axis_index] = self.final_length
         # Set up walls of fixed particles:
+        snapshot = self.sim.state.get_snapshot()
         self.fix_length = self.initial_length * fix_ratio
-        positions = self.hoomd_snapshot.particles.position[:,self._axis_index]
+        positions = snapshot.particles.position[:,self._axis_index]
         box_max = self.initial_length / 2
         box_min = -box_max
-        left_tags = np.where(positions < (box_min + fix_length))[0] 
-        right_tags = np.where(positions > (box_max - fix_length))[0] 
+        left_tags = np.where(positions < (box_min + self.fix_length))[0] 
+        right_tags = np.where(positions > (box_max - self.fix_length))[0] 
         self.fix_left = hoomd.filter.Tags(left_tags.astype(np.uint32))
         self.fix_right = hoomd.filter.Tags(right_tags.astype(np.uint32))
         self.all_fixed = hoomd.filter.Union(self.fix_left, self.fix_right)
         # Set the group of particles to be integrated over
-        self.integrate_group(
-                hoomd.filter.SetDifference(hoomd.filter.All(), self.all_fixed)
+        self.integrate_group = hoomd.filter.SetDifference(
+                hoomd.filter.All(), self.all_fixed
         )
 
         @property
