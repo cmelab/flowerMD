@@ -1,11 +1,12 @@
 from hoomd_polymers import Simulation
 
-def Weld(Simulation):
+def Tensile(Simulation):
     def __init__(
             self,
             initial_state,
             forcefield,
-            weld_axis,
+            tensile_axis,
+            strain,
             fix_ratio=0.20,
             r_cut=2.5,
             dt=0.0001,
@@ -16,7 +17,7 @@ def Weld(Simulation):
             log_write_freq=1e3,
             log_file_name="sim_data.txt"
     ):
-        super(Weld, self).__init__(
+        super(Tensile, self).__init__(
                 initial_state=initial_state,
                 forcefield=forcefield,
                 r_cut=rcut,
@@ -27,24 +28,45 @@ def Weld(Simulation):
                 gsd_file_name=gsd_file_name,
                 log_write_freq=log_write_freq,
         )
-        self.weld_axis=weld_axis.lower()
+        self.tensile_axis=tensile_axis.lower()
         self.fix_ratio = fix_ratio
-        force_dict = {
+        self.strain = strain
+        axis_array_dict = {
                 "x": np.array([1,0,0]),
                 "y": np.array([0,1,0]),
                 "z": np.array([0,0,1])
         }
-        position_dict = {"x": 0, "y": 1, "z": 2}
-        # TODO: do we need the box length here? Probably not
-        axis_box_length = getattr(self.sim.state.box, f"L{self.weld_axis}")
-        snap = sim.state.get_snapshot()
-        positions = snap.particles.position[:,position_dict[self.weld_axis]]
-        left_tags = np.where(positions < 0)[0]
-        right_tags = np.where(positions > 0)[0]
-        left_group = hoomd.filter.Tags(left_tags)
-        right_group = hoomd.filter.Tags(right_tags)
-        left_force = hoomd.md.force.Constant(filter=left_group)
-        right_force = hoomd.md.force.Constant(filter=right_group)
-        for _type in snap.particles.types:
-            left_force.constant_force[_type] = force_dict[self.weld_axis]
-            right_force.constant_force[_type] = -1*force_dict[self.weld_axis]
+        axis_dict = {"x": 0, "y": 1, "z": 2}
+        self._axis_index = axis_dict[self.tensile_axis]
+        self._axis_array = axis_array_dict[self.tensile_axis]
+        # Set up final box length after tensile test
+        self.initial_box = self.box_lengths
+        self.initial_length = self.initial_box[self._axis_index]
+        self.final_length = self.initial_length * (1+strain)
+        self.final_box = np.copy(self.initial_box)
+        self.final_box[self._axis_index] = self.final_length
+        # Set up walls of fixed particles:
+        self.fix_length = self.initial_length * fix_ratio
+        positions = self.hoomd_snapshot.particles.position[:,self._axis_index]
+        box_max = self.initial_length / 2
+        box_min = -box_max
+        left_tags = np.where(positions < (box_min + fix_length))[0] 
+        right_tags = np.where(positions > (box_max - fix_length))[0] 
+        fix_left = hoomd.filter.Tags(left_tags.astype(np.uint32))
+        fix_right = hoomd.filter.Tags(right_tags.astype(np.uint32))
+        all_fixed = hoomd.filter.Union(fix_left, fix_right)
+        # Set the group of particles to be integrated over
+        self.integrate_group(
+                hoomd.filter.SetDifference(hoomd.filter.All(), all_fixed)
+        )
+
+        @property
+        def strain(self):
+            delta_L = self.box_lengths[self._axis_index] - self.initial_length
+            return delta_L / self.initial_length 
+
+        def run_tesile(self, strain, kT, n_steps, period):
+            current_length = self.box_lengths[self._axis_index]
+            final_length = current_length * (1 + strain)
+            final_box = np.copy(self.box_lengths)
+            final_box[self._axis_index] = final_length
