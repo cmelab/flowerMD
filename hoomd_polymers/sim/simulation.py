@@ -1,6 +1,7 @@
 from itertools import combinations_with_replacement as combo
 import operator
 import os
+import pickle
 
 import gsd.hoomd
 import hoomd
@@ -376,6 +377,10 @@ class Simulation:
                 t_start=self.sim.timestep,
                 t_ramp=int(n_steps)
         )
+
+    def pickle_forcefield(self, file_path="forcefield.pickle"):
+        f = open(file_path), "wb")
+        pickle.dump(self.forcefield, f)
 
     def _update_walls(self):
         for wall_axis in self._wall_forces:
