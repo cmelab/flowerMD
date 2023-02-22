@@ -53,8 +53,8 @@ class Tensile(Simulation):
         positions = snapshot.particles.position[:,self._axis_index]
         box_max = self.initial_length / 2
         box_min = -box_max
-        left_tags = np.where(positions < (box_min + self.fix_length))[0] 
-        right_tags = np.where(positions > (box_max - self.fix_length))[0] 
+        left_tags = np.where(positions < (box_min + self.fix_length))[0]
+        right_tags = np.where(positions > (box_max - self.fix_length))[0]
         self.fix_left = hoomd.filter.Tags(left_tags.astype(np.uint32))
         self.fix_right = hoomd.filter.Tags(right_tags.astype(np.uint32))
         self.all_fixed = hoomd.filter.Union(self.fix_left, self.fix_right)
@@ -63,44 +63,45 @@ class Tensile(Simulation):
                 hoomd.filter.All(), self.all_fixed
         )
 
-        @property
-        def strain(self):
-            delta_L = self.box_lengths[self._axis_index] - self.initial_length
-            return delta_L / self.initial_length 
+    @property
+    def strain(self):
+        delta_L = self.box_lengths[self._axis_index] - self.initial_length
+        return delta_L / self.initial_length
 
-        def _shift_particles(self, shift_by):
-            snap = self.sim.state.get_snapshot()
-            snap.particles.position[
-                    self.fix_left.tags]-=(self._axis_array*(shift_by/2))
-            snap.particles.position[
-                    self.fix_right.tags]+=(self._axis_array*(shift_by/2))
-            self.sim.state.set_snapshot(snap)
+    def _shift_particles(self, shift_by):
+        snap = self.sim.state.get_snapshot()
+        snap.particles.position[
+                self.fix_left.tags]-=(self._axis_array*(shift_by/2))
+        snap.particles.position[
+                self.fix_right.tags]+=(self._axis_array*(shift_by/2))
+        self.sim.state.set_snapshot(snap)
 
-        def run_tesile(self, strain, kT, n_steps, period):
-            current_length = self.box_lengths[self._axis_index]
-            final_length = current_length * (1 + strain)
-            final_box = np.copy(self.box_lengths)
-            final_box[self._axis_index] = final_length
-            # Set up box resizer
-            resize_trigger = hoomd.trigger.Periodic(period)
-            box_ramp = hoomd.variant.Ramp(
-                    A=0, B=1, t_start=self.sim.timestep, t_ramp=int(n_steps)
-            )
-            box_resizer = hoomd.update.BoxResize(
-                    box1=self.box_lengths,
-                    box2=final_box,
-                    variant=box_ramp,
-                    trigger=resize_trigger
-            )
-            self.sim.operations.updaters.append(box_resizer)
-            self.set_integrator_method(
-                integrator_method=hoomd.md.methods.NVE,
-                method_kwargs={"filter": self.integrate_group}
-            )
+    def run_tesile(self, strain, kT, n_steps, period):
+        current_length = self.box_lengths[self._axis_index]
+        final_length = current_length * (1 + strain)
+        final_box = np.copy(self.box_lengths)
+        final_box[self._axis_index] = final_length
+        # Set up box resizer
+        resize_trigger = hoomd.trigger.Periodic(period)
+        box_ramp = hoomd.variant.Ramp(
+                A=0, B=1, t_start=self.sim.timestep, t_ramp=int(n_steps)
+        )
+        box_resizer = hoomd.update.BoxResize(
+                box1=self.box_lengths,
+                box2=final_box,
+                variant=box_ramp,
+                trigger=resize_trigger
+        )
+        self.sim.operations.updaters.append(box_resizer)
+        self.set_integrator_method(
+            integrator_method=hoomd.md.methods.NVE,
+            method_kwargs={"filter": self.integrate_group}
+        )
 
-            last_length = initial_length
-            while self.sim.timestep < box_ramp.t_start + box_ramp.t_ramp:
-                self.sim.run(period)
-                shift_by = self.box_lengths[self._axis_index] - last_length
-                self._shift_particles(shift_by)
-                last_length = self.box_lengths
+        last_length = self.initial_length
+        while self.sim.timestep < box_ramp.t_start + box_ramp.t_ramp + 1:
+            self.sim.run(period)
+            shift_by = self.box_lengths[self._axis_index] - last_length
+            self._shift_particles(shift_by)
+            last_length = self.box_lengths
+        self.sim.operations.updaters.remove(box_resizer)
