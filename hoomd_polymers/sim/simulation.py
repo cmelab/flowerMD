@@ -379,7 +379,7 @@ class Simulation:
         )
 
     def pickle_forcefield(self, file_path="forcefield.pickle"):
-        f = open(file_path), "wb")
+        f = open(file_path, "wb")
         pickle.dump(self.forcefield, f)
 
     def _update_walls(self):
