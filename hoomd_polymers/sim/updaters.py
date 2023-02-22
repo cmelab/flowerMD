@@ -9,6 +9,6 @@ class PullParticles(Action):
 
     def act(self, timestep):
         snap = self._state.get_snapshot()
-        snap.particles.position[self.neg_filter.tags][self.axis] -= shift_by
-        snap.particles.position[self.pos_filter.tags][self.axis] += shift_by
+        snap.particles.position[self.neg_filter.tags][self.axis] -= self.shift_by
+        snap.particles.position[self.pos_filter.tags][self.axis] += self.shift_by
         self._state.set_snapshot(snap)
