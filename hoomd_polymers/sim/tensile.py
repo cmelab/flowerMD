@@ -87,7 +87,8 @@ class Tensile(Simulation):
                 box1=self.box_lengths,
                 box2=final_box,
                 variant=box_ramp,
-                trigger=resize_trigger
+                trigger=resize_trigger,
+                filter=hoomd.filter.Null()
         )
         self.sim.operations.updaters.append(box_resizer)
         self.set_integrator_method(
@@ -96,8 +97,9 @@ class Tensile(Simulation):
         )
 
         last_length = current_length
-        #while self.box_lengths[self._axis_index] < final_length:
-        while self.sim.timestep < box_ramp.t_start + box_ramp.t_ramp + 1:
+        #self.sim.run(n_steps)
+        while self.box_lengths[self._axis_index] < final_length:
+        #while self.sim.timestep < box_ramp.t_start + box_ramp.t_ramp + 1:
             self.sim.run(period + 1)
             shift_by = self.box_lengths[self._axis_index] - last_length
             self._shift_particles(shift_by)
