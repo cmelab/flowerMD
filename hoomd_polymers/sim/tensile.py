@@ -95,9 +95,10 @@ class Tensile(Simulation):
             method_kwargs={"filter": self.integrate_group}
         )
 
-        last_length = self.initial_length
+        last_length = current_length
+        #while self.box_lengths[self._axis_index] < final_length:
         while self.sim.timestep < box_ramp.t_start + box_ramp.t_ramp + 1:
-            self.sim.run(period)
+            self.sim.run(period + 1)
             shift_by = self.box_lengths[self._axis_index] - last_length
             self._shift_particles(shift_by)
             last_length = self.box_lengths[self._axis_index]
