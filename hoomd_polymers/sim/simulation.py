@@ -382,12 +382,12 @@ class Simulation:
         f = open(file_path, "wb")
         pickle.dump(self.forcefield, f)
 
+    #TODO Make custom updater?
     def _update_walls(self):
         for wall_axis in self._wall_forces:
             wall_force = self._wall_forces[wall_axis][0]
             wall_kwargs = self._wall_forces[wall_axis][1]
             self.remove_force(wall_force)
-            #self.sim.operations.integrator.forces.remove(wall_force)
             self.add_walls(wall_axis, **wall_kwargs)
 
     def _thermalize_system(self, kT):

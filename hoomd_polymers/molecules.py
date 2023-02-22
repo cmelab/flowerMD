@@ -7,7 +7,6 @@ from mbuild.lib.recipes import Polymer
 
 from hoomd_polymers.library import MON_DIR
 
-#TODO: Add description attributes to each monomer class
 
 class CoPolymer(Polymer):
     def __init__(
@@ -107,7 +106,7 @@ class PEKK_para(Polymer):
         super(PEKK_para, self).__init__()
         self.smiles_str = "c1ccc(Oc2ccc(C(=O)c3ccc(C(=O))cc3)cc2)cc1"
         self.file = os.path.join(MON_DIR, "pekk_para.mol2")
-        self.description = ("Poly(ether-ether-ketone) with para bonding "
+        self.description = ("Poly(ether-ketone-ketone) with para bonding "
                             "configuration between consectuvie "
                             "ketone linkage groups")
         self.monomer = mb.load(self.file)
@@ -128,7 +127,7 @@ class PEKK_meta(Polymer):
         super(PEKK_meta, self).__init__()
         self.smiles_str = "c1cc(Oc2ccc(C(=O)c3cc(C(=O))ccc3)cc2)ccc1"
         self.file = os.path.join(MON_DIR, "pekk_meta.mol2")
-        self.description = ("Poly(ether-ether-ketone) with meta bonding "
+        self.description = ("Poly(ether-ketone-ketone) with meta bonding "
                             "configuration between consectuvie "
                             "ketone linkage groups")
         self.monomer = mb.load(self.file)

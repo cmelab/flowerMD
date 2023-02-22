@@ -68,13 +68,14 @@ class Tensile(Simulation):
     def _shift_particles(self, shift_by):
         snap = self.sim.state.get_snapshot()
         snap.particles.position[
-                self.fix_left.tags]-=(self._axis_array*(shift_by/2))
+                self.fix_left.tags][self._axis_index]-=shift_by/2
         snap.particles.position[
-                self.fix_right.tags]+=(self._axis_array*(shift_by/2))
+                self.fix_right.tags][self._axis_index]+=shift_by/2
         self.sim.state.set_snapshot(snap)
 
     def run_tesile(self, strain, kT, n_steps, period):
         current_length = self.box_lengths[self._axis_index]
+        # TODO: Handle cases where current_length is diff from initial_length
         final_length = current_length * (1+strain)
         final_box = np.copy(self.box_lengths)
         final_box[self._axis_index] = final_length
@@ -97,9 +98,7 @@ class Tensile(Simulation):
         )
 
         last_length = current_length
-        #self.sim.run(n_steps)
         while self.box_lengths[self._axis_index] < final_length:
-        #while self.sim.timestep < box_ramp.t_start + box_ramp.t_ramp + 1:
             self.sim.run(period + 1)
             shift_by = self.box_lengths[self._axis_index] - last_length
             self._shift_particles(shift_by)
