@@ -44,9 +44,6 @@ class Tensile(Simulation):
         # Set up final box length after tensile test
         self.initial_box = self.box_lengths
         self.initial_length = self.initial_box[self._axis_index]
-        #self.final_length = self.initial_length * (1+strain)
-        #self.final_box = np.copy(self.initial_box)
-        #self.final_box[self._axis_index] = self.final_length
         # Set up walls of fixed particles:
         snapshot = self.sim.state.get_snapshot()
         self.fix_length = self.initial_length * fix_ratio
@@ -78,7 +75,7 @@ class Tensile(Simulation):
 
     def run_tesile(self, strain, kT, n_steps, period):
         current_length = self.box_lengths[self._axis_index]
-        final_length = current_length * (1 + strain)
+        final_length = current_length * (1+strain)
         final_box = np.copy(self.box_lengths)
         final_box[self._axis_index] = final_length
         # Set up box resizer
@@ -103,5 +100,5 @@ class Tensile(Simulation):
             self.sim.run(period)
             shift_by = self.box_lengths[self._axis_index] - last_length
             self._shift_particles(shift_by)
-            last_length = self.box_lengths
+            last_length = self.box_lengths[self._axis_index]
         self.sim.operations.updaters.remove(box_resizer)
