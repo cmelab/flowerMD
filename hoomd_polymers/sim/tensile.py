@@ -69,9 +69,9 @@ class Tensile(Simulation):
     def _shift_particles(self, shift_by):
         snap = self.sim.state.get_snapshot()
         snap.particles.position[
-                self.fix_left.tags][self._axis_index]-=shift_by/2
+                self.fix_left.tags]-=(shift_by/2 * self._axis_array)
         snap.particles.position[
-                self.fix_right.tags][self._axis_index]+=shift_by/2
+                self.fix_right.tags]+=(shift_by/2 * self._axis_array)
         self.sim.state.set_snapshot(snap)
 
     def run_tenstile_test(self, strain, kT, n_steps, period):
@@ -79,7 +79,7 @@ class Tensile(Simulation):
         final_length = current_length * (1+strain)
         final_box = np.copy(self.box_lengths)
         final_box[self._axis_index] = final_length
-        shift_by = (final_length - current_length) / (period%n_steps)
+        shift_by = (final_length - current_length) / (n_steps//period)
         resize_trigger = hoomd.trigger.Periodic(period)
         box_ramp = hoomd.variant.Ramp(
                 A=0, B=1, t_start=self.sim.timestep, t_ramp=int(n_steps)
