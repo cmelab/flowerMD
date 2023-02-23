@@ -69,9 +69,9 @@ class Tensile(Simulation):
     def _shift_particles(self, shift_by):
         snap = self.sim.state.get_snapshot()
         snap.particles.position[
-                self.fix_left.tags]-=(shift_by/2 * self._axis_array)
+                self.fix_left.tags] -= (shift_by/2 * self._axis_array)
         snap.particles.position[
-                self.fix_right.tags]+=(shift_by/2 * self._axis_array)
+                self.fix_right.tags] += (shift_by/2 * self._axis_array)
         self.sim.state.set_snapshot(snap)
 
     def run_tenstile_test(self, strain, kT, n_steps, period):
