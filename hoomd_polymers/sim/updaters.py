@@ -1,5 +1,6 @@
 import hoomd
 
+
 class PullParticles(hoomd.custom.Action):
     def __init__(self, shift_by, axis, neg_filter, pos_filter):
         self.shift_by = shift_by
@@ -8,7 +9,8 @@ class PullParticles(hoomd.custom.Action):
         self.pos_filter = pos_filter
 
     def act(self, timestep):
-        snap = self._state.get_snapshot()
-        snap.particles.position[self.neg_filter.tags] -= (self.shift_by*self.axis)
-        snap.particles.position[self.pos_filter.tags] += (self.shift_by*self.axis)
-        self._state.set_snapshot(snap)
+        with self._state.cpu_local_snapshot as snap:
+            neg_filter = snap.particles.rtag[self.neg_filter.tags]
+            pos_filter = snap.particles.rtag[self.pos_filter.tags]
+            snap.particles.position[neg_filter] -= (self.shift_by*self.axis)
+            snap.particles.position[pos_filter] += (self.shift_by*self.axis)

@@ -42,12 +42,11 @@ class Tensile(Simulation):
         axis_dict = {"x": 0, "y": 1, "z": 2}
         self._axis_index = axis_dict[self.tensile_axis]
         self._axis_array = axis_array_dict[self.tensile_axis]
-        # Set up final box length after tensile test
         self.initial_box = self.box_lengths
         self.initial_length = self.initial_box[self._axis_index]
+        self.fix_length = self.initial_length * fix_ratio
         # Set up walls of fixed particles:
         snapshot = self.sim.state.get_snapshot()
-        self.fix_length = self.initial_length * fix_ratio
         positions = snapshot.particles.position[:,self._axis_index]
         box_max = self.initial_length / 2
         box_min = -box_max
@@ -55,10 +54,10 @@ class Tensile(Simulation):
         right_tags = np.where(positions > (box_max - self.fix_length))[0]
         self.fix_left = hoomd.filter.Tags(left_tags.astype(np.uint32))
         self.fix_right = hoomd.filter.Tags(right_tags.astype(np.uint32))
-        self.all_fixed = hoomd.filter.Union(self.fix_left, self.fix_right)
+        all_fixed = hoomd.filter.Union(self.fix_left, self.fix_right)
         # Set the group of particles to be integrated over
         self.integrate_group = hoomd.filter.SetDifference(
-                hoomd.filter.All(), self.all_fixed
+                hoomd.filter.All(), all_fixed
         )
 
     @property
@@ -66,15 +65,7 @@ class Tensile(Simulation):
         delta_L = self.box_lengths[self._axis_index] - self.initial_length
         return delta_L / self.initial_length
 
-    def _shift_particles(self, shift_by):
-        snap = self.sim.state.get_snapshot()
-        snap.particles.position[
-                self.fix_left.tags] -= (shift_by/2 * self._axis_array)
-        snap.particles.position[
-                self.fix_right.tags] += (shift_by/2 * self._axis_array)
-        self.sim.state.set_snapshot(snap)
-
-    def run_tenstile_test(self, strain, kT, n_steps, period):
+    def run_tenstile(self, strain, kT, n_steps, period):
         current_length = self.box_lengths[self._axis_index]
         final_length = current_length * (1+strain)
         final_box = np.copy(self.box_lengths)
@@ -107,35 +98,3 @@ class Tensile(Simulation):
             method_kwargs={"filter": self.integrate_group}
         )
         self.sim.run(n_steps + 1)
-
-    def run_tesile(self, strain, kT, n_steps, period):
-        current_length = self.box_lengths[self._axis_index]
-        # TODO: Handle cases where current_length is diff from initial_length
-        final_length = current_length * (1+strain)
-        final_box = np.copy(self.box_lengths)
-        final_box[self._axis_index] = final_length
-        # Set up box resizer
-        resize_trigger = hoomd.trigger.Periodic(period)
-        box_ramp = hoomd.variant.Ramp(
-                A=0, B=1, t_start=self.sim.timestep, t_ramp=int(n_steps)
-        )
-        box_resizer = hoomd.update.BoxResize(
-                box1=self.box_lengths,
-                box2=final_box,
-                variant=box_ramp,
-                trigger=resize_trigger,
-                filter=hoomd.filter.Null()
-        )
-        self.sim.operations.updaters.append(box_resizer)
-        self.set_integrator_method(
-            integrator_method=hoomd.md.methods.NVE,
-            method_kwargs={"filter": self.integrate_group}
-        )
-
-        last_length = current_length
-        while self.box_lengths[self._axis_index] < final_length:
-            self.sim.run(period + 1)
-            shift_by = self.box_lengths[self._axis_index] - last_length
-            self._shift_particles(shift_by)
-            last_length = self.box_lengths[self._axis_index]
-        self.sim.operations.updaters.remove(box_resizer)
