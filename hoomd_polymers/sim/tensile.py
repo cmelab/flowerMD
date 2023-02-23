@@ -2,7 +2,7 @@ import hoomd
 import numpy as np
 
 from hoomd_polymers.sim.simulation import Simulation
-from hoomd_polymers.updaters import PullParticles
+from hoomd_polymers.sim.updaters import PullParticles
 
 
 class Tensile(Simulation):
@@ -79,7 +79,7 @@ class Tensile(Simulation):
         final_length = current_length * (1+strain)
         final_box = np.copy(self.box_lengths)
         final_box[self._axis_index] = final_length
-        shift_by = (final_length - current_length) / (n_steps%period)
+        shift_by = (final_length - current_length) / (period%n_steps)
         resize_trigger = hoomd.trigger.Periodic(period)
         box_ramp = hoomd.variant.Ramp(
                 A=0, B=1, t_start=self.sim.timestep, t_ramp=int(n_steps)
@@ -91,17 +91,22 @@ class Tensile(Simulation):
                 trigger=resize_trigger,
                 filter=hoomd.filter.Null()
         )
+        particle_puller = PullParticles(
+            shift_by=shift_by/2,
+            axis=self._axis_array,
+            neg_filter=self.fix_left,
+            pos_filter=self.fix_right
+        )
         particle_updater = hoomd.update.CustomUpdater(
-                action=PullParticles(
-                    shift_by=shift_by,
-                    axis=self._axis_index,
-                    neg_filter=self.fix_left,
-                    pos_filter=self.fix_right
-                ),
-                trigger=resize_trigger
+                trigger=resize_trigger, action=particle_puller
         )
         self.sim.operations.updaters.append(box_resizer)
         self.sim.operations.updaters.append(particle_updater)
+        self.set_integrator_method(
+            integrator_method=hoomd.md.methods.NVE,
+            method_kwargs={"filter": self.integrate_group}
+        )
+        self.sim.run(n_steps + 1)
 
     def run_tesile(self, strain, kT, n_steps, period):
         current_length = self.box_lengths[self._axis_index]
