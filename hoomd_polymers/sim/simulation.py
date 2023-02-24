@@ -53,11 +53,11 @@ class Simulation(hoomd.simulation.Simulation):
     """
     def __init__(
         self,
-        device,
         initial_state,
         forcefield=None,
         r_cut=2.5,
         dt=0.0001,
+        device=hoomd.device.auto_select(),
         seed=42,
         restart=None,  #TODO: Restart logic
         gsd_write_freq=1e4,
@@ -65,10 +65,10 @@ class Simulation(hoomd.simulation.Simulation):
         log_write_freq=1e3,
         log_file_name="sim_data.txt"
     ):
+        super(Simulation, self).__init__(device, seed)
         self.initial_state = initial_state
         self.forcefield = forcefield
         self.r_cut = r_cut
-        self._dt = dt
         self.gsd_write_freq = gsd_write_freq
         self.log_write_freq = log_write_freq
         self.gsd_file_name = gsd_file_name
@@ -81,7 +81,10 @@ class Simulation(hoomd.simulation.Simulation):
             "pressure",
             "pressure_tensor",
         ]
-        super(Simulation, self).__init__(device, seed)
+        self._dt = dt
+        self._reference_distance = 1  
+        self._reference_energy = 1 
+        self._reference_mass = 1 
         self._integrate_group = hoomd.filter.All()
         self.integrator = None
         self._wall_forces = dict()
@@ -100,13 +103,68 @@ class Simulation(hoomd.simulation.Simulation):
     @property
     def atom_types(self):
         """"""
-        snap = self.state.get_snapshot()
-        return snap.particles.types
+        with self.state.cpu_local_snapshot as snap:
+            return snap.particles.types
+        #snap = self.state.get_snapshot()
+        #return snap.particles.types
+
+    @property
+    def reference_distance(self):
+        return self._reference_distance
+    
+    @reference_distance.setter
+    def reference_distance(self, distance):
+        self._reference_distance = distance
+
+    @property
+    def reference_energy(self):
+        return self._reference_energy
+
+    @reference_energy.setter
+    def reference_energy(self, energy):
+        self._reference_energy = energy 
+    
+    @property
+    def reference_mass(self):
+        return self._reference_mass
+
+    @reference_mass.setter
+    def reference_mass(self, mass):
+        self._reference_mass = mass
+
+    @property
+    def box_lengths_reduced(self):
+        box = self.state.box
+        return np.array([box.Lx, box.Ly, box.Lz])
 
     @property
     def box_lengths(self):
-        box = self.state.box
-        return np.array([box.Lx, box.Ly, box.Lz])
+        return self.box_lengths_reduced * self.reference_distance 
+
+    @property
+    def volume_reduced(self):
+        return np.prod(self.box_lengths_reduced)
+
+    @property
+    def volume(self):
+        return np.prod(self.box_lengths)
+
+    @property
+    def mass_reduced(self):
+        with self.state.cpu_local_snapshot as snap:
+            return sum(snap.particles.mass)
+
+    @property
+    def mass(self):
+        return self.mass_reduced * self.reference_mass
+    
+    @property
+    def density_reduced(self):
+        return (self.mass_reduced / self.volume_reduced)
+
+    @property
+    def density(self):
+        return (self.mass / self.volume)
 
     #TODO: Fix nlist functions
     @property
@@ -205,7 +263,7 @@ class Simulation(hoomd.simulation.Simulation):
         """"""
         wall_axis = np.asarray(wall_axis)
         #box = self.box_lengths
-        wall_origin = wall_axis * self.box_lengths/2
+        wall_origin = wall_axis * self.box_lengths_reduced/2
         wall_normal = -wall_axis
         wall_origin2 = -wall_origin
         wall_normal2 = -wall_normal
