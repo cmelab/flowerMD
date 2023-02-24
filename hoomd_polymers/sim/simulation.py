@@ -134,7 +134,6 @@ class Simulation:
         if self.integrator:
             self.sim.operations.integrator.dt = self.dt
 
-
     @property
     def integrate_group(self):
         """"""
@@ -205,7 +204,7 @@ class Simulation:
         wall_axis = np.asarray(wall_axis)
         box = self.sim.state.box
         wall_origin = wall_axis * np.array([box.Lx/2, box.Ly/2, box.Lz/2])
-        wall_normal = -wall_origin
+        wall_normal = -wall_axis
         wall_origin2 = -wall_origin
         wall_normal2 = -wall_normal
         wall1 = hoomd.wall.Plane(origin=wall_origin, normal=wall_normal)
@@ -231,7 +230,7 @@ class Simulation:
         wall_force = self._wall_forces[wall_axis][0]
         self.remove_force(wall_force)
 
-    def run_update_box(
+    def run_update_volume(
             self,
             n_steps,
             period,
@@ -290,66 +289,6 @@ class Simulation:
             )
             self.sim.operations.updaters.append(wall_updater)
         self.sim.run(n_steps + 1)
-
-    def run_update_volume(
-            self,
-            n_steps,
-            period,
-            kT,
-            tau_kt,
-            final_box_lengths,
-            thermalize_particles=True
-    ):
-        """Runs an NVT simulation while shrinking or expanding
-        the simulation volume to the given final volume.
-
-        Parameters:
-        -----------
-        n_steps : int, required
-            Number of steps to run during shrinking
-        period : int, required
-            The number of steps ran between box updates
-        kT : int or hoomd.variant.Ramp; required
-            The temperature to use during shrinking.
-        tau_kt : float; required
-            Thermostat coupling period (in simulation time units)
-        final_box_lengths : np.ndarray, shape=(3,), dtype=float; required
-            The final box edge lengths in (x, y, z) order
-
-        """
-        resize_trigger = hoomd.trigger.Periodic(period)
-        box_ramp = hoomd.variant.Ramp(
-                A=0, B=1, t_start=self.sim.timestep, t_ramp=int(n_steps)
-        )
-        initial_box = self.sim.state.box
-        final_box = hoomd.Box(
-                Lx=final_box_lengths[0],
-                Ly=final_box_lengths[1],
-                Lz=final_box_lengths[2]
-        )
-        box_resizer = hoomd.update.BoxResize(
-                box1=initial_box,
-                box2=final_box,
-                variant=box_ramp,
-                trigger=resize_trigger
-        )
-        self.sim.operations.updaters.append(box_resizer)
-        self.set_integrator_method(
-                integrator_method=hoomd.md.methods.NVT,
-                method_kwargs={
-                    "tau": tau_kt, "filter": self.integrate_group, "kT": kT
-                },
-        )
-        if thermalize_particles:
-            self._thermalize_system(kT)
-        if not self._wall_forces:
-            self.sim.run(n_steps)
-        else:
-            while self.sim.timestep < box_ramp.t_start + box_ramp.t_ramp:
-                self.sim.run(period)
-                self._update_walls()
-            self.sim.run(1)
-            self._update_walls()
 
     def run_langevin(
             self,
@@ -442,7 +381,6 @@ class Simulation:
         f = open(file_path, "wb")
         pickle.dump(self.forcefield, f)
 
-    #TODO Make custom updater?
     def _update_walls(self):
         for wall_axis in self._wall_forces:
             wall_force = self._wall_forces[wall_axis][0]
