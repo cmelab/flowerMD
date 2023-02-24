@@ -13,7 +13,7 @@ import parmed as pmd
 from hoomd_polymers.sim.updaters import UpdateWalls
 
 
-class Simulation:
+class Simulation(hoomd.simulation.Simulation):
     """The simulation context management class.
 
     This class takes the output of the Initialization class
@@ -53,6 +53,7 @@ class Simulation:
     """
     def __init__(
         self,
+        device,
         initial_state,
         forcefield=None,
         r_cut=2.5,
@@ -80,37 +81,31 @@ class Simulation:
             "pressure",
             "pressure_tensor",
         ]
-        self.device = hoomd.device.auto_select()
-        self.sim = hoomd.Simulation(device=self.device, seed=seed)
+        super(Simulation, self).__init__(device, seed)
         self._integrate_group = hoomd.filter.All()
         self.integrator = None
         self._wall_forces = dict()
         if isinstance(self.initial_state, str): # Load from a GSD file
             print("Initializing simulation state from a GSD file.")
-            self.sim.create_state_from_gsd(self.initial_state)
+            self.create_state_from_gsd(self.initial_state)
         elif isinstance(self.initial_state, hoomd.snapshot.Snapshot):
             print("Initializing simulation state from a snapshot.")
-            self.sim.create_state_from_snapshot(self.initial_state)
+            self.create_state_from_snapshot(self.initial_state)
         elif isinstance(self.initial_state, gsd.hoomd.Snapshot):
             print("Initializing simulation state from a snapshot.")
-            self.sim.create_state_from_snapshot(self.initial_state)
+            self.create_state_from_snapshot(self.initial_state)
         # Add a gsd and thermo props logger to sim operations
         self._add_hoomd_writers()
 
     @property
-    def timestep(self):
-        """"""
-        return self.sim.timestep
-
-    @property
     def atom_types(self):
         """"""
-        snap = self.sim.state.get_snapshot()
+        snap = self.state.get_snapshot()
         return snap.particles.types
 
     @property
     def box_lengths(self):
-        box = self.sim.state.box
+        box = self.state.box
         return np.array([box.Lx, box.Ly, box.Lz])
 
     #TODO: Fix nlist functions
@@ -132,7 +127,7 @@ class Simulation:
     def dt(self, value):
         self._dt = value
         if self.integrator:
-            self.sim.operations.integrator.dt = self.dt
+            self.operations.integrator.dt = self.dt
 
     @property
     def integrate_group(self):
@@ -147,7 +142,7 @@ class Simulation:
     @property
     def method(self):
         if self.integrator:
-            return self.sim.operations.integrator.methods[0]
+            return self.operations.integrator.methods[0]
         else:
             raise RuntimeError(
                     "No integrator, or method has been set yet. "
@@ -191,9 +186,9 @@ class Simulation:
         if not self.integrator: # Integrator and method not yet created
             self.integrator = hoomd.md.Integrator(dt=self.dt)
             self.integrator.forces = self.forcefield
-            self.sim.operations.add(self.integrator)
+            self.operations.add(self.integrator)
             new_method = integrator_method(**method_kwargs)
-            self.sim.operations.integrator.methods = [new_method]
+            self.operations.integrator.methods = [new_method]
         else: # Replace the existing integrator method
             self.integrator.methods.remove(self.method)
             new_method = integrator_method(**method_kwargs)
@@ -202,8 +197,8 @@ class Simulation:
     def add_walls(self, wall_axis, sigma, epsilon, r_cut, r_extrap=0):
         """"""
         wall_axis = np.asarray(wall_axis)
-        box = self.sim.state.box
-        wall_origin = wall_axis * np.array([box.Lx/2, box.Ly/2, box.Lz/2])
+        #box = self.box_lengths
+        wall_origin = wall_axis * self.box_lengths/2
         wall_normal = -wall_axis
         wall_origin2 = -wall_origin
         wall_normal2 = -wall_normal
@@ -258,9 +253,9 @@ class Simulation:
         """
         resize_trigger = hoomd.trigger.Periodic(period)
         box_ramp = hoomd.variant.Ramp(
-                A=0, B=1, t_start=self.sim.timestep, t_ramp=int(n_steps)
+                A=0, B=1, t_start=self.timestep, t_ramp=int(n_steps)
         )
-        initial_box = self.sim.state.box
+        initial_box = self.state.box
         final_box = hoomd.Box(
                 Lx=final_box_lengths[0],
                 Ly=final_box_lengths[1],
@@ -272,7 +267,7 @@ class Simulation:
                 variant=box_ramp,
                 trigger=resize_trigger
         )
-        self.sim.operations.updaters.append(box_resizer)
+        self.operations.updaters.append(box_resizer)
         self.set_integrator_method(
                 integrator_method=hoomd.md.methods.NVT,
                 method_kwargs={
@@ -287,8 +282,8 @@ class Simulation:
             wall_updater = hoomd.update.CustomUpdater(
                     trigger=resize_trigger, action=wall_update
             )
-            self.sim.operations.updaters.append(wall_updater)
-        self.sim.run(n_steps + 1)
+            self.operations.updaters.append(wall_updater)
+        self.run(n_steps + 1)
 
     def run_langevin(
             self,
@@ -347,7 +342,7 @@ class Simulation:
         )
         if thermalize_particles:
             self._thermalize_system(kT)
-        self.sim.run(n_steps)
+        self.run(n_steps)
 
     def run_NVT(self, n_steps, kT, tau_kt, thermalize_particles=True):
         """"""
@@ -359,7 +354,7 @@ class Simulation:
         )
         if thermalize_particles:
             self._thermalize_system(kT)
-        self.sim.run(n_steps)
+        self.run(n_steps)
 
     def run_NVE(self, n_steps):
         """"""
@@ -367,13 +362,13 @@ class Simulation:
                 integrator_method=hoomd.md.methods.NVE,
                 method_kwargs={"filter": self.integrate_group}
         )
-        self.sim.run(n_steps)
+        self.run(n_steps)
 
     def temperature_ramp(self, n_steps, kT_start, kT_final):
         return hoomd.variant.Ramp(
                 A=kT_start,
                 B=kT_final,
-                t_start=self.sim.timestep,
+                t_start=self.timestep,
                 t_ramp=int(n_steps)
         )
 
@@ -390,11 +385,11 @@ class Simulation:
 
     def _thermalize_system(self, kT):
         if isinstance(kT, hoomd.variant.Ramp):
-            self.sim.state.thermalize_particle_momenta(
+            self.state.thermalize_particle_momenta(
                     filter=self.integrate_group, kT=kT.range[0]
             )
         else:
-            self.sim.state.thermalize_particle_momenta(
+            self.state.thermalize_particle_momenta(
                     filter=self.integrate_group, kT=kT
             )
 
@@ -420,11 +415,11 @@ class Simulation:
         )
 
         logger = hoomd.logging.Logger(categories=["scalar", "string"])
-        logger.add(self.sim, quantities=["timestep", "tps"])
+        logger.add(self, quantities=["timestep", "tps"])
         thermo_props = hoomd.md.compute.ThermodynamicQuantities(
                 filter=self.integrate_group
         )
-        self.sim.operations.computes.append(thermo_props)
+        self.operations.computes.append(thermo_props)
         logger.add(thermo_props, quantities=self.log_quantities)
 
         for f in self.forcefield:
@@ -436,5 +431,5 @@ class Simulation:
             logger=logger,
             max_header_len=None,
         )
-        self.sim.operations.writers.append(gsd_writer)
-        self.sim.operations.writers.append(table_file)
+        self.operations.writers.append(gsd_writer)
+        self.operations.writers.append(table_file)

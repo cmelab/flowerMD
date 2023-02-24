@@ -22,5 +22,4 @@ class UpdateWalls(hoomd.custom.Action):
         self.sim = sim
 
     def act(self, timestep):
-        box = self._state.box
         self.sim._update_walls()

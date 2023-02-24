@@ -14,6 +14,7 @@ class Tensile(Simulation):
             fix_ratio=0.20,
             r_cut=2.5,
             dt=0.0001,
+            device=hoomd.device.auto_select()
             seed=42,
             restart=None,
             gsd_write_freq=1e4,
@@ -26,6 +27,7 @@ class Tensile(Simulation):
                 forcefield=forcefield,
                 r_cut=r_cut,
                 dt=dt,
+                device=device,
                 seed=seed,
                 restart=restart,
                 gsd_write_freq=gsd_write_freq,
@@ -46,7 +48,7 @@ class Tensile(Simulation):
         self.initial_length = self.initial_box[self._axis_index]
         self.fix_length = self.initial_length * fix_ratio
         # Set up walls of fixed particles:
-        snapshot = self.sim.state.get_snapshot()
+        snapshot = self.state.get_snapshot()
         positions = snapshot.particles.position[:,self._axis_index]
         box_max = self.initial_length / 2
         box_min = -box_max
@@ -73,7 +75,7 @@ class Tensile(Simulation):
         shift_by = (final_length - current_length) / (n_steps//period)
         resize_trigger = hoomd.trigger.Periodic(period)
         box_ramp = hoomd.variant.Ramp(
-                A=0, B=1, t_start=self.sim.timestep, t_ramp=int(n_steps)
+                A=0, B=1, t_start=self.timestep, t_ramp=int(n_steps)
         )
         box_resizer = hoomd.update.BoxResize(
                 box1=self.box_lengths,
@@ -91,10 +93,10 @@ class Tensile(Simulation):
         particle_updater = hoomd.update.CustomUpdater(
                 trigger=resize_trigger, action=particle_puller
         )
-        self.sim.operations.updaters.append(box_resizer)
-        self.sim.operations.updaters.append(particle_updater)
+        self.operations.updaters.append(box_resizer)
+        self.operations.updaters.append(particle_updater)
         self.set_integrator_method(
             integrator_method=hoomd.md.methods.NVE,
             method_kwargs={"filter": self.integrate_group}
         )
-        self.sim.run(n_steps + 1)
+        self.run(n_steps + 1)
