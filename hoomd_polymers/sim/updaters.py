@@ -22,4 +22,11 @@ class UpdateWalls(hoomd.custom.Action):
         self.sim = sim
 
     def act(self, timestep):
-        self.sim._update_walls()
+        self.update_walls()
+
+    def update_walls(self):
+        for wall_axis in self.sim._wall_forces:
+            wall_force = self.sim._wall_forces[wall_axis][0]
+            wall_kwargs = self.sim._wall_forces[wall_axis][1]
+            self.sim.remove_force(wall_force)
+            self.sim.add_walls(wall_axis, **wall_kwargs)

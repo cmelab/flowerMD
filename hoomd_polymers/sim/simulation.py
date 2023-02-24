@@ -67,7 +67,7 @@ class Simulation(hoomd.simulation.Simulation):
     ):
         super(Simulation, self).__init__(device, seed)
         self.initial_state = initial_state
-        self.forcefield = forcefield
+        self._forcefield = forcefield
         self.r_cut = r_cut
         self.gsd_write_freq = gsd_write_freq
         self.log_write_freq = log_write_freq
@@ -103,10 +103,15 @@ class Simulation(hoomd.simulation.Simulation):
     @property
     def atom_types(self):
         """"""
-        with self.state.cpu_local_snapshot as snap:
-            return snap.particles.types
-        #snap = self.state.get_snapshot()
-        #return snap.particles.types
+        snap = self.state.get_snapshot()
+        return snap.particles.types
+
+    @property
+    def forces(self):
+        if self.integrator:
+            return self.operations.integrator.forces
+        else:
+            return self._forcefield
 
     @property
     def reference_distance(self):
@@ -210,13 +215,13 @@ class Simulation(hoomd.simulation.Simulation):
 
     def add_force(self, hoomd_force):
         """"""
-        self.forcefield.append(hoomd_force)
+        self._forcefield.append(hoomd_force)
         if self.integrator:
             self.integrator.forces.append(hoomd_force)
 
     def remove_force(self, hoomd_force):
         """"""
-        self.forcefield.remove(hoomd_force)
+        self._forcefield.remove(hoomd_force)
         if self.integrator:
             self.integrator.forces.remove(hoomd_force)
 
@@ -250,7 +255,7 @@ class Simulation(hoomd.simulation.Simulation):
         """
         if not self.integrator: # Integrator and method not yet created
             self.integrator = hoomd.md.Integrator(dt=self.dt)
-            self.integrator.forces = self.forcefield
+            self.integrator.forces = self._forcefield
             self.operations.add(self.integrator)
             new_method = integrator_method(**method_kwargs)
             self.operations.integrator.methods = [new_method]
@@ -262,7 +267,6 @@ class Simulation(hoomd.simulation.Simulation):
     def add_walls(self, wall_axis, sigma, epsilon, r_cut, r_extrap=0):
         """"""
         wall_axis = np.asarray(wall_axis)
-        #box = self.box_lengths
         wall_origin = wall_axis * self.box_lengths_reduced/2
         wall_normal = -wall_axis
         wall_origin2 = -wall_origin
@@ -439,14 +443,7 @@ class Simulation(hoomd.simulation.Simulation):
 
     def pickle_forcefield(self, file_path="forcefield.pickle"):
         f = open(file_path, "wb")
-        pickle.dump(self.forcefield, f)
-
-    def _update_walls(self):
-        for wall_axis in self._wall_forces:
-            wall_force = self._wall_forces[wall_axis][0]
-            wall_kwargs = self._wall_forces[wall_axis][1]
-            self.remove_force(wall_force)
-            self.add_walls(wall_axis, **wall_kwargs)
+        pickle.dump(self.forces, f)
 
     def _thermalize_system(self, kT):
         if isinstance(kT, hoomd.variant.Ramp):
@@ -458,11 +455,10 @@ class Simulation(hoomd.simulation.Simulation):
                     filter=self.integrate_group, kT=kT
             )
 
-    #TODO: Better way to access this
     def _lj_force(self):
         if not self.integrator:
             lj_force = [
-                    f for f in self.forcefield if
+                    f for f in self._forcefield if
                     isinstance(f, hoomd.md.pair.pair.LJ)][0]
         else:
             lj_froce = [
@@ -487,7 +483,7 @@ class Simulation(hoomd.simulation.Simulation):
         self.operations.computes.append(thermo_props)
         logger.add(thermo_props, quantities=self.log_quantities)
 
-        for f in self.forcefield:
+        for f in self._forcefield:
             logger.add(f, quantities=["energy"])
 
         table_file = hoomd.write.Table(
