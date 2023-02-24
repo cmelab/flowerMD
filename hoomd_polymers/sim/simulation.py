@@ -10,6 +10,8 @@ from mbuild.formats.hoomd_forcefield import create_hoomd_forcefield
 import numpy as np
 import parmed as pmd
 
+from hoomd_polymers.sim.updaters import UpdateWalls
+
 
 class Simulation:
     """The simulation context management class.
@@ -229,6 +231,65 @@ class Simulation:
         wall_force = self._wall_forces[wall_axis][0]
         self.remove_force(wall_force)
 
+    def run_update_box(
+            self,
+            n_steps,
+            period,
+            kT,
+            tau_kt,
+            final_box_lengths,
+            thermalize_particles=True
+    ):
+        """Runs an NVT simulation while shrinking or expanding
+        the simulation volume to the given final volume.
+
+        Parameters:
+        -----------
+        n_steps : int, required
+            Number of steps to run during shrinking
+        period : int, required
+            The number of steps ran between box updates
+        kT : int or hoomd.variant.Ramp; required
+            The temperature to use during shrinking.
+        tau_kt : float; required
+            Thermostat coupling period (in simulation time units)
+        final_box_lengths : np.ndarray, shape=(3,), dtype=float; required
+            The final box edge lengths in (x, y, z) order
+
+        """
+        resize_trigger = hoomd.trigger.Periodic(period)
+        box_ramp = hoomd.variant.Ramp(
+                A=0, B=1, t_start=self.sim.timestep, t_ramp=int(n_steps)
+        )
+        initial_box = self.sim.state.box
+        final_box = hoomd.Box(
+                Lx=final_box_lengths[0],
+                Ly=final_box_lengths[1],
+                Lz=final_box_lengths[2]
+        )
+        box_resizer = hoomd.update.BoxResize(
+                box1=initial_box,
+                box2=final_box,
+                variant=box_ramp,
+                trigger=resize_trigger
+        )
+        self.sim.operations.updaters.append(box_resizer)
+        self.set_integrator_method(
+                integrator_method=hoomd.md.methods.NVT,
+                method_kwargs={
+                    "tau": tau_kt, "filter": self.integrate_group, "kT": kT
+                },
+        )
+        if thermalize_particles:
+            self._thermalize_system(kT)
+
+        if self._wall_forces:
+            wall_update = UpdateWalls(sim=self)
+            wall_updater = hoomd.update.CustomUpdater(
+                    trigger=resize_trigger, action=wall_update
+            )
+            self.sim.operations.updaters.append(wall_updater)
+        self.sim.run(n_steps + 1)
 
     def run_update_volume(
             self,
@@ -284,7 +345,6 @@ class Simulation:
         if not self._wall_forces:
             self.sim.run(n_steps)
         else:
-            start_timestep = self.sim.timestep
             while self.sim.timestep < box_ramp.t_start + box_ramp.t_ramp:
                 self.sim.run(period)
                 self._update_walls()

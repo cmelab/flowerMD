@@ -1,4 +1,5 @@
 import hoomd
+import numpy as np
 
 
 class PullParticles(hoomd.custom.Action):
@@ -14,3 +15,12 @@ class PullParticles(hoomd.custom.Action):
             pos_filter = snap.particles.rtag[self.pos_filter.tags]
             snap.particles.position[neg_filter] -= (self.shift_by*self.axis)
             snap.particles.position[pos_filter] += (self.shift_by*self.axis)
+
+
+class UpdateWalls(hoomd.custom.Action):
+    def __init__(self, sim):
+        self.sim = sim
+
+    def act(self, timestep):
+        box = self._state.box
+        self.sim._update_walls()
