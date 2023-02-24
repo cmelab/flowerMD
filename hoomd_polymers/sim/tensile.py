@@ -44,7 +44,7 @@ class Tensile(Simulation):
         axis_dict = {"x": 0, "y": 1, "z": 2}
         self._axis_index = axis_dict[self.tensile_axis]
         self._axis_array = axis_array_dict[self.tensile_axis]
-        self.initial_box = self.box_lengths
+        self.initial_box = self.box_lengths_reduced
         self.initial_length = self.initial_box[self._axis_index]
         self.fix_length = self.initial_length * fix_ratio
         # Set up walls of fixed particles:
@@ -64,13 +64,13 @@ class Tensile(Simulation):
 
     @property
     def strain(self):
-        delta_L = self.box_lengths[self._axis_index] - self.initial_length
+        delta_L = self.box_lengths_reduced[self._axis_index]-self.initial_length
         return delta_L / self.initial_length
 
     def run_tenstile(self, strain, kT, n_steps, period):
-        current_length = self.box_lengths[self._axis_index]
+        current_length = self.box_lengths_reduced[self._axis_index]
         final_length = current_length * (1+strain)
-        final_box = np.copy(self.box_lengths)
+        final_box = np.copy(self.box_lengths_reduced)
         final_box[self._axis_index] = final_length
         shift_by = (final_length - current_length) / (n_steps//period)
         resize_trigger = hoomd.trigger.Periodic(period)
@@ -78,7 +78,7 @@ class Tensile(Simulation):
                 A=0, B=1, t_start=self.timestep, t_ramp=int(n_steps)
         )
         box_resizer = hoomd.update.BoxResize(
-                box1=self.box_lengths,
+                box1=self.box_lengths_reduced,
                 box2=final_box,
                 variant=box_ramp,
                 trigger=resize_trigger,

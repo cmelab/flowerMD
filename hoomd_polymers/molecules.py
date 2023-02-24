@@ -52,6 +52,7 @@ class PolyEthylene(Polymer):
     def __init__(self, length):
         super(PolyEthylene, self).__init__()
         self.smiles_str = "CC"
+        self.description = "Poly(ethylene)"
         self.file = None
         self.monomer = mb.load(self.smiles_str, smiles=True)
         self.bond_indices = [2, 6]
@@ -146,6 +147,7 @@ class PEKK_meta(Polymer):
 class LJ_chain(mb.Compound):
     def __init__(self, length, bond_length, bead_name="A", bead_mass=1.0):
         super(LJ_chain, self).__init__()
+        self.description = "Simple bead-spring polymer"
         bead = mb.Compound(mass=bead_mass, name=bead_name)
         last_bead = None
         for i in range(length):
