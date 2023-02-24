@@ -14,7 +14,7 @@ class Tensile(Simulation):
             fix_ratio=0.20,
             r_cut=2.5,
             dt=0.0001,
-            device=hoomd.device.auto_select()
+            device=hoomd.device.auto_select(),
             seed=42,
             restart=None,
             gsd_write_freq=1e4,

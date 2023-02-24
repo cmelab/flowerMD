@@ -53,11 +53,11 @@ class Simulation(hoomd.simulation.Simulation):
     """
     def __init__(
         self,
-        device,
         initial_state,
         forcefield=None,
         r_cut=2.5,
         dt=0.0001,
+        device=hoomd.device.auto_select(),
         seed=42,
         restart=None,  #TODO: Restart logic
         gsd_write_freq=1e4,
@@ -121,7 +121,7 @@ class Simulation(hoomd.simulation.Simulation):
         return self._reference_energy
 
     @reference_energy.setter
-    def reference_distance(self, energy):
+    def reference_energy(self, energy):
         self._reference_energy = energy 
     
     @property
@@ -139,7 +139,7 @@ class Simulation(hoomd.simulation.Simulation):
 
     @property
     def box_lengths(self):
-        return self.box_lengths_reduced * reference_distance 
+        return self.box_lengths_reduced * self.reference_distance 
 
     @property
     def volume_reduced(self):
