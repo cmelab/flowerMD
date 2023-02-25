@@ -81,13 +81,14 @@ class Simulation(hoomd.simulation.Simulation):
             "pressure",
             "pressure_tensor",
         ]
+        self.integrator = None
         self._dt = dt
         self._reference_distance = 1  
         self._reference_energy = 1 
         self._reference_mass = 1 
         self._integrate_group = hoomd.filter.All()
-        self.integrator = None
         self._wall_forces = dict()
+
         if isinstance(self.initial_state, str): # Load from a GSD file
             print("Initializing simulation state from a GSD file.")
             self.create_state_from_gsd(self.initial_state)
