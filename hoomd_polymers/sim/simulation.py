@@ -226,19 +226,26 @@ class Simulation(hoomd.simulation.Simulation):
         if self.integrator:
             self.integrator.forces.remove(hoomd_force)
 
-    def scale_epsilon(self, scale_factor):
+    def adjust_epsilon(self, scale_by=None, shift_by=None):
         """"""
         lj_forces = self._lj_force()
         for k in lj_forces.params.keys():
             epsilon = lj_forces.params[k]['epsilon']
-            lj_forces.params[k]['epsilon'] = epsilon * scale_factor
+            if scale_by:
+                lj_forces.params[k]['epsilon'] = epsilon * scale_by
+            elif shift_by:
+                lj_forces.params[k]['epsilon'] = epsilon + scale_by
 
-    def scale_sigma(self, scale_factor):
+
+    def scale_sigma(self, scale_by=None, shift_by=None):
         """"""
         lj_forces = self._lj_force()
         for k in lj_forces.params.keys():
             sigma = lj_forces.params[k]['sigma']
-            lj_forces.params[k]['sigma'] = sigma * scale_factor
+            if scale_by:
+                lj_forces.params[k]['sigma'] = sigma * scale_by
+            elif shift_by:
+                lj_forces.params[k]['sigma'] = sigma + shift_by
 
     def add_epsilon_scaler(self, n_steps, scale1, scale2, period):
         scale_by = (scale2 - scale1) / (n_steps // period)
@@ -250,6 +257,7 @@ class Simulation(hoomd.simulation.Simulation):
         self.operations.updaters.append(epsilon_updater)
 
     def add_sigma_scaler(self, n_steps, scale1, scale2, period):
+        self.scale_sigma(scale_by=scale1)
         scale_by = (scale2 - scale1) / (n_steps // period)
         scale_trigger = hoomd.trigger.Periodic(period)
         sigma_scaler = ScaleSigma(sim=self, scale_factor=scale_by)
