@@ -6,6 +6,7 @@ dependencies:
   - freud
   - gsd
   - mbuild
+  - numba
   - numpy
   - pip=22.2
   - pytest
