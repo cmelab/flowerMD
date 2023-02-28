@@ -2,6 +2,24 @@ import hoomd
 import numpy as np
 
 
+class ScaleEpsilon(hoomd.custom.Action):
+    def __init__(self, sim, scale_factor):
+        self.scale_factor = scale_factor
+        self.sim = sim
+
+    def act(self, timestep):
+        self.sim.scale_epsilon(self.scale_factor)
+
+
+class ScaleSigma(hoomd.custom.Action):
+    def __init__(self, sim, scale_factor):
+        self.scale_factor = scale_factor
+        self.sim = sim
+
+    def act(self, timestep):
+        self.sim.scale_sigma(self.scale_factor)
+
+
 class PullParticles(hoomd.custom.Action):
     def __init__(self, shift_by, axis, neg_filter, pos_filter):
         self.shift_by = shift_by

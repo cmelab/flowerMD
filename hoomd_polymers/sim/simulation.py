@@ -10,7 +10,7 @@ from mbuild.formats.hoomd_forcefield import create_hoomd_forcefield
 import numpy as np
 import parmed as pmd
 
-from hoomd_polymers.sim.updaters import UpdateWalls
+from hoomd_polymers.sim.actions import UpdateWalls, ScaleEpsilon, ScaleSigma
 
 
 class Simulation(hoomd.simulation.Simulation):
@@ -240,6 +240,24 @@ class Simulation(hoomd.simulation.Simulation):
             sigma = lj_forces.params[k]['sigma']
             lj_forces.params[k]['sigma'] = sigma * scale_factor
 
+    def add_epsilon_scaler(self, n_steps, scale1, scale2, period):
+        scale_by = (scale2 - scale1) / (n_steps // period)
+        scale_trigger = hoomd.trigger.Periodic(period)
+        epsilon_scaler = ScaleEpsilon(sim=self, scale_factor=scale_by)
+        epsilon_updater = hoomd.update.CustomUpdater(
+                trigger=scale_trigger, action=epsilon_scaler
+        )
+        self.operations.updaters.append(epsilon_updater)
+
+    def add_sigma_scaler(self, n_steps, scale1, scale2, period):
+        scale_by = (scale2 - scale1) / (n_steps // period)
+        scale_trigger = hoomd.trigger.Periodic(period)
+        sigma_scaler = ScaleSigma(sim=self, scale_factor=scale_by)
+        sigma_updater = hoomd.update.CustomUpdater(
+                trigger=scale_trigger, action=sigma_scaler
+        )
+        self.operations.updaters.append(sigma_updater)
+
     def set_integrator_method(self, integrator_method, method_kwargs):
         """Creates an initial (or updates the existing) method used by
         Hoomd's integrator. This doesn't need to be called directly;
@@ -446,6 +464,10 @@ class Simulation(hoomd.simulation.Simulation):
         f = open(file_path, "wb")
         pickle.dump(self.forces, f)
 
+    def picke_state(self, file_path="simulation_state.pickle"):
+        f = open(file_path, "wb")
+        pickle.dump(self.state, f)
+
     def _thermalize_system(self, kT):
         if isinstance(kT, hoomd.variant.Ramp):
             self.state.thermalize_particle_momenta(
@@ -462,7 +484,7 @@ class Simulation(hoomd.simulation.Simulation):
                     f for f in self._forcefield if
                     isinstance(f, hoomd.md.pair.pair.LJ)][0]
         else:
-            lj_froce = [
+            lj_force = [
                     f for f in self.integrator.forces if
                     isinstance(f, hoomd.md.pair.pair.LJ)][0]
         return lj_force

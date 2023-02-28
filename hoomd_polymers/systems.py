@@ -4,7 +4,7 @@ import numpy as np
 
 
 class System:
-    def __init__(self, molecule, density, n_mols, chain_lengths, mol_kwargs={}):
+    def __init__(self, molecule, density, n_mols, chain_lengths=None, mol_kwargs={}):
         self.density = density
         self.n_mols = n_mols
         self.chain_lengths = chain_lengths
@@ -12,14 +12,18 @@ class System:
         self.system = None
         self.typed_system = None
         self._hoomd_objects = None
-        self.chains = []
-        for n, l in zip(n_mols, chain_lengths):
-            for i in range(n):
-                self.chains.append(molecule(length=l, **mol_kwargs))
+        self.molecules = []
+        if chain_lengths:
+            for n, l in zip(n_mols, chain_lengths):
+                for i in range(n):
+                    self.molecules.append(molecule(length=l, **mol_kwargs))
+        else:
+            for i in range(n_mols):
+                self.molecules.append(molecule(**mol_kwargs))
     @property
     def mass(self):
         if not self.system:
-            return sum(i.mass for i in self.chains)
+            return sum(i.mass for i in self.molecules)
         else:
             return self.system.mass
 
@@ -157,7 +161,7 @@ class Pack(System):
             molecule,
             density,
             n_mols,
-            chain_lengths,
+            chain_lengths=None,
             mol_kwargs={},
             packing_expand_factor=5
     ):
@@ -167,8 +171,8 @@ class Pack(System):
 
     def _build(self):
         self.system = mb.packing.fill_box(
-                compound=self.chains,
-                n_compounds=[1 for i in self.chains],
+                compound=self.molecules,
+                n_compounds=[1 for i in self.molecules],
                 density=self.density/(self.packing_expand_factor**3),
                 overlap=0.2,
                 edge=0.2
@@ -182,10 +186,10 @@ class Lattice(System):
             molecule,
             density,
             n_mols,
-            chain_lengths,
             x,
             y,
             n,
+            chain_lengths=None,
             mol_kwargs={},
             basis_vector=[0.5, 0.5, 0],
             z_adjust=1.0,
@@ -204,8 +208,8 @@ class Lattice(System):
             layer = mb.Compound()
             for j in range(self.n):
                 try:
-                    comp1 = self.chains[next_idx]
-                    comp2 = self.chains[next_idx + 1]
+                    comp1 = self.molecules[next_idx]
+                    comp2 = self.molecules[next_idx + 1]
                     comp2.translate(self.basis_vector)
                     unit_cell = mb.Compound(subcompounds=[comp1, comp2])
                     unit_cell.translate((0, self.y*j, 0))
