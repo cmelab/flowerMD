@@ -8,7 +8,7 @@ class ScaleEpsilon(hoomd.custom.Action):
         self.sim = sim
 
     def act(self, timestep):
-        self.sim.scale_epsilon(shift_by=self.scale_factor)
+        self.sim.adjust_epsilon(shift_by=self.scale_factor)
 
 
 class ScaleSigma(hoomd.custom.Action):
@@ -17,10 +17,8 @@ class ScaleSigma(hoomd.custom.Action):
         self.sim = sim
 
     def act(self, timestep):
-        self.sim.scale_sigma(shift_by=self.scale_factor)
+        self.sim.adjust_sigma(shift_by=self.scale_factor)
         lj_forces = self.sim._lj_force()
-        print(lj_forces.params["s, s"]["sigma"])
-        print(".....")
 
 
 class PullParticles(hoomd.custom.Action):

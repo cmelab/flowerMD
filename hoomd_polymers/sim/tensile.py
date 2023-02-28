@@ -2,7 +2,7 @@ import hoomd
 import numpy as np
 
 from hoomd_polymers.sim.simulation import Simulation
-from hoomd_polymers.sim.updaters import PullParticles
+from hoomd_polymers.sim.actions import PullParticles
 
 
 class Tensile(Simulation):

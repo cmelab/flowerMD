@@ -176,12 +176,12 @@ class Simulation(hoomd.simulation.Simulation):
     @property
     def nlist(self):
         """"""
-        return self._lj_force[0].nlist
+        return self._lj_force().nlist
 
     @nlist.setter
     def nlist(self, hoomd_nlist, buffer=0.4):
         """"""
-        self._lj_force[0].nlist = hoomd_nlist(buffer)
+        self._lj_force().nlist = hoomd_nlist(buffer)
 
     @property
     def dt(self):
@@ -237,7 +237,7 @@ class Simulation(hoomd.simulation.Simulation):
                 lj_forces.params[k]['epsilon'] = epsilon + scale_by
 
 
-    def scale_sigma(self, scale_by=None, shift_by=None):
+    def adjust_sigma(self, scale_by=None, shift_by=None):
         """"""
         lj_forces = self._lj_force()
         for k in lj_forces.params.keys():
@@ -257,7 +257,7 @@ class Simulation(hoomd.simulation.Simulation):
         self.operations.updaters.append(epsilon_updater)
 
     def add_sigma_scaler(self, n_steps, scale1, scale2, period):
-        self.scale_sigma(scale_by=scale1)
+        self.adjust_sigma(scale_by=scale1)
         scale_by = (scale2 - scale1) / (n_steps // period)
         scale_trigger = hoomd.trigger.Periodic(period)
         sigma_scaler = ScaleSigma(sim=self, scale_factor=scale_by)
