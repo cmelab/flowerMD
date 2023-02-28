@@ -1,6 +1,8 @@
 import mbuild as mb
 from mbuild.formats.hoomd_forcefield import create_hoomd_forcefield
 import numpy as np
+from numba import jit
+from hoomd_polymers.utils import scale_charges
 
 
 class System:
@@ -65,9 +67,14 @@ class System:
             return self._hoomd_objects[2]
 
     def apply_forcefield(
-            self, forcefield, remove_hydrogens=False, scale_parameters=True
+            self,
+            forcefield,
+            remove_hydrogens=False,
+            scale_parameters=True,
+            remove_charges=False,
+            make_charge_neutral=False
     ):
-        self.typed_system = forcefield.apply(self.system)
+        self.typed_system = forcefield.apply(structure=self.system)
         if remove_hydrogens:
             print("Removing hydrogen atoms and adjusting heavy atoms")
             hydrogens = [a for a in self.typed_system.atoms if a.element == 1]
@@ -78,6 +85,17 @@ class System:
             self.typed_system.strip(
                     [a.atomic_number == 1 for a in self.typed_system.atoms]
             )
+        if remove_charges:
+            for atom in self.typed_system.atoms:
+                atom.charge = 0
+        if make_charge_neutral and not remove_charges:
+            new_charges = scale_charges(
+                    charges=np.array([a.charge for a in self.typed_system.atoms]),
+                    n_particles=len(self.typed_system.atoms)
+            )
+            for idx, charge in enumerate(new_charges):
+                self.typed_system.atoms[idx].charge = charge
+
         init_snap, forcefield, refs = create_hoomd_forcefield(
                 structure=self.typed_system,
                 r_cut=2.5,
