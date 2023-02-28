@@ -22,6 +22,7 @@ class System:
         else:
             for i in range(n_mols):
                 self.molecules.append(molecule(**mol_kwargs))
+
     @property
     def mass(self):
         if not self.system:
@@ -137,7 +138,7 @@ class System:
 
     def visualize(self):
         if self.system:
-            self.system.visualize()
+            self.system.visualize().show()
         else:
             raise ValueError(
                     "The initial configuraiton has not been created yet."

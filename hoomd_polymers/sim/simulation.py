@@ -172,7 +172,6 @@ class Simulation(hoomd.simulation.Simulation):
     def density(self):
         return (self.mass / self.volume)
 
-    #TODO: Fix nlist functions
     @property
     def nlist(self):
         """"""
