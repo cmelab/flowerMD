@@ -19,8 +19,8 @@ class ScaleSigma(hoomd.custom.Action):
     def act(self, timestep):
         self.sim.scale_sigma(shift_by=self.scale_factor)
         lj_forces = self.sim._lj_force()
-        for param in lj_forces.params.keys():
-            print(lj_forces.params[param]["sigma"])
+        print(lj_forces.params["s-s"]["sigma"])
+        print(".....")
 
 
 class PullParticles(hoomd.custom.Action):
