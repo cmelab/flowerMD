@@ -19,7 +19,7 @@ class ScaleSigma(hoomd.custom.Action):
     def act(self, timestep):
         self.sim.scale_sigma(shift_by=self.scale_factor)
         lj_forces = self.sim._lj_force()
-        print(lj_forces.params["s-s"]["sigma"])
+        print(lj_forces.params["('s', 's')"]["sigma"])
         print(".....")
 
 
