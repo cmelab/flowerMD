@@ -1,3 +1,8 @@
+## About
+
+Wrapper for [MoSDeF](https://github.com/mosdef-hub) packages and [Hoomd-Blue](https://github.com/glotzerlab/hoomd-blue) with 
+a focus on simulating soft matter systems.
+
 ## Installation
 
 ### 1. Clone this repository: ###  
