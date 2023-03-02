@@ -11,6 +11,7 @@ class GAFF(foyer.Forcefield):
                 "https://github.com/rsdefever/antefoyer/tree/master/antefoyer"
         )
 
+
 class OPLS_AA(foyer.Forcefield):
     def __init__(self, name="oplsaa"):
         super(OPLS_AA, self).__init__(name=name)
@@ -28,11 +29,11 @@ class OPLS_AA_PPS(foyer.Forcefield):
                 "One missing parameter was added manually: "
                 "<Angle class1=CA class2=S class3=CA angle=1.805 k=627.6/> "
                 "The equilibrium angle was determined from "
-                "experimental PPS papers. The spring constant was used "
+                "experimental PPS papers. The spring constant taken "
                 "from the equivalent angle in GAFF."
 		)
 
 
 class FF_from_file(foyer.Forcefield):
     def __init__(self, xml_file):
-        super(OPLS_AA_PPS, self).__init__(forcefield_files=xml_file)
+        super(FF_from_file, self).__init__(forcefield_files=xml_file)

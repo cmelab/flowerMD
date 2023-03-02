@@ -235,7 +235,6 @@ class Simulation(hoomd.simulation.Simulation):
             elif shift_by:
                 lj_forces.params[k]['epsilon'] = epsilon + scale_by
 
-
     def adjust_sigma(self, scale_by=None, shift_by=None):
         """"""
         lj_forces = self._lj_force()
@@ -471,9 +470,9 @@ class Simulation(hoomd.simulation.Simulation):
         f = open(file_path, "wb")
         pickle.dump(self.forces, f)
 
-    def picke_state(self, file_path="simulation_state.pickle"):
+    def pickle_state(self, file_path="simulation_state.pickle"):
         f = open(file_path, "wb")
-        pickle.dump(self.state, f)
+        pickle.dump(self.state.get_snapshot(), f)
 
     def _thermalize_system(self, kT):
         if isinstance(kT, hoomd.variant.Ramp):
