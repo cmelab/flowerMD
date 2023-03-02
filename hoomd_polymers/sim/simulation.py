@@ -225,44 +225,29 @@ class Simulation(hoomd.simulation.Simulation):
         if self.integrator:
             self.integrator.forces.remove(hoomd_force)
 
-    def adjust_epsilon(self, scale_by=None, shift_by=None):
+    def adjust_epsilon(self, scale_by=None, shift_by=None, type_filter):
         """"""
         lj_forces = self._lj_force()
         for k in lj_forces.params.keys():
+            if k not in type_filter:
+                continue
             epsilon = lj_forces.params[k]['epsilon']
             if scale_by:
                 lj_forces.params[k]['epsilon'] = epsilon * scale_by
             elif shift_by:
                 lj_forces.params[k]['epsilon'] = epsilon + scale_by
 
-    def adjust_sigma(self, scale_by=None, shift_by=None):
+    def adjust_sigma(self, scale_by=None, shift_by=None, type_filter=None):
         """"""
         lj_forces = self._lj_force()
         for k in lj_forces.params.keys():
+            if k not in type_filter:
+                continue
             sigma = lj_forces.params[k]['sigma']
             if scale_by:
                 lj_forces.params[k]['sigma'] = sigma * scale_by
             elif shift_by:
                 lj_forces.params[k]['sigma'] = sigma + shift_by
-
-    def add_epsilon_scaler(self, n_steps, scale1, scale2, period):
-        scale_by = (scale2 - scale1) / (n_steps // period)
-        scale_trigger = hoomd.trigger.Periodic(period)
-        epsilon_scaler = ScaleEpsilon(sim=self, scale_factor=scale_by)
-        epsilon_updater = hoomd.update.CustomUpdater(
-                trigger=scale_trigger, action=epsilon_scaler
-        )
-        self.operations.updaters.append(epsilon_updater)
-
-    def add_sigma_scaler(self, n_steps, scale1, scale2, period):
-        self.adjust_sigma(scale_by=scale1)
-        scale_by = (scale2 - scale1) / (n_steps // period)
-        scale_trigger = hoomd.trigger.Periodic(period)
-        sigma_scaler = ScaleSigma(sim=self, scale_factor=scale_by)
-        sigma_updater = hoomd.update.CustomUpdater(
-                trigger=scale_trigger, action=sigma_scaler
-        )
-        self.operations.updaters.append(sigma_updater)
 
     def set_integrator_method(self, integrator_method, method_kwargs):
         """Creates an initial (or updates the existing) method used by
