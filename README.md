@@ -46,6 +46,10 @@ pe_sim.run_NVT(kT=3.0, tau_kT=0.01, n_steps=1e6)
 
 #### Using with your own molecule and forcefield:
 ```
+import foyer
+from hoomd_polymers.systems import Pack
+from hoomd_polymers.sim import Simulation
+
 def my_molecule(file_path):
     return mb.load(file_path)
 
