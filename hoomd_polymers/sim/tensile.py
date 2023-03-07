@@ -67,7 +67,7 @@ class Tensile(Simulation):
         delta_L = self.box_lengths_reduced[self._axis_index]-self.initial_length
         return delta_L / self.initial_length
 
-    def run_tenstile(self, strain, kT, n_steps, period):
+    def run_tensile(self, strain, kT, n_steps, period):
         current_length = self.box_lengths_reduced[self._axis_index]
         final_length = current_length * (1+strain)
         final_box = np.copy(self.box_lengths_reduced)
