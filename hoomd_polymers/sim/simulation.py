@@ -241,7 +241,7 @@ class Simulation(hoomd.simulation.Simulation):
         """"""
         lj_forces = self._lj_force()
         for k in lj_forces.params.keys():
-            if k not in type_filter:
+            if type_filter and k not in type_filter:
                 continue
             sigma = lj_forces.params[k]['sigma']
             if scale_by:
