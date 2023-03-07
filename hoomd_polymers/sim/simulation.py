@@ -225,7 +225,7 @@ class Simulation(hoomd.simulation.Simulation):
         if self.integrator:
             self.integrator.forces.remove(hoomd_force)
 
-    def adjust_epsilon(self, scale_by=None, shift_by=None, type_filter):
+    def adjust_epsilon(self, scale_by=None, shift_by=None, type_filter=None):
         """"""
         lj_forces = self._lj_force()
         for k in lj_forces.params.keys():

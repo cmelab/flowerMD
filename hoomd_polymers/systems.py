@@ -237,7 +237,7 @@ class Lattice(System):
                     pass
             layer.translate((self.x*i, 0, 0))
             self.system.add(layer)
-    bounding_box = self.system.bounding_box()
-    x_len = bounding_box.lengths[0] 
-    y_len = bounding_box.lengths[1] 
-    self.set_target_box(x_constraint=x_len, y_constraint=y_len)
+        bounding_box = self.system.bounding_box()
+        x_len = bounding_box.lengths[0] 
+        y_len = bounding_box.lengths[1] 
+        self.set_target_box(x_constraint=x_len, y_constraint=y_len)
