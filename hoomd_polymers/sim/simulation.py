@@ -104,8 +104,8 @@ class Simulation(hoomd.simulation.Simulation):
     @property
     def atom_types(self):
         """"""
-        snap = self.state.get_snapshot()
-        return snap.particles.types
+        with self.state.cpu_local_snapshot as snap:
+            return snap.particles.types
 
     @property
     def forces(self):
