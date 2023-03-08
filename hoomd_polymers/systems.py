@@ -78,7 +78,14 @@ class System:
         self.typed_system = forcefield.apply(structure=self.system)
         if remove_hydrogens:
             print("Removing hydrogen atoms and adjusting heavy atoms")
+            # Try by element first:
             hydrogens = [a for a in self.typed_system.atoms if a.element == 1]
+            if len(hydrogens) == 0: # Try by mass
+                hydrogens = [a for a in self.typed_system.atoms if a.mass == 1.008]
+                if len(hydrogens) == 0:
+                    warnings.warn(
+                            "Hydrogen atoms could not be found by element or mass"
+                    )
             for h in hydrogens:
                 bonded_atom = h.bond_partners[0]
                 bonded_atom.mass += h.mass
