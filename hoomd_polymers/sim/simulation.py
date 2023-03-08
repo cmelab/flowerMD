@@ -459,6 +459,9 @@ class Simulation(hoomd.simulation.Simulation):
         f = open(file_path, "wb")
         pickle.dump(self.state.get_snapshot(), f)
 
+    def save_restart_gsd(self, file_path="restart.gsd"):
+        hoomd.write.GSD.write(self.state, filename=file_path)
+
     def _thermalize_system(self, kT):
         if isinstance(kT, hoomd.variant.Ramp):
             self.state.thermalize_particle_momenta(
