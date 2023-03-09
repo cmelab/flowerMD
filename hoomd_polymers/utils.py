@@ -1,6 +1,13 @@
 from numba import jit
 
 
+def check_return_iterable(obj):
+    try:
+        iter(obj)
+        return obj
+    except:
+        return [obj]
+
 @jit(nopython=False)
 def scale_charges(charges, n_particles):
     net_charge = sum(charges)

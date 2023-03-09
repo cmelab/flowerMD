@@ -2,26 +2,30 @@ import mbuild as mb
 from mbuild.formats.hoomd_forcefield import create_hoomd_forcefield
 import numpy as np
 from numba import jit
-from hoomd_polymers.utils import scale_charges
+from hoomd_polymers.utils import scale_charges check_return_iterable
 
 
 class System:
-    def __init__(self, molecule, density, n_mols, chain_lengths=None, mol_kwargs={}):
+    def __init__(self, molecule, density, n_mols, mol_kwargs={}):
         self.density = density
-        self.n_mols = n_mols
-        self.chain_lengths = chain_lengths
+        self.n_mols = check_return_iterable(n_mols)
+        #self.chain_lengths = check_return_iterable(chain_lengths)
+        self._molecules = check_return_iterable(molecule)
+        self.mol_kwargs = check_return_iterable(mol_kwargs)
         self.target_box = None
         self.system = None
         self.typed_system = None
         self._hoomd_objects = None
         self.molecules = []
-        if chain_lengths:
-            for n, l in zip(n_mols, chain_lengths):
-                for i in range(n):
-                    self.molecules.append(molecule(length=l, **mol_kwargs))
-        else:
-            for i in range(n_mols):
-                self.molecules.append(molecule(**mol_kwargs))
+
+        for mol, n, kw_args, in zip(
+                self._molecules,
+                self.n_mols,
+                #self.chain_lengths,
+                self.mol_kwargs
+        ):
+            for i in range(n):
+                self.molecules.append(mol(**kw_args))
 
     @property
     def mass(self):
@@ -187,11 +191,10 @@ class Pack(System):
             molecule,
             density,
             n_mols,
-            chain_lengths=None,
             mol_kwargs={},
             packing_expand_factor=5
     ):
-        super(Pack, self).__init__(molecule, density, n_mols, chain_lengths, mol_kwargs)
+        super(Pack, self).__init__(molecule, density, n_mols, mol_kwargs)
         self.packing_expand_factor = packing_expand_factor
         self._build()
 
@@ -215,12 +218,11 @@ class Lattice(System):
             x,
             y,
             n,
-            chain_lengths=None,
             mol_kwargs={},
             basis_vector=[0.5, 0.5, 0],
             z_adjust=1.0,
     ):
-        super(Lattice, self).__init__(molecule, density, n_mols, chain_lengths, mol_kwargs)
+        super(Lattice, self).__init__(molecule, density, n_mols, mol_kwargs)
         self.x = x
         self.y = y
         self.n = n
