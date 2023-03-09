@@ -79,7 +79,13 @@ class System:
             remove_charges=False,
             make_charge_neutral=False
     ):
-        self.typed_system = forcefield.apply(structure=self.system)
+        if len(self._molecules) == 1:
+            use_residue_map = True
+        else:
+            use_residue_map = False
+        self.typed_system = forcefield.apply(
+                structure=self.system, use_residue_map=use_residue_map
+        )
         if remove_hydrogens:
             print("Removing hydrogen atoms and adjusting heavy atoms")
             # Try by element first:
