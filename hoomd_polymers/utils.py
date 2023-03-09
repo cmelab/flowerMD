@@ -2,6 +2,8 @@ from numba import jit
 
 
 def check_return_iterable(obj):
+    if isinstance(obj, dict):
+        return [obj]
     try:
         iter(obj)
         return obj

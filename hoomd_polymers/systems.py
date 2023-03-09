@@ -2,7 +2,7 @@ import mbuild as mb
 from mbuild.formats.hoomd_forcefield import create_hoomd_forcefield
 import numpy as np
 from numba import jit
-from hoomd_polymers.utils import scale_charges check_return_iterable
+from hoomd_polymers.utils import scale_charges, check_return_iterable
 
 
 class System:
