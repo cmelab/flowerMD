@@ -59,7 +59,6 @@ class Simulation(hoomd.simulation.Simulation):
         dt=0.0001,
         device=hoomd.device.auto_select(),
         seed=42,
-        restart=None,  #TODO: Restart logic
         gsd_write_freq=1e4,
         gsd_file_name="trajectory.gsd",
         log_write_freq=1e3,
