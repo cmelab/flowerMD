@@ -110,6 +110,7 @@ class System:
             for atom in self.typed_system.atoms:
                 atom.charge = 0
         if make_charge_neutral and not remove_charges:
+            print("Adjust charges to make system charge neutral")
             new_charges = scale_charges(
                     charges=np.array([a.charge for a in self.typed_system.atoms]),
                     n_particles=len(self.typed_system.atoms)
