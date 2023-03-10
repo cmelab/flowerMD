@@ -12,7 +12,6 @@ class System:
     def __init__(self, molecule, density, n_mols, mol_kwargs={}):
         self.density = density
         self.n_mols = check_return_iterable(n_mols)
-        #self.chain_lengths = check_return_iterable(chain_lengths)
         self._molecules = check_return_iterable(molecule)
         self.mol_kwargs = check_return_iterable(mol_kwargs)
         self.target_box = None
@@ -25,7 +24,6 @@ class System:
         for mol, n, kw_args, in zip(
                 self._molecules,
                 self.n_mols,
-                #self.chain_lengths,
                 self.mol_kwargs
         ):
             for i in range(n):
@@ -63,17 +61,6 @@ class System:
             )
         else:
             return self._hoomd_objects[1]
-
-    #@property
-    #def reference_values(self):
-    #    if not self._hoomd_objects:
-    #        raise ValueError(
-    #                "The hoomd objects have not yet been created. "
-    #                "Create a Hoomd snapshot and forcefield by applying "
-    #                "a forcefield using System.apply_forcefield()."
-    #        )
-    #    else:
-    #        return self._hoomd_objects[2]
 
     @property
     def reference_distance(self):
@@ -135,7 +122,7 @@ class System:
                 r_cut=2.5,
                 auto_scale=scale_parameters
         )
-        self._hoomd_objects = [init_snap, forcefield, refs]
+        self._hoomd_objects = [init_snap, forcefield]
         self._reference_values = refs
     
     def set_target_box(
