@@ -2,6 +2,9 @@ import mbuild as mb
 from mbuild.formats.hoomd_forcefield import create_hoomd_forcefield
 import numpy as np
 from numba import jit
+import unyt
+
+
 from hoomd_polymers.utils import scale_charges, check_return_iterable
 
 
@@ -16,6 +19,7 @@ class System:
         self.system = None
         self.typed_system = None
         self._hoomd_objects = None
+        self._reference_values = None
         self.molecules = []
 
         for mol, n, kw_args, in zip(
@@ -60,16 +64,28 @@ class System:
         else:
             return self._hoomd_objects[1]
 
+    #@property
+    #def reference_values(self):
+    #    if not self._hoomd_objects:
+    #        raise ValueError(
+    #                "The hoomd objects have not yet been created. "
+    #                "Create a Hoomd snapshot and forcefield by applying "
+    #                "a forcefield using System.apply_forcefield()."
+    #        )
+    #    else:
+    #        return self._hoomd_objects[2]
+
     @property
-    def reference_values(self):
-        if not self._hoomd_objects:
-            raise ValueError(
-                    "The hoomd objects have not yet been created. "
-                    "Create a Hoomd snapshot and forcefield by applying "
-                    "a forcefield using System.apply_forcefield()."
-            )
-        else:
-            return self._hoomd_objects[2]
+    def reference_distance(self):
+        return self._reference_values.distance * unyt.angstrom
+
+    @property
+    def reference_mass(self):
+        return self._reference_values.mass * unyt.amu 
+
+    @property
+    def reference_energy(self):
+        return self._reference_values.energy * unyt.kcal / unyt.mol
 
     def apply_forcefield(
             self,
@@ -120,6 +136,7 @@ class System:
                 auto_scale=scale_parameters
         )
         self._hoomd_objects = [init_snap, forcefield, refs]
+        self._reference_values = refs
     
     def set_target_box(
             self, x_constraint=None, y_constraint=None, z_constraint=None
