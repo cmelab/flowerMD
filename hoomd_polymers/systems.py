@@ -14,7 +14,7 @@ class System:
         self.n_mols = check_return_iterable(n_mols)
         self._molecules = check_return_iterable(molecule)
         self.mol_kwargs = check_return_iterable(mol_kwargs)
-        self.target_box = None
+        selftarget_box = None
         self.system = None
         self.typed_system = None
         self._hoomd_objects = None
@@ -214,7 +214,7 @@ class Pack(System):
         self.system = mb.packing.fill_box(
                 compound=self.molecules,
                 n_compounds=[1 for i in self.molecules],
-                box=self.target_box * self.packing_expand_factor,
+                box=list(self.target_box*self.packing_expand_factor),
                 overlap=0.2,
                 edge=0.2
         )
