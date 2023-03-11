@@ -210,14 +210,14 @@ class Pack(System):
         self._build()
 
     def _build(self):
+        self.set_target_box()
         self.system = mb.packing.fill_box(
                 compound=self.molecules,
                 n_compounds=[1 for i in self.molecules],
-                density=self.density/(self.packing_expand_factor**3),
+                box=self.target_box * self.packing_expand_factor,
                 overlap=0.2,
                 edge=0.2
         )
-        self.set_target_box()
 
 
 class Lattice(System):
