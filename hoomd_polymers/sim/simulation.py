@@ -101,12 +101,6 @@ class Simulation(hoomd.simulation.Simulation):
         self._add_hoomd_writers()
 
     @property
-    def atom_types(self):
-        """"""
-        with self.state.cpu_local_snapshot as snap:
-            return snap.particles.types
-
-    @property
     def forces(self):
         if self.integrator:
             return self.operations.integrator.forces
@@ -283,7 +277,7 @@ class Simulation(hoomd.simulation.Simulation):
         wall1 = hoomd.wall.Plane(origin=wall_origin, normal=wall_normal)
         wall2 = hoomd.wall.Plane(origin=wall_origin2, normal=wall_normal2)
         lj_walls = hoomd.md.external.wall.LJ(walls=[wall1, wall2])
-        lj_walls.params[self.atom_types] = {
+        lj_walls.params[self.state.particle_types] = {
                 "epsilon": epsilon,
                 "sigma": sigma,
                 "r_cut": r_cut,
