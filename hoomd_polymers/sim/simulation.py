@@ -10,7 +10,7 @@ from mbuild.formats.hoomd_forcefield import create_hoomd_forcefield
 import numpy as np
 import parmed as pmd
 
-from hoomd_polymers.sim.actions import UpdateWalls, ScaleEpsilon, ScaleSigma
+from hoomd_polymers.sim.actions import UpdateWalls, StdOutLogger
 
 
 class Simulation(hoomd.simulation.Simulation):
@@ -355,7 +355,14 @@ class Simulation(hoomd.simulation.Simulation):
                     trigger=resize_trigger, action=wall_update
             )
             self.operations.updaters.append(wall_updater)
+        std_out_logger = StdOutLogger(n_steps=n_steps, sim=self)
+        std_out_logger_printer = hoomd.update.CustomUpdater(
+                trigger=hoomd.trigger.Periodic(self.log_write_freq),
+                action=std_out_logger
+        )
+        self.operations.updaters.append(std_out_logger_printer)
         self.run(n_steps + 1)
+        self.operations.updaters.remove(std_out_logger_printer)
 
     def run_langevin(
             self,

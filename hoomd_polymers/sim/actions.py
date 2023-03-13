@@ -2,23 +2,17 @@ import hoomd
 import numpy as np
 
 
-class ScaleEpsilon(hoomd.custom.Action):
-    def __init__(self, sim, scale_factor):
-        self.scale_factor = scale_factor
+class StdOutLogger(hoomd.custom.Action):
+    def __init__(self, n_steps, sim):
+        self.n_steps = n_steps
         self.sim = sim
-
+    
     def act(self, timestep):
-        self.sim.adjust_epsilon(shift_by=self.scale_factor)
-
-
-class ScaleSigma(hoomd.custom.Action):
-    def __init__(self, sim, scale_factor):
-        self.scale_factor = scale_factor
-        self.sim = sim
-
-    def act(self, timestep):
-        self.sim.adjust_sigma(shift_by=self.scale_factor)
-        lj_forces = self.sim._lj_force()
+        if timestep != 0:
+            tps = self.sim.tps
+            current_step = self.sim.timestep
+            eta = np.round((self.n_steps - current_step)/(60*tps), 1)
+            print(f"Step {current_step} of {self.n_steps}; TPS: {tps}; ETA: {eta}")
 
 
 class PullParticles(hoomd.custom.Action):
@@ -49,3 +43,22 @@ class UpdateWalls(hoomd.custom.Action):
             wall_kwargs = self.sim._wall_forces[wall_axis][1]
             self.sim.remove_force(wall_force)
             self.sim.add_walls(wall_axis, **wall_kwargs)
+
+
+class ScaleEpsilon(hoomd.custom.Action):
+    def __init__(self, sim, scale_factor):
+        self.scale_factor = scale_factor
+        self.sim = sim
+
+    def act(self, timestep):
+        self.sim.adjust_epsilon(shift_by=self.scale_factor)
+
+
+class ScaleSigma(hoomd.custom.Action):
+    def __init__(self, sim, scale_factor):
+        self.scale_factor = scale_factor
+        self.sim = sim
+
+    def act(self, timestep):
+        self.sim.adjust_sigma(shift_by=self.scale_factor)
+        lj_forces = self.sim._lj_force()
