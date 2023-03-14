@@ -44,11 +44,13 @@ class Interface:
         
         pos = np.concatenate((left_pos, right_pos), axis=None)
         mass = np.concatenate((snap.particles.mass, snap.particles.mass), axis=None)
+        charges = np.concatenate((snap.particles.charge, snap.particles.charge), axis=None)
         type_ids = np.concatenate(
                 (snap.particles.typeid, snap.particles.typeid), axis=None
         )
         interface.particles.position = pos
         interface.particles.mass = mass
+        interface.particles.charge = charges
         interface.particles.types = snap.particles.types
         interface.particles.typeid = type_ids
         
@@ -115,7 +117,6 @@ class WeldSimulation(Simulation):
             wall_r_extrap=0,
             r_cut=2.5,
             seed=42,
-            restart=None,
             gsd_write_freq=1e4,
             gsd_file_name="weld.gsd",
             log_write_freq=1e3,
@@ -126,7 +127,6 @@ class WeldSimulation(Simulation):
                 forcefield=forcefield,
                 r_cut=r_cut,
                 seed=seed,
-                restart=restart,
                 gsd_write_freq=gsd_write_freq,
                 gsd_file_name=gsd_file_name,
                 log_write_freq=log_write_freq,
