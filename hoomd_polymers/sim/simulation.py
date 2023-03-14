@@ -228,7 +228,7 @@ class Simulation(hoomd.simulation.Simulation):
             if scale_by:
                 lj_forces.params[k]['epsilon'] = epsilon * scale_by
             elif shift_by:
-                lj_forces.params[k]['epsilon'] = epsilon + scale_by
+                lj_forces.params[k]['epsilon'] = epsilon + shift_by
 
     def adjust_sigma(self, scale_by=None, shift_by=None, type_filter=None):
         """"""
@@ -388,7 +388,14 @@ class Simulation(hoomd.simulation.Simulation):
         )
         if thermalize_particles:
             self._thermalize_system(kT)
+        std_out_logger = StdOutLogger(n_steps=n_steps, sim=self)
+        std_out_logger_printer = hoomd.update.CustomUpdater(
+                trigger=hoomd.trigger.Periodic(self.log_write_freq),
+                action=std_out_logger
+        )
+        self.operations.updaters.append(std_out_logger_printer)
         self.run(n_steps)
+        self.operations.updaters.remove(std_out_logger_printer)
 
     def run_NPT(
             self,
@@ -421,7 +428,14 @@ class Simulation(hoomd.simulation.Simulation):
         )
         if thermalize_particles:
             self._thermalize_system(kT)
+        std_out_logger = StdOutLogger(n_steps=n_steps, sim=self)
+        std_out_logger_printer = hoomd.update.CustomUpdater(
+                trigger=hoomd.trigger.Periodic(self.log_write_freq),
+                action=std_out_logger
+        )
+        self.operations.updaters.append(std_out_logger_printer)
         self.run(n_steps)
+        self.operations.updaters.remove(std_out_logger_printer)
 
     def run_NVT(self, n_steps, kT, tau_kt, thermalize_particles=True):
         """"""
@@ -433,7 +447,14 @@ class Simulation(hoomd.simulation.Simulation):
         )
         if thermalize_particles:
             self._thermalize_system(kT)
+        std_out_logger = StdOutLogger(n_steps=n_steps, sim=self)
+        std_out_logger_printer = hoomd.update.CustomUpdater(
+                trigger=hoomd.trigger.Periodic(self.log_write_freq),
+                action=std_out_logger
+        )
+        self.operations.updaters.append(std_out_logger_printer)
         self.run(n_steps)
+        self.operations.updaters.remove(std_out_logger_printer)
 
     def run_NVE(self, n_steps):
         """"""
@@ -441,7 +462,14 @@ class Simulation(hoomd.simulation.Simulation):
                 integrator_method=hoomd.md.methods.NVE,
                 method_kwargs={"filter": self.integrate_group}
         )
+        std_out_logger = StdOutLogger(n_steps=n_steps, sim=self)
+        std_out_logger_printer = hoomd.update.CustomUpdater(
+                trigger=hoomd.trigger.Periodic(self.log_write_freq),
+                action=std_out_logger
+        )
+        self.operations.updaters.append(std_out_logger_printer)
         self.run(n_steps)
+        self.operations.updaters.remove(std_out_logger_printer)
 
     def temperature_ramp(self, n_steps, kT_start, kT_final):
         return hoomd.variant.Ramp(
