@@ -9,7 +9,20 @@ from hoomd_polymers.utils import scale_charges, check_return_iterable
 
 
 class System:
-    def __init__(self, molecule, density, n_mols, mol_kwargs={}):
+    """Base class from which other systems inherit.
+
+    Parameters
+    ----------
+    molecule : hoomd_polymers.molecule; required
+    n_mols : int; required
+        The number of times to replicate molecule in the system
+    density : float; optional; default None 
+        The desired density of the system (g/cm^3). Used to set the
+        target_box attribute. Can be useful when initializing
+        systems at low denisty and running a shrink simulaton
+        to acheive a target density.
+    """
+    def __init__(self, molecule, n_mols, density=None, mol_kwargs={}):
         self.density = density
         self.n_mols = check_return_iterable(n_mols)
         self._molecules = check_return_iterable(molecule)
