@@ -16,18 +16,18 @@ class System:
     molecule : hoomd_polymers.molecule; required
     n_mols : int; required
         The number of times to replicate molecule in the system
-    density : float; optional; default None 
+    density : float; optional; default None
         The desired density of the system (g/cm^3). Used to set the
         target_box attribute. Can be useful when initializing
         systems at low denisty and running a shrink simulaton
         to acheive a target density.
     """
-    def __init__(self, molecule, n_mols, density=None, mol_kwargs={}):
-        self.density = density
+    def __init__(self, molecule, n_mols, mol_kwargs={}, density=None):
         self.n_mols = check_return_iterable(n_mols)
         self._molecules = check_return_iterable(molecule)
         self.mol_kwargs = check_return_iterable(mol_kwargs)
-        selftarget_box = None
+        self.density = density
+        self.target_box = None
         self.system = None
         self.typed_system = None
         self._hoomd_objects = None
@@ -51,7 +51,7 @@ class System:
 
     @property
     def box(self):
-        return self.system.box 
+        return self.system.box
 
     @property
     def hoomd_snapshot(self):
@@ -81,7 +81,7 @@ class System:
 
     @property
     def reference_mass(self):
-        return self._reference_values.mass * unyt.amu 
+        return self._reference_values.mass * unyt.amu
 
     @property
     def reference_energy(self):
@@ -138,7 +138,7 @@ class System:
         )
         self._hoomd_objects = [init_snap, forcefield]
         self._reference_values = refs
-    
+
     def set_target_box(
             self, x_constraint=None, y_constraint=None, z_constraint=None
     ):
@@ -213,12 +213,17 @@ class Pack(System):
     def __init__(
             self,
             molecule,
-            density,
             n_mols,
             mol_kwargs={},
+            density=None,
             packing_expand_factor=5
     ):
-        super(Pack, self).__init__(molecule, density, n_mols, mol_kwargs)
+        super(Pack, self).__init__(
+                molecule=molecule,
+                n_mols=n_mols,
+                mol_kwargs=mol_kwargs,
+                density=density
+        )
         self.packing_expand_factor = packing_expand_factor
         self._build()
 
@@ -246,7 +251,12 @@ class Lattice(System):
             basis_vector=[0.5, 0.5, 0],
             z_adjust=1.0,
     ):
-        super(Lattice, self).__init__(molecule, density, n_mols, mol_kwargs)
+        super(Lattice, self).__init__(
+                molecule=molecule,
+                n_mols=n_mols,
+                mol_kwargs=mol_kwargs,
+                density=density
+        )
         self.x = x
         self.y = y
         self.n = n
@@ -272,6 +282,6 @@ class Lattice(System):
             layer.translate((self.x*i, 0, 0))
             self.system.add(layer)
         bounding_box = self.system.get_boundingbox()
-        x_len = bounding_box.lengths[0] 
-        y_len = bounding_box.lengths[1] 
+        x_len = bounding_box.lengths[0]
+        y_len = bounding_box.lengths[1]
         self.set_target_box(x_constraint=x_len, y_constraint=y_len)
