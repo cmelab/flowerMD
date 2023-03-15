@@ -29,7 +29,6 @@ class Tensile(Simulation):
                 dt=dt,
                 device=device,
                 seed=seed,
-                restart=restart,
                 gsd_write_freq=gsd_write_freq,
                 gsd_file_name=gsd_file_name,
                 log_write_freq=log_write_freq,
