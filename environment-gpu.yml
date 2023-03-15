@@ -7,7 +7,6 @@ dependencies:
   - gsd
   - hoomd>3.0=*gpu*
   - mbuild
-  - numba
   - numpy
   - pip
   - pytest

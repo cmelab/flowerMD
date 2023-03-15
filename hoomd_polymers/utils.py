@@ -1,6 +1,3 @@
-from numba import jit
-
-
 def check_return_iterable(obj):
     if isinstance(obj, dict):
         return [obj]
@@ -10,7 +7,7 @@ def check_return_iterable(obj):
     except:
         return [obj]
 
-@jit(nopython=False)
+
 def scale_charges(charges, n_particles):
     net_charge = sum(charges)
     abs_charge = sum([abs(charge) for charge in charges])
