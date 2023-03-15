@@ -82,9 +82,9 @@ class Simulation(hoomd.simulation.Simulation):
         ]
         self.integrator = None
         self._dt = dt
-        self._reference_distance = 1  
-        self._reference_energy = 1 
-        self._reference_mass = 1 
+        self._reference_distance = 1
+        self._reference_energy = 1
+        self._reference_mass = 1
         self._integrate_group = hoomd.filter.All()
         self._wall_forces = dict()
 
@@ -110,7 +110,7 @@ class Simulation(hoomd.simulation.Simulation):
     @property
     def reference_distance(self):
         return self._reference_distance
-    
+
     @reference_distance.setter
     def reference_distance(self, distance):
         self._reference_distance = distance
@@ -121,8 +121,8 @@ class Simulation(hoomd.simulation.Simulation):
 
     @reference_energy.setter
     def reference_energy(self, energy):
-        self._reference_energy = energy 
-    
+        self._reference_energy = energy
+
     @property
     def reference_mass(self):
         return self._reference_mass
@@ -138,7 +138,7 @@ class Simulation(hoomd.simulation.Simulation):
 
     @property
     def box_lengths(self):
-        return self.box_lengths_reduced * self.reference_distance 
+        return self.box_lengths_reduced * self.reference_distance
 
     @property
     def volume_reduced(self):
@@ -156,7 +156,7 @@ class Simulation(hoomd.simulation.Simulation):
     @property
     def mass(self):
         return self.mass_reduced * self.reference_mass
-    
+
     @property
     def density_reduced(self):
         return (self.mass_reduced / self.volume_reduced)
@@ -357,7 +357,7 @@ class Simulation(hoomd.simulation.Simulation):
             self.operations.updaters.append(wall_updater)
         std_out_logger = StdOutLogger(n_steps=n_steps, sim=self)
         std_out_logger_printer = hoomd.update.CustomUpdater(
-                trigger=hoomd.trigger.Periodic(self.log_write_freq),
+                trigger=hoomd.trigger.Periodic(self.gsd_write_freq),
                 action=std_out_logger
         )
         self.operations.updaters.append(std_out_logger_printer)
@@ -390,7 +390,7 @@ class Simulation(hoomd.simulation.Simulation):
             self._thermalize_system(kT)
         std_out_logger = StdOutLogger(n_steps=n_steps, sim=self)
         std_out_logger_printer = hoomd.update.CustomUpdater(
-                trigger=hoomd.trigger.Periodic(self.log_write_freq),
+                trigger=hoomd.trigger.Periodic(self.gsd_write_freq),
                 action=std_out_logger
         )
         self.operations.updaters.append(std_out_logger_printer)
@@ -430,7 +430,7 @@ class Simulation(hoomd.simulation.Simulation):
             self._thermalize_system(kT)
         std_out_logger = StdOutLogger(n_steps=n_steps, sim=self)
         std_out_logger_printer = hoomd.update.CustomUpdater(
-                trigger=hoomd.trigger.Periodic(self.log_write_freq),
+                trigger=hoomd.trigger.Periodic(self.gsd_write_freq),
                 action=std_out_logger
         )
         self.operations.updaters.append(std_out_logger_printer)
@@ -449,7 +449,7 @@ class Simulation(hoomd.simulation.Simulation):
             self._thermalize_system(kT)
         std_out_logger = StdOutLogger(n_steps=n_steps, sim=self)
         std_out_logger_printer = hoomd.update.CustomUpdater(
-                trigger=hoomd.trigger.Periodic(self.log_write_freq),
+                trigger=hoomd.trigger.Periodic(self.gsd_write_freq),
                 action=std_out_logger
         )
         self.operations.updaters.append(std_out_logger_printer)
