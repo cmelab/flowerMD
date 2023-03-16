@@ -2,6 +2,70 @@ import numpy as np
 import gsd.hoomd
 
 from hoomd_polymers.sim.simulation import Simulation
+from hoomd_polymers.systems import System 
+
+class Slab(System):
+    def __init__(
+            self,
+            molecule,
+            n_mols,
+            n_voids,
+            void_size,
+            mol_kwargs={},
+            density=None,
+            packing_expand_factor=5
+    ):
+        super(Slab, self).__init__(
+                molecule=molecule,
+                n_mols=n_mols,
+                mol_kwargs=mol_kwargs,
+                density=density,
+        )
+        self.packing_expand_factor = packing_expand_factor
+        self.n_voids = n_voids
+        self.void_size = void_size
+
+
+
+class SlabSimulation(Simulation):
+    def __init__(
+            self,
+            initial_state,
+            forcefield,
+            interface_axis="x",
+            wall_sigma=1.0,
+            wall_epsilon=1.0,
+            wall_r_cut=2.5,
+            wall_r_extrap=0,
+            r_cut=2.5,
+            seed=42,
+            gsd_write_freq=1e4,
+            gsd_file_name="weld.gsd",
+            log_write_freq=1e3,
+            log_file_name="sim_data.txt"
+    ):
+        super(WeldSimulation, self).__init__(
+                initial_state=initial_state,
+                forcefield=forcefield,
+                r_cut=r_cut,
+                seed=seed,
+                gsd_write_freq=gsd_write_freq,
+                gsd_file_name=gsd_file_name,
+                log_write_freq=log_write_freq,
+                log_file_name=log_file_name
+        )
+        axis_dict = {"x": (1,0,0), "y": (0, 1, 0), "z": (0, 0, 1)}
+        self.interface_axis = interface_axis.lower()
+        self.wall_axis = axis_dict[self.interface_axis]
+        self.add_walls(
+                self.wall_axis,
+                wall_sigma,
+                wall_epsilon,
+                wall_r_cut,
+                wall_r_extrap
+        )
+
+        def add_voids(self, void size, num_voids)
 
 
 class Interface:
