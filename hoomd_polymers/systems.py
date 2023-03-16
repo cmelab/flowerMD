@@ -1,7 +1,6 @@
 import mbuild as mb
 from mbuild.formats.hoomd_forcefield import create_hoomd_forcefield
 import numpy as np
-from numba import jit
 import unyt
 
 
