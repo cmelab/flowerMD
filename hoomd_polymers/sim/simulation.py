@@ -68,8 +68,8 @@ class Simulation(hoomd.simulation.Simulation):
         self.initial_state = initial_state
         self._forcefield = forcefield
         self.r_cut = r_cut
-        self.gsd_write_freq = gsd_write_freq
-        self.log_write_freq = log_write_freq
+        self.gsd_write_freq = int(gsd_write_freq)
+        self.log_write_freq = int(log_write_freq)
         self.gsd_file_name = gsd_file_name
         self.log_file_name = log_file_name
         self.log_quantities = [

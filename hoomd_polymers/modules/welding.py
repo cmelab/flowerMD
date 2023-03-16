@@ -1,8 +1,10 @@
-import numpy as np
 import gsd.hoomd
+import hoomd
+import numpy as np
 
 from hoomd_polymers.sim.simulation import Simulation
 from hoomd_polymers.systems import System 
+
 
 class Slab(System):
     def __init__(
@@ -10,7 +12,7 @@ class Slab(System):
             molecule,
             n_mols,
             n_voids,
-            void_size,
+            void_fraction,
             mol_kwargs={},
             density=None,
             packing_expand_factor=5
@@ -23,7 +25,8 @@ class Slab(System):
         )
         self.packing_expand_factor = packing_expand_factor
         self.n_voids = n_voids
-        self.void_size = void_size
+        self.void_fraction = void_fraction
+
 
 
 
@@ -32,6 +35,8 @@ class SlabSimulation(Simulation):
             self,
             initial_state,
             forcefield,
+            n_voids,
+            void_fraction,
             interface_axis="x",
             wall_sigma=1.0,
             wall_epsilon=1.0,
@@ -44,7 +49,7 @@ class SlabSimulation(Simulation):
             log_write_freq=1e3,
             log_file_name="sim_data.txt"
     ):
-        super(WeldSimulation, self).__init__(
+        super(SlabSimulation, self).__init__(
                 initial_state=initial_state,
                 forcefield=forcefield,
                 r_cut=r_cut,
@@ -54,18 +59,37 @@ class SlabSimulation(Simulation):
                 log_write_freq=log_write_freq,
                 log_file_name=log_file_name
         )
-        axis_dict = {"x": (1,0,0), "y": (0, 1, 0), "z": (0, 0, 1)}
+        self.n_voids = n_voids
+        self.void_fraction = void_fraction
         self.interface_axis = interface_axis.lower()
-        self.wall_axis = axis_dict[self.interface_axis]
+        axis_array_dict = {"x": (1,0,0), "y": (0, 1, 0), "z": (0, 0, 1)}
+        axis_dict = {"x": 0, "y": 1, "z": 2}
+        self._axis_array = axis_array_dict[self.interface_axis]
+        self._axis_index = axis_dict[self.interface_axis]
         self.add_walls(
-                self.wall_axis,
+                self._axis_array,
                 wall_sigma,
                 wall_epsilon,
                 wall_r_cut,
                 wall_r_extrap
         )
+        self.add_voids(wall_epsilon, wall_sigma, wall_r_cut, wall_r_extrap)
 
-        def add_voids(self, void size, num_voids)
+    def add_voids(self, epsilon, sigma, r_cut, r_extrap):
+        sphere_dia = self.box_lengths_reduced[self._axis_index]/self.n_voids
+        sphere_origin = self._axis_array * self.box_lengths_reduced/2 
+        hoomd_sphere = hoomd.wall.Sphere(
+                origin=sphere_origin, radius=sphere_dia/2, inside=False,
+        )
+        lj_sphere = hoomd.md.external.wall.LJ(walls=[hoomd_sphere])
+        lj_sphere.params[self.state.particle_types] = {
+                "epsilon": epsilon,
+                "sigma": sigma,
+                "r_cut": r_cut,
+                "r_extrap": r_extrap
+        }
+        self.add_force(lj_sphere)
+
 
 
 class Interface:
