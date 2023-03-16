@@ -6,30 +6,6 @@ from hoomd_polymers.sim.simulation import Simulation
 from hoomd_polymers.systems import System 
 
 
-class Slab(System):
-    def __init__(
-            self,
-            molecule,
-            n_mols,
-            n_voids,
-            void_fraction,
-            mol_kwargs={},
-            density=None,
-            packing_expand_factor=5
-    ):
-        super(Slab, self).__init__(
-                molecule=molecule,
-                n_mols=n_mols,
-                mol_kwargs=mol_kwargs,
-                density=density,
-        )
-        self.packing_expand_factor = packing_expand_factor
-        self.n_voids = n_voids
-        self.void_fraction = void_fraction
-
-
-
-
 class SlabSimulation(Simulation):
     def __init__(
             self,
