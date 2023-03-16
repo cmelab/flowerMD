@@ -6,11 +6,12 @@ class StdOutLogger(hoomd.custom.Action):
     def __init__(self, n_steps, sim):
         self.n_steps = n_steps
         self.sim = sim
+        self.starting_step = sim.timestep
     
     def act(self, timestep):
         if timestep != 0:
             tps = np.round(self.sim.tps,2)
-            current_step = self.sim.timestep
+            current_step = self.sim.timestep - self.starting_step
             eta = np.round((self.n_steps - current_step)/(60*tps), 1)
             print(f"Step {current_step} of {self.n_steps}; TPS: {tps}; ETA: {eta} minutes")
 
