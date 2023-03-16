@@ -4,6 +4,7 @@ import numpy as np
 
 from hoomd_polymers.sim.simulation import Simulation
 from hoomd_polymers.systems import System 
+from .utils import add_void_particles
 
 
 class SlabSimulation(Simulation):
@@ -12,7 +13,7 @@ class SlabSimulation(Simulation):
             initial_state,
             forcefield,
             n_voids,
-            void_fraction,
+            void_size,
             interface_axis="x",
             wall_sigma=1.0,
             wall_epsilon=1.0,
@@ -35,8 +36,19 @@ class SlabSimulation(Simulation):
                 log_write_freq=log_write_freq,
                 log_file_name=log_file_name
         )
+        new_snap, new_ff = add_void_particles(
+                snapshot=initial_state,
+                forcefield=forcefield,
+                num_voids=1,
+                void_axis=(1,0,0),
+                void_diameter=void_size,
+                epsilon=1,
+                r_cut=void_size
+        )
+        self._forcefield = new_ff
+        #self.create_state_from_snapshot(new_snap)
         self.n_voids = n_voids
-        self.void_fraction = void_fraction
+        self.void_size = void_size
         self.interface_axis = interface_axis.lower()
         axis_array_dict = {"x": (1,0,0), "y": (0, 1, 0), "z": (0, 0, 1)}
         axis_dict = {"x": 0, "y": 1, "z": 2}
@@ -49,22 +61,12 @@ class SlabSimulation(Simulation):
                 wall_r_cut,
                 wall_r_extrap
         )
-        self.add_voids(wall_epsilon, wall_sigma, wall_r_cut, wall_r_extrap)
 
-    def add_voids(self, epsilon, sigma, r_cut, r_extrap):
-        sphere_dia = self.box_lengths_reduced[self._axis_index]/self.n_voids
-        sphere_origin = self._axis_array * self.box_lengths_reduced/2 
-        hoomd_sphere = hoomd.wall.Sphere(
-                origin=sphere_origin, radius=sphere_dia/2, inside=False,
-        )
-        lj_sphere = hoomd.md.external.wall.LJ(walls=[hoomd_sphere])
-        lj_sphere.params[self.state.particle_types] = {
-                "epsilon": epsilon,
-                "sigma": sigma,
-                "r_cut": r_cut,
-                "r_extrap": r_extrap
-        }
-        self.add_force(lj_sphere)
+        snap = self.state.get_snapshot()
+        integrate_types = [i for i in snap.particles.types if i != "VOID"]
+        self.integrate_group = hoomd.filter.Type(integrate_types)
+
+
 
 
 
