@@ -12,8 +12,6 @@ class SlabSimulation(Simulation):
             self,
             initial_state,
             forcefield,
-            n_voids,
-            void_size,
             interface_axis="x",
             wall_sigma=1.0,
             wall_epsilon=1.0,
@@ -25,7 +23,7 @@ class SlabSimulation(Simulation):
             gsd_file_name="weld.gsd",
             log_write_freq=1e3,
             log_file_name="sim_data.txt"
-    ):
+        ):
         super(SlabSimulation, self).__init__(
                 initial_state=initial_state,
                 forcefield=forcefield,
@@ -36,19 +34,6 @@ class SlabSimulation(Simulation):
                 log_write_freq=log_write_freq,
                 log_file_name=log_file_name
         )
-        new_snap, new_ff = add_void_particles(
-                snapshot=initial_state,
-                forcefield=forcefield,
-                num_voids=1,
-                void_axis=(1,0,0),
-                void_diameter=void_size,
-                epsilon=1,
-                r_cut=void_size
-        )
-        self._forcefield = new_ff
-        #self.create_state_from_snapshot(new_snap)
-        self.n_voids = n_voids
-        self.void_size = void_size
         self.interface_axis = interface_axis.lower()
         axis_array_dict = {"x": (1,0,0), "y": (0, 1, 0), "z": (0, 0, 1)}
         axis_dict = {"x": 0, "y": 1, "z": 2}
@@ -65,9 +50,6 @@ class SlabSimulation(Simulation):
         snap = self.state.get_snapshot()
         integrate_types = [i for i in snap.particles.types if i != "VOID"]
         self.integrate_group = hoomd.filter.Type(integrate_types)
-
-
-
 
 
 class Interface:
