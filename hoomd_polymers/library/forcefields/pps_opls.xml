@@ -39,10 +39,10 @@
 		<Proper class1="CA" class2="CA" class3="SH" class4="HS" c0="4.6024" c1="0.0" c2="-4.6024" c3="0.0" c4="0.0" c5="0.0"/>
 	</RBTorsionForce>
 	<NonbondedForce coulomb14scale="0.5" lj14scale="0.5">
-		<Atom type="hs" charge="0.1" sigma="0.0" epsilon="0.0"/>
-		<Atom type="ca" charge="-0.1" sigma="0.355" epsilon="0.29288"/>
-		<Atom type="s" charge="0.0" sigma="0.36" epsilon="1.48532"/>
-		<Atom type="ha" charge="0.0" sigma="0.242" epsilon="0.12552"/>
-		<Atom type="sh" charge="0.0" sigma="0.36" epsilon="1.7782"/>
+		<Atom type="hs" charge="0.155" sigma="0.0" epsilon="0.0"/>
+		<Atom type="ca" charge="-0.155" sigma="0.355" epsilon="0.29288"/>
+		<Atom type="s" charge="-0.335" sigma="0.36" epsilon="1.48532"/>
+		<Atom type="ha" charge="0.155" sigma="0.242" epsilon="0.12552"/>
+		<Atom type="sh" charge="-0.335" sigma="0.36" epsilon="1.7782"/>
 	</NonbondedForce>
 </ForceField>
