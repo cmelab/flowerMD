@@ -71,4 +71,29 @@ class TestSimulate(BaseTest):
         ) 
         sim.run_NVE(n_steps=500)
 
+    def test_update_volume(self, polyethylene_system):
+        sim = Simulation(
+                initial_state=polyethylene_system.hoomd_snapshot,
+                forcefield=polyethylene_system.hoomd_forcefield
+        )
+        sim.run_update_volume(
+                kT=1.0,
+                tau_kt=0.01,
+                n_steps=500,
+                period=1,
+                final_box_lengths=sim.box_lengths*0.5
+        )
 
+    def test_update_volume_walls(self, polyethylene_system):
+        sim = Simulation(
+                initial_state=polyethylene_system.hoomd_snapshot,
+                forcefield=polyethylene_system.hoomd_forcefield
+        )
+        sim.add_walls(wall_axis=(1,0,0), sigma=1.0, epsilon=1.0, r_cut=1.12)
+        sim.run_update_volume(
+                kT=1.0,
+                tau_kt=0.01,
+                n_steps=500,
+                period=5,
+                final_box_lengths=sim.box_lengths*0.5
+        )
