@@ -382,7 +382,7 @@ class Simulation(hoomd.simulation.Simulation):
                         "filter": self.integrate_group,
                         "kT": kT,
                         "alpha": alpha,
-                        "tally_reservoir_energy": tally_resivoir_energy,
+                        "tally_reservoir_energy": tally_reservoir_energy,
                         "default_gamma": default_gamma,
                         "default_gamma_r": default_gamma_r,
                     }
