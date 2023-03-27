@@ -70,6 +70,7 @@ class Simulation(hoomd.simulation.Simulation):
         self.r_cut = r_cut
         self.gsd_write_freq = int(gsd_write_freq)
         self.log_write_freq = int(log_write_freq)
+        self._std_out_freq = int((self.gsd_write_freq + self.log_write_freq)/2)
         self.gsd_file_name = gsd_file_name
         self.log_file_name = log_file_name
         self.log_quantities = [
@@ -348,7 +349,7 @@ class Simulation(hoomd.simulation.Simulation):
             self.operations.updaters.append(wall_updater)
         std_out_logger = StdOutLogger(n_steps=n_steps, sim=self)
         std_out_logger_printer = hoomd.update.CustomUpdater(
-                trigger=hoomd.trigger.Periodic(self.gsd_write_freq),
+                trigger=hoomd.trigger.Periodic(self._std_out_freq),
                 action=std_out_logger
         )
         self.operations.updaters.append(std_out_logger_printer)
@@ -381,7 +382,7 @@ class Simulation(hoomd.simulation.Simulation):
             self._thermalize_system(kT)
         std_out_logger = StdOutLogger(n_steps=n_steps, sim=self)
         std_out_logger_printer = hoomd.update.CustomUpdater(
-                trigger=hoomd.trigger.Periodic(self.gsd_write_freq),
+                trigger=hoomd.trigger.Periodic(self._std_out_freq),
                 action=std_out_logger
         )
         self.operations.updaters.append(std_out_logger_printer)
@@ -421,7 +422,7 @@ class Simulation(hoomd.simulation.Simulation):
             self._thermalize_system(kT)
         std_out_logger = StdOutLogger(n_steps=n_steps, sim=self)
         std_out_logger_printer = hoomd.update.CustomUpdater(
-                trigger=hoomd.trigger.Periodic(self.gsd_write_freq),
+                trigger=hoomd.trigger.Periodic(self._std_out_freq),
                 action=std_out_logger
         )
         self.operations.updaters.append(std_out_logger_printer)
@@ -440,7 +441,7 @@ class Simulation(hoomd.simulation.Simulation):
             self._thermalize_system(kT)
         std_out_logger = StdOutLogger(n_steps=n_steps, sim=self)
         std_out_logger_printer = hoomd.update.CustomUpdater(
-                trigger=hoomd.trigger.Periodic(self.gsd_write_freq),
+                trigger=hoomd.trigger.Periodic(self._std_out_freq),
                 action=std_out_logger
         )
         self.operations.updaters.append(std_out_logger_printer)
@@ -455,7 +456,7 @@ class Simulation(hoomd.simulation.Simulation):
         )
         std_out_logger = StdOutLogger(n_steps=n_steps, sim=self)
         std_out_logger_printer = hoomd.update.CustomUpdater(
-                trigger=hoomd.trigger.Periodic(self.log_write_freq),
+                trigger=hoomd.trigger.Periodic(self._std_out_freq),
                 action=std_out_logger
         )
         self.operations.updaters.append(std_out_logger_printer)
@@ -472,7 +473,7 @@ class Simulation(hoomd.simulation.Simulation):
 
     def pickle_forcefield(self, file_path="forcefield.pickle"):
         f = open(file_path, "wb")
-        pickle.dump(self.forces, f)
+        pickle.dump(self._forcefield, f)
 
     def pickle_state(self, file_path="simulation_state.pickle"):
         f = open(file_path, "wb")

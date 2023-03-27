@@ -1,7 +1,6 @@
 import mbuild as mb
 from mbuild.formats.hoomd_forcefield import create_hoomd_forcefield
 import numpy as np
-from numba import jit
 import unyt
 
 
@@ -93,7 +92,8 @@ class System:
             remove_hydrogens=False,
             scale_parameters=True,
             remove_charges=False,
-            make_charge_neutral=False
+            make_charge_neutral=False,
+            r_cut=2.5
     ):
         if len(self._molecules) == 1:
             use_residue_map = True
@@ -113,6 +113,7 @@ class System:
                             "Hydrogen atoms could not be found by element or mass"
                     )
             for h in hydrogens:
+                h.atomic_number = 1
                 bonded_atom = h.bond_partners[0]
                 bonded_atom.mass += h.mass
                 bonded_atom.charge += h.charge
@@ -133,7 +134,7 @@ class System:
 
         init_snap, forcefield, refs = create_hoomd_forcefield(
                 structure=self.typed_system,
-                r_cut=2.5,
+                r_cut=r_cut,
                 auto_scale=scale_parameters
         )
         self._hoomd_objects = [init_snap, forcefield]
