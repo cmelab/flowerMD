@@ -1,5 +1,5 @@
 [![pytest](https://github.com/chrisjonesbsu/hoomd-polymers/actions/workflows/pytest.yml/badge.svg)](https://github.com/chrisjonesbsu/hoomd-polymers/actions/workflows/pytest.yml)
-[![.github/workflows/codecov.yml](https://github.com/chrisjonesBSU/hoomd-polymers/actions/workflows/codecov.yml/badge.svg?branch=main)](https://github.com/chrisjonesBSU/hoomd-polymers/actions/workflows/codecov.yml)
+[![.github/workflows/codecov.yml](https://github.com/chrisjonesBSU/hoomd-polymers/actions/workflows/codecov.yml/badge.svg?branch=main)](https://github.com/chrisjonesBSU/hoomd-polymers/actions/workflows/main.yml)
 ## About
 
 Wrapper for [MoSDeF](https://github.com/mosdef-hub) packages and [Hoomd-Blue](https://github.com/glotzerlab/hoomd-blue) with 
