@@ -211,6 +211,14 @@ class System:
 
 
 class Pack(System):
+    """Uses PACKMOL via mbuild.packing.fill_box.
+    The box used for packing is expanded to allow PACKMOL to place all of the molecules.
+
+    Parameters
+    ----------
+    packing_expand_factor : int; optional, default 5
+
+    """
     def __init__(
             self,
             molecule,
@@ -240,6 +248,20 @@ class Pack(System):
 
 
 class Lattice(System):
+    """Places the molecules in a lattice configuration.
+    Assumes two molecules per unit cell.
+
+    Parameters
+    ----------
+    x : float; required
+        The distance (nm) between lattice points in the x direction. 
+    y : float; required
+        The distance (nm) between lattice points in the y direction. 
+    n : int; required
+        The number of times to repeat the unit cell in x and y
+    lattice_vector : array-like
+        The vector between points in the unit cell 
+    """
     def __init__(
             self,
             molecule,
