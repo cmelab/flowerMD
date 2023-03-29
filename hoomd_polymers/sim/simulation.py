@@ -88,16 +88,7 @@ class Simulation(hoomd.simulation.Simulation):
         self._reference_mass = 1
         self._integrate_group = hoomd.filter.All()
         self._wall_forces = dict()
-
-        if isinstance(self.initial_state, str): # Load from a GSD file
-            print("Initializing simulation state from a GSD file.")
-            self.create_state_from_gsd(self.initial_state)
-        elif isinstance(self.initial_state, hoomd.snapshot.Snapshot):
-            print("Initializing simulation state from a snapshot.")
-            self.create_state_from_snapshot(self.initial_state)
-        elif isinstance(self.initial_state, gsd.hoomd.Snapshot):
-            print("Initializing simulation state from a snapshot.")
-            self.create_state_from_snapshot(self.initial_state)
+        self._create_state(self.initial_state)
         # Add a gsd and thermo props logger to sim operations
         self._add_hoomd_writers()
 
@@ -511,6 +502,17 @@ class Simulation(hoomd.simulation.Simulation):
                     f for f in self.integrator.forces if
                     isinstance(f, hoomd.md.pair.pair.LJ)][0]
         return lj_force
+
+    def _create_state(self, initial_state):
+        if isinstance(initial_state, str): # Load from a GSD file
+            print("Initializing simulation state from a GSD file.")
+            self.create_state_from_gsd(initial_state)
+        elif isinstance(initial_state, hoomd.snapshot.Snapshot):
+            print("Initializing simulation state from a snapshot.")
+            self.create_state_from_snapshot(initial_state)
+        elif isinstance(initial_state, gsd.hoomd.Snapshot):
+            print("Initializing simulation state from a snapshot.")
+            self.create_state_from_snapshot(initial_state)
 
     def _add_hoomd_writers(self):
         """Creates gsd and log writers"""

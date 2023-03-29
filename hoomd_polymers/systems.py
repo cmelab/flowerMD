@@ -225,7 +225,8 @@ class Pack(System):
             n_mols,
             mol_kwargs={},
             density=None,
-            packing_expand_factor=5
+            packing_expand_factor=5,
+            edge=0.2
     ):
         super(Pack, self).__init__(
                 molecule=molecule,
@@ -234,6 +235,7 @@ class Pack(System):
                 density=density
         )
         self.packing_expand_factor = packing_expand_factor
+        self.edge = edge
         self._build()
 
     def _build(self):
@@ -243,7 +245,7 @@ class Pack(System):
                 n_compounds=[1 for i in self.molecules],
                 box=list(self.target_box*self.packing_expand_factor),
                 overlap=0.2,
-                edge=0.2
+                edge=self.edge
         )
 
 
