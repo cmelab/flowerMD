@@ -1,7 +1,9 @@
-import numpy as np
 import gsd.hoomd
+import hoomd
+import numpy as np
 
 from hoomd_polymers.sim.simulation import Simulation
+from hoomd_polymers.systems import System 
 
 
 class Interface:
@@ -103,6 +105,51 @@ class Interface:
             interface.pairs.typeid = pair_type_ids
             interface.pairs.types = snap.pairs.types
         return interface
+
+
+class SlabSimulation(Simulation):
+    def __init__(
+            self,
+            initial_state,
+            forcefield,
+            interface_axis="x",
+            wall_sigma=1.0,
+            wall_epsilon=1.0,
+            wall_r_cut=2.5,
+            wall_r_extrap=0,
+            r_cut=2.5,
+            seed=42,
+            gsd_write_freq=1e4,
+            gsd_file_name="weld.gsd",
+            log_write_freq=1e3,
+            log_file_name="sim_data.txt"
+        ):
+        super(SlabSimulation, self).__init__(
+                initial_state=initial_state,
+                forcefield=forcefield,
+                r_cut=r_cut,
+                seed=seed,
+                gsd_write_freq=gsd_write_freq,
+                gsd_file_name=gsd_file_name,
+                log_write_freq=log_write_freq,
+                log_file_name=log_file_name
+        )
+        self.interface_axis = interface_axis.lower()
+        axis_array_dict = {"x": (1,0,0), "y": (0, 1, 0), "z": (0, 0, 1)}
+        axis_dict = {"x": 0, "y": 1, "z": 2}
+        self._axis_array = axis_array_dict[self.interface_axis]
+        self._axis_index = axis_dict[self.interface_axis]
+        self.add_walls(
+                self._axis_array,
+                wall_sigma,
+                wall_epsilon,
+                wall_r_cut,
+                wall_r_extrap
+        )
+
+        snap = self.state.get_snapshot()
+        integrate_types = [i for i in snap.particles.types if i != "VOID"]
+        self.integrate_group = hoomd.filter.Type(integrate_types)
 
 
 class WeldSimulation(Simulation):
