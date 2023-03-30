@@ -1,4 +1,6 @@
 from base_test import BaseTest
+import os
+import pickle
 import pytest
 
 import gsd.hoomd
@@ -193,3 +195,45 @@ class TestSimulate(BaseTest):
                 initial_state=polyethylene_system.hoomd_snapshot,
                 forcefield=polyethylene_system.hoomd_forcefield
         )
+        sim.remove_force(sim._lj_force())
+        for i in sim.forces:
+            assert not isinstance(i, hoomd.md.pair.LJ)
+
+    def test_set_integrate_group(self, polyethylene_system):
+        sim = Simulation(
+                initial_state=polyethylene_system.hoomd_snapshot,
+                forcefield=polyethylene_system.hoomd_forcefield
+        )
+        assert isinstance(sim.integrate_group, hoomd.filter.All)
+        tag_filter = hoomd.filter.Tags([0, 1, 2, 3])
+        sim.integrate_group = tag_filter
+        assert not isinstance(sim.integrate_group, hoomd.filter.All)
+        sim.run_NVT(n_steps=200, kT=1.0, tau_kt=0.01)
+
+    def test_pickle_ff(self, polyethylene_system):
+        sim = Simulation(
+                initial_state=polyethylene_system.hoomd_snapshot,
+                forcefield=polyethylene_system.hoomd_forcefield
+        )
+        sim.pickle_forcefield("forcefield.pickle")
+        assert os.path.isfile("forcefield.pickle")
+        f = open("forcefield.pickle", "rb")
+        hoomd_ff = pickle.load(f)
+
+        for i, j in zip(sim.forces, hoomd_ff):
+            assert type(i) == type(j)
+        os.remove("forcefield.pickle")
+
+    def test_save_restart_gsd(self, polyethylene_system):
+        sim = Simulation(
+                initial_state=polyethylene_system.hoomd_snapshot,
+                forcefield=polyethylene_system.hoomd_forcefield
+        )
+        sim.save_restart_gsd("restart.gsd")
+        assert os.path.isfile("restart.gsd")
+        sim.pickle_forcefield("forcefield.pickle")
+        f = open("forcefield.pickle", "rb")
+        hoomd_ff = pickle.load(f)
+        new_sim = Simulation(initial_state="restart.gsd", forcefield=hoomd_ff)
+        os.remove("forcefield.pickle")
+        os.remove("restart.gsd")

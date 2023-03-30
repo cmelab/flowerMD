@@ -475,10 +475,6 @@ class Simulation(hoomd.simulation.Simulation):
         f = open(file_path, "wb")
         pickle.dump(self._forcefield, f)
 
-    def pickle_state(self, file_path="simulation_state.pickle"):
-        f = open(file_path, "wb")
-        pickle.dump(self.state.get_snapshot(), f)
-
     def save_restart_gsd(self, file_path="restart.gsd"):
         hoomd.write.GSD.write(self.state, filename=file_path)
 
