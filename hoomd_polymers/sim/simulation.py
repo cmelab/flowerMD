@@ -178,6 +178,16 @@ class Simulation(hoomd.simulation.Simulation):
             self.operations.integrator.dt = self.dt
 
     @property
+    def real_timestep(self):
+        mass = self.reference_mass.to("kg")
+        dist = self.reference_distance.to("m")
+        energy = self.reference_energy.to("J")
+
+        tau = (mass*dist**2)/(energy)
+        timestep = self.dt * (tau**0.5)
+        return timestep
+
+    @property
     def integrate_group(self):
         """"""
         return self._integrate_group
