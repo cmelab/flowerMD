@@ -182,8 +182,7 @@ class Simulation(hoomd.simulation.Simulation):
         mass = self.reference_mass.to("kg")
         dist = self.reference_distance.to("m")
         energy = self.reference_energy.to("J")
-
-        tau = (mass*dist**2)/(energy)
+        tau = (mass*(dist**2))/energy
         timestep = self.dt * (tau**0.5)
         return timestep
 
