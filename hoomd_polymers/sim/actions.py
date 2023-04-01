@@ -4,7 +4,7 @@ import numpy as np
 
 class StdOutLogger(hoomd.custom.Action):
     def __init__(self, n_steps, sim):
-        self.n_steps = n_steps
+        self.n_steps = int(n_steps)
         self.sim = sim
         self.starting_step = sim.timestep
     
