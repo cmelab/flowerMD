@@ -227,15 +227,19 @@ class LJ_chain(mb.Compound):
         last_bead = None
         for i in range(length):
             for idx, bead_type in enumerate(bead_sequence):
-                next_bead = mb.Compound(
-                        mass=bead_mass[bead_type], name=bead_type, charge=0
-                )
+                mass = bead_mass.get(bead_type, None)
+                if not mass:
+                    raise ValueError(
+                            f"The bead mass for {bead_type} was not given "
+                            "in the bead_mass dict."
+                    )
+                next_bead = mb.Compound(mass=mass, name=bead_type, charge=0)
                 self.add(next_bead)
                 if last_bead:
                     bead_pair = "-".join([last_bead.name, next_bead.name])
-                    bead_pair_rev = "-".join([next_bead.name, last_bead.name])
                     bond_length = bond_lengths.get(bead_pair, None)
                     if not bond_length:
+                        bead_pair_rev = "-".join([next_bead.name, last_bead.name])
                         bond_length = bond_lengths.get(bead_pair_rev, None)
                     if not bond_length:
                         raise ValueError(
