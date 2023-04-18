@@ -207,13 +207,13 @@ class LJ_chain(mb.Compound):
     Parameters
     ----------
     length : int; required
-        The number of beads in the polymer chain
-    bond_length : float; required
+        The number of times to repeat bead_sequence in a single chain.
+    bead_sequence : list; optional; default ["A"]
+        The sequence of bead types in the chain.
+    bond_length : dict; optional; default {"A-A": 1.0}
         The bond length between connected beads (units: nm)
-    bead_name : str; optional; default "A"
-        The name of the bead
-    bead_mass : float; optional; default 1.0
-        The mass of the bead
+    bead_mass : dict; optional; default {"A": 1.0} 
+        The mass of the bead types
     """
     def __init__(
             self,
