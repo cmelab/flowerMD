@@ -241,12 +241,12 @@ class LJ_chain(mb.Compound):
                     if not bond_length:
                         bead_pair_rev = "-".join([next_bead.name, last_bead.name])
                         bond_length = bond_lengths.get(bead_pair_rev, None)
-                    if not bond_length:
-                        raise ValueError(
-                                "The bond length for pair "
-                                f"{bead_pair} or {bead_pair_rev} "
-                                "is not found in the bond_lengths dict."
-                        )
+                        if not bond_length:
+                            raise ValueError(
+                                    "The bond length for pair "
+                                    f"{bead_pair} or {bead_pair_rev} "
+                                    "is not found in the bond_lengths dict."
+                            )
                     new_pos = last_bead.xyz[0] + (0, 0, bond_length)
                     next_bead.translate_to(new_pos)
                     self.add_bond([next_bead, last_bead])
