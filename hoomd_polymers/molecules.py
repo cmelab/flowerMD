@@ -4,6 +4,7 @@ import random
 import mbuild as mb
 from mbuild.coordinate_transform import z_axis_transform
 from mbuild.lib.recipes import Polymer
+import numpy as np
 
 from hoomd_polymers.library import MON_DIR
 
@@ -214,15 +215,35 @@ class LJ_chain(mb.Compound):
     bead_mass : float; optional; default 1.0
         The mass of the bead
     """
-    def __init__(self, length, bond_length, bead_name="A", bead_mass=1.0):
+    def __init__(
+            self,
+            length,
+            bead_sequence=["A"],
+            bead_mass={"A": 1.0},
+            bond_lengths={"A-A": 1.0},
+    ):
         super(LJ_chain, self).__init__()
         self.description = "Simple bead-spring polymer"
-        bead = mb.Compound(mass=bead_mass, name=bead_name)
         last_bead = None
         for i in range(length):
-            next_bead = mb.clone(bead)
-            next_bead.translate((0, 0, bond_length*i))
-            self.add(next_bead)
-            if i != 0:
-                self.add_bond([next_bead, last_bead])
-            last_bead = next_bead
+            for idx, bead_type in enumerate(bead_sequence):
+                next_bead = mb.Compound(
+                        mass=bead_mass[bead_type], name=bead_type, charge=0
+                )
+                self.add(next_bead)
+                if last_bead:
+                    bead_pair = "-".join([last_bead.name, next_bead.name])
+                    bead_pair_rev = "-".join([next_bead.name, last_bead.name])
+                    bond_length = bond_lengths.get(bead_pair, None)
+                    if not bond_length:
+                        bond_length = bond_lengths.get(bead_pair_rev, None)
+                    if not bond_length:
+                        raise ValueError(
+                                "The bond length for pair "
+                                f"{bead_pair} or {bead_pair_rev} "
+                                "is not found in the bond_lengths dict."
+                        )
+                    new_pos = last_bead.xyz[0] + (0, 0, bond_length)
+                    next_bead.translate_to(new_pos)
+                    self.add_bond([next_bead, last_bead])
+                last_bead = next_bead
