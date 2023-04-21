@@ -2,6 +2,7 @@ import mbuild as mb
 from mbuild.formats.hoomd_forcefield import create_hoomd_forcefield
 import numpy as np
 import unyt
+from gmso.external import from_mbuild, to_gsd_snapshot
 
 
 from hoomd_polymers.utils import scale_charges, check_return_iterable
@@ -78,6 +79,16 @@ class System:
     @property
     def reference_energy(self):
         return self._reference_values.energy * unyt.kcal / unyt.mol
+    
+    def to_hoomd_snapshot(self):
+        topology = from_mbuild(self.system)
+        topology.identify_connections()
+        snap, refs = to_gsd_snapshot(top=topology, auto_scale=False)
+        return snap
+
+    def to_gsd(self):
+        pass
+        
 
     def apply_forcefield(
             self,
