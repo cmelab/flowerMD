@@ -21,10 +21,8 @@ class System:
         systems at low denisty and running a shrink simulaton
         to acheive a target density.
     """
-    def __init__(self, molecule, n_mols, mol_kwargs={}, density=None):
-        self.n_mols = check_return_iterable(n_mols)
+    def __init__(self, molecule, density):
         self._molecules = check_return_iterable(molecule)
-        self.mol_kwargs = check_return_iterable(mol_kwargs)
         self.density = density
         self.target_box = None
         self.system = None
@@ -33,13 +31,8 @@ class System:
         self._reference_values = None
         self.molecules = []
 
-        for mol, n, kw_args, in zip(
-                self._molecules,
-                self.n_mols,
-                self.mol_kwargs
-        ):
-            for i in range(n):
-                self.molecules.append(mol(**kw_args))
+        for mol in self._molecules:
+            self.molecules.extend(mol._generate())
 
     @property
     def mass(self):
@@ -222,18 +215,11 @@ class Pack(System):
     def __init__(
             self,
             molecule,
-            n_mols,
-            mol_kwargs={},
-            density=None,
+            density,
             packing_expand_factor=5,
             edge=0.2
     ):
-        super(Pack, self).__init__(
-                molecule=molecule,
-                n_mols=n_mols,
-                mol_kwargs=mol_kwargs,
-                density=density
-        )
+        super(Pack, self).__init__(molecule=molecule, density=density)
         self.packing_expand_factor = packing_expand_factor
         self.edge = edge
         self._build()
@@ -268,20 +254,13 @@ class Lattice(System):
             self,
             molecule,
             density,
-            n_mols,
             x,
             y,
             n,
-            mol_kwargs={},
             basis_vector=[0.5, 0.5, 0],
             z_adjust=1.0,
     ):
-        super(Lattice, self).__init__(
-                molecule=molecule,
-                n_mols=n_mols,
-                mol_kwargs=mol_kwargs,
-                density=density
-        )
+        super(Lattice, self).__init__(molecule=molecule, density=density)
         self.x = x
         self.y = y
         self.n = n

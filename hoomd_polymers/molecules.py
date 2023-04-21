@@ -7,6 +7,7 @@ from mbuild.lib.recipes import Polymer
 import numpy as np
 
 from hoomd_polymers.library import MON_DIR
+from hoomd_polymers.utils import check_return_iterable
 
 
 class CoPolymer(Polymer):
@@ -201,7 +202,7 @@ class PEKK_meta(Polymer):
         self.build(n=length, sequence="A")
 
 
-class LJ_chain(mb.Compound):
+class LJChain():
     """Creates a coarse-grained bead-spring polymer chain.
 
     Parameters
@@ -217,30 +218,39 @@ class LJ_chain(mb.Compound):
     """
     def __init__(
             self,
-            length,
+            lengths,
+            n_mols,
             bead_sequence=["A"],
             bead_mass={"A": 1.0},
             bond_lengths={"A-A": 1.0},
     ):
-        super(LJ_chain, self).__init__()
+        super(LJChain, self).__init__()
         self.description = "Simple bead-spring polymer"
+        self.lengths = check_return_iterable(lengths)
+        self.n_mols = check_return_iterable(n_mols)
+        self.bead_sequence = bead_sequence
+        self.bead_mass = bead_mass
+        self.bond_lengths = bond_lengths
+
+    def _build(self, length):
+        chain = mb.Compound()
         last_bead = None
         for i in range(length):
-            for idx, bead_type in enumerate(bead_sequence):
-                mass = bead_mass.get(bead_type, None)
+            for idx, bead_type in enumerate(self.bead_sequence):
+                mass = self.bead_mass.get(bead_type, None)
                 if not mass:
                     raise ValueError(
                             f"The bead mass for {bead_type} was not given "
                             "in the bead_mass dict."
                     )
                 next_bead = mb.Compound(mass=mass, name=bead_type, charge=0)
-                self.add(next_bead)
+                chain.add(next_bead)
                 if last_bead:
                     bead_pair = "-".join([last_bead.name, next_bead.name])
-                    bond_length = bond_lengths.get(bead_pair, None)
+                    bond_length = self.bond_lengths.get(bead_pair, None)
                     if not bond_length:
                         bead_pair_rev = "-".join([next_bead.name, last_bead.name])
-                        bond_length = bond_lengths.get(bead_pair_rev, None)
+                        bond_length = self.bond_lengths.get(bead_pair_rev, None)
                         if not bond_length:
                             raise ValueError(
                                     "The bond length for pair "
@@ -249,5 +259,14 @@ class LJ_chain(mb.Compound):
                             )
                     new_pos = last_bead.xyz[0] + (0, 0, bond_length)
                     next_bead.translate_to(new_pos)
-                    self.add_bond([next_bead, last_bead])
+                    chain.add_bond([next_bead, last_bead])
                 last_bead = next_bead
+        return chain
+
+    def _generate(self):
+        molecules = []
+        for idx, length in enumerate(self.lengths):
+            for i in range(self.n_mols[idx]):
+                mol = self._build(length=length)
+                molecules.append(mol)
+        return molecules
