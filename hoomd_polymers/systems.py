@@ -80,15 +80,18 @@ class System:
     def reference_energy(self):
         return self._reference_values.energy * unyt.kcal / unyt.mol
     
-    def to_hoomd_snapshot(self):
+    def to_hoomd_snapshot(self, auto_scale=False, base_units=None):
         topology = from_mbuild(self.system)
         topology.identify_connections()
-        snap, refs = to_gsd_snapshot(top=topology, auto_scale=False)
+        snap, refs = to_gsd_snapshot(
+                top=topology,
+                auto_scale=auto_scale,
+                base_units=base_units
+        )
         return snap
 
     def to_gsd(self):
         pass
-        
 
     def apply_forcefield(
             self,
