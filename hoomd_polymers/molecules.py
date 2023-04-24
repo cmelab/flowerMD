@@ -39,7 +39,8 @@ class CoPolymer(Polymer):
             self,
             monomer_A,
             monomer_B,
-            length,
+            lengths,
+            n_mols,
             sequence=None,
             random_sequence=True,
             AB_ratio=0.50,
@@ -58,23 +59,35 @@ class CoPolymer(Polymer):
             self.sequence = sequence
         self.A_ratio = self.sequence.count("A")/len(self.sequence)
         self.B_ratio = self.sequence.count("B")/len(self.sequence)
-        
-        self.add_monomer(
-                self.monomer_A.monomer,
-                indices=self.monomer_A.bond_indices,
-                orientation=self.monomer_A.bond_orientation,
-                separation=self.monomer_A.bond_length
-        )
-        self.add_monomer(
-                self.monomer_B.monomer,
-                indices=self.monomer_B.bond_indices,
-                orientation=self.monomer_B.bond_orientation,
-                separation=self.monomer_B.bond_length
-        )
-        self.build(n=length, sequence=self.sequence)
+        self.lengths = lengths
+        self.n_mols = n_mols
+
+        def _build(self, length, sequence):
+            chain = Polymer()
+            chain.add_monomer(
+                    self.monomer_A.monomer,
+                    indices=self.monomer_A.bond_indices,
+                    orientation=self.monomer_A.bond_orientation,
+                    separation=self.monomer_A.bond_length
+            )
+            chain.add_monomer(
+                    self.monomer_B.monomer,
+                    indices=self.monomer_B.bond_indices,
+                    orientation=self.monomer_B.bond_orientation,
+                    separation=self.monomer_B.bond_length
+            )
+            chain.build(n=length, sequence=self.sequence)
+
+    def _generate(self):
+        molecules = []
+        for idx, length in enumerate(self.lengths):
+            for i in range(self.n_mols[idx]):
+                mol = self._build(length=length)
+                molecules.append(mol)
+        return molecules
 
 
-class PolyEthylene(Polymer):
+class PolyEthylene():
     """Creates a Poly(ethylene) chain.
 
     Parameters
@@ -91,21 +104,32 @@ class PolyEthylene(Polymer):
         self.bond_indices = [2, 6]
         self.bond_length = 0.145
         self.bond_orientation = [None, None]
-        self.add_monomer(
+
+    def _build(self, length):
+        chain = Polymer()
+        chain.add_monomer(
                 self.monomer,
                 indices=self.bond_indices,
                 separation=self.bond_length
         )
-        self.build(n=length, sequence="A")
+        chain.build(n=length, sequence="A")
         # Align the chain along the z-axis
         z_axis_transform(
-                self,
-                point_on_z_axis=self[-2],
-                point_on_zx_plane=self[-1]
+                chain,
+                point_on_z_axis=chain[-2],
+                point_on_zx_plane=chain[-1]
         )
 
+    def _generate(self):
+        molecules = []
+        for idx, length in enumerate(self.lengths):
+            for i in range(self.n_mols[idx]):
+                mol = self._build(length=length)
+                molecules.append(mol)
+        return molecules
 
-class PPS(Polymer):
+
+class PPS:
     """Creates a Poly(phenylene-sulfide) (PPS) chain.
 
     Parameters
@@ -113,8 +137,7 @@ class PPS(Polymer):
     length : int; required
         The number of monomer repeat units in the chain
     """
-    def __init__(self, length):
-        super(PPS, self).__init__()
+    def __init__(self, lengths, n_mols):
         self.smiles_str = "c1ccc(S)cc1"
         self.file = None
         self.description = "Poly(phenylene-sulfide)"
@@ -128,13 +151,33 @@ class PPS(Polymer):
         self.bond_indices = [7, 10]
         self.bond_length = 0.176
         self.bond_orientation = [[0, 0, 1], [0, 0, -1]]
-        self.add_monomer(
+        self.lengths = lengths
+        self.n_mols = n_mols
+
+    def _build(self, length):
+        chain = Polymer()
+        chain.add_monomer(
                 self.monomer,
                 indices=self.bond_indices,
-                separation=self.bond_length,
+                separation=self.bond_length
                 orientation=self.bond_orientation
         )
-        self.build(n=length, sequence="A")
+        chain.build(n=length, sequence="A")
+        # Align the chain along the z-axis
+        z_axis_transform(
+                chain,
+                point_on_z_axis=chain[-2],
+                point_on_zx_plane=chain[-1]
+        )
+        return chain
+
+    def _generate(self):
+        molecules = []
+        for idx, length in enumerate(self.lengths):
+            for i in range(self.n_mols[idx]):
+                mol = self._build(length=length)
+                molecules.append(mol)
+        return molecules
 
 
 class PEEK(Polymer):
@@ -142,7 +185,7 @@ class PEEK(Polymer):
         super(PEEK, self).__init__()
 
 
-class PEKK_para(Polymer):
+class PEKK_para:
     """Creates a Poly(ether-ketone-ketone) (PEKK) chain.
     The bonding positions of consecutive ketone groups
     takes place on the para site of the phenyl ring.
@@ -152,8 +195,7 @@ class PEKK_para(Polymer):
     length : int; required
         The number of monomer repeat units in the chain
     """
-    def __init__(self, length):
-        super(PEKK_para, self).__init__()
+    def __init__(self, lengths, n_mols):
         self.smiles_str = "c1ccc(Oc2ccc(C(=O)c3ccc(C(=O))cc3)cc2)cc1"
         self.file = os.path.join(MON_DIR, "pekk_para.mol2")
         self.description = ("Poly(ether-ketone-ketone) with para bonding "
@@ -163,16 +205,30 @@ class PEKK_para(Polymer):
         self.bond_indices = [35, 36]
         self.bond_length = 0.148
         self.bond_orientation = [[0, 0, -1], [0, 0, 1]]
-        self.add_monomer(
+        self.lengths = lengths
+        self.n_mols = n_mols
+    
+    def _build(self, length):
+        chain = Polymer()
+        chain.add_monomer(
                 self.monomer,
                 indices=self.bond_indices,
-                separation=self.bond_length,
+                separation=self.bond_length
                 orientation=self.bond_orientation
         )
-        self.build(n=length, sequence="A")
+        chain.build(n=length, sequence="A")
+        return chain
+
+    def _generate(self):
+        molecules = []
+        for idx, length in enumerate(self.lengths):
+            for i in range(self.n_mols[idx]):
+                mol = self._build(length=length)
+                molecules.append(mol)
+        return molecules
 
 
-class PEKK_meta(Polymer):
+class PEKK_meta:
     """Creates a Poly(ether-ketone-ketone) (PEKK) chain.
     The bonding positions of consecutive ketone groups
     takes place on the meta site of the phenyl ring.
@@ -182,8 +238,7 @@ class PEKK_meta(Polymer):
     length : int; required
         The number of monomer repeat units in the chain
     """
-    def __init__(self, length):
-        super(PEKK_meta, self).__init__()
+    def __init__(self, lengths, n_mols):
         self.smiles_str = "c1cc(Oc2ccc(C(=O)c3cc(C(=O))ccc3)cc2)ccc1"
         self.file = os.path.join(MON_DIR, "pekk_meta.mol2")
         self.description = ("Poly(ether-ketone-ketone) with meta bonding "
@@ -193,16 +248,30 @@ class PEKK_meta(Polymer):
         self.bond_indices = [35, 36]
         self.bond_length = 0.148
         self.bond_orientation = [[0, 0, -1], [0, 0, 1]]
-        self.add_monomer(
+        self.lengths = lengths
+        self.n_mols = n_mols
+
+    def _build(self, length):
+        chain = Polymer()
+        chain.add_monomer(
                 self.monomer,
                 indices=self.bond_indices,
-                separation=self.bond_length,
+                separation=self.bond_length
                 orientation=self.bond_orientation
         )
-        self.build(n=length, sequence="A")
+        chain.build(n=length, sequence="A")
+        return chain
+
+    def _generate(self):
+        molecules = []
+        for idx, length in enumerate(self.lengths):
+            for i in range(self.n_mols[idx]):
+                mol = self._build(length=length)
+                molecules.append(mol)
+        return molecules
 
 
-class LJChain():
+class LJChain:
     """Creates a coarse-grained bead-spring polymer chain.
 
     Parameters
