@@ -22,8 +22,8 @@ class System:
         systems at low denisty and running a shrink simulaton
         to acheive a target density.
     """
-    def __init__(self, molecule, density):
-        self._molecules = check_return_iterable(molecule)
+    def __init__(self, molecules, density):
+        self.molecules = []
         self.density = density
         self.target_box = None
         self.system = None
@@ -32,8 +32,16 @@ class System:
         self._reference_values = None
         self.molecules = []
 
-        for mol in self._molecules:
-            self.molecules.extend(mol._generate())
+        for mol_list in molecules:
+            self.molecules.extend(mol_list)
+
+    @property
+    def n_molecules(self):
+        return len(self.molecules)
+
+    @property
+    def n_particles(self):
+        return sum[mol.n_particles for mol in self.molecules]
 
     @property
     def mass(self):
@@ -228,12 +236,12 @@ class Pack(System):
     """
     def __init__(
             self,
-            molecule,
+            molecules,
             density,
             packing_expand_factor=5,
             edge=0.2
     ):
-        super(Pack, self).__init__(molecule=molecule, density=density)
+        super(Pack, self).__init__(molecules=molecules, density=density)
         self.packing_expand_factor = packing_expand_factor
         self.edge = edge
         self._build()
@@ -266,7 +274,7 @@ class Lattice(System):
     """
     def __init__(
             self,
-            molecule,
+            molecules,
             density,
             x,
             y,
@@ -274,7 +282,7 @@ class Lattice(System):
             basis_vector=[0.5, 0.5, 0],
             z_adjust=1.0,
     ):
-        super(Lattice, self).__init__(molecule=molecule, density=density)
+        super(Lattice, self).__init__(molecules=molecules, density=density)
         self.x = x
         self.y = y
         self.n = n

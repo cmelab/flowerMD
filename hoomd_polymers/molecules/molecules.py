@@ -3,64 +3,14 @@ import random
 
 import mbuild as mb
 from mbuild.coordinate_transform import z_axis_transform
-from mbuild.lib.recipes import Polymer as mbPolymer
+from mbuild.lib.recipes import Polymer
 import numpy as np
 
 from hoomd_polymers.library import MON_DIR
 from hoomd_polymers.utils import check_return_iterable
 
 
-class Polymer:
-    def __init__(
-            self,
-            lengths,
-            n_mols,
-            smiles,
-            file,
-            description,
-            bond_indices,
-            bond_length,
-            bond_orientation
-    ):
-        self.description = description 
-        self.smiles = smiles
-        self.file = file 
-        self.n_mols = n_mols
-        self.lengths = lengths
-        self.bond_indices = bond_indices
-        self.bond_length = bond_length
-        self.bond_orientation = bond_orientation
-        self.monomer = self._load()
-        self._molecules = []
-        self._mapping = None
-        self._generate()
-
-    @property
-    def molecules(self):
-        return self._molecules
-    
-    @property
-    def mapping(self):
-        return self._mapping
-
-    @mapping.setter
-    def mapping(self, mapping_array):
-        self._mapping = mapping_array
-
-    def _load(self):
-        pass
-    
-    def _build(self, length):
-        pass
-
-    def _generate(self):
-        for idx, length in enumerate(self.lengths):
-            for i in range(self.n_mols[idx]):
-                mol = self._build(length=length)
-                self._molecules.append(mol)
-
-
-class CoPolymer(mbPolymer):
+class CoPolymer(Polymer):
     """Builds a polymer consisting of two monomer types.
     
     Parameters
@@ -113,7 +63,7 @@ class CoPolymer(mbPolymer):
         self.n_mols = n_mols
 
         def _build(self, length, sequence):
-            chain = mbPolymer()
+            chain = Polymer()
             chain.add_monomer(
                     self.monomer_A.monomer,
                     indices=self.monomer_A.bond_indices,
@@ -137,7 +87,7 @@ class CoPolymer(mbPolymer):
         return molecules
 
 
-class PolyEthylene(Polymer):
+class PolyEthylene():
     """Creates a Poly(ethylene) chain.
 
     Parameters
@@ -145,29 +95,18 @@ class PolyEthylene(Polymer):
     length : int; required
         The number of monomer repeat units in the chain
     """
-    def __init__(self, lengths, n_mols):
-        smiles = "CC"
-        file = None
-        description = "Poly(ethylene)"
-        bond_indices = [2, 6]
-        bond_length = 0.145
-        bond_orientation = [None, None]
-        super(PolyEthylene, self).__init__(
-                lengths=lengths,
-                n_mols=n_mols,
-                smiles=smiles,
-                file=file,
-                description=description,
-                bond_indices=bond_indices,
-                bond_length=bond_length,
-                bond_orientation=bond_orientation
-        )
-
-    def _load(self):
-        return mb.load(self.smiles, smiles=True)
+    def __init__(self, length):
+        super(PolyEthylene, self).__init__()
+        self.smiles_str = "CC"
+        self.description = "Poly(ethylene)"
+        self.file = None
+        self.monomer = mb.load(self.smiles_str, smiles=True)
+        self.bond_indices = [2, 6]
+        self.bond_length = 0.145
+        self.bond_orientation = [None, None]
 
     def _build(self, length):
-        chain = mbPolymer()
+        chain = Polymer()
         chain.add_monomer(
                 self.monomer,
                 indices=self.bond_indices,
@@ -180,10 +119,17 @@ class PolyEthylene(Polymer):
                 point_on_z_axis=chain[-2],
                 point_on_zx_plane=chain[-1]
         )
-        return chain
+
+    def _generate(self):
+        molecules = []
+        for idx, length in enumerate(self.lengths):
+            for i in range(self.n_mols[idx]):
+                mol = self._build(length=length)
+                molecules.append(mol)
+        return molecules
 
 
-class PPS(Polymer):
+class PPS:
     """Creates a Poly(phenylene-sulfide) (PPS) chain.
 
     Parameters
@@ -192,38 +138,28 @@ class PPS(Polymer):
         The number of monomer repeat units in the chain
     """
     def __init__(self, lengths, n_mols):
-        smiles = "c1ccc(S)cc1"
-        file = None
-        description = "Poly(phenylene-sulfide)"
-        bond_indices = [7, 10]
-        bond_length = 0.176
-        bond_orientation = [[0, 0, 1], [0, 0, -1]]
-        super(PPS, self).__init__(
-                lengths=lengths,
-                n_mols=n_mols,
-                smiles=smiles,
-                file=file,
-                description=description,
-                bond_indices=bond_indices,
-                bond_length=bond_length,
-                bond_orientation=bond_orientation
-        )
-    def _load(self):
-        monomer = mb.load(self.smiles, smiles=True)
+        self.smiles_str = "c1ccc(S)cc1"
+        self.file = None
+        self.description = "Poly(phenylene-sulfide)"
+        self.monomer = mb.load(self.smiles_str, smiles=True)
         # Need to align monomer along zx plane due to orientation of S-H bond
         z_axis_transform(
-                monomer,
-                point_on_z_axis=monomer[7],
-                point_on_zx_plane=monomer[4]
+                self.monomer,
+                point_on_z_axis=self.monomer[7],
+                point_on_zx_plane=self.monomer[4]
         )
-        return monomer
+        self.bond_indices = [7, 10]
+        self.bond_length = 0.176
+        self.bond_orientation = [[0, 0, 1], [0, 0, -1]]
+        self.lengths = lengths
+        self.n_mols = n_mols
 
     def _build(self, length):
-        chain = mbPolymer()
+        chain = Polymer()
         chain.add_monomer(
                 self.monomer,
                 indices=self.bond_indices,
-                separation=self.bond_length,
+                separation=self.bond_length
                 orientation=self.bond_orientation
         )
         chain.build(n=length, sequence="A")
@@ -234,6 +170,14 @@ class PPS(Polymer):
                 point_on_zx_plane=chain[-1]
         )
         return chain
+
+    def _generate(self):
+        molecules = []
+        for idx, length in enumerate(self.lengths):
+            for i in range(self.n_mols[idx]):
+                mol = self._build(length=length)
+                molecules.append(mol)
+        return molecules
 
 
 class PEEK(Polymer):
@@ -265,11 +209,11 @@ class PEKK_para:
         self.n_mols = n_mols
     
     def _build(self, length):
-        chain = mbPolymer()
+        chain = Polymer()
         chain.add_monomer(
                 self.monomer,
                 indices=self.bond_indices,
-                separation=self.bond_length,
+                separation=self.bond_length
                 orientation=self.bond_orientation
         )
         chain.build(n=length, sequence="A")
@@ -308,11 +252,11 @@ class PEKK_meta:
         self.n_mols = n_mols
 
     def _build(self, length):
-        chain = mbPolymer()
+        chain = Polymer()
         chain.add_monomer(
                 self.monomer,
                 indices=self.bond_indices,
-                separation=self.bond_length,
+                separation=self.bond_length
                 orientation=self.bond_orientation
         )
         chain.build(n=length, sequence="A")
