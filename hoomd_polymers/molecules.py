@@ -10,7 +10,44 @@ from hoomd_polymers.library import MON_DIR
 from hoomd_polymers.utils import check_return_iterable
 
 
-class Polymer:
+class Molecule:
+    def __init__(self, n_mols, smiles, file, description):
+        self.description = description 
+        self.smiles = smiles
+        self.file = file 
+        self.n_mols = n_mols
+        self._molecules = []
+        self._mapping = None
+        self._generate()
+
+    @property
+    def molecules(self):
+        """List of all instances of the molecule"""
+        return self._molecules
+    
+    @property
+    def mapping(self):
+        """Dictionary of particle index to bead mapping"""
+        return self._mapping
+
+    @mapping.setter
+    def mapping(self, mapping_array):
+        self._mapping = mapping_array
+
+    def _load(self):
+        if self.smiles and not self.file:
+            return mb.load(self.smiles, smiles=True)
+        else:
+            return mb.load(self.file)
+    
+    def _build(self, length):
+        pass
+
+    def _generate(self):
+        pass
+
+
+class Polymer(Molecule):
     def __init__(
             self,
             lengths,
@@ -22,36 +59,20 @@ class Polymer:
             bond_length,
             bond_orientation
     ):
-        self.description = description 
-        self.smiles = smiles
-        self.file = file 
-        self.n_mols = n_mols
         self.lengths = lengths
         self.bond_indices = bond_indices
         self.bond_length = bond_length
         self.bond_orientation = bond_orientation
-        self.monomer = self._load()
-        self._molecules = []
-        self._mapping = None
-        self._generate()
+        super(Polymer, self).__init__(
+                n_mols=n_mols,
+                smiles=smiles,
+                file=file,
+                description=description
+        )
 
     @property
-    def molecules(self):
-        return self._molecules
-    
-    @property
-    def mapping(self):
-        return self._mapping
-
-    @mapping.setter
-    def mapping(self, mapping_array):
-        self._mapping = mapping_array
-
-    def _load(self):
-        pass
-    
-    def _build(self, length):
-        pass
+    def monomer(self):
+        return self._load()
 
     def _generate(self):
         for idx, length in enumerate(self.lengths):
@@ -60,7 +81,7 @@ class Polymer:
                 self._molecules.append(mol)
 
 
-class CoPolymer(mbPolymer):
+class CoPolymer(Polymer):
     """Builds a polymer consisting of two monomer types.
     
     Parameters
@@ -96,21 +117,25 @@ class CoPolymer(mbPolymer):
             AB_ratio=0.50,
             seed=24
     ):
-        super(CoPolymer, self).__init__()
         self.monomer_A = monomer_A(length=1)
         self.monomer_B = monomer_B(length=1)
-        if random_sequence:
-            random.seed(seed)
-            self.sequence = random.choices(
-                    ["A", "B"], [AB_ratio, 1-AB_ratio], k=length
-            )
-            length = 1
-        else:
-            self.sequence = sequence
-        self.A_ratio = self.sequence.count("A")/len(self.sequence)
-        self.B_ratio = self.sequence.count("B")/len(self.sequence)
-        self.lengths = lengths
+        self.lengths = lengths,
         self.n_mols = n_mols
+        self.sequence = sequence
+        self.random_sequence = sequence
+        self.AB_ratio = AB_ratio
+
+        self.smiles = {"A": self.monomer_A.smiles, "B": self.monomer_B.smiles},
+        self.file = {"A": self.monomer_A.file, "B": self.monomer_B.file},
+        self.description={
+                    "A": self.monomer_A.description,
+                    "B": self.monomer_B.description
+                },
+        random.seed(self.seed)
+        self._A_count = 0
+        self._B_count = 0
+        self.A_ratio = self._A_count / (self._A_count + self._B_count)
+        self.B_ratio = self._B_count / (self._A_count + self._B_count)
 
         def _build(self, length, sequence):
             chain = mbPolymer()
@@ -127,14 +152,24 @@ class CoPolymer(mbPolymer):
                     separation=self.monomer_B.bond_length
             )
             chain.build(n=length, sequence=self.sequence)
+            return chain
 
     def _generate(self):
-        molecules = []
         for idx, length in enumerate(self.lengths):
             for i in range(self.n_mols[idx]):
-                mol = self._build(length=length)
-                molecules.append(mol)
-        return molecules
+                if random_sequence:
+                    sequence = random.choices(
+                            ["A", "B"],
+                            [self.AB_ratio, 1-self.AB_ratio],
+                            k=length
+                    )
+                    self._A_count += sequence.count("A")
+                    self._B_count += sequence.count("B")
+                    length = 1
+                else:
+                    sequence = self.sequence
+                mol = self._build(length=length, sequence=sequence)
+                self._molecules.append(mol)
 
 
 class PolyEthylene(Polymer):
@@ -275,14 +310,6 @@ class PEKK_para:
         chain.build(n=length, sequence="A")
         return chain
 
-    def _generate(self):
-        molecules = []
-        for idx, length in enumerate(self.lengths):
-            for i in range(self.n_mols[idx]):
-                mol = self._build(length=length)
-                molecules.append(mol)
-        return molecules
-
 
 class PEKK_meta:
     """Creates a Poly(ether-ketone-ketone) (PEKK) chain.
@@ -317,14 +344,6 @@ class PEKK_meta:
         )
         chain.build(n=length, sequence="A")
         return chain
-
-    def _generate(self):
-        molecules = []
-        for idx, length in enumerate(self.lengths):
-            for i in range(self.n_mols[idx]):
-                mol = self._build(length=length)
-                molecules.append(mol)
-        return molecules
 
 
 class LJChain:

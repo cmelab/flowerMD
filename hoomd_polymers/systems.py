@@ -41,7 +41,7 @@ class System:
 
     @property
     def n_particles(self):
-        return sum[mol.n_particles for mol in self.molecules]
+        return sum([mol.n_particles for mol in self.molecules])
 
     @property
     def mass(self):
