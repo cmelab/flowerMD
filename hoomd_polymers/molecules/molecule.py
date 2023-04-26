@@ -6,16 +6,13 @@ from mbuild.coordinate_transform import z_axis_transform
 from mbuild.lib.recipes import Polymer as mbPolymer
 import numpy as np
 
-from hoomd_polymers.library import MON_DIR
-from hoomd_polymers.utils import check_return_iterable
-
 
 class Molecule:
     def __init__(self, n_mols, smiles, file, description):
-        self.description = description 
-        self.smiles = smiles
-        self.file = file 
         self.n_mols = n_mols
+        self.smiles = smiles 
+        self.file = file 
+        self.description = description 
         self._molecules = []
         self._mapping = None
         self._generate()
@@ -37,16 +34,11 @@ class Molecule:
     def _load(self):
         if self.file: # Loading from file takes precedent over SMILES 
             return mb.load(self.file)
-        else:
+        elif self.smiles:
             return mb.load(self.smiles, smiles=True)
     
-    def _build(self):
-        pass
-
     def _generate(self):
-        for i in range(self.n_mols):
-            mol = self._load()
-            self._molecules.append(mol)
+        pass
 
 
 class Polymer(Molecule):
@@ -76,8 +68,16 @@ class Polymer(Molecule):
     def monomer(self):
         return self._load()
 
-    def _build(self):
-        pass
+    def _build(self, length):
+        chain = mbPolymer()
+        chain.add_monomer(
+                self.monomer,
+                indices=self.bond_indices,
+                separation=self.bond_length,
+                orientation=self.bond_orientation
+        )
+        chain.build(n=length, sequence="A")
+        return chain
 
     def _generate(self):
         for idx, length in enumerate(self.lengths):
@@ -86,7 +86,7 @@ class Polymer(Molecule):
                 self._molecules.append(mol)
 
 
-class CoPolymer(Polymer):
+class CoPolymer(Molecule):
     """Builds a polymer consisting of two monomer types.
     
     Parameters
@@ -122,47 +122,58 @@ class CoPolymer(Polymer):
             AB_ratio=0.50,
             seed=24
     ):
-        self.monomer_A = monomer_A(length=1)
-        self.monomer_B = monomer_B(length=1)
-        self.lengths = lengths,
+        self.lengths = lengths
+        self.monomer_A = monomer_A(lengths=[1], n_mols=[1])
+        self.monomer_B = monomer_B(lengths=[1], n_mols=[1])
         self.n_mols = n_mols
         self.sequence = sequence
-        self.random_sequence = sequence
+        self.random_sequence = random_sequence
         self.AB_ratio = AB_ratio
-
-        self.smiles = {"A": self.monomer_A.smiles, "B": self.monomer_B.smiles},
-        self.file = {"A": self.monomer_A.file, "B": self.monomer_B.file},
-        self.description={
-                    "A": self.monomer_A.description,
-                    "B": self.monomer_B.description
-                },
-        random.seed(self.seed)
+        self.seed = seed
         self._A_count = 0
         self._B_count = 0
-        self.A_ratio = self._A_count / (self._A_count + self._B_count)
-        self.B_ratio = self._B_count / (self._A_count + self._B_count)
+        self.smiles = {"A": self.monomer_A.smiles, "B": self.monomer_B.smiles}
+        self.description = {
+            "A": self.monomer_A.description, "B": self.monomer_B.description
+        }
+        self.file = {"A": self.monomer_A.file, "B": self.monomer_B.file}
+        random.seed(self.seed)
+        super(CoPolymer, self).__init__(
+                n_mols=n_mols,
+                smiles=self.smiles,
+                file=self.file,
+                description=self.description
+        )
+    
+    @property
+    def A_ratio(self):
+        return self._A_count / (self._A_count + self._B_count)
 
-        def _build(self, length, sequence):
-            chain = mbPolymer()
-            chain.add_monomer(
-                    self.monomer_A.monomer,
-                    indices=self.monomer_A.bond_indices,
-                    orientation=self.monomer_A.bond_orientation,
-                    separation=self.monomer_A.bond_length
-            )
-            chain.add_monomer(
-                    self.monomer_B.monomer,
-                    indices=self.monomer_B.bond_indices,
-                    orientation=self.monomer_B.bond_orientation,
-                    separation=self.monomer_B.bond_length
-            )
-            chain.build(n=length, sequence=self.sequence)
-            return chain
+    @property
+    def B_ratio(self):
+        return self._B_count / (self._A_count + self._B_count)
+
+    def _build(self, length, sequence):
+        chain = mbPolymer()
+        chain.add_monomer(
+                self.monomer_A.monomer,
+                indices=self.monomer_A.bond_indices,
+                orientation=self.monomer_A.bond_orientation,
+                separation=self.monomer_A.bond_length
+        )
+        chain.add_monomer(
+                self.monomer_B.monomer,
+                indices=self.monomer_B.bond_indices,
+                orientation=self.monomer_B.bond_orientation,
+                separation=self.monomer_B.bond_length
+        )
+        chain.build(n=length, sequence=sequence)
+        return chain
 
     def _generate(self):
         for idx, length in enumerate(self.lengths):
             for i in range(self.n_mols[idx]):
-                if random_sequence:
+                if self.random_sequence:
                     sequence = random.choices(
                             ["A", "B"],
                             [self.AB_ratio, 1-self.AB_ratio],

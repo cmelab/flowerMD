@@ -3,6 +3,7 @@ import random
 
 import mbuild as mb
 from mbuild.coordinate_transform import z_axis_transform
+from mbuild.lib.recipes import Polymer as mbPolymer
 import numpy as np
 
 from hoomd_polymers.library import MON_DIR
@@ -88,30 +89,13 @@ class PPS(Polymer):
         )
         return monomer
 
-    def _build(self, length):
-        chain = mbPolymer()
-        chain.add_monomer(
-                self.monomer,
-                indices=self.bond_indices,
-                separation=self.bond_length,
-                orientation=self.bond_orientation
-        )
-        chain.build(n=length, sequence="A")
-        # Align the chain along the z-axis
-        z_axis_transform(
-                chain,
-                point_on_z_axis=chain[-2],
-                point_on_zx_plane=chain[-1]
-        )
-        return chain
-
 
 class PEEK(Polymer):
     def __init__(self, length):
         super(PEEK, self).__init__()
 
 
-class PEKK_para:
+class PEKK_para(Polymer):
     """Creates a Poly(ether-ketone-ketone) (PEKK) chain.
     The bonding positions of consecutive ketone groups
     takes place on the para site of the phenyl ring.
@@ -122,7 +106,7 @@ class PEKK_para:
         The number of monomer repeat units in the chain
     """
     def __init__(self, lengths, n_mols):
-        smiles_str = "c1ccc(Oc2ccc(C(=O)c3ccc(C(=O))cc3)cc2)cc1"
+        smiles = "c1ccc(Oc2ccc(C(=O)c3ccc(C(=O))cc3)cc2)cc1"
         file = os.path.join(MON_DIR, "pekk_para.mol2")
         description = ("Poly(ether-ketone-ketone) with para bonding "
                             "configuration between consecutive "
@@ -141,19 +125,8 @@ class PEKK_para:
                 bond_orientation=bond_orientation
         )
     
-    def _build(self, length):
-        chain = mbPolymer()
-        chain.add_monomer(
-                self.monomer,
-                indices=self.bond_indices,
-                separation=self.bond_length,
-                orientation=self.bond_orientation
-        )
-        chain.build(n=length, sequence="A")
-        return chain
 
-
-class PEKK_meta:
+class PEKK_meta(Polymer):
     """Creates a Poly(ether-ketone-ketone) (PEKK) chain.
     The bonding positions of consecutive ketone groups
     takes place on the meta site of the phenyl ring.
@@ -175,18 +148,17 @@ class PEKK_meta:
         self.bond_orientation = [[0, 0, -1], [0, 0, 1]]
         self.lengths = lengths
         self.n_mols = n_mols
-
-    def _build(self, length):
-        chain = mbPolymer()
-        chain.add_monomer(
-                self.monomer,
-                indices=self.bond_indices,
-                separation=self.bond_length,
-                orientation=self.bond_orientation
+        super(PEKK_meta, self).__init__(
+                lengths=lengths,
+                n_mols=n_mols,
+                smiles=smiles,
+                file=file,
+                description=description,
+                bond_indices=bond_indices,
+                bond_length=bond_length,
+                bond_orientation=bond_orientation
         )
-        chain.build(n=length, sequence="A")
-        return chain
-
+    
 
 class LJChain:
     """Creates a coarse-grained bead-spring polymer chain.
