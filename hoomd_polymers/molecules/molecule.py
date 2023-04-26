@@ -8,7 +8,7 @@ import numpy as np
 
 
 class Molecule:
-    def __init__(self, n_mols, smiles, file, description):
+    def __init__(self, n_mols, smiles=None, file=None, description=None):
         self.n_mols = n_mols
         self.smiles = smiles 
         self.file = file 
@@ -32,10 +32,16 @@ class Molecule:
         self._mapping = mapping_array
 
     def _load(self):
-        if self.file: # Loading from file takes precedent over SMILES 
+        if self.file and isinstance(self.file, str): # Loading from file takes precedent over SMILES 
             return mb.load(self.file)
-        elif self.smiles:
+        elif self.smiles and isinstance(self.smiles, str):
             return mb.load(self.smiles, smiles=True)
+        else:
+            raise ValueError(
+                    "Unable to load from ",
+                    f"File: {self.file}",
+                    f"SMILES: {self.smiles}"
+            )
     
     def _generate(self):
         pass
@@ -179,10 +185,14 @@ class CoPolymer(Molecule):
                             [self.AB_ratio, 1-self.AB_ratio],
                             k=length
                     )
+                    print("-------------------------")
+                    print(sequence)
+                    print("-------------------------")
                     self._A_count += sequence.count("A")
                     self._B_count += sequence.count("B")
-                    length = 1
+                    _length = 1
                 else:
                     sequence = self.sequence
-                mol = self._build(length=length, sequence=sequence)
+                    _length = length
+                mol = self._build(length=_length, sequence=sequence)
                 self._molecules.append(mol)
