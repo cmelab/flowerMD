@@ -185,9 +185,6 @@ class CoPolymer(Molecule):
                             [self.AB_ratio, 1-self.AB_ratio],
                             k=length
                     )
-                    print("-------------------------")
-                    print(sequence)
-                    print("-------------------------")
                     self._A_count += sequence.count("A")
                     self._B_count += sequence.count("B")
                     _length = 1

@@ -137,17 +137,14 @@ class PEKK_meta(Polymer):
         The number of monomer repeat units in the chain
     """
     def __init__(self, lengths, n_mols):
-        self.smiles_str = "c1cc(Oc2ccc(C(=O)c3cc(C(=O))ccc3)cc2)ccc1"
-        self.file = os.path.join(MON_DIR, "pekk_meta.mol2")
-        self.description = ("Poly(ether-ketone-ketone) with meta bonding "
+        smiles = "c1cc(Oc2ccc(C(=O)c3cc(C(=O))ccc3)cc2)ccc1"
+        file = os.path.join(MON_DIR, "pekk_meta.mol2")
+        description = ("Poly(ether-ketone-ketone) with meta bonding "
                             "configuration between consectuvie "
                             "ketone linkage groups")
-        self.monomer = mb.load(self.file)
-        self.bond_indices = [35, 36]
-        self.bond_length = 0.148
-        self.bond_orientation = [[0, 0, -1], [0, 0, 1]]
-        self.lengths = lengths
-        self.n_mols = n_mols
+        bond_indices = [35, 36]
+        bond_length = 0.148
+        bond_orientation = [[0, 0, -1], [0, 0, 1]]
         super(PEKK_meta, self).__init__(
                 lengths=lengths,
                 n_mols=n_mols,
