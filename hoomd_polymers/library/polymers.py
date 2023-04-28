@@ -37,22 +37,6 @@ class PolyEthylene(Polymer):
                 bond_orientation=bond_orientation
         )
 
-    def _build(self, length):
-        chain = mbPolymer()
-        chain.add_monomer(
-                self.monomer,
-                indices=self.bond_indices,
-                separation=self.bond_length
-        )
-        chain.build(n=length, sequence="A")
-        # Align the chain along the z-axis
-        z_axis_transform(
-                chain,
-                point_on_z_axis=chain[-2],
-                point_on_zx_plane=chain[-1]
-        )
-        return chain
-
 
 class PPS(Polymer):
     """Creates a Poly(phenylene-sulfide) (PPS) chain.

@@ -3,7 +3,6 @@ import hoomd
 import numpy as np
 
 from hoomd_polymers.sim.simulation import Simulation
-from hoomd_polymers.systems import System 
 
 
 class Interface:
