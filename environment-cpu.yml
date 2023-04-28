@@ -17,3 +17,4 @@ dependencies:
   - unyt
   - pip:
       - git+https://github.com/cmelab/cmeutils.git@master
+      - git+https://github.com/mosdef-hub/gmso.git@main
