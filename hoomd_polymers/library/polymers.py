@@ -7,7 +7,7 @@ from mbuild.lib.recipes import Polymer as mbPolymer
 import numpy as np
 
 from hoomd_polymers.library import MON_DIR
-from hoomd_polymers.molecules import Molecule, Polymer
+from hoomd_polymers import Polymer
 from hoomd_polymers.utils import check_return_iterable
 
 

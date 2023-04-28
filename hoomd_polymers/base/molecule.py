@@ -6,10 +6,12 @@ from mbuild.coordinate_transform import z_axis_transform
 from mbuild.lib.recipes import Polymer as mbPolymer
 import numpy as np
 
+from hoomd_polymers.utils import check_return_iterable
+
 
 class Molecule:
     def __init__(self, n_mols, smiles=None, file=None, description=None):
-        self.n_mols = n_mols
+        self.n_mols = check_return_iterable(n_mols)
         self.smiles = smiles 
         self.file = file 
         self.description = description 
@@ -59,7 +61,7 @@ class Polymer(Molecule):
             bond_length,
             bond_orientation
     ):
-        self.lengths = lengths
+        self.lengths = check_return_iterable(lengths)
         self.bond_indices = bond_indices
         self.bond_length = bond_length
         self.bond_orientation = bond_orientation
