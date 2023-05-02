@@ -3,7 +3,7 @@ from mbuild.formats.hoomd_forcefield import create_hoomd_forcefield
 import numpy as np
 import unyt
 from gmso.external import from_mbuild, to_gsd_snapshot
-
+import warnings
 
 from hoomd_polymers.utils import scale_charges, check_return_iterable
 
