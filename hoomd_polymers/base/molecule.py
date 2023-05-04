@@ -4,20 +4,22 @@ import mbuild as mb
 from mbuild.lib.recipes import Polymer as mbPolymer
 from typing import Union, Dict, List
 from hoomd_polymers.utils import check_return_iterable
-from .forcefield import _find_xml_ff, _apply_xml_ff, _validate_hoomd_ff
+
+
+from .forcefield import find_xml_ff, apply_xml_ff, _validate_hoomd_ff
 
 from gmso.external.convert_mbuild import from_mbuild
 from hoomd.md.force import Force as HForce
 
 class Molecule:
-    def __init__(self, n_mols, force_field: Union[Dict, List[HForce], str], smiles=None, file=None, description=None, ):
+    def __init__(self, n_mols, force_field: Union[Dict, List[HForce], str]=None, smiles=None, file=None, description=None, ):
         self.n_mols = check_return_iterable(n_mols)
         self.smiles = smiles 
         self.file = file 
         self.description = description
         self._mapping = None
         self._mb_molecule = self._load()
-        self._gmso_molecule = self._convert_to_gmso()
+        self.gmso_molecule = self._convert_to_gmso()
         self._molecules = []
         self._generate()
         self.force_field = self._validate_force_field(force_field)
@@ -61,12 +63,12 @@ class Molecule:
     def _validate_force_field(self, force_field):
         self.ff_type = None
         if isinstance(force_field, str):
-            ff_xml_path, ff_type = _find_xml_ff(force_field)
+            ff_xml_path, ff_type = find_xml_ff(force_field)
             self.ff_type = ff_type
-            self._gmso_molecule = _apply_xml_ff(ff_xml_path, self._gmso_molecule)
+            self.gmso_molecule = apply_xml_ff(ff_xml_path, self.gmso_molecule)
             self.force_field = ff_xml_path
         elif isinstance(force_field, List):
-            if _validate_hoomd_ff(force_field, self._gmso_molecule):
+            if _validate_hoomd_ff(force_field, self.gmso_molecule):
                 self.force_field = force_field
 
 
@@ -80,7 +82,8 @@ class Polymer(Molecule):
             description,
             bond_indices,
             bond_length,
-            bond_orientation
+            bond_orientation,
+            **kwargs
     ):
         self.lengths = check_return_iterable(lengths)
         self.bond_indices = bond_indices
@@ -90,7 +93,8 @@ class Polymer(Molecule):
                 n_mols=n_mols,
                 smiles=smiles,
                 file=file,
-                description=description
+                description=description,
+                **kwargs
         )
 
     @property

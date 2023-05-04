@@ -5,7 +5,7 @@ import mbuild as mb
 from mbuild.coordinate_transform import z_axis_transform
 from mbuild.lib.recipes import Polymer as mbPolymer
 import numpy as np
-
+import hoomd_polymers
 from hoomd_polymers.library import MON_DIR
 from hoomd_polymers import Polymer
 from hoomd_polymers.utils import check_return_iterable
@@ -19,9 +19,8 @@ class PolyEthylene(Polymer):
     length : int; required
         The number of monomer repeat units in the chain
     """
-    def __init__(self, lengths, n_mols):
+    def __init__(self, lengths, n_mols, **kwargs):
         smiles = "CC"
-        file = None
         description = "Poly(ethylene)"
         bond_indices = [2, 6]
         bond_length = 0.145
@@ -30,11 +29,11 @@ class PolyEthylene(Polymer):
                 lengths=lengths,
                 n_mols=n_mols,
                 smiles=smiles,
-                file=file,
                 description=description,
                 bond_indices=bond_indices,
                 bond_length=bond_length,
-                bond_orientation=bond_orientation
+                bond_orientation=bond_orientation,
+                **kwargs
         )
 
 
@@ -46,7 +45,7 @@ class PPS(Polymer):
     length : int; required
         The number of monomer repeat units in the chain
     """
-    def __init__(self, lengths, n_mols):
+    def __init__(self, lengths, n_mols, **kwargs):
         smiles = "c1ccc(S)cc1"
         file = None
         description = "Poly(phenylene-sulfide)"
@@ -61,7 +60,8 @@ class PPS(Polymer):
                 description=description,
                 bond_indices=bond_indices,
                 bond_length=bond_length,
-                bond_orientation=bond_orientation
+                bond_orientation=bond_orientation,
+                **kwargs
         )
     def _load(self):
         monomer = mb.load(self.smiles, smiles=True)

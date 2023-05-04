@@ -1,6 +1,7 @@
 class FF_Types:
-    OPLS = "opls"
-    OPLSAA = "oplsaa"
-    GAFF = "gaff"
-    CUSTOM = "custom"
-    HOOMD = "Hoomd"
+    opls = "opls"
+    pps_opls = "pps_opls"
+    oplsaa = "oplsaa"
+    gaff = "gaff"
+    custom = "custom"
+    Hoomd = "Hoomd"
