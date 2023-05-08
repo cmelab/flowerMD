@@ -1,28 +1,34 @@
+import itertools
 import random
+from typing import Union, Dict, List
 
 import mbuild as mb
-from mbuild.lib.recipes import Polymer as mbPolymer
-from typing import Union, Dict, List
-from hoomd_polymers.utils import check_return_iterable
-
-
-from .forcefield import find_xml_ff, apply_xml_ff, _validate_hoomd_ff
-
 from gmso.external.convert_mbuild import from_mbuild
 from hoomd.md.force import Force as HForce
+from mbuild.lib.recipes import Polymer as mbPolymer
+
+from hoomd_polymers.base.base_types import FF_Types
+from hoomd_polymers.utils import check_return_iterable
+from .forcefield import find_xml_ff, apply_xml_ff, _validate_hoomd_ff
+
 
 class Molecule:
-    def __init__(self, n_mols, force_field: Union[Dict, List[HForce], str]=None, smiles=None, file=None, description=None, ):
+    def __init__(self, n_mols, force_field: Union[Dict, List[HForce], str]=None, smiles=None, file=None, description=None,
+                 remove_hydrogens=False):
         self.n_mols = check_return_iterable(n_mols)
+        self.force_field = force_field
         self.smiles = smiles 
         self.file = file 
         self.description = description
+        self.remove_hydrogens = remove_hydrogens
         self._mapping = None
         self._mb_molecule = self._load()
-        self.gmso_molecule = self._convert_to_gmso()
+        self.gmso_molecule, self.topology_information = self._get_topology_information()
+        if self.force_field:
+            self._validate_force_field()
         self._molecules = []
         self._generate()
-        self.force_field = self._validate_force_field(force_field)
+
 
 
     @property
@@ -39,6 +45,29 @@ class Molecule:
     def mapping(self, mapping_array):
         self._mapping = mapping_array
 
+    @property
+    def particle_types(self):
+        return self.topology_information["particle_types"]
+
+    @property
+    def pair_types(self):
+        return self.topology_information["pair_types"]
+
+    @property
+    def bond_types(self):
+        return self.topology_information["bond_types"]
+
+    @property
+    def angle_types(self):
+        return self.topology_information["angle_types"]
+
+    @property
+    def diherdal_types(self):
+        return self.topology_information["dihedral_types"]
+
+    @property
+    def improper_types(self):
+        return self.improper_types["improper_types"]
 
     def _load(self):
         if self.file and isinstance(self.file, str): # Loading from file takes precedent over SMILES 
@@ -60,16 +89,84 @@ class Molecule:
         topology.identify_connections()
         return topology
 
-    def _validate_force_field(self, force_field):
+    def _particle_information(self, gmso_molecule):
+        particle_types = set()
+        hydrogen_types = set()
+        for site in gmso_molecule.sites:
+            particle_types.add(site.atom_type or site.name)
+            if site.element.atomic_number == 1:
+                hydrogen_types.add(site.atom_type or site.name)
+        return particle_types, hydrogen_types
+
+    def _identify_pairs(self, particle_types):
+        pairs = list(itertools.combinations_with_replacement(particle_types, 2))
+        return pairs
+
+    def _identify_bond_types(self, gmso_molecule):
+        bond_types = set()
+        for bond in gmso_molecule.bonds:
+            bond_connections = [bond.connection_members[0].atom_type or bond.connection_members[0].name,
+                            bond.connection_members[1].atom_type or bond.connection_members[1].name]
+            bond_connections.sort()
+            bond_types.add(tuple(bond_connections))
+        return bond_types
+
+    def _identify_angle_types(self, gmso_molecule):
+        angle_types = set()
+        for angle in gmso_molecule.angles:
+            angle_connections = [angle.connection_members[0].atom_type or angle.connection_members[0].name,
+                                 angle.connection_members[1].atom_type or angle.connection_members[1].name,
+                                 angle.connection_members[2].atom_type or angle.connection_members[2].name]
+            angle_connections.sort()
+            angle_types.add(tuple(angle_connections))
+        return angle_types
+
+    def _identify_dihedral_types(self, gmso_molecule):
+        dihedral_types = set()
+        for dihedral in gmso_molecule.dihedrals:
+            dihedral_connections = [dihedral.connection_members[0].atom_type or dihedral.connection_members[0].name,
+                                    dihedral.connection_members[1].atom_type or dihedral.connection_members[1].name,
+                                    dihedral.connection_members[2].atom_type or dihedral.connection_members[2].name,
+                                    dihedral.connection_members[3].atom_type or dihedral.connection_members[3].name]
+            dihedral_connections.sort()
+            dihedral_types.add(tuple(dihedral_connections))
+        return dihedral_types
+
+    def _identify_improper_types(self, gmso_molecule):
+        improper_types = set()
+        for improper in gmso_molecule.impropers:
+            improper_connections = [improper.connection_members[0].atom_type or improper.connection_members[0].name,
+                                    improper.connection_members[1].atom_type or improper.connection_members[1].name,
+                                    improper.connection_members[2].atom_type or improper.connection_members[2].name,
+                                    improper.connection_members[3].atom_type or improper.connection_members[3].name]
+            improper_connections.sort()
+            improper_types.add(tuple(improper_connections))
+        return improper_types
+
+    def _get_topology_information(self):
+        gmso_molecule = self._convert_to_gmso()
+        topology_information = dict()
+        particle_types, hydrogen_types = self._particle_information(gmso_molecule)
+        topology_information["particle_types"] = particle_types
+        topology_information["hydrogen_types"] = hydrogen_types
+        topology_information["pair_types"] = self._identify_pairs(particle_types)
+        topology_information["bond_types"] = self._identify_bond_types(gmso_molecule)
+        topology_information["angle_types"] = self._identify_angle_types(gmso_molecule)
+        topology_information["dihedral_types"] = self._identify_dihedral_types(gmso_molecule)
+        topology_information["improper_types"] = self._identify_improper_types(gmso_molecule)
+        return gmso_molecule, topology_information
+
+    def _validate_force_field(self):
         self.ff_type = None
-        if isinstance(force_field, str):
-            ff_xml_path, ff_type = find_xml_ff(force_field)
+        if isinstance(self.force_field, str):
+            ff_xml_path, ff_type = find_xml_ff(self.force_field)
             self.ff_type = ff_type
             self.gmso_molecule = apply_xml_ff(ff_xml_path, self.gmso_molecule)
-            self.force_field = ff_xml_path
-        elif isinstance(force_field, List):
-            if _validate_hoomd_ff(force_field, self.gmso_molecule):
-                self.force_field = force_field
+        elif isinstance(self.force_field, List):
+            _validate_hoomd_ff(self.force_field, self.topology_information)
+            self.ff_type = FF_Types.Hoomd
+
+
 
 
 class Polymer(Molecule):
