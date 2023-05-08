@@ -5,7 +5,6 @@ from gmso.parameterization import apply
 
 from hoomd_polymers.base.base_types import FF_Types
 
-
 FF_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '../library/forcefields'))
 def ff_xml_directory():
     ff_xml_directory = dict()
@@ -42,6 +41,6 @@ def apply_xml_ff(ff_xml_path, gmso_mol):
     return gmso_mol
 
 
-def _validate_hoomd_ff(ff_list, gmso_mol):
-    #TODO: Check if a force exsits for every bonded and non-bonded interaction types.
+def _validate_hoomd_ff(ff_list, topology_information):
+    #TODO: Check if a force exsits for all bonded and non-bonded interaction types.
     return True
