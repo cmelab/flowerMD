@@ -82,7 +82,8 @@ class Molecule:
             )
 
     def _generate(self):
-        self._molecules.append(self._mb_molecule)
+        for i in range(self.n_mols):
+            self._molecules.append(self._mb_molecule)
 
     def _convert_to_gmso(self):
         topology = from_mbuild(self._mb_molecule)
