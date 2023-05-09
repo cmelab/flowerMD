@@ -5,10 +5,12 @@ dependencies:
   - foyer
   - freud
   - gsd
-  - hoomd>3.0=*gpu*
+  - hoomd>3.7=*gpu*
   - mbuild
   - numpy
+  - openbabel
   - pip
+  - py3Dmol
   - pytest
   - pytest-cov
   - python=3.9
@@ -18,3 +20,4 @@ dependencies:
   - pip:
       - git+https://github.com/cmelab/cmeutils.git@master
       - git+https://github.com/mosdef-hub/gmso.git@main
+      - git+https://github.com/cmelab/grits.git@main

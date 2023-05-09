@@ -4,6 +4,7 @@ from typing import Union, Dict, List
 
 import mbuild as mb
 from gmso.external.convert_mbuild import from_mbuild
+from grits import CG_Compound
 from hoomd.md.force import Force as HForce
 from mbuild.lib.recipes import Polymer as mbPolymer
 
@@ -27,13 +28,15 @@ class Molecule:
         if self.force_field:
             self._validate_force_field()
         self._molecules = []
+        self._cg_molecules = []
         self._generate()
-
 
 
     @property
     def molecules(self):
         """List of all instances of the molecule"""
+        if self._cg_molecules:
+            return self._cg_molecules
         return self._molecules
     
     @property
@@ -68,6 +71,11 @@ class Molecule:
     @property
     def improper_types(self):
         return self.improper_types["improper_types"]
+    
+    def coarse_grain(self, beads=None, mapping=None):
+        for comp in self.molecules:
+            cg_comp = CG_Compound(comp, beads=beads, mapping=mapping)
+            self._cg_molecules.append(cg_comp)
 
     def _load(self):
         if self.file and isinstance(self.file, str): # Loading from file takes precedent over SMILES 
