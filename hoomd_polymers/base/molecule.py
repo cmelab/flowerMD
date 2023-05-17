@@ -24,12 +24,13 @@ class Molecule:
         self.remove_hydrogens = remove_hydrogens
         self._mapping = None
         self._mb_molecule = self._load()
-        self.gmso_molecule, self.topology_information = self._get_topology_information()
-        if self.force_field:
-            self._validate_force_field()
         self._molecules = []
         self._cg_molecules = []
         self._generate()
+        self.gmso_molecule = self._convert_to_gmso(self._molecules[0])
+        if self.force_field:
+            self._validate_force_field()
+
 
 
     @property
@@ -93,8 +94,8 @@ class Molecule:
         for i in range(self.n_mols):
             self._molecules.append(self._mb_molecule)
 
-    def _convert_to_gmso(self):
-        topology = from_mbuild(self._mb_molecule)
+    def _convert_to_gmso(self, mb_molecule):
+        topology = from_mbuild(mb_molecule)
         topology.identify_connections()
         return topology
 
@@ -116,7 +117,6 @@ class Molecule:
         for bond in gmso_molecule.bonds:
             bond_connections = [bond.connection_members[0].atom_type or bond.connection_members[0].name,
                             bond.connection_members[1].atom_type or bond.connection_members[1].name]
-            bond_connections.sort()
             bond_types.add(tuple(bond_connections))
         return bond_types
 
@@ -126,7 +126,6 @@ class Molecule:
             angle_connections = [angle.connection_members[0].atom_type or angle.connection_members[0].name,
                                  angle.connection_members[1].atom_type or angle.connection_members[1].name,
                                  angle.connection_members[2].atom_type or angle.connection_members[2].name]
-            angle_connections.sort()
             angle_types.add(tuple(angle_connections))
         return angle_types
 
@@ -137,7 +136,6 @@ class Molecule:
                                     dihedral.connection_members[1].atom_type or dihedral.connection_members[1].name,
                                     dihedral.connection_members[2].atom_type or dihedral.connection_members[2].name,
                                     dihedral.connection_members[3].atom_type or dihedral.connection_members[3].name]
-            dihedral_connections.sort()
             dihedral_types.add(tuple(dihedral_connections))
         return dihedral_types
 
@@ -148,12 +146,10 @@ class Molecule:
                                     improper.connection_members[1].atom_type or improper.connection_members[1].name,
                                     improper.connection_members[2].atom_type or improper.connection_members[2].name,
                                     improper.connection_members[3].atom_type or improper.connection_members[3].name]
-            improper_connections.sort()
             improper_types.add(tuple(improper_connections))
         return improper_types
 
-    def _get_topology_information(self):
-        gmso_molecule = self._convert_to_gmso()
+    def _get_topology_information(self, gmso_molecule):
         topology_information = dict()
         particle_types, hydrogen_types = self._particle_information(gmso_molecule)
         topology_information["particle_types"] = particle_types
@@ -163,7 +159,7 @@ class Molecule:
         topology_information["angle_types"] = self._identify_angle_types(gmso_molecule)
         topology_information["dihedral_types"] = self._identify_dihedral_types(gmso_molecule)
         topology_information["improper_types"] = self._identify_improper_types(gmso_molecule)
-        return gmso_molecule, topology_information
+        return topology_information
 
     def _validate_force_field(self):
         self.ff_type = None
@@ -171,7 +167,9 @@ class Molecule:
             ff_xml_path, ff_type = find_xml_ff(self.force_field)
             self.ff_type = ff_type
             self.gmso_molecule = apply_xml_ff(ff_xml_path, self.gmso_molecule)
+            self.topology_information = self._get_topology_information(self.gmso_molecule)
         elif isinstance(self.force_field, List):
+            self.topology_information = self._get_topology_information(self.gmso_molecule)
             _validate_hoomd_ff(self.force_field, self.topology_information)
             self.ff_type = FF_Types.Hoomd
 
