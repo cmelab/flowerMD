@@ -4,6 +4,7 @@ channels:
 dependencies:
   - foyer
   - freud
+  - gmso >= 0.10.0
   - gsd
   - hoomd>3.7=*gpu*
   - mbuild
@@ -19,5 +20,4 @@ dependencies:
   - unyt
   - pip:
       - git+https://github.com/cmelab/cmeutils.git@master
-      - git+https://github.com/mosdef-hub/gmso.git@main
       - git+https://github.com/cmelab/grits.git@main
