@@ -103,9 +103,9 @@ class Molecule:
         particle_types = set()
         hydrogen_types = set()
         for site in gmso_molecule.sites:
-            particle_types.add(site.atom_type or site.name)
+            particle_types.add(site.atom_type.name or site.name)
             if site.element.atomic_number == 1:
-                hydrogen_types.add(site.atom_type or site.name)
+                hydrogen_types.add(site.atom_type.name or site.name)
         return particle_types, hydrogen_types
 
     def _identify_pairs(self, particle_types):
@@ -115,27 +115,27 @@ class Molecule:
     def _identify_bond_types(self, gmso_molecule):
         bond_types = set()
         for bond in gmso_molecule.bonds:
-            bond_connections = [bond.connection_members[0].atom_type or bond.connection_members[0].name,
-                            bond.connection_members[1].atom_type or bond.connection_members[1].name]
+            bond_connections = [bond.connection_members[0].atom_type.name or bond.connection_members[0].name,
+                            bond.connection_members[1].atom_type.name or bond.connection_members[1].name]
             bond_types.add(tuple(bond_connections))
         return bond_types
 
     def _identify_angle_types(self, gmso_molecule):
         angle_types = set()
         for angle in gmso_molecule.angles:
-            angle_connections = [angle.connection_members[0].atom_type or angle.connection_members[0].name,
-                                 angle.connection_members[1].atom_type or angle.connection_members[1].name,
-                                 angle.connection_members[2].atom_type or angle.connection_members[2].name]
+            angle_connections = [angle.connection_members[0].atom_type.name or angle.connection_members[0].name,
+                                 angle.connection_members[1].atom_type.name or angle.connection_members[1].name,
+                                 angle.connection_members[2].atom_type.name or angle.connection_members[2].name]
             angle_types.add(tuple(angle_connections))
         return angle_types
 
     def _identify_dihedral_types(self, gmso_molecule):
         dihedral_types = set()
         for dihedral in gmso_molecule.dihedrals:
-            dihedral_connections = [dihedral.connection_members[0].atom_type or dihedral.connection_members[0].name,
-                                    dihedral.connection_members[1].atom_type or dihedral.connection_members[1].name,
-                                    dihedral.connection_members[2].atom_type or dihedral.connection_members[2].name,
-                                    dihedral.connection_members[3].atom_type or dihedral.connection_members[3].name]
+            dihedral_connections = [dihedral.connection_members[0].atom_type.name or dihedral.connection_members[0].name,
+                                    dihedral.connection_members[1].atom_type.name or dihedral.connection_members[1].name,
+                                    dihedral.connection_members[2].atom_type.name or dihedral.connection_members[2].name,
+                                    dihedral.connection_members[3].atom_type.name or dihedral.connection_members[3].name]
             dihedral_types.add(tuple(dihedral_connections))
         return dihedral_types
 
