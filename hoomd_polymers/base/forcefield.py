@@ -6,6 +6,7 @@ from gmso.parameterization import apply
 from hoomd_polymers.base.base_types import FF_Types
 
 FF_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '../library/forcefields'))
+
 def ff_xml_directory():
     ff_xml_directory = dict()
     for (dirpath, dirnames, filenames) in os.walk(FF_DIR):

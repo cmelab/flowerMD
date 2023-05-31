@@ -174,8 +174,6 @@ class Molecule:
             self.ff_type = FF_Types.Hoomd
 
 
-
-
 class Polymer(Molecule):
     def __init__(
             self,
