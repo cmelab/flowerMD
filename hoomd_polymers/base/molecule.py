@@ -142,10 +142,10 @@ class Molecule:
     def _identify_improper_types(self, gmso_molecule):
         improper_types = set()
         for improper in gmso_molecule.impropers:
-            improper_connections = [improper.connection_members[0].atom_type or improper.connection_members[0].name,
-                                    improper.connection_members[1].atom_type or improper.connection_members[1].name,
-                                    improper.connection_members[2].atom_type or improper.connection_members[2].name,
-                                    improper.connection_members[3].atom_type or improper.connection_members[3].name]
+            improper_connections = [improper.connection_members[0].atom_type.name or improper.connection_members[0].name,
+                                    improper.connection_members[1].atom_type.name or improper.connection_members[1].name,
+                                    improper.connection_members[2].atom_type.name or improper.connection_members[2].name,
+                                    improper.connection_members[3].atom_type.name or improper.connection_members[3].name]
             improper_types.add(tuple(improper_connections))
         return improper_types
 
