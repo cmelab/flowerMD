@@ -472,6 +472,29 @@ class Simulation(hoomd.simulation.Simulation):
         self.run(n_steps)
         self.operations.updaters.remove(std_out_logger_printer)
 
+    def run_displacement_cap(self, n_steps, maximum_displacement=1e-3):
+        """ NVE based integrator that Puts a cap on the maximum displacement per time step.
+
+        Parameters:
+        -----------
+        n_steps : int, required
+            Number of steps to run during shrinking
+        maximum_displacement : maximum displacement per step (length)
+
+        """
+        self.set_integrator_method(
+                integrator_method=hoomd.md.methods.DisplacementCapped,
+                method_kwargs={"maximum_displacement": maximum_displacement}
+        )
+        std_out_logger = StdOutLogger(n_steps=n_steps, sim=self)
+        std_out_logger_printer = hoomd.update.CustomUpdater(
+                trigger=hoomd.trigger.Periodic(self._std_out_freq),
+                action=std_out_logger
+        )
+        self.operations.updaters.append(std_out_logger_printer)
+        self.run(n_steps)
+        self.operations.updaters.remove(std_out_logger_printer)
+
     def temperature_ramp(self, n_steps, kT_start, kT_final):
         return hoomd.variant.Ramp(
                 A=kT_start,
