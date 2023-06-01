@@ -179,12 +179,13 @@ class Polymer(Molecule):
             self,
             lengths,
             n_mols,
-            smiles,
-            file,
-            description,
-            bond_indices,
-            bond_length,
-            bond_orientation,
+            smiles=None,
+            file=None,
+            force_field=None,
+            description=None,
+            bond_indices=None,
+            bond_length=None,
+            bond_orientation=None,
             **kwargs
     ):
         self.lengths = check_return_iterable(lengths)
@@ -196,6 +197,7 @@ class Polymer(Molecule):
                 smiles=smiles,
                 file=file,
                 description=description,
+                force_field=force_field,
                 **kwargs
         )
 
@@ -304,6 +306,9 @@ class CoPolymer(Molecule):
         )
         chain.build(n=length, sequence=sequence)
         return chain
+    
+    def _load(self):
+        return None
 
     def _generate(self):
         for idx, length in enumerate(self.lengths):
