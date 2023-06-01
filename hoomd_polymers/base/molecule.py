@@ -167,6 +167,7 @@ class Molecule:
             ff_xml_path, ff_type = find_xml_ff(self.force_field)
             self.ff_type = ff_type
             self.gmso_molecule = apply_xml_ff(ff_xml_path, self.gmso_molecule)
+            # For the case of xml ff, topology information is obtained after applying ff.
             self.topology_information = self._get_topology_information(self.gmso_molecule)
         elif isinstance(self.force_field, List):
             self.topology_information = self._get_topology_information(self.gmso_molecule)
