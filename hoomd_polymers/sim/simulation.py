@@ -484,7 +484,8 @@ class Simulation(hoomd.simulation.Simulation):
         """
         self.set_integrator_method(
                 integrator_method=hoomd.md.methods.DisplacementCapped,
-                method_kwargs={"maximum_displacement": maximum_displacement}
+                method_kwargs={"filter": self.integrate_group,
+                               "maximum_displacement": maximum_displacement}
         )
         std_out_logger = StdOutLogger(n_steps=n_steps, sim=self)
         std_out_logger_printer = hoomd.update.CustomUpdater(
