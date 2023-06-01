@@ -77,6 +77,14 @@ class TestSimulate(BaseTest):
         sim.run_NVE(n_steps=500)
         assert isinstance(sim.method, hoomd.md.methods.NVE)
 
+    def test_displacement_cap(self, polyethylene_system):
+        sim = Simulation(
+                initial_state=polyethylene_system.hoomd_snapshot,
+                forcefield=polyethylene_system.hoomd_forcefield
+        )
+        sim.run_displacement_cap(n_steps=500, maximum_displacement=1e-4)
+        assert isinstance(sim.method, hoomd.md.methods.DisplacementCapped)
+
     def test_update_volume(self, polyethylene_system):
         sim = Simulation(
                 initial_state=polyethylene_system.hoomd_snapshot,
