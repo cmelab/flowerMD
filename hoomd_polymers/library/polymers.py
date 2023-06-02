@@ -87,7 +87,8 @@ class PEKK(CoPolymer):
             sequence=None,
             random_sequence=False,
             TI_ratio=0.50,
-            seed=24
+            seed=24,
+            **kwargs
     ):
         super(PEKK, self).__init__(
                 monomer_A=PEKK_meta,
@@ -97,7 +98,8 @@ class PEKK(CoPolymer):
                 sequence=sequence,
                 random_sequence=random_sequence,
                 AB_ratio=TI_ratio,
-                seed=seed
+                seed=seed,
+                **kwargs
         )
 
 

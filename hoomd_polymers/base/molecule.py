@@ -32,8 +32,6 @@ class Molecule:
         if self.force_field:
             self._validate_force_field()
 
-
-
     @property
     def molecules(self):
         """List of all instances of the molecule"""
@@ -260,6 +258,7 @@ class CoPolymer(Molecule):
             monomer_B,
             lengths,
             n_mols,
+            force_field=None,
             sequence=None,
             random_sequence=True,
             AB_ratio=0.50,
@@ -285,7 +284,8 @@ class CoPolymer(Molecule):
                 n_mols=n_mols,
                 smiles=self.smiles,
                 file=self.file,
-                description=self.description
+                description=self.description,
+                force_field=force_field
         )
     
     @property
