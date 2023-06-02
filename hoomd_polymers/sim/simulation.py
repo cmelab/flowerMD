@@ -474,7 +474,11 @@ class Simulation(hoomd.simulation.Simulation):
 
     def run_displacement_cap(self, n_steps, maximum_displacement=1e-3):
         """ NVE based integrator that Puts a cap on the maximum displacement per time step.
-
+        
+        DisplacementCapped method is mostly useful for initially relaxing a system with overlapping particles.
+        Putting a cap on the max particle displacement prevents Hoomd Particle Out of Box execption.
+        Once the system is relaxed, other run methods (NVE, NVT, etc) can be used.
+        
         Parameters:
         -----------
         n_steps : int, required
