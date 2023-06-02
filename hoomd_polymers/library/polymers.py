@@ -7,7 +7,7 @@ from mbuild.lib.recipes import Polymer as mbPolymer
 import numpy as np
 import hoomd_polymers
 from hoomd_polymers.library import MON_DIR
-from hoomd_polymers import Polymer
+from hoomd_polymers import Polymer, CoPolymer
 from hoomd_polymers.utils import check_return_iterable
 
 
@@ -77,6 +77,28 @@ class PPS(Polymer):
 class PEEK(Polymer):
     def __init__(self, length):
         super(PEEK, self).__init__()
+
+
+class PEKK(CoPolymer):
+    def __init__(
+            self,
+            lengths,
+            n_mols,
+            sequence=None,
+            random_sequence=False,
+            TI_ratio=0.50,
+            seed=24
+    ):
+        super(PEKK, self).__init__(
+                monomer_A=PEKK_meta,
+                monomer_B=PEKK_para,
+                lengths=lengths,
+                n_mols=n_mols,
+                sequence=sequence,
+                random_sequence=random_sequence,
+                AB_ratio=TI_ratio,
+                seed=seed
+        )
 
 
 class PEKK_para(Polymer):
