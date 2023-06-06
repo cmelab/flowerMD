@@ -64,9 +64,13 @@ def _validate_hoomd_ff(forcefields, topology_information, remove_hydrogens):
             dihedral_forces.append(force)
 
     for f in pair_forces:
+        params = list(map(list, f.params.keys()))
         for pair in topology_information["pair_types"]:
-            params = list(map(list, f.params.keys()))
-            if not (list(pair) in params or list(pair[::-1]) in params):
+            pair = list(pair)
+            if remove_hydrogens and any(p in topology_information["hydrogen_types"] for p in pair):
+                # ignore pair interactions that include hydrogen atoms
+                continue
+            if not (pair in params or pair[::-1] in params):
                 raise MissingPairPotentialError(pair=tuple(pair), potential_type=type(f))
 
 
