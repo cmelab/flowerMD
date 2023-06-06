@@ -11,7 +11,7 @@ from mbuild.lib.recipes import Polymer as mbPolymer
 
 from hoomd_polymers.utils.base_types import FF_Types
 from hoomd_polymers.utils import check_return_iterable
-from hoomd_polymers.utils.forcefield import find_xml_ff, apply_xml_ff, _validate_hoomd_ff
+from hoomd_polymers.utils.ff_utils import find_xml_ff, apply_xml_ff, _validate_hoomd_ff
 
 
 class Molecule:
@@ -107,7 +107,7 @@ class Molecule:
             particle_types.add(p_name)
             if site.element.atomic_number == 1:
                 hydrogen_types.add(p_name)
-        return particle_types, hydrogen_types
+        return list(particle_types), list(hydrogen_types)
 
     def _identify_pairs(self, particle_types):
         pairs = set(itertools.combinations_with_replacement(particle_types, 2))
