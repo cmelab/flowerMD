@@ -1,5 +1,5 @@
 import os
-
+import hoomd
 import forcefield_utilities as ffutils
 from gmso.parameterization import apply
 
@@ -42,6 +42,34 @@ def apply_xml_ff(ff_xml_path, gmso_mol):
     return gmso_mol
 
 
-def _validate_hoomd_ff(ff_list, topology_information):
+def _validate_hoomd_ff(forcefields, topology_information, remove_hydrogens):
     #TODO: Check if a force exsits for all bonded and non-bonded interaction types.
+    pair_forces = []
+    special_pairـforces = []
+    bond_forces = []
+    angle_forces = []
+    dihedral_forces = []
+
+    for force in forcefields:
+        if isinstance(force, hoomd.md.pair.Pair):
+            pair_forces.append(force)
+        elif isinstance(force, hoomd.md.special_pair.SpecialPair):
+            special_pairـforces.append(force)
+        elif isinstance(force, hoomd.md.bond.Bond):
+            bond_forces.append(force)
+        elif isinstance(force, hoomd.md.angle.Angle):
+            angle_forces.append(force)
+        elif isinstance(force, hoomd.md.dihedral.Dihedral):
+            dihedral_forces.append(force)
+
+    for pair in topology_information["pair_types"]:
+
+        for f in pair_forces:
+            try:
+                assert (pair[0], pair[1]) in f.params.keys() or (pair[1], pair[0]) in f.params.keys()
+            except AssertionError:
+
+
     return True
+
+
