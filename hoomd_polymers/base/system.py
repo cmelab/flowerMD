@@ -5,7 +5,7 @@ import unyt
 from gmso.external import from_mbuild, to_gsd_snapshot
 import warnings
 
-from hoomd_polymers.utils import scale_charges, check_return_iterable
+from hoomd_polymers.utils import scale_charges
 
 
 class System:
@@ -23,7 +23,6 @@ class System:
         to acheive a target density.
     """
     def __init__(self, molecules, density):
-        self.molecules = []
         self.density = density
         self.target_box = None
         self.system = None
@@ -110,7 +109,7 @@ class System:
             make_charge_neutral=False,
             r_cut=2.5
     ):
-        if len(self._molecules) == 1:
+        if len(self.molecules) == 1:
             use_residue_map = True
         else:
             use_residue_map = False
