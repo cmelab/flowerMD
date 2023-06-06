@@ -4,13 +4,14 @@ from typing import Union, Dict, List
 
 import mbuild as mb
 from gmso.external.convert_mbuild import from_mbuild
+from gmso.external import to_hoomd_forcefield
 from grits import CG_Compound
 from hoomd.md.force import Force as HForce
 from mbuild.lib.recipes import Polymer as mbPolymer
 
-from hoomd_polymers.base.base_types import FF_Types
+from hoomd_polymers.utils.base_types import FF_Types
 from hoomd_polymers.utils import check_return_iterable
-from .forcefield import find_xml_ff, apply_xml_ff, _validate_hoomd_ff
+from hoomd_polymers.utils.forcefield import find_xml_ff, apply_xml_ff, _validate_hoomd_ff
 
 
 class Molecule:
@@ -109,7 +110,7 @@ class Molecule:
         return particle_types, hydrogen_types
 
     def _identify_pairs(self, particle_types):
-        pairs = list(itertools.combinations_with_replacement(particle_types, 2))
+        pairs = set(itertools.combinations_with_replacement(particle_types, 2))
         return pairs
 
     def _identify_bond_types(self, gmso_molecule):
@@ -174,7 +175,7 @@ class Molecule:
             # Update topology information from typed gmso molecule after applying ff.
             self.topology_information = self._get_topology_information(self.gmso_molecule)
         elif isinstance(self.force_field, List):
-            _validate_hoomd_ff(self.force_field, self.topology_information)
+            _validate_hoomd_ff(self.force_field, self.topology_information, remove_hydrogens=self.remove_hydrogens)
             self.ff_type = FF_Types.Hoomd
 
 
