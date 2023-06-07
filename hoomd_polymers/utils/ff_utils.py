@@ -4,7 +4,7 @@ import forcefield_utilities as ffutils
 from gmso.parameterization import apply
 
 from .base_types import FF_Types
-from .exceptions import MissingPairPotentialError, MissingBondPotentialError
+from .exceptions import MissingPairPotentialError, MissingBondPotentialError, MissingAnglePotentialError
 
 FF_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '../library/forcefields'))
 
@@ -90,3 +90,15 @@ def _validate_hoomd_ff(forcefields, topology_information, remove_hydrogens):
                 continue
             if not (bond_dir1 in params or bond_dir2 in params):
                 raise MissingBondPotentialError(bond=bond_dir1, potential_type=type(f))
+
+
+    for f in angle_forces:
+        params = list(f.params.keys())
+        for angle in topology_information["angle_types"]:
+            angle_dir1 = '-'.join(angle)
+            angle_dir2 = '-'.join(angle[::-1])
+            if remove_hydrogens and _include_hydrogen(angle, topology_information["hydrogen_types"]):
+                # ignore bonds that include hydrogen atoms
+                continue
+            if not (angle_dir1 in params or angle_dir2 in params):
+                raise MissingAnglePotentialError(angle=angle_dir1, potential_type=type(f))
