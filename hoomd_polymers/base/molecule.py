@@ -142,7 +142,8 @@ class Molecule:
             p3_name = getattr(dihedral.connection_members[2].atom_type, "name", None) or dihedral.connection_members[2].name
             p4_name = getattr(dihedral.connection_members[3].atom_type, "name", None) or dihedral.connection_members[3].name
             dihedral_connections = [p1_name, p2_name, p3_name, p4_name]
-            dihedral_types.add(tuple(dihedral_connections))
+            if not tuple(dihedral_connections[::-1]) in dihedral_types:
+                dihedral_types.add(tuple(dihedral_connections))
         return dihedral_types
 
     def _identify_improper_types(self, gmso_molecule):
