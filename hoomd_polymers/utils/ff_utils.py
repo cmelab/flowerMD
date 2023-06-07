@@ -4,7 +4,7 @@ import forcefield_utilities as ffutils
 from gmso.parameterization import apply
 
 from .base_types import FF_Types
-from .exceptions import MissingPairPotentialError
+from .exceptions import MissingPairPotentialError, MissingBondPotentialError
 
 FF_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '../library/forcefields'))
 
@@ -74,4 +74,15 @@ def _validate_hoomd_ff(forcefields, topology_information, remove_hydrogens):
                 raise MissingPairPotentialError(pair=tuple(pair), potential_type=type(f))
 
 
+    #ToDo: Handle charges
 
+    for f in bond_forces:
+        params = list(f.params.keys())
+        for bond in topology_information["bond_types"]:
+            bond_dir1 = '-'.join(bond)
+            bond_dir2 = '-'.join(bond[::-1])
+            if remove_hydrogens and any(p in topology_information["hydrogen_types"] for p in bond):
+                # ignore bonds that include hydrogen atoms
+                continue
+            if not (bond_dir1 in params or bond_dir2 in params):
+                raise MissingBondPotentialError(bond=bond_dir1, potential_type=type(f))
