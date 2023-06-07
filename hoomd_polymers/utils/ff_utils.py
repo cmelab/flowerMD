@@ -5,7 +5,7 @@ from gmso.parameterization import apply
 
 from .base_types import FF_Types
 from .exceptions import MissingPairPotentialError, MissingBondPotentialError, MissingAnglePotentialError, \
-    MissingDihedralPotentialError
+    MissingDihedralPotentialError, MissingCoulombPotentialError
 
 FF_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '../library/forcefields'))
 
@@ -49,24 +49,23 @@ def _include_hydrogen(connections, hydrogen_types):
 
 
 def _validate_hoomd_ff(forcefields, topology_information, remove_hydrogens):
-    #TODO: Check if a force exsits for all bonded and non-bonded interaction types.
     pair_forces = []
-    special_pair_forces = []
     bond_forces = []
     angle_forces = []
     dihedral_forces = []
+    coulomb_forces = []
 
     for force in forcefields:
         if isinstance(force, hoomd.md.pair.Pair):
             pair_forces.append(force)
-        elif isinstance(force, hoomd.md.special_pair.SpecialPair):
-            special_pair_forces.append(force)
         elif isinstance(force, hoomd.md.bond.Bond):
             bond_forces.append(force)
         elif isinstance(force, hoomd.md.angle.Angle):
             angle_forces.append(force)
         elif isinstance(force, hoomd.md.dihedral.Dihedral):
             dihedral_forces.append(force)
+        elif isinstance(force, hoomd.md.long_range.pppm.Coulomb):
+            coulomb_forces.append(force)
 
     for f in pair_forces:
         params = list(map(list, f.params.keys()))
@@ -77,9 +76,6 @@ def _validate_hoomd_ff(forcefields, topology_information, remove_hydrogens):
                 continue
             if not (pair in params or pair[::-1] in params):
                 raise MissingPairPotentialError(connection=tuple(pair), potential_class=type(f))
-
-
-    #ToDo: Handle charges
 
     for f in bond_forces:
         params = list(f.params.keys())
@@ -113,3 +109,6 @@ def _validate_hoomd_ff(forcefields, topology_information, remove_hydrogens):
                 continue
             if not (dihedral_dir1 in params or dihedral_dir2 in params):
                 raise MissingDihedralPotentialError(connection=dihedral_dir1, potential_class=type(f))
+
+    if any(topology_information["particle_charge"]) and not coulomb_forces:
+        raise MissingCoulombPotentialError(potential_class=str(hoomd.md.long_range.pppm.Coulomb))
