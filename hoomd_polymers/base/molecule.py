@@ -119,7 +119,8 @@ class Molecule:
             p1_name = getattr(bond.connection_members[0].atom_type, "name", None) or bond.connection_members[0].name
             p2_name = getattr(bond.connection_members[1].atom_type, "name", None) or bond.connection_members[1].name
             bond_connections = [p1_name, p2_name]
-            bond_types.add(tuple(bond_connections))
+            if not tuple(bond_connections[::-1]) in bond_types:
+                bond_types.add(tuple(bond_connections))
         return bond_types
 
     def _identify_angle_types(self, gmso_molecule):
