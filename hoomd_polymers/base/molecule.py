@@ -130,7 +130,8 @@ class Molecule:
             p2_name = getattr(angle.connection_members[1].atom_type, "name", None) or angle.connection_members[1].name
             p3_name = getattr(angle.connection_members[2].atom_type, "name", None) or angle.connection_members[2].name
             angle_connections = [p1_name, p2_name, p3_name]
-            angle_types.add(tuple(angle_connections))
+            if not tuple(angle_connections[::-1]) in angle_types:
+                angle_types.add(tuple(angle_connections))
         return angle_types
 
     def _identify_dihedral_types(self, gmso_molecule):
