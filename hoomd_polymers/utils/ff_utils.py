@@ -4,7 +4,8 @@ import forcefield_utilities as ffutils
 from gmso.parameterization import apply
 
 from .base_types import FF_Types
-from .exceptions import MissingPairPotentialError, MissingBondPotentialError, MissingAnglePotentialError
+from .exceptions import MissingPairPotentialError, MissingBondPotentialError, MissingAnglePotentialError, \
+    MissingDihedralPotentialError
 
 FF_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '../library/forcefields'))
 
@@ -75,7 +76,7 @@ def _validate_hoomd_ff(forcefields, topology_information, remove_hydrogens):
                 # ignore pair interactions that include hydrogen atoms
                 continue
             if not (pair in params or pair[::-1] in params):
-                raise MissingPairPotentialError(pair=tuple(pair), potential_type=type(f))
+                raise MissingPairPotentialError(connection=tuple(pair), potential_class=type(f))
 
 
     #ToDo: Handle charges
@@ -89,8 +90,7 @@ def _validate_hoomd_ff(forcefields, topology_information, remove_hydrogens):
                 # ignore bonds that include hydrogen atoms
                 continue
             if not (bond_dir1 in params or bond_dir2 in params):
-                raise MissingBondPotentialError(bond=bond_dir1, potential_type=type(f))
-
+                raise MissingBondPotentialError(connection=bond_dir1, potential_class=type(f))
 
     for f in angle_forces:
         params = list(f.params.keys())
@@ -98,7 +98,18 @@ def _validate_hoomd_ff(forcefields, topology_information, remove_hydrogens):
             angle_dir1 = '-'.join(angle)
             angle_dir2 = '-'.join(angle[::-1])
             if remove_hydrogens and _include_hydrogen(angle, topology_information["hydrogen_types"]):
-                # ignore bonds that include hydrogen atoms
+                # ignore angles that include hydrogen atoms
                 continue
             if not (angle_dir1 in params or angle_dir2 in params):
-                raise MissingAnglePotentialError(angle=angle_dir1, potential_type=type(f))
+                raise MissingAnglePotentialError(connection=angle_dir1, potential_class=type(f))
+
+    for f in dihedral_forces:
+        params = list(f.params.keys())
+        for dihedral in topology_information["dihedral_types"]:
+            dihedral_dir1 = '-'.join(dihedral)
+            dihedral_dir2 = '-'.join(dihedral[::-1])
+            if remove_hydrogens and _include_hydrogen(dihedral, topology_information["hydrogen_types"]):
+                # ignore dihedrals that include hydrogen atoms
+                continue
+            if not (dihedral_dir1 in params or dihedral_dir2 in params):
+                raise MissingDihedralPotentialError(connection=dihedral_dir1, potential_class=type(f))
