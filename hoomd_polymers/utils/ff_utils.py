@@ -43,6 +43,10 @@ def apply_xml_ff(ff_xml_path, gmso_mol):
     return gmso_mol
 
 
+def _include_hydrogen(connections, hydrogen_types):
+    return any(p in hydrogen_types for p in connections)
+
+
 def _validate_hoomd_ff(forcefields, topology_information, remove_hydrogens):
     #TODO: Check if a force exsits for all bonded and non-bonded interaction types.
     pair_forces = []
@@ -67,7 +71,7 @@ def _validate_hoomd_ff(forcefields, topology_information, remove_hydrogens):
         params = list(map(list, f.params.keys()))
         for pair in topology_information["pair_types"]:
             pair = list(pair)
-            if remove_hydrogens and any(p in topology_information["hydrogen_types"] for p in pair):
+            if remove_hydrogens and _include_hydrogen(pair, topology_information["hydrogen_types"]):
                 # ignore pair interactions that include hydrogen atoms
                 continue
             if not (pair in params or pair[::-1] in params):
@@ -81,7 +85,7 @@ def _validate_hoomd_ff(forcefields, topology_information, remove_hydrogens):
         for bond in topology_information["bond_types"]:
             bond_dir1 = '-'.join(bond)
             bond_dir2 = '-'.join(bond[::-1])
-            if remove_hydrogens and any(p in topology_information["hydrogen_types"] for p in bond):
+            if remove_hydrogens and _include_hydrogen(bond, topology_information["hydrogen_types"]):
                 # ignore bonds that include hydrogen atoms
                 continue
             if not (bond_dir1 in params or bond_dir2 in params):
