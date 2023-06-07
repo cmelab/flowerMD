@@ -12,3 +12,9 @@ class MissingBondPotentialError(MissingPotentialError):
     def __init__(self, bond, potential_type):
         msg = f"Missing bond potential for {bond} bond in {potential_type}."
         super().__init__(msg)
+
+
+class MissingAnglePotentialError(MissingPotentialError):
+    def __init__(self, angle, potential_type):
+        msg = f"Missing angle potential for {angle} angle in {potential_type}."
+        super().__init__(msg)
