@@ -29,7 +29,7 @@ class Molecule:
         self._cg_molecules = []
         self._generate()
         self.gmso_molecule = self._convert_to_gmso(self._molecules[0])
-        self.topology_information = self._get_topology_information(self.gmso_molecule)
+        self._identify_topology_information(self.gmso_molecule)
         if self.force_field:
             self._validate_force_field()
 
@@ -50,29 +50,19 @@ class Molecule:
         self._mapping = mapping_array
 
     @property
-    def particle_types(self):
-        return self.topology_information["particle_types"]
+    def topology_information(self):
+        topology_information = dict()
+        topology_information["particle_types"] = self.particle_types
+        topology_information["particle_charge"] = self.particle_charge
+        topology_information["hydrogen_types"] = self.hydrogen_types
+        topology_information["particle_typeid"] = self.particle_typeid
+        topology_information["pair_types"] = self.pairs
+        topology_information["bond_types"] = self.bond_types
+        topology_information["angle_types"] = self.angle_types
+        topology_information["dihedral_types"] = self.dihedral_types
+        topology_information["improper_types"] = self.improper_types
+        return topology_information
 
-    @property
-    def pair_types(self):
-        return self.topology_information["pair_types"]
-
-    @property
-    def bond_types(self):
-        return self.topology_information["bond_types"]
-
-    @property
-    def angle_types(self):
-        return self.topology_information["angle_types"]
-
-    @property
-    def diherdal_types(self):
-        return self.topology_information["dihedral_types"]
-
-    @property
-    def improper_types(self):
-        return self.improper_types["improper_types"]
-    
     def coarse_grain(self, beads=None, mapping=None):
         for comp in self.molecules:
             cg_comp = CG_Compound(comp, beads=beads, mapping=mapping)
@@ -99,75 +89,71 @@ class Molecule:
         topology.identify_connections()
         return topology
 
-    def _particle_information(self, gmso_molecule):
-        particle_types = set()
-        hydrogen_types = set()
+    def _identify_particle_information(self, gmso_molecule):
+        self.particle_types = []
+        self.hydrogen_types = []
+        self.particle_typeid = []
+        self.particle_charge = []
         for site in gmso_molecule.sites:
             p_name = getattr(site.atom_type, "name", None) or site.name
-            particle_types.add(p_name)
-            if site.element.atomic_number == 1:
-                hydrogen_types.add(p_name)
-        return list(particle_types), list(hydrogen_types)
+            if p_name not in self.particle_types:
+                self.particle_types.append(p_name)
+            if site.element.atomic_number == 1 and p_name not in self.hydrogen_types:
+                self.particle_types.append(p_name)
+            self.particle_typeid.append(self.particle_types.index(p_name))
+            self.particle_charge.append(site.charge.to_value() if site.charge else 0)
 
     def _identify_pairs(self, particle_types):
-        pairs = set(itertools.combinations_with_replacement(particle_types, 2))
-        return pairs
-
+        self.pairs = set(itertools.combinations_with_replacement(particle_types, 2))
+        
     def _identify_bond_types(self, gmso_molecule):
-        bond_types = set()
+        self.bond_types = set()
         for bond in gmso_molecule.bonds:
             p1_name = getattr(bond.connection_members[0].atom_type, "name", None) or bond.connection_members[0].name
             p2_name = getattr(bond.connection_members[1].atom_type, "name", None) or bond.connection_members[1].name
             bond_connections = [p1_name, p2_name]
-            if not tuple(bond_connections[::-1]) in bond_types:
-                bond_types.add(tuple(bond_connections))
-        return bond_types
+            if not tuple(bond_connections[::-1]) in self.bond_types:
+                self.bond_types.add(tuple(bond_connections))
 
     def _identify_angle_types(self, gmso_molecule):
-        angle_types = set()
+        self.angle_types = set()
         for angle in gmso_molecule.angles:
             p1_name = getattr(angle.connection_members[0].atom_type, "name", None) or angle.connection_members[0].name
             p2_name = getattr(angle.connection_members[1].atom_type, "name", None) or angle.connection_members[1].name
             p3_name = getattr(angle.connection_members[2].atom_type, "name", None) or angle.connection_members[2].name
             angle_connections = [p1_name, p2_name, p3_name]
-            if not tuple(angle_connections[::-1]) in angle_types:
-                angle_types.add(tuple(angle_connections))
-        return angle_types
+            if not tuple(angle_connections[::-1]) in self.angle_types:
+                self.angle_types.add(tuple(angle_connections))
 
     def _identify_dihedral_types(self, gmso_molecule):
-        dihedral_types = set()
+        self.dihedral_types = set()
         for dihedral in gmso_molecule.dihedrals:
             p1_name = getattr(dihedral.connection_members[0].atom_type, "name", None) or dihedral.connection_members[0].name
             p2_name = getattr(dihedral.connection_members[1].atom_type, "name", None) or dihedral.connection_members[1].name
             p3_name = getattr(dihedral.connection_members[2].atom_type, "name", None) or dihedral.connection_members[2].name
             p4_name = getattr(dihedral.connection_members[3].atom_type, "name", None) or dihedral.connection_members[3].name
             dihedral_connections = [p1_name, p2_name, p3_name, p4_name]
-            if not tuple(dihedral_connections[::-1]) in dihedral_types:
-                dihedral_types.add(tuple(dihedral_connections))
-        return dihedral_types
+            if not tuple(dihedral_connections[::-1]) in self.dihedral_types:
+                self.dihedral_types.add(tuple(dihedral_connections))
 
     def _identify_improper_types(self, gmso_molecule):
-        improper_types = set()
+        self.improper_types = set()
         for improper in gmso_molecule.impropers:
             p1_name = getattr(improper.connection_members[0].atom_type, "name", None) or improper.connection_members[0].name
             p2_name = getattr(improper.connection_members[1].atom_type, "name", None) or improper.connection_members[1].name
             p3_name = getattr(improper.connection_members[2].atom_type, "name", None) or improper.connection_members[2].name
             p4_name = getattr(improper.connection_members[3].atom_type, "name", None) or improper.connection_members[3].name
             improper_connections = [p1_name, p2_name, p3_name, p4_name]
-            improper_types.add(tuple(improper_connections))
-        return improper_types
+            if not tuple(improper_connections[::-1]) in self.improper_types:
+                self.improper_types.add(tuple(improper_connections))
 
-    def _get_topology_information(self, gmso_molecule):
-        topology_information = dict()
-        particle_types, hydrogen_types = self._particle_information(gmso_molecule)
-        topology_information["particle_types"] = particle_types
-        topology_information["hydrogen_types"] = hydrogen_types
-        topology_information["pair_types"] = self._identify_pairs(particle_types)
-        topology_information["bond_types"] = self._identify_bond_types(gmso_molecule)
-        topology_information["angle_types"] = self._identify_angle_types(gmso_molecule)
-        topology_information["dihedral_types"] = self._identify_dihedral_types(gmso_molecule)
-        topology_information["improper_types"] = self._identify_improper_types(gmso_molecule)
-        return topology_information
+    def _identify_topology_information(self, gmso_molecule):
+        self._identify_particle_information(gmso_molecule)
+        self._identify_pairs(self.particle_types)
+        self._identify_bond_types(gmso_molecule)
+        self._identify_angle_types(gmso_molecule)
+        self._identify_dihedral_types(gmso_molecule)
+        self._identify_improper_types(gmso_molecule)
 
     def _validate_force_field(self):
         self.ff_type = None
@@ -176,10 +162,12 @@ class Molecule:
             self.ff_type = ff_type
             self.gmso_molecule = apply_xml_ff(ff_xml_path, self.gmso_molecule)
             # Update topology information from typed gmso molecule after applying ff.
-            self.topology_information = self._get_topology_information(self.gmso_molecule)
+            self._identify_topology_information(self.gmso_molecule)
         elif isinstance(self.force_field, List):
+            self.particle_charge = [1, 0, -2, 0]
             _validate_hoomd_ff(self.force_field, self.topology_information, remove_hydrogens=self.remove_hydrogens)
             self.ff_type = FF_Types.Hoomd
+
 
 
 class Polymer(Molecule):
