@@ -1,6 +1,7 @@
 import os
-import hoomd
+
 import forcefield_utilities as ffutils
+import hoomd
 from gmso.parameterization import apply
 
 from .base_types import FF_Types
@@ -8,6 +9,7 @@ from .exceptions import MissingPairPotentialError, MissingBondPotentialError, Mi
     MissingDihedralPotentialError, MissingCoulombPotentialError
 
 FF_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '../library/forcefields'))
+
 
 def ff_xml_directory():
     ff_xml_directory = dict()
