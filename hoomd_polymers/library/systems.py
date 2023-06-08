@@ -28,9 +28,8 @@ class Pack(System):
         super(Pack, self).__init__(molecules=molecules, density=density)
         self.packing_expand_factor = packing_expand_factor
         self.edge = edge
-        self._build()
 
-    def _build(self):
+    def build_system(self):
         self.set_target_box()
         self.system = mb.packing.fill_box(
                 compound=self.molecules,
@@ -71,9 +70,8 @@ class Lattice(System):
         self.y = y
         self.n = n
         self.basis_vector = basis_vector
-        self._build()
 
-    def _build(self):
+    def build_system(self):
         next_idx = 0
         self.system = mb.Compound()
         for i in range(self.n):
