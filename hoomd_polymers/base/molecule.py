@@ -4,13 +4,12 @@ from typing import Union, Dict, List
 
 import mbuild as mb
 from gmso.external.convert_mbuild import from_mbuild
-from gmso.external import to_hoomd_forcefield
 from grits import CG_Compound
 from hoomd.md.force import Force as HForce
 from mbuild.lib.recipes import Polymer as mbPolymer
 
-from hoomd_polymers.utils.base_types import FF_Types
 from hoomd_polymers.utils import check_return_iterable
+from hoomd_polymers.utils.base_types import FF_Types
 from hoomd_polymers.utils.ff_utils import find_xml_ff, apply_xml_ff, _validate_hoomd_ff
 
 
