@@ -1,4 +1,4 @@
-import mbuild as mb
+from abc import ABC, abstractmethod
 from mbuild.formats.hoomd_forcefield import create_hoomd_forcefield
 import numpy as np
 import unyt
@@ -6,9 +6,9 @@ from gmso.external import from_mbuild, to_gsd_snapshot
 import warnings
 
 from hoomd_polymers.utils import scale_charges
-
-
-class System:
+from typing import List, Union, Optional
+from hoomd_polymers import Molecule
+class System(ABC):
     """Base class from which other systems inherit.
 
     Parameters
@@ -22,17 +22,32 @@ class System:
         systems at low denisty and running a shrink simulaton
         to acheive a target density.
     """
-    def __init__(self, molecules, density):
+    def __init__(self, molecule: Union[List, Molecule], force_field: Optional[Union[List, str]], density: float):
         self.density = density
         self.target_box = None
-        self.system = None
         self.typed_system = None
         self._hoomd_objects = None
         self._reference_values = None
+        self.force_field = None
         self.molecules = []
+        if isinstance(molecule, List):
 
-        for mol_list in molecules:
-            self.molecules.extend(mol_list)
+            for mol_list in molecule:
+                self.molecules.extend(mol_list)
+        elif isinstance(molecule, Molecule):
+            self.molecules = molecule.molecules
+
+        if force_field:
+            self.force_field = force_field
+        elif isinstance(molecule, Molecule) and molecule.force_field:
+            self.force_field = molecule.force_field
+
+        self.system = self.build_system()
+
+    @abstractmethod
+    def build_system(self):
+        pass
+
 
     @property
     def n_molecules(self):
