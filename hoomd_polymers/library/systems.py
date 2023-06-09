@@ -29,7 +29,7 @@ class Pack(System):
         self.packing_expand_factor = packing_expand_factor
         self.edge = edge
 
-    def build_system(self):
+    def _build_system(self):
         self.set_target_box()
         self.system = mb.packing.fill_box(
                 compound=self.molecules,
@@ -71,7 +71,7 @@ class Lattice(System):
         self.n = n
         self.basis_vector = basis_vector
 
-    def build_system(self):
+    def _build_system(self):
         next_idx = 0
         self.system = mb.Compound()
         for i in range(self.n):

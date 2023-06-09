@@ -1,13 +1,18 @@
+import warnings
 from abc import ABC, abstractmethod
-from mbuild.formats.hoomd_forcefield import create_hoomd_forcefield
+from typing import List, Union, Optional
+
 import numpy as np
 import unyt
-from gmso.external import from_mbuild, to_gsd_snapshot
-import warnings
+from gmso.external import from_mbuild, to_gsd_snapshot, to_hoomd_forcefield
+from mbuild.formats.hoomd_forcefield import create_hoomd_forcefield
 
-from hoomd_polymers.utils import scale_charges
-from typing import List, Union, Optional
 from hoomd_polymers import Molecule
+from hoomd_polymers.utils import scale_charges
+from hoomd_polymers.utils.base_types import FF_Types
+from hoomd_polymers.utils.ff_utils import find_xml_ff, apply_xml_ff
+
+
 class System(ABC):
     """Base class from which other systems inherit.
 
@@ -22,32 +27,58 @@ class System(ABC):
         systems at low denisty and running a shrink simulaton
         to acheive a target density.
     """
-    def __init__(self, molecule: Union[List, Molecule], force_field: Optional[Union[List, str]], density: float):
+    def __init__(self, molecule: Union[List, Molecule], force_field: Optional[Union[List, str]], density: float,
+                 r_cut=2.5, auto_scale=False, base_units=None):
         self.density = density
+        self.r_cut = r_cut
+        self.auto_scale = auto_scale
+        self.base_units = base_units
         self.target_box = None
         self.typed_system = None
         self._hoomd_objects = None
         self._reference_values = None
         self.force_field = None
         self.molecules = []
-        if isinstance(molecule, List):
 
+        if isinstance(molecule, List):
             for mol_list in molecule:
                 self.molecules.extend(mol_list)
         elif isinstance(molecule, Molecule):
             self.molecules = molecule.molecules
+
+        self.system = self._build_system()
+        self.gmso_system = self._convert_to_gmso()
+        self._create_hoomd_snapshot()
 
         if force_field:
             self.force_field = force_field
         elif isinstance(molecule, Molecule) and molecule.force_field:
             self.force_field = molecule.force_field
 
-        self.system = self.build_system()
+        if force_field:
+            self._validate_force_field()
+
+
+
 
     @abstractmethod
-    def build_system(self):
+    def _build_system(self):
         pass
 
+    def _convert_to_gmso(self):
+        topology = from_mbuild(self.system)
+        topology.identify_connections()
+        return topology
+
+    def _validate_force_field(self):
+        self.ff_type = None
+        if isinstance(self.force_field, str):
+            ff_xml_path, ff_type = find_xml_ff(self.force_field)
+            self.ff_type = ff_type
+            self.typed_system = apply_xml_ff(ff_xml_path, self.gmso_system)
+        elif isinstance(self.force_field, List):
+            #TODO: Maybe validating hoomd forces here?
+            self.ff_type = FF_Types.Hoomd
 
     @property
     def n_molecules(self):
@@ -79,16 +110,21 @@ class System(ABC):
         else:
             return self._hoomd_objects[0]
 
-    @property
-    def hoomd_forcefield(self):
-        if not self._hoomd_objects:
-            raise ValueError(
-                    "The hoomd forcefield has not yet been created. "
-                    "Create a Hoomd snapshot and forcefield by applying "
-                    "a forcefield using System.apply_forcefield()."
-            )
-        else:
-            return self._hoomd_objects[1]
+    # @property
+    # def hoomd_forcefield(self):
+    #     if not self.hoomd_forcefield:
+    #         raise ValueError(
+    #                 "The hoomd forcefield has not yet been created. "
+    #                 "Create a Hoomd snapshot and forcefield by applying "
+    #                 "a forcefield using System.apply_forcefield()."
+    #         )
+    #     else:
+    #         return self.hoomd_forcefield
+    #
+    # @hoomd_forcefield.setter
+    # def hoomd_forcefield(self, value):
+    #     self._hoomd_forcefield = value
+
 
     @property
     def reference_distance(self):
@@ -102,15 +138,18 @@ class System(ABC):
     def reference_energy(self):
         return self._reference_values.energy * unyt.kcal / unyt.mol
     
-    def to_hoomd_snapshot(self, auto_scale=False, base_units=None):
-        topology = from_mbuild(self.system)
-        topology.identify_connections()
+    def _create_hoomd_snapshot(self):
         snap, refs = to_gsd_snapshot(
-                top=topology,
-                auto_scale=auto_scale,
-                base_units=base_units
+                top=self.gmso_system,
+                auto_scale=self.auto_scale,
+                base_units=self.base_units
         )
         return snap
+
+    def _create_hoomd_forcefield(self):
+        self.hoomd_forcefield = to_hoomd_forcefield(self.gmso_system, r_cut=self.r_cut, nlist_buffer=0.4,
+                                    pppm_kwargs={"resolution": (8, 8, 8), "order": 4}, base_units=None,
+                                    auto_scale=self.auto_scale)
 
     def to_gsd(self):
         pass
@@ -237,3 +276,5 @@ class System(ABC):
         # Convert from cm back to nm
         L *= 1e7
         return L
+
+

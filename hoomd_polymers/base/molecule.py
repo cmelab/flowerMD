@@ -8,13 +8,14 @@ from grits import CG_Compound
 from hoomd.md.force import Force as HForce
 from mbuild.lib.recipes import Polymer as mbPolymer
 
+from typing import Union
 from hoomd_polymers.utils import check_return_iterable
 from hoomd_polymers.utils.base_types import FF_Types
 from hoomd_polymers.utils.ff_utils import find_xml_ff, apply_xml_ff, _validate_hoomd_ff
 
 
 class Molecule:
-    def __init__(self, n_mols, force_field: Union[Dict, List[HForce], str]=None, smiles=None, file=None, description=None,
+    def __init__(self, n_mols, compound: Union[mb.Compound, str],force_field: Union[Dict, List[HForce], str]=None, smiles=None, file=None, description=None,
                  remove_hydrogens=False):
         self.n_mols = check_return_iterable(n_mols)
         self.force_field = force_field
@@ -31,6 +32,7 @@ class Molecule:
         self._identify_topology_information(self.gmso_molecule)
         if self.force_field:
             self._validate_force_field()
+
 
     @property
     def molecules(self):
