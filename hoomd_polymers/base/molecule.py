@@ -163,7 +163,6 @@ class Molecule:
             # Update topology information from typed gmso molecule after applying ff.
             self._identify_topology_information(self.gmso_molecule)
         elif isinstance(self.force_field, List):
-            self.particle_charge = [1, 0, -2, 0]
             _validate_hoomd_ff(self.force_field, self.topology_information, remove_hydrogens=self.remove_hydrogens)
             self.ff_type = FF_Types.Hoomd
 
