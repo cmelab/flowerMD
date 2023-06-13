@@ -40,6 +40,7 @@ class System(ABC):
         self.force_field = None
         self.molecules = []
 
+        #ToDo: create an instance of the Molecule class and validate forcefield
         if isinstance(molecule, List):
             for mol_list in molecule:
                 self.molecules.extend(mol_list)
@@ -50,17 +51,6 @@ class System(ABC):
         self.gmso_system = self._convert_to_gmso()
         self._create_hoomd_snapshot()
 
-        if force_field:
-            self.force_field = force_field
-        elif isinstance(molecule, Molecule) and molecule.force_field:
-            self.force_field = molecule.force_field
-
-        if force_field:
-            self._validate_force_field()
-
-
-
-
     @abstractmethod
     def _build_system(self):
         pass
@@ -69,16 +59,6 @@ class System(ABC):
         topology = from_mbuild(self.system)
         topology.identify_connections()
         return topology
-
-    def _validate_force_field(self):
-        self.ff_type = None
-        if isinstance(self.force_field, str):
-            ff_xml_path, ff_type = find_xml_ff(self.force_field)
-            self.ff_type = ff_type
-            self.typed_system = apply_xml_ff(ff_xml_path, self.gmso_system)
-        elif isinstance(self.force_field, List):
-            #TODO: Maybe validating hoomd forces here?
-            self.ff_type = FF_Types.Hoomd
 
     @property
     def n_molecules(self):
@@ -110,20 +90,20 @@ class System(ABC):
         else:
             return self._hoomd_objects[0]
 
-    # @property
-    # def hoomd_forcefield(self):
-    #     if not self.hoomd_forcefield:
-    #         raise ValueError(
-    #                 "The hoomd forcefield has not yet been created. "
-    #                 "Create a Hoomd snapshot and forcefield by applying "
-    #                 "a forcefield using System.apply_forcefield()."
-    #         )
-    #     else:
-    #         return self.hoomd_forcefield
-    #
-    # @hoomd_forcefield.setter
-    # def hoomd_forcefield(self, value):
-    #     self._hoomd_forcefield = value
+    @property
+    def hoomd_forcefield(self):
+        if not self.hoomd_forcefield:
+            raise ValueError(
+                    "The hoomd forcefield has not yet been created. "
+                    "Create a Hoomd snapshot and forcefield by applying "
+                    "a forcefield using System.apply_forcefield()."
+            )
+        else:
+            return self.hoomd_forcefield
+
+    @hoomd_forcefield.setter
+    def hoomd_forcefield(self, value):
+        self._hoomd_forcefield = value
 
 
     @property

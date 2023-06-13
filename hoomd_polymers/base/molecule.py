@@ -15,7 +15,7 @@ from hoomd_polymers.utils.ff_utils import find_xml_ff, apply_xml_ff, _validate_h
 
 
 class Molecule:
-    def __init__(self, n_mols, compound: Union[mb.Compound, str],force_field: Union[Dict, List[HForce], str]=None, smiles=None, file=None, description=None,
+    def __init__(self, n_mols, force_field: Union[Dict, List[HForce], str]=None, smiles=None, file=None, description=None,
                  remove_hydrogens=False):
         self.n_mols = check_return_iterable(n_mols)
         self.force_field = force_field
