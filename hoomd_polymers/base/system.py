@@ -11,7 +11,7 @@ from hoomd_polymers import Molecule
 from hoomd_polymers.utils import scale_charges
 from hoomd_polymers.utils.base_types import FF_Types
 from hoomd_polymers.utils.ff_utils import find_xml_ff, apply_xml_ff
-
+import mbuild as mb
 
 class System(ABC):
     """Base class from which other systems inherit.
@@ -27,7 +27,7 @@ class System(ABC):
         systems at low denisty and running a shrink simulaton
         to acheive a target density.
     """
-    def __init__(self, molecule: Union[List, Molecule], force_field: Optional[Union[List, str]], density: float,
+    def __init__(self, molecules: Union[List, Molecule], force_field: Optional[Union[List, str]], density: float,
                  r_cut=2.5, auto_scale=False, base_units=None):
         self.density = density
         self.r_cut = r_cut
@@ -41,11 +41,11 @@ class System(ABC):
         self.molecules = []
 
         #ToDo: create an instance of the Molecule class and validate forcefield
-        if isinstance(molecule, List):
-            for mol_list in molecule:
+        if isinstance(molecules, List):
+            for mol_list in molecules:
                 self.molecules.extend(mol_list)
-        elif isinstance(molecule, Molecule):
-            self.molecules = molecule.molecules
+        elif isinstance(molecules, Molecule):
+            self.molecules = molecules.molecules
 
         self.system = self._build_system()
         self.gmso_system = self._convert_to_gmso()
@@ -258,3 +258,87 @@ class System(ABC):
         return L
 
 
+class Pack(System):
+    """Uses PACKMOL via mbuild.packing.fill_box.
+    The box used for packing is expanded to allow PACKMOL to place all of the molecules.
+
+    Parameters
+    ----------
+    packing_expand_factor : int; optional, default 5
+
+    """
+    def __init__(
+            self,
+            molecules,
+            density,
+            packing_expand_factor=5,
+            edge=0.2
+    ):
+        super(Pack, self).__init__(molecules=molecules, density=density)
+        self.packing_expand_factor = packing_expand_factor
+        self.edge = edge
+
+    def _build_system(self):
+        self.set_target_box()
+        self.system = mb.packing.fill_box(
+                compound=self.molecules,
+                n_compounds=[1 for i in self.molecules],
+                box=list(self.target_box*self.packing_expand_factor),
+                overlap=0.2,
+                edge=self.edge
+        )
+
+
+class Lattice(System):
+    """Places the molecules in a lattice configuration.
+    Assumes two molecules per unit cell.
+
+    Parameters
+    ----------
+    x : float; required
+        The distance (nm) between lattice points in the x direction.
+    y : float; required
+        The distance (nm) between lattice points in the y direction.
+    n : int; required
+        The number of times to repeat the unit cell in x and y
+    lattice_vector : array-like
+        The vector between points in the unit cell
+    """
+    def __init__(
+            self,
+            molecules,
+            density,
+            x,
+            y,
+            n,
+            basis_vector=[0.5, 0.5, 0],
+            z_adjust=1.0,
+    ):
+        super(Lattice, self).__init__(molecules=molecules, density=density)
+        self.x = x
+        self.y = y
+        self.n = n
+        self.basis_vector = basis_vector
+
+    def _build_system(self):
+        next_idx = 0
+        self.system = mb.Compound()
+        for i in range(self.n):
+            layer = mb.Compound()
+            for j in range(self.n):
+                try:
+                    comp1 = self.molecules[next_idx]
+                    comp2 = self.molecules[next_idx + 1]
+                    comp2.translate(self.basis_vector)
+                    unit_cell = mb.Compound(subcompounds=[comp1, comp2])
+                    unit_cell.translate((0, self.y*j, 0))
+                    layer.add(unit_cell)
+                    next_idx += 2
+                except IndexError:
+                    pass
+            layer.translate((self.x*i, 0, 0))
+            self.system.add(layer)
+        bounding_box = self.system.get_boundingbox()
+        x_len = bounding_box.lengths[0]
+        y_len = bounding_box.lengths[1]
+        self.set_target_box(x_constraint=x_len, y_constraint=y_len)
