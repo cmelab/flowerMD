@@ -2,6 +2,7 @@ import warnings
 from abc import ABC, abstractmethod
 from typing import List, Union, Optional
 
+import mbuild as mb
 import numpy as np
 import unyt
 from gmso.external import from_mbuild, to_gsd_snapshot, to_hoomd_forcefield
@@ -9,9 +10,7 @@ from mbuild.formats.hoomd_forcefield import create_hoomd_forcefield
 
 from hoomd_polymers import Molecule
 from hoomd_polymers.utils import scale_charges
-from hoomd_polymers.utils.base_types import FF_Types
-from hoomd_polymers.utils.ff_utils import find_xml_ff, apply_xml_ff
-import mbuild as mb
+
 
 class System(ABC):
     """Base class from which other systems inherit.
@@ -256,6 +255,7 @@ class System(ABC):
         # Convert from cm back to nm
         L *= 1e7
         return L
+
 
 
 class Pack(System):
