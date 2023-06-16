@@ -15,13 +15,12 @@ from hoomd_polymers.utils.ff_utils import find_xml_ff, apply_xml_ff, _validate_h
 
 
 class Molecule:
-    def __init__(self, n_mols, force_field: Union[Dict, List[HForce], str]=None, smiles=None, file=None, description=None,
+    def __init__(self, n_mols, force_field: Union[Dict, List[HForce], str]=None, smiles=None, file=None,
                  remove_hydrogens=False):
         self.n_mols = check_return_iterable(n_mols)
         self.force_field = force_field
         self.smiles = smiles 
         self.file = file 
-        self.description = description
         self.remove_hydrogens = remove_hydrogens
         self._mapping = None
         self._mb_molecule = self._load()
@@ -178,7 +177,6 @@ class Polymer(Molecule):
             smiles=None,
             file=None,
             force_field=None,
-            description=None,
             bond_indices=None,
             bond_length=None,
             bond_orientation=None,
@@ -192,7 +190,6 @@ class Polymer(Molecule):
                 n_mols=n_mols,
                 smiles=smiles,
                 file=file,
-                description=description,
                 force_field=force_field,
                 **kwargs
         )
@@ -266,17 +263,13 @@ class CoPolymer(Molecule):
         self.seed = seed
         self._A_count = 0
         self._B_count = 0
-        self.smiles = {"A": self.monomer_A.smiles, "B": self.monomer_B.smiles}
-        self.description = {
-            "A": self.monomer_A.description, "B": self.monomer_B.description
-        }
-        self.file = {"A": self.monomer_A.file, "B": self.monomer_B.file}
+        self.smiles = [self.monomer_A.smiles, self.monomer_B.smiles]
+        self.file = [self.monomer_A.file, self.monomer_B.file]
         random.seed(self.seed)
         super(CoPolymer, self).__init__(
                 n_mols=n_mols,
                 smiles=self.smiles,
                 file=self.file,
-                description=self.description,
                 force_field=force_field
         )
     

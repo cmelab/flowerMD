@@ -21,7 +21,6 @@ class PolyEthylene(Polymer):
     """
     def __init__(self, lengths, n_mols, **kwargs):
         smiles = "CC"
-        description = "Poly(ethylene)"
         bond_indices = [2, 6]
         bond_length = 0.145
         bond_orientation = [None, None]
@@ -29,7 +28,6 @@ class PolyEthylene(Polymer):
                 lengths=lengths,
                 n_mols=n_mols,
                 smiles=smiles,
-                description=description,
                 bond_indices=bond_indices,
                 bond_length=bond_length,
                 bond_orientation=bond_orientation,
@@ -48,7 +46,6 @@ class PPS(Polymer):
     def __init__(self, lengths, n_mols, **kwargs):
         smiles = "c1ccc(S)cc1"
         file = None
-        description = "Poly(phenylene-sulfide)"
         bond_indices = [7, 10]
         bond_length = 0.176
         bond_orientation = [[0, 0, 1], [0, 0, -1]]
@@ -57,7 +54,6 @@ class PPS(Polymer):
                 n_mols=n_mols,
                 smiles=smiles,
                 file=file,
-                description=description,
                 bond_indices=bond_indices,
                 bond_length=bond_length,
                 bond_orientation=bond_orientation,
@@ -84,6 +80,7 @@ class PEKK(CoPolymer):
             self,
             lengths,
             n_mols,
+            force_field=None,
             sequence=None,
             random_sequence=False,
             TI_ratio=0.50,
@@ -95,6 +92,7 @@ class PEKK(CoPolymer):
                 monomer_B=PEKK_para,
                 lengths=lengths,
                 n_mols=n_mols,
+                force_field=force_field,
                 sequence=sequence,
                 random_sequence=random_sequence,
                 AB_ratio=TI_ratio,
@@ -116,9 +114,6 @@ class PEKK_para(Polymer):
     def __init__(self, lengths, n_mols):
         smiles = "c1ccc(Oc2ccc(C(=O)c3ccc(C(=O))cc3)cc2)cc1"
         file = os.path.join(MON_DIR, "pekk_para.mol2")
-        description = ("Poly(ether-ketone-ketone) with para bonding "
-                            "configuration between consecutive "
-                            "ketone linkage groups")
         bond_indices = [35, 36]
         bond_length = 0.148
         bond_orientation = [[0, 0, -1], [0, 0, 1]]
@@ -127,7 +122,6 @@ class PEKK_para(Polymer):
                 n_mols=n_mols,
                 smiles=smiles,
                 file=file,
-                description=description,
                 bond_indices=bond_indices,
                 bond_length=bond_length,
                 bond_orientation=bond_orientation
@@ -147,9 +141,6 @@ class PEKK_meta(Polymer):
     def __init__(self, lengths, n_mols):
         smiles = "c1cc(Oc2ccc(C(=O)c3cc(C(=O))ccc3)cc2)ccc1"
         file = os.path.join(MON_DIR, "pekk_meta.mol2")
-        description = ("Poly(ether-ketone-ketone) with meta bonding "
-                            "configuration between consectuvie "
-                            "ketone linkage groups")
         bond_indices = [35, 36]
         bond_length = 0.148
         bond_orientation = [[0, 0, -1], [0, 0, 1]]
@@ -158,7 +149,6 @@ class PEKK_meta(Polymer):
                 n_mols=n_mols,
                 smiles=smiles,
                 file=file,
-                description=description,
                 bond_indices=bond_indices,
                 bond_length=bond_length,
                 bond_orientation=bond_orientation
@@ -188,7 +178,6 @@ class LJChain:
             bond_lengths={"A-A": 1.0},
     ):
         super(LJChain, self).__init__()
-        self.description = "Simple bead-spring polymer"
         self.lengths = check_return_iterable(lengths)
         self.n_mols = check_return_iterable(n_mols)
         self.bead_sequence = bead_sequence

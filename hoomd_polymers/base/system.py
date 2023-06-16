@@ -8,7 +8,8 @@ import unyt
 from gmso.external import from_mbuild, to_gsd_snapshot, to_hoomd_forcefield
 from mbuild.formats.hoomd_forcefield import create_hoomd_forcefield
 
-from hoomd_polymers import Molecule
+#from hoomd_polymers import Molecule
+from hoomd_polymers.base.molecule import Molecule
 from hoomd_polymers.utils import scale_charges
 
 
@@ -69,10 +70,7 @@ class System(ABC):
 
     @property
     def mass(self):
-        if not self.system:
-            return sum(i.mass for i in self.molecules)
-        else:
-            return self.system.mass
+        return sum(i.mass for i in self.molecules)
 
     @property
     def box(self):
@@ -271,22 +269,26 @@ class Pack(System):
             self,
             molecules,
             density,
+            force_field=None,
             packing_expand_factor=5,
             edge=0.2
     ):
-        super(Pack, self).__init__(molecules=molecules, density=density)
+        super(Pack, self).__init__(
+                molecules=molecules, density=density, force_field=force_field
+        )
         self.packing_expand_factor = packing_expand_factor
         self.edge = edge
 
     def _build_system(self):
         self.set_target_box()
-        self.system = mb.packing.fill_box(
+        system = mb.packing.fill_box(
                 compound=self.molecules,
                 n_compounds=[1 for i in self.molecules],
                 box=list(self.target_box*self.packing_expand_factor),
                 overlap=0.2,
                 edge=self.edge
         )
+        return system
 
 
 class Lattice(System):
@@ -322,7 +324,7 @@ class Lattice(System):
 
     def _build_system(self):
         next_idx = 0
-        self.system = mb.Compound()
+        system = mb.Compound()
         for i in range(self.n):
             layer = mb.Compound()
             for j in range(self.n):
@@ -342,3 +344,4 @@ class Lattice(System):
         x_len = bounding_box.lengths[0]
         y_len = bounding_box.lengths[1]
         self.set_target_box(x_constraint=x_len, y_constraint=y_len)
+        return system
