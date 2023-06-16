@@ -42,8 +42,11 @@ class System(ABC):
 
         #ToDo: create an instance of the Molecule class and validate forcefield
         if isinstance(molecules, List):
-            for mol_list in molecules:
-                self.molecules.extend(mol_list)
+            for mol in molecules:
+                if isinstance(mol, Molecule):
+                    self.molecules.extend(mol.molecules)
+                else:
+                    self.molecules.extend(mol)
         elif isinstance(molecules, Molecule):
             self.molecules = molecules.molecules
 
@@ -273,11 +276,11 @@ class Pack(System):
             packing_expand_factor=5,
             edge=0.2
     ):
+        self.packing_expand_factor = packing_expand_factor
+        self.edge = edge
         super(Pack, self).__init__(
                 molecules=molecules, density=density, force_field=force_field
         )
-        self.packing_expand_factor = packing_expand_factor
-        self.edge = edge
 
     def _build_system(self):
         self.set_target_box()
@@ -316,11 +319,11 @@ class Lattice(System):
             basis_vector=[0.5, 0.5, 0],
             z_adjust=1.0,
     ):
-        super(Lattice, self).__init__(molecules=molecules, density=density)
         self.x = x
         self.y = y
         self.n = n
         self.basis_vector = basis_vector
+        super(Lattice, self).__init__(molecules=molecules, density=density)
 
     def _build_system(self):
         next_idx = 0
