@@ -11,6 +11,7 @@ from mbuild.formats.hoomd_forcefield import create_hoomd_forcefield
 #from hoomd_polymers import Molecule
 from hoomd_polymers.base.molecule import Molecule
 from hoomd_polymers.utils import scale_charges
+from hoomd_polymers.utils.ff_utils import find_xml_ff, apply_xml_ff, _validate_hoomd_ff
 
 
 class System(ABC):
@@ -27,17 +28,26 @@ class System(ABC):
         systems at low denisty and running a shrink simulaton
         to acheive a target density.
     """
-    def __init__(self, molecules: Union[List, Molecule], force_field: Optional[Union[List, str]], density: float,
-                 r_cut=2.5, auto_scale=False, base_units=None):
+    def __init__(
+            self,
+            molecules: Union[List, Molecule],
+            force_field: Optional[Union[List, str]],
+            density: float,
+            r_cut: float,
+            auto_scale=False,
+            base_units=None
+    ):
         self.density = density
         self.r_cut = r_cut
         self.auto_scale = auto_scale
         self.base_units = base_units
         self.target_box = None
         self.typed_system = None
-        self._hoomd_objects = None
-        self._reference_values = None
+        self._hoomd_snapshot = None
+        self._hoomd_forcefield = None
+        self._reference_values = dict() 
         self.force_field = None
+        self._mol_forcefields = set()
         self.molecules = []
 
         #ToDo: create an instance of the Molecule class and validate forcefield
@@ -45,14 +55,15 @@ class System(ABC):
             for mol in molecules:
                 if isinstance(mol, Molecule):
                     self.molecules.extend(mol.molecules)
+                    self._mol_forcefields.add(mol.force_field)
                 else:
                     self.molecules.extend(mol)
         elif isinstance(molecules, Molecule):
             self.molecules = molecules.molecules
+            self._mol_forcefields.add(mol.force_field)
 
         self.system = self._build_system()
         self.gmso_system = self._convert_to_gmso()
-        self._create_hoomd_snapshot()
 
     @abstractmethod
     def _build_system(self):
@@ -80,61 +91,66 @@ class System(ABC):
         return self.system.box
 
     @property
-    def hoomd_snapshot(self):
-        if not self._hoomd_objects:
-            raise ValueError(
-                    "The hoomd snapshot has not yet been created. "
-                    "Create a Hoomd snapshot and forcefield by applying "
-                    "a forcefield using System.apply_forcefield()."
-            )
-        else:
-            return self._hoomd_objects[0]
-
-    @property
-    def hoomd_forcefield(self):
-        if not self.hoomd_forcefield:
-            raise ValueError(
-                    "The hoomd forcefield has not yet been created. "
-                    "Create a Hoomd snapshot and forcefield by applying "
-                    "a forcefield using System.apply_forcefield()."
-            )
-        else:
-            return self.hoomd_forcefield
-
-    @hoomd_forcefield.setter
-    def hoomd_forcefield(self, value):
-        self._hoomd_forcefield = value
-
-
-    @property
-    def reference_distance(self):
-        return self._reference_values.distance * unyt.angstrom
+    def reference_length(self):
+        return self._reference_values.get("length", None)
 
     @property
     def reference_mass(self):
-        return self._reference_values.mass * unyt.amu
+        return self._reference_values.get("mass", None)
 
     @property
     def reference_energy(self):
-        return self._reference_values.energy * unyt.kcal / unyt.mol
+        return self._reference_values.get("energy", None)
+
+    @property
+    def hoomd_snapshot(self):
+        if not self._hoomd_snapshot:
+            self._hoomd_snapshot = self._create_hoomd_snapshot()
+        return self._hoomd_snapshot
     
+    @property
+    def hoomd_forcefield(self):
+        if not self._hoomd_forcefield:
+            self._hoomd_forcefield = self._create_hoomd_forcefield()
+        return self._hoomd_forcefield
+
+    def _create_hoomd_forcefield(self):
+        force_list = []
+        ff, refs = to_hoomd_forcefield(
+                top=self.gmso_system,
+                r_cut=self.r_cut,
+                base_units=self._reference_values
+        )
+        for force in ff:
+            force_list.extend(ff[force])
+        return force_list
+
     def _create_hoomd_snapshot(self):
         snap, refs = to_gsd_snapshot(
                 top=self.gmso_system,
                 auto_scale=self.auto_scale,
-                base_units=self.base_units
+                base_units=self._reference_values
         )
         return snap
-
-    def _create_hoomd_forcefield(self):
-        self.hoomd_forcefield = to_hoomd_forcefield(self.gmso_system, r_cut=self.r_cut, nlist_buffer=0.4,
-                                    pppm_kwargs={"resolution": (8, 8, 8), "order": 4}, base_units=None,
-                                    auto_scale=self.auto_scale)
-
+    
+    #TODO: Write a quick GSD writer using hoomd_snapshot property
     def to_gsd(self):
         pass
 
-    def apply_forcefield(
+    #TODO: Change this to a hidden function; add conditional based on ff types 
+    def apply_forcefield(self):
+        ff_xml_path, ff_type = find_xml_ff(tuple(self._mol_forcefields)[0])
+        self.gmso_system = apply_xml_ff(ff_xml_path, self.gmso_system)
+        if self.auto_scale:
+            epsilons = [s.atom_type.parameters["epsilon"] for s in self.gmso_system.sites]
+            sigmas = [s.atom_type.parameters["sigma"] for s in self.gmso_system.sites]
+            masses = [s.mass for s in self.gmso_system.sites]
+            self._reference_values["energy"] = np.max(epsilons) * epsilons[0].unit_array
+            self._reference_values["length"] = np.max(sigmas) * sigmas[0].unit_array
+            self._reference_values["mass"] = np.max(masses) * masses[0].unit_array.to("amu")
+
+    #TODO: Remove this function
+    def _apply_forcefield(
             self,
             forcefield,
             remove_hydrogens=False,
@@ -270,16 +286,24 @@ class Pack(System):
     """
     def __init__(
             self,
-            molecules,
-            density,
-            force_field=None,
+            molecules: Union[List, Molecule],
+            force_field: Optional[Union[List, str]],
+            density: float,
+            r_cut: float,
+            auto_scale=False,
+            base_units=None,
             packing_expand_factor=5,
-            edge=0.2
+            edge=0.2,
     ):
         self.packing_expand_factor = packing_expand_factor
         self.edge = edge
         super(Pack, self).__init__(
-                molecules=molecules, density=density, force_field=force_field
+                molecules=molecules,
+                density=density,
+                force_field=force_field,
+                r_cut=r_cut,
+                auto_scale=auto_scale,
+                base_units=base_units
         )
 
     def _build_system(self):
