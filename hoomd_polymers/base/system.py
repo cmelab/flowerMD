@@ -54,7 +54,7 @@ class System(ABC):
         self.all_molecules = []
 
         self.n_mol_types = 1
-        for i, mol_item in enumerate(self._molecules):
+        for mol_item in self._molecules:
             if isinstance(mol_item, Molecule):
                 mol_item.assign_mol_name(str(self.n_mol_types))
                 self.n_mol_types += 1
@@ -63,7 +63,7 @@ class System(ABC):
                     if mol_item.ff_type == FF_Types.Hoomd:
                         self._hoomd_forcefield.extend(mol_item.force_field)
                     else:
-                        self._mol_forcefields_dict[str(i)] = mol_item.force_field
+                        self._mol_forcefields_dict[str(self.n_mol_types)] = mol_item.force_field
             elif isinstance(mol_item, mb.Compound):
                 mol_item.name = str(self.n_mol_types)
                 self.all_molecules.append(mol_item)
@@ -76,10 +76,6 @@ class System(ABC):
                         raise MoleculeLoadError(msg=f"Unsupported compound type {type(sub_mol)}. "
                                                     f"Supported compound types are: {str(mb.Compound)}")
                 self.n_mol_types += 1
-
-        
-
-
 
 
 
