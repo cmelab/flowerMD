@@ -69,11 +69,6 @@ class System(ABC):
     def _build_system(self):
         pass
 
-    def _convert_to_gmso(self):
-        topology = from_mbuild(self.system)
-        topology.identify_connections()
-        return topology
-
     @property
     def n_molecules(self):
         return len(self.molecules)
@@ -84,7 +79,7 @@ class System(ABC):
 
     @property
     def mass(self):
-        return sum(i.mass for i in self.molecules)
+        return sum(mol.mass for mol in self.molecules)
 
     @property
     def box(self):
@@ -103,6 +98,26 @@ class System(ABC):
         return self._reference_values.get("energy", None)
 
     @property
+    def reference_values(self):
+        return self._reference_values
+
+    @reference_length.setter
+    def reference_length(self, length):
+        self._reference_values["length"] = length
+
+    @reference_energy.setter
+    def reference_length(self, energy):
+        self._reference_values["energy"] = energy 
+
+    @reference_mass.setter
+    def reference_length(self, mass):
+        self._reference_values["mass"] = mass 
+
+    @reference_values.setter
+    def reference_values(self, ref_value_dict):
+        self._reference_values = ref_value_dict
+
+    @property
     def hoomd_snapshot(self):
         if not self._hoomd_snapshot:
             self._hoomd_snapshot = self._create_hoomd_snapshot()
@@ -113,41 +128,6 @@ class System(ABC):
         if not self._hoomd_forcefield:
             self._hoomd_forcefield = self._create_hoomd_forcefield()
         return self._hoomd_forcefield
-
-    def _create_hoomd_forcefield(self):
-        force_list = []
-        ff, refs = to_hoomd_forcefield(
-                top=self.gmso_system,
-                r_cut=self.r_cut,
-                base_units=self._reference_values
-        )
-        for force in ff:
-            force_list.extend(ff[force])
-        return force_list
-
-    def _create_hoomd_snapshot(self):
-        snap, refs = to_gsd_snapshot(
-                top=self.gmso_system,
-                auto_scale=self.auto_scale,
-                base_units=self._reference_values
-        )
-        return snap
-    
-    #TODO: Write a quick GSD writer using hoomd_snapshot property
-    def to_gsd(self):
-        pass
-
-    #TODO: Change this to a hidden function; add conditional based on ff types 
-    def apply_forcefield(self):
-        ff_xml_path, ff_type = find_xml_ff(tuple(self._mol_forcefields)[0])
-        self.gmso_system = apply_xml_ff(ff_xml_path, self.gmso_system)
-        if self.auto_scale:
-            epsilons = [s.atom_type.parameters["epsilon"] for s in self.gmso_system.sites]
-            sigmas = [s.atom_type.parameters["sigma"] for s in self.gmso_system.sites]
-            masses = [s.mass for s in self.gmso_system.sites]
-            self._reference_values["energy"] = np.max(epsilons) * epsilons[0].unit_array
-            self._reference_values["length"] = np.max(sigmas) * sigmas[0].unit_array
-            self._reference_values["mass"] = np.max(masses) * masses[0].unit_array.to("amu")
 
     def remove_hydrogens(self):
         """Call this method to remove hydrogen atoms from the system.
@@ -176,6 +156,52 @@ class System(ABC):
             self._hoomd_snapshot = self._create_hoomd_snapshot()
         if self._hoomd_forcefield:
             self._hoomd_forcefield = self._create_hoomd_forcefield()
+
+    def remove_charges(self):
+        pass
+
+    def scale_charges(self):
+        pass
+
+    def to_gsd(self, file_name):
+        with gsd.hoomd.open(file_name, "wb") as traj:
+            traj.append(self.hoomd_snapshot)
+
+    def _convert_to_gmso(self):
+        topology = from_mbuild(self.system)
+        topology.identify_connections()
+        return topology
+
+    def _create_hoomd_forcefield(self):
+        force_list = []
+        ff, refs = to_hoomd_forcefield(
+                top=self.gmso_system,
+                r_cut=self.r_cut,
+                base_units=self._reference_values
+        )
+        for force in ff:
+            force_list.extend(ff[force])
+        return force_list
+
+    def _create_hoomd_snapshot(self):
+        snap, refs = to_gsd_snapshot(
+                top=self.gmso_system,
+                auto_scale=self.auto_scale,
+                base_units=self._reference_values
+        )
+        return snap
+    
+    #TODO: Change this to a hidden function; add conditional based on ff types 
+    def apply_forcefield(self):
+        ff_xml_path, ff_type = find_xml_ff(tuple(self._mol_forcefields)[0])
+        self.gmso_system = apply_xml_ff(ff_xml_path, self.gmso_system)
+        if self.auto_scale:
+            epsilons = [s.atom_type.parameters["epsilon"] for s in self.gmso_system.sites]
+            sigmas = [s.atom_type.parameters["sigma"] for s in self.gmso_system.sites]
+            masses = [s.mass for s in self.gmso_system.sites]
+            self._reference_values["energy"] = np.max(epsilons) * epsilons[0].unit_array
+            self._reference_values["length"] = np.max(sigmas) * sigmas[0].unit_array
+            self._reference_values["mass"] = np.max(masses) * masses[0].unit_array.to("amu")
 
     def _apply_forcefield(
             self,
