@@ -5,7 +5,7 @@ from typing import List, Union, Optional
 import mbuild as mb
 import numpy as np
 import unyt
-from gmso.external import from_mbuild, to_gsd_snapshot, to_hoomd_forcefield
+from gmso.external import from_mbuild, to_parmed, from_parmed, to_gsd_snapshot, to_hoomd_forcefield
 from mbuild.formats.hoomd_forcefield import create_hoomd_forcefield
 
 #from hoomd_polymers import Molecule
@@ -149,7 +149,34 @@ class System(ABC):
             self._reference_values["length"] = np.max(sigmas) * sigmas[0].unit_array
             self._reference_values["mass"] = np.max(masses) * masses[0].unit_array.to("amu")
 
-    #TODO: Remove this function
+    def remove_hydrogens(self):
+        """Call this method to remove hydrogen atoms from the system.
+        The masses and charges of the hydrogens are absorbed into 
+        the heavy atoms they were bonded to.
+        """
+        parmed_struc = to_parmed(self.gmso_system)
+        # Try by element first:
+        hydrogens = [a for a in parmed_struc.atoms if a.element == 1]
+        if len(hydrogens) == 0: # Try by mass
+            hydrogens = [a for a in parmed_struc.atoms if a.mass == 1.008]
+            if len(hydrogens) == 0:
+                warnings.warn(
+                        "Hydrogen atoms could not be found by element or mass"
+                )
+        for h in hydrogens:
+            h.atomic_number = 1
+            bonded_atom = h.bond_partners[0]
+            bonded_atom.mass += h.mass
+            bonded_atom.charge += h.charge
+        parmed_struc.strip(
+                [a.atomic_number == 1 for a in parmed_struc.atoms]
+        )
+        self.gmso_system = from_parmed(parmed_struc)
+        if self._hoomd_snapshot:
+            self._hoomd_snapshot = self._create_hoomd_snapshot()
+        if self._hoomd_forcefield:
+            self._hoomd_forcefield = self._create_hoomd_forcefield()
+
     def _apply_forcefield(
             self,
             forcefield,
