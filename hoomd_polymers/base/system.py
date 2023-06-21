@@ -9,8 +9,10 @@ from gmso.external import from_mbuild, to_parmed, from_parmed, to_gsd_snapshot, 
 from mbuild.formats.hoomd_forcefield import create_hoomd_forcefield
 
 from hoomd_polymers.base.molecule import Molecule
-from hoomd_polymers.utils import scale_charges
+from hoomd_polymers.utils import scale_charges, check_return_iterable
 from hoomd_polymers.utils.ff_utils import find_xml_ff, apply_xml_ff
+from hoomd_polymers.utils.base_types import FF_Types
+from hoomd_polymers.utils.exceptions import MoleculeLoadError
 
 class System(ABC):
     """Base class from which other systems inherit.
@@ -28,13 +30,17 @@ class System(ABC):
     """
     def __init__(
             self,
-            molecules: Union[List, Molecule],
-            force_field: Optional[Union[List, str]],
+            molecules,
             density: float,
             r_cut: float,
+            force_field=None,
             auto_scale=False,
             base_units=None
     ):
+        self._molecules = check_return_iterable(molecules)
+        self._force_field = None
+        if force_field:
+            self._force_field = check_return_iterable(force_field)
         self.density = density
         self.r_cut = r_cut
         self.auto_scale = auto_scale
@@ -42,13 +48,41 @@ class System(ABC):
         self.target_box = None
         self.typed_system = None
         self._hoomd_snapshot = None
-        self._hoomd_forcefield = None
-        self._reference_values = dict() 
-        self.force_field = None
-        self._mol_forcefields = set()
-        self.molecules = []
+        self._hoomd_forcefield = []
+        self._reference_values = dict()
+        self._mol_forcefields_dict = dict()
+        self.all_molecules = []
 
-        #ToDo: Handle molecules and ff
+        self.n_mol_types = 1
+        for i, mol_item in enumerate(self._molecules):
+            if isinstance(mol_item, Molecule):
+                mol_item.assign_mol_name(str(self.n_mol_types))
+                self.n_mol_types += 1
+                self.all_molecules.extend(mol_item.molecules)
+                if mol_item.force_field:
+                    if mol_item.ff_type == FF_Types.Hoomd:
+                        self._hoomd_forcefield.extend(mol_item.force_field)
+                    else:
+                        self._mol_forcefields_dict[str(i)] = mol_item.force_field
+            elif isinstance(mol_item, mb.Compound):
+                mol_item.name = str(self.n_mol_types)
+                self.all_molecules.append(mol_item)
+            elif isinstance(mol_item, List):
+                for sub_mol in mol_item:
+                    if isinstance(sub_mol, mb.Compound):
+                        sub_mol.name = str(self.n_mol_types)
+                        self.all_molecules.append(sub_mol)
+                    else:
+                        raise MoleculeLoadError(msg=f"Unsupported compound type {type(sub_mol)}. "
+                                                    f"Supported compound types are: {str(mb.Compound)}")
+                self.n_mol_types += 1
+
+        
+
+
+
+
+
 
     @abstractmethod
     def _build_system(self):
@@ -56,15 +90,15 @@ class System(ABC):
 
     @property
     def n_molecules(self):
-        return len(self.molecules)
+        return len(self.all_molecules)
 
     @property
     def n_particles(self):
-        return sum([mol.n_particles for mol in self.molecules])
+        return sum([mol.n_particles for mol in self.all_molecules])
 
     @property
     def mass(self):
-        return sum(mol.mass for mol in self.molecules)
+        return sum(mol.mass for mol in self.all_molecules)
 
     @property
     def box(self):
@@ -136,11 +170,12 @@ class System(ABC):
         parmed_struc.strip(
                 [a.atomic_number == 1 for a in parmed_struc.atoms]
         )
-        self.gmso_system = from_parmed(parmed_struc)
-        if self._hoomd_snapshot:
-            self._hoomd_snapshot = self._create_hoomd_snapshot()
-        if self._hoomd_forcefield:
-            self._hoomd_forcefield = self._create_hoomd_forcefield()
+        if len(hydrogens) > 0:
+            self.gmso_system = from_parmed(parmed_struc)
+            if self._hoomd_snapshot:
+                self._hoomd_snapshot = self._create_hoomd_snapshot()
+            if self._hoomd_forcefield and self.gmso_system.is_typed():
+                self._hoomd_forcefield = self._create_hoomd_forcefield()
 
     def remove_charges(self):
         pass
@@ -197,7 +232,7 @@ class System(ABC):
             make_charge_neutral=False,
             r_cut=2.5
     ):
-        if len(self.molecules) == 1:
+        if len(self.all_molecules) == 1:
             use_residue_map = True
         else:
             use_residue_map = False
@@ -347,8 +382,8 @@ class Pack(System):
     def _build_system(self):
         self.set_target_box()
         system = mb.packing.fill_box(
-                compound=self.molecules,
-                n_compounds=[1 for i in self.molecules],
+                compound=self.all_molecules,
+                n_compounds=[1 for i in self.all_molecules],
                 box=list(self.target_box*self.packing_expand_factor),
                 overlap=0.2,
                 edge=self.edge
@@ -394,8 +429,8 @@ class Lattice(System):
             layer = mb.Compound()
             for j in range(self.n):
                 try:
-                    comp1 = self.molecules[next_idx]
-                    comp2 = self.molecules[next_idx + 1]
+                    comp1 = self.all_molecules[next_idx]
+                    comp2 = self.all_molecules[next_idx + 1]
                     comp2.translate(self.basis_vector)
                     unit_cell = mb.Compound(subcompounds=[comp1, comp2])
                     unit_cell.translate((0, self.y*j, 0))
