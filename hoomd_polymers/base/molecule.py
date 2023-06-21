@@ -16,8 +16,7 @@ from hoomd_polymers.utils.ff_utils import find_xml_ff, apply_xml_ff, _validate_h
 from hoomd_polymers.utils.exceptions import MoleculeLoadError
 
 class Molecule:
-    def __init__(self, num_mols, force_field: Union[Dict, List[HForce], str] = None, smiles=None, file=None,
-                 compound=None):
+    def __init__(self, num_mols, force_field=None, smiles=None, file=None, compound=None):
         self.n_mols = check_return_iterable(num_mols)
         self.force_field = force_field
         self.smiles = smiles
