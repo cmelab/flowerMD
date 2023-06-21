@@ -1,4 +1,5 @@
 import itertools
+import os.path
 import random
 from typing import Union, Dict, List
 
@@ -12,16 +13,16 @@ from typing import Union
 from hoomd_polymers.utils import check_return_iterable
 from hoomd_polymers.utils.base_types import FF_Types
 from hoomd_polymers.utils.ff_utils import find_xml_ff, apply_xml_ff, _validate_hoomd_ff
-
+from hoomd_polymers.utils.exceptions import MoleculeLoadError
 
 class Molecule:
-    def __init__(self, n_mols, force_field: Union[Dict, List[HForce], str]=None, smiles=None, file=None,
-                 remove_hydrogens=False):
-        self.n_mols = check_return_iterable(n_mols)
+    def __init__(self, num_mols, force_field: Union[Dict, List[HForce], str] = None, smiles=None, file=None,
+                 compound=None):
+        self.n_mols = check_return_iterable(num_mols)
         self.force_field = force_field
-        self.smiles = smiles 
-        self.file = file 
-        self.remove_hydrogens = remove_hydrogens
+        self.smiles = smiles
+        self.file = file
+        self.compound = compound
         self._mapping = None
         self._mb_molecule = self._load()
         self._molecules = []
@@ -69,16 +70,23 @@ class Molecule:
             self._cg_molecules.append(cg_comp)
 
     def _load(self):
-        if self.file and isinstance(self.file, str): # Loading from file takes precedent over SMILES 
-            return mb.load(self.file)
-        elif self.smiles and isinstance(self.smiles, str):
-            return mb.load(self.smiles, smiles=True)
-        else:
-            raise ValueError(
-                    "Unable to load from ",
-                    f"File: {self.file}",
-                    f"SMILES: {self.smiles}"
-            )
+        if self.compound:
+            if isinstance(self.compound, mb.Compound):
+                return self.compound
+            else:
+                raise MoleculeLoadError(msg=f"Unsupported compound type {type(self.compound)}. "
+                                            f"Supported compound types are: {str(mb.Compound)}")
+        if self.file:
+            if isinstance(self.file, str) and os.path.isfile(self.file):
+                return mb.load(self.file)
+            else:
+                raise MoleculeLoadError(msg=f"Unable to load the molecule from file {self.file}.")
+
+        if self.smiles:
+            if isinstance(self.smiles, str):
+                return mb.load(self.smiles, smiles=True)
+            else:
+                raise MoleculeLoadError(msg=f"Unable to load the molecule from smiles {self.smiles}.")
 
     def _generate(self):
         for i in range(self.n_mols):
@@ -168,12 +176,11 @@ class Molecule:
             self.ff_type = FF_Types.Hoomd
 
 
-
 class Polymer(Molecule):
     def __init__(
             self,
             lengths,
-            n_mols,
+            num_mols,
             smiles=None,
             file=None,
             force_field=None,
@@ -187,7 +194,7 @@ class Polymer(Molecule):
         self.bond_length = bond_length
         self.bond_orientation = bond_orientation
         super(Polymer, self).__init__(
-                n_mols=n_mols,
+                num_mols=num_mols,
                 smiles=smiles,
                 file=file,
                 force_field=force_field,
@@ -246,7 +253,7 @@ class CoPolymer(Molecule):
             monomer_A,
             monomer_B,
             lengths,
-            n_mols,
+            num_mols,
             force_field=None,
             sequence=None,
             random_sequence=True,
@@ -256,7 +263,7 @@ class CoPolymer(Molecule):
         self.lengths = lengths
         self.monomer_A = monomer_A(lengths=[1], n_mols=[1])
         self.monomer_B = monomer_B(lengths=[1], n_mols=[1])
-        self.n_mols = n_mols
+        self.num_mols = num_mols
         self.sequence = sequence
         self.random_sequence = random_sequence
         self.AB_ratio = AB_ratio
@@ -267,7 +274,7 @@ class CoPolymer(Molecule):
         self.file = [self.monomer_A.file, self.monomer_B.file]
         random.seed(self.seed)
         super(CoPolymer, self).__init__(
-                n_mols=n_mols,
+                n_mols=num_mols,
                 smiles=self.smiles,
                 file=self.file,
                 force_field=force_field
