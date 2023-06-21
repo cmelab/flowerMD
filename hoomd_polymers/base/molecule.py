@@ -107,7 +107,7 @@ class Molecule:
             if p_name not in self.particle_types:
                 self.particle_types.append(p_name)
             if site.element.atomic_number == 1 and p_name not in self.hydrogen_types:
-                self.particle_types.append(p_name)
+                self.hydrogen_types.append(p_name)
             self.particle_typeid.append(self.particle_types.index(p_name))
             self.particle_charge.append(site.charge.to_value() if site.charge else 0)
 
@@ -172,7 +172,7 @@ class Molecule:
             # Update topology information from typed gmso molecule after applying ff.
             self._identify_topology_information(self.gmso_molecule)
         elif isinstance(self.force_field, List):
-            _validate_hoomd_ff(self.force_field, self.topology_information, remove_hydrogens=self.remove_hydrogens)
+            _validate_hoomd_ff(self.force_field, self.topology_information)
             self.ff_type = FF_Types.Hoomd
 
 

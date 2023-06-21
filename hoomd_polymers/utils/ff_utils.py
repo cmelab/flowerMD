@@ -50,7 +50,7 @@ def _include_hydrogen(connections, hydrogen_types):
     return any(p in hydrogen_types for p in connections)
 
 
-def _validate_hoomd_ff(forcefields, topology_information, remove_hydrogens):
+def _validate_hoomd_ff(forcefields, topology_information, ignore_hydrogen=True):
     pair_forces = []
     bond_forces = []
     angle_forces = []
@@ -73,7 +73,7 @@ def _validate_hoomd_ff(forcefields, topology_information, remove_hydrogens):
         params = list(map(list, f.params.keys()))
         for pair in topology_information["pair_types"]:
             pair = list(pair)
-            if remove_hydrogens and _include_hydrogen(pair, topology_information["hydrogen_types"]):
+            if ignore_hydrogen and _include_hydrogen(pair, topology_information["hydrogen_types"]):
                 # ignore pair interactions that include hydrogen atoms
                 continue
             if not (pair in params or pair[::-1] in params):
@@ -84,7 +84,7 @@ def _validate_hoomd_ff(forcefields, topology_information, remove_hydrogens):
         for bond in topology_information["bond_types"]:
             bond_dir1 = '-'.join(bond)
             bond_dir2 = '-'.join(bond[::-1])
-            if remove_hydrogens and _include_hydrogen(bond, topology_information["hydrogen_types"]):
+            if ignore_hydrogen and _include_hydrogen(bond, topology_information["hydrogen_types"]):
                 # ignore bonds that include hydrogen atoms
                 continue
             if not (bond_dir1 in params or bond_dir2 in params):
@@ -95,7 +95,7 @@ def _validate_hoomd_ff(forcefields, topology_information, remove_hydrogens):
         for angle in topology_information["angle_types"]:
             angle_dir1 = '-'.join(angle)
             angle_dir2 = '-'.join(angle[::-1])
-            if remove_hydrogens and _include_hydrogen(angle, topology_information["hydrogen_types"]):
+            if ignore_hydrogen and _include_hydrogen(angle, topology_information["hydrogen_types"]):
                 # ignore angles that include hydrogen atoms
                 continue
             if not (angle_dir1 in params or angle_dir2 in params):
@@ -106,7 +106,7 @@ def _validate_hoomd_ff(forcefields, topology_information, remove_hydrogens):
         for dihedral in topology_information["dihedral_types"]:
             dihedral_dir1 = '-'.join(dihedral)
             dihedral_dir2 = '-'.join(dihedral[::-1])
-            if remove_hydrogens and _include_hydrogen(dihedral, topology_information["hydrogen_types"]):
+            if ignore_hydrogen and _include_hydrogen(dihedral, topology_information["hydrogen_types"]):
                 # ignore dihedrals that include hydrogen atoms
                 continue
             if not (dihedral_dir1 in params or dihedral_dir2 in params):

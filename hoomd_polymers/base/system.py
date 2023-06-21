@@ -1,18 +1,16 @@
 import warnings
 from abc import ABC, abstractmethod
 from typing import List, Union, Optional
-
+import gsd
 import mbuild as mb
 import numpy as np
 import unyt
 from gmso.external import from_mbuild, to_parmed, from_parmed, to_gsd_snapshot, to_hoomd_forcefield
 from mbuild.formats.hoomd_forcefield import create_hoomd_forcefield
 
-#from hoomd_polymers import Molecule
 from hoomd_polymers.base.molecule import Molecule
 from hoomd_polymers.utils import scale_charges
-from hoomd_polymers.utils.ff_utils import find_xml_ff, apply_xml_ff, _validate_hoomd_ff
-
+from hoomd_polymers.utils.ff_utils import find_xml_ff, apply_xml_ff
 
 class System(ABC):
     """Base class from which other systems inherit.
@@ -50,20 +48,7 @@ class System(ABC):
         self._mol_forcefields = set()
         self.molecules = []
 
-        #ToDo: create an instance of the Molecule class and validate forcefield
-        if isinstance(molecules, List):
-            for mol in molecules:
-                if isinstance(mol, Molecule):
-                    self.molecules.extend(mol.molecules)
-                    self._mol_forcefields.add(mol.force_field)
-                else:
-                    self.molecules.extend(mol)
-        elif isinstance(molecules, Molecule):
-            self.molecules = molecules.molecules
-            self._mol_forcefields.add(mol.force_field)
-
-        self.system = self._build_system()
-        self.gmso_system = self._convert_to_gmso()
+        #ToDo: Handle molecules and ff
 
     @abstractmethod
     def _build_system(self):

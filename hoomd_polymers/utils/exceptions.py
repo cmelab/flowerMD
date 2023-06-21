@@ -41,3 +41,7 @@ class MissingCoulombPotentialError(MissingPotentialError):
     def _generate_msg(self):
         return f"Missing Coulomb force {self.potential_class} for electrostatic interactions."
 
+
+class MoleculeLoadError(Exception):
+    def __init__(self, msg):
+        super().__init__(msg)
