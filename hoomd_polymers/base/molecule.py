@@ -174,6 +174,9 @@ class Molecule:
             _validate_hoomd_ff(self.force_field, self.topology_information)
             self.ff_type = FF_Types.Hoomd
 
+    def assign_mol_name(self, name):
+        for mol in self.molecules:
+            mol.name = name
 
 class Polymer(Molecule):
     def __init__(
