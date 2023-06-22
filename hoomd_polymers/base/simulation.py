@@ -4,8 +4,11 @@ import gsd.hoomd
 import hoomd
 import hoomd.md
 import numpy as np
+import unyt as u
+import warnings
 
 from hoomd_polymers.sim.actions import UpdateWalls, StdOutLogger
+from hoomd_polymers.utils.exceptions import ReferenceUnitError
 
 
 class Simulation(hoomd.simulation.Simulation):
@@ -78,9 +81,7 @@ class Simulation(hoomd.simulation.Simulation):
         ]
         self.integrator = None
         self._dt = dt
-        self._reference_distance = 1
-        self._reference_energy = 1
-        self._reference_mass = 1
+        self._reference_values = dict()
         self._integrate_group = hoomd.filter.All()
         self._wall_forces = dict()
         self._create_state(self.initial_state)
@@ -94,29 +95,62 @@ class Simulation(hoomd.simulation.Simulation):
         else:
             return self._forcefield
 
-    @property
-    def reference_distance(self):
-        return self._reference_distance
-
-    @reference_distance.setter
-    def reference_distance(self, distance):
-        self._reference_distance = distance
 
     @property
-    def reference_energy(self):
-        return self._reference_energy
-
-    @reference_energy.setter
-    def reference_energy(self, energy):
-        self._reference_energy = energy
+    def reference_length(self):
+        return self._reference_values.get("length", None)
 
     @property
     def reference_mass(self):
-        return self._reference_mass
+        return self._reference_values.get("mass", None)
+
+    @property
+    def reference_energy(self):
+        return self._reference_values.get("energy", None)
+
+    @property
+    def reference_values(self):
+        return self._reference_values
+
+    @reference_length.setter
+    def reference_length(self, length, unit=None):
+        if isinstance(length, u.array.unyt_quantity):
+            self._reference_values["length"] = length
+        elif isinstance(unit, str) and (isinstance(length, float) or isinstance(length, int)):
+            self._reference_values["length"] = length * getattr(u, unit)
+        else:
+            raise ReferenceUnitError(f"Invalid reference length input.Please provide reference length (number) and "
+                                     f"unit (string) or pass length value as an {str(u.array.unyt_quantity)}.")
+
+    @reference_energy.setter
+    def reference_energy(self, energy, unit=None):
+        if isinstance(energy, u.array.unyt_quantity):
+            self._reference_values["energy"] = energy
+        elif isinstance(unit, str) and (isinstance(energy, float) or isinstance(energy, int)):
+            self._reference_values["energy"] = energy * getattr(u, unit)
+        else:
+            raise ReferenceUnitError(f"Invalid reference energy input.Please provide reference energy (number) and "
+                                     f"unit (string) or pass energy value as an {str(u.array.unyt_quantity)}.")
 
     @reference_mass.setter
-    def reference_mass(self, mass):
-        self._reference_mass = mass
+    def reference_mass(self, mass, unit=None):
+        if isinstance(mass, u.array.unyt_quantity):
+            self._reference_values["mass"] = mass
+        elif isinstance(unit, str) and (isinstance(mass, float) or isinstance(mass, int)):
+            self._reference_values["mass"] = mass * getattr(u, unit)
+        else:
+            raise ReferenceUnitError(f"Invalid reference mass input.Please provide reference mass (number) and "
+                                     f"unit (string) or pass mass value as an {str(u.array.unyt_quantity)}.")
+
+    @reference_values.setter
+    def reference_values(self, ref_value_dict):
+        ref_keys = ["length", "mass", "energy"]
+        for k in ref_keys:
+            if k not in ref_value_dict.keys():
+                raise ValueError(f"Missing reference for {k}.")
+            if not isinstance(ref_value_dict[k], u.array.unyt_quantity):
+                raise ReferenceUnitError(f"{k} reference value must be of type {str(u.array.unyt_quantity)}")
+        self._reference_values = ref_value_dict
 
     @property
     def box_lengths_reduced(self):
@@ -125,7 +159,13 @@ class Simulation(hoomd.simulation.Simulation):
 
     @property
     def box_lengths(self):
-        return self.box_lengths_reduced * self.reference_distance
+        if self._reference_values["length"]:
+            return self.box_lengths_reduced * self._reference_values["length"]
+        else:
+            warnings.warn("Reference length is not specified. Using HOOMD's unit-less length instead. "
+                          "You can set reference length value and unit with `reference_length()` method. ")
+            return self.box_lengths_reduced
+
 
     @property
     def volume_reduced(self):
@@ -142,7 +182,11 @@ class Simulation(hoomd.simulation.Simulation):
 
     @property
     def mass(self):
-        return self.mass_reduced * self.reference_mass
+        if self._reference_values["mass"]:
+            return self.mass_reduced * self._reference_values["mass"]
+        else:
+            warnings.warn("Reference mass is not specified. Using HOOMD's unit-less mass instead. "
+                          "You can set reference mass value and unit with `reference_mass()` method. ")
 
     @property
     def density_reduced(self):
@@ -174,9 +218,18 @@ class Simulation(hoomd.simulation.Simulation):
 
     @property
     def real_timestep(self):
-        mass = self.reference_mass.to("kg")
-        dist = self.reference_distance.to("m")
-        energy = self.reference_energy.to("J")
+        if self._reference_values.get("mass"):
+            mass = self._reference_values["mass"].to("kg")
+        else:
+            mass = 1 * u.kg
+        if self._reference_values.get("length"):
+            dist = self.reference_length.to("m")
+        else:
+            dist = 1 * u.m
+        if self._reference_values.get("energy"):
+            energy = self.reference_energy.to("J")
+        else:
+            energy = 1 * u.J
         tau = (mass*(dist**2))/energy
         timestep = self.dt * (tau**0.5)
         return timestep
@@ -469,11 +522,11 @@ class Simulation(hoomd.simulation.Simulation):
 
     def run_displacement_cap(self, n_steps, maximum_displacement=1e-3):
         """ NVE based integrator that Puts a cap on the maximum displacement per time step.
-        
+
         DisplacementCapped method is mostly useful for initially relaxing a system with overlapping particles.
         Putting a cap on the max particle displacement prevents Hoomd Particle Out of Box execption.
         Once the system is relaxed, other run methods (NVE, NVT, etc) can be used.
-        
+
         Parameters:
         -----------
         n_steps : int, required
