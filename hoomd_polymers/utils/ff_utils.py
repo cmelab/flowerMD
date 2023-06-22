@@ -37,6 +37,12 @@ def find_xml_ff(ff_source):
     return ff_xml_path, ff_type
 
 
+def xml_to_gmso_ff(ff_xml):
+    ff_xml_path, ff_type = find_xml_ff(ff_xml)
+    gmso_ff = ffutils.FoyerFFs().load(ff_xml_path).to_gmso_ff()
+    return gmso_ff
+
+
 def apply_xml_ff(ff_xml_path, gmso_mol):
     gmso_ff = ffutils.FoyerFFs().load(ff_xml_path).to_gmso_ff()
     apply(top=gmso_mol,
