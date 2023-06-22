@@ -7,10 +7,10 @@ import numpy as np
 import unyt
 from gmso.external import from_mbuild, to_parmed, from_parmed, to_gsd_snapshot, to_hoomd_forcefield
 from mbuild.formats.hoomd_forcefield import create_hoomd_forcefield
-
+from gmso.parameterization import apply
 from hoomd_polymers.base.molecule import Molecule
 from hoomd_polymers.utils import scale_charges, check_return_iterable
-from hoomd_polymers.utils.ff_utils import find_xml_ff, apply_xml_ff
+from hoomd_polymers.utils.ff_utils import xml_to_gmso_ff
 from hoomd_polymers.utils.base_types import FF_Types
 from hoomd_polymers.utils.exceptions import MoleculeLoadError
 
@@ -50,7 +50,7 @@ class System(ABC):
         self._hoomd_snapshot = None
         self._hoomd_forcefield = []
         self._reference_values = dict()
-        self._mol_forcefields_dict = dict()
+        self._gmso_forcefields_dict = dict()
         self.all_molecules = []
 
         # Collecting all molecules
@@ -64,7 +64,7 @@ class System(ABC):
                     if mol_item.ff_type == FF_Types.Hoomd:
                         self._hoomd_forcefield.extend(mol_item.force_field)
                     else:
-                        self._mol_forcefields_dict[str(self.n_mol_types)] = mol_item.force_field
+                        self._gmso_forcefields_dict[str(self.n_mol_types)] = xml_to_gmso_ff(mol_item.force_field)
             elif isinstance(mol_item, mb.Compound):
                 mol_item.name = str(self.n_mol_types)
                 self.all_molecules.append(mol_item)
@@ -78,14 +78,14 @@ class System(ABC):
                                                     f"Supported compound types are: {str(mb.Compound)}")
                 self.n_mol_types += 1
 
-        # Collecting all force-fields if provided
+        # Collecting all force-fields if xml force-field is provided
         if self._force_field:
             for i in range(self.n_mol_types):
-                if not self._mol_forcefields_dict.get(str(i)):
+                if not self._gmso_forcefields_dict.get(str(i)):
                     if i < len(self._force_field):
-                        self._mol_forcefields_dict[str(i)] = self._force_field[i]
+                        self._gmso_forcefields_dict[str(i)] = xml_to_gmso_ff(self._force_field[i])
                     else:
-                        self._mol_forcefields_dict[str(i)] = self._force_field[0]
+                        self._gmso_forcefields_dict[str(i)] = xml_to_gmso_ff(self._force_field[0])
 
     @abstractmethod
     def _build_system(self):
@@ -216,9 +216,7 @@ class System(ABC):
     
     #TODO: Change this to a hidden function; add conditional based on ff types 
     def apply_forcefield(self):
-
-        ff_xml_path, ff_type = find_xml_ff(tuple(self._mol_forcefields)[0])
-        self.gmso_system = apply_xml_ff(ff_xml_path, self.gmso_system)
+        self.gmso_system = apply(self.gmso_system, self._gmso_forcefields_dict)
         if self.auto_scale:
             epsilons = [s.atom_type.parameters["epsilon"] for s in self.gmso_system.sites]
             sigmas = [s.atom_type.parameters["sigma"] for s in self.gmso_system.sites]
