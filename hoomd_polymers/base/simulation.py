@@ -1,14 +1,9 @@
-from itertools import combinations_with_replacement as combo
-import operator
-import os
 import pickle
 
 import gsd.hoomd
 import hoomd
 import hoomd.md
-from mbuild.formats.hoomd_forcefield import create_hoomd_forcefield
 import numpy as np
-import parmed as pmd
 
 from hoomd_polymers.sim.actions import UpdateWalls, StdOutLogger
 

@@ -1,19 +1,18 @@
 import itertools
 import os.path
 import random
-from typing import Union, Dict, List
+from typing import List
 
 import mbuild as mb
 from gmso.external.convert_mbuild import from_mbuild
 from grits import CG_Compound
-from hoomd.md.force import Force as HForce
 from mbuild.lib.recipes import Polymer as mbPolymer
 
-from typing import Union
 from hoomd_polymers.utils import check_return_iterable
 from hoomd_polymers.utils.base_types import FF_Types
-from hoomd_polymers.utils.ff_utils import find_xml_ff, apply_xml_ff, _validate_hoomd_ff
 from hoomd_polymers.utils.exceptions import MoleculeLoadError
+from hoomd_polymers.utils.ff_utils import find_xml_ff, apply_xml_ff, _validate_hoomd_ff
+
 
 class Molecule:
     def __init__(self, num_mols, force_field=None, smiles=None, file=None, compound=None):

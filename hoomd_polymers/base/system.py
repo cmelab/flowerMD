@@ -1,19 +1,19 @@
 import warnings
 from abc import ABC, abstractmethod
 from typing import List, Union, Optional
+
 import gsd
 import mbuild as mb
 import numpy as np
 import unyt as u
-import numbers
 from gmso.external import from_mbuild, to_parmed, from_parmed, to_gsd_snapshot, to_hoomd_forcefield
-from mbuild.formats.hoomd_forcefield import create_hoomd_forcefield
 from gmso.parameterization import apply
+
 from hoomd_polymers.base.molecule import Molecule
-from hoomd_polymers.utils import scale_charges, check_return_iterable
-from hoomd_polymers.utils.ff_utils import xml_to_gmso_ff
+from hoomd_polymers.utils import check_return_iterable
 from hoomd_polymers.utils.base_types import FF_Types
 from hoomd_polymers.utils.exceptions import MoleculeLoadError, ReferenceUnitError
+from hoomd_polymers.utils.ff_utils import xml_to_gmso_ff
 
 
 class System(ABC):
