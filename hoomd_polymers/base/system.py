@@ -14,6 +14,7 @@ from hoomd_polymers.utils.ff_utils import xml_to_gmso_ff
 from hoomd_polymers.utils.base_types import FF_Types
 from hoomd_polymers.utils.exceptions import MoleculeLoadError
 
+
 class System(ABC):
     """Base class from which other systems inherit.
 
@@ -78,7 +79,7 @@ class System(ABC):
                                                     f"Supported compound types are: {str(mb.Compound)}")
                 self.n_mol_types += 1
 
-        # Collecting all force-fields if xml force-field is provided
+        # Collecting all force-fields only if xml force-field is provided
         if self._force_field:
             for i in range(self.n_mol_types):
                 if not self._gmso_forcefields_dict.get(str(i)):
@@ -86,6 +87,9 @@ class System(ABC):
                         self._gmso_forcefields_dict[str(i)] = xml_to_gmso_ff(self._force_field[i])
                     else:
                         self._gmso_forcefields_dict[str(i)] = xml_to_gmso_ff(self._force_field[0])
+        self.system = self._build_system()
+        self.gmso_system = self._convert_to_gmso()
+        self._apply_forcefield()
 
     @abstractmethod
     def _build_system(self):
@@ -132,8 +136,9 @@ class System(ABC):
         self._reference_values["energy"] = energy 
 
     @reference_mass.setter
-    def reference_length(self, mass):
-        self._reference_values["mass"] = mass 
+    def reference_length(self, mass, unit=None):
+        self._reference_values["mass"] = mass
+
 
     @reference_values.setter
     def reference_values(self, ref_value_dict):
@@ -213,9 +218,8 @@ class System(ABC):
                 base_units=self._reference_values
         )
         return snap
-    
-    #TODO: Change this to a hidden function; add conditional based on ff types 
-    def apply_forcefield(self):
+
+    def _apply_forcefield(self):
         self.gmso_system = apply(self.gmso_system, self._gmso_forcefields_dict)
         if self.auto_scale:
             epsilons = [s.atom_type.parameters["epsilon"] for s in self.gmso_system.sites]
@@ -224,60 +228,6 @@ class System(ABC):
             self._reference_values["energy"] = np.max(epsilons) * epsilons[0].unit_array
             self._reference_values["length"] = np.max(sigmas) * sigmas[0].unit_array
             self._reference_values["mass"] = np.max(masses) * masses[0].unit_array.to("amu")
-
-    def _apply_forcefield(
-            self,
-            forcefield,
-            remove_hydrogens=False,
-            scale_parameters=True,
-            remove_charges=False,
-            make_charge_neutral=False,
-            r_cut=2.5
-    ):
-        if len(self.all_molecules) == 1:
-            use_residue_map = True
-        else:
-            use_residue_map = False
-        self.typed_system = forcefield.apply(
-                structure=self.system, use_residue_map=use_residue_map
-        )
-        if remove_hydrogens:
-            print("Removing hydrogen atoms and adjusting heavy atoms")
-            # Try by element first:
-            hydrogens = [a for a in self.typed_system.atoms if a.element == 1]
-            if len(hydrogens) == 0: # Try by mass
-                hydrogens = [a for a in self.typed_system.atoms if a.mass == 1.008]
-                if len(hydrogens) == 0:
-                    warnings.warn(
-                            "Hydrogen atoms could not be found by element or mass"
-                    )
-            for h in hydrogens:
-                h.atomic_number = 1
-                bonded_atom = h.bond_partners[0]
-                bonded_atom.mass += h.mass
-                bonded_atom.charge += h.charge
-            self.typed_system.strip(
-                    [a.atomic_number == 1 for a in self.typed_system.atoms]
-            )
-        if remove_charges:
-            for atom in self.typed_system.atoms:
-                atom.charge = 0
-        if make_charge_neutral and not remove_charges:
-            print("Adjust charges to make system charge neutral")
-            new_charges = scale_charges(
-                    charges=np.array([a.charge for a in self.typed_system.atoms]),
-                    n_particles=len(self.typed_system.atoms)
-            )
-            for idx, charge in enumerate(new_charges):
-                self.typed_system.atoms[idx].charge = charge
-
-        init_snap, forcefield, refs = create_hoomd_forcefield(
-                structure=self.typed_system,
-                r_cut=r_cut,
-                auto_scale=scale_parameters
-        )
-        self._hoomd_objects = [init_snap, forcefield]
-        self._reference_values = refs
 
     def set_target_box(
             self, x_constraint=None, y_constraint=None, z_constraint=None
