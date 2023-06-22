@@ -53,7 +53,8 @@ class System(ABC):
         self._mol_forcefields_dict = dict()
         self.all_molecules = []
 
-        self.n_mol_types = 1
+        # Collecting all molecules
+        self.n_mol_types = 0
         for mol_item in self._molecules:
             if isinstance(mol_item, Molecule):
                 mol_item.assign_mol_name(str(self.n_mol_types))
@@ -77,8 +78,14 @@ class System(ABC):
                                                     f"Supported compound types are: {str(mb.Compound)}")
                 self.n_mol_types += 1
 
-
-
+        # Collecting all force-fields if provided
+        if self._force_field:
+            for i in range(self.n_mol_types):
+                if not self._mol_forcefields_dict.get(str(i)):
+                    if i < len(self._force_field):
+                        self._mol_forcefields_dict[str(i)] = self._force_field[i]
+                    else:
+                        self._mol_forcefields_dict[str(i)] = self._force_field[0]
 
     @abstractmethod
     def _build_system(self):
@@ -209,6 +216,7 @@ class System(ABC):
     
     #TODO: Change this to a hidden function; add conditional based on ff types 
     def apply_forcefield(self):
+
         ff_xml_path, ff_type = find_xml_ff(tuple(self._mol_forcefields)[0])
         self.gmso_system = apply_xml_ff(ff_xml_path, self.gmso_system)
         if self.auto_scale:
