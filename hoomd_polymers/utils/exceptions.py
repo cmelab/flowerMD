@@ -45,3 +45,8 @@ class MissingCoulombPotentialError(MissingPotentialError):
 class MoleculeLoadError(Exception):
     def __init__(self, msg):
         super().__init__(msg)
+
+
+class ReferenceUnitError(Exception):
+    def __init__(self, msg):
+        super().__init__(msg)
