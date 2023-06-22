@@ -4,7 +4,8 @@ from typing import List, Union, Optional
 import gsd
 import mbuild as mb
 import numpy as np
-import unyt
+import unyt as u
+import numbers
 from gmso.external import from_mbuild, to_parmed, from_parmed, to_gsd_snapshot, to_hoomd_forcefield
 from mbuild.formats.hoomd_forcefield import create_hoomd_forcefield
 from gmso.parameterization import apply
@@ -12,7 +13,7 @@ from hoomd_polymers.base.molecule import Molecule
 from hoomd_polymers.utils import scale_charges, check_return_iterable
 from hoomd_polymers.utils.ff_utils import xml_to_gmso_ff
 from hoomd_polymers.utils.base_types import FF_Types
-from hoomd_polymers.utils.exceptions import MoleculeLoadError
+from hoomd_polymers.utils.exceptions import MoleculeLoadError, ReferenceUnitError
 
 
 class System(ABC):
@@ -128,20 +129,43 @@ class System(ABC):
         return self._reference_values
 
     @reference_length.setter
-    def reference_length(self, length):
-        self._reference_values["length"] = length
+    def reference_length(self, length, unit=None):
+        if isinstance(length, u.array.unyt_quantity):
+            self._reference_values["length"] = length
+        elif isinstance(unit, str) and (isinstance(length, float) or isinstance(length, int)):
+            self._reference_values["length"] = length * getattr(u, unit)
+        else:
+            raise ReferenceUnitError(f"Invalid reference length input.Please provide reference length (number) and "
+                                     f"unit (string) or pass length value as an {str(u.array.unyt_quantity)}.")
 
     @reference_energy.setter
-    def reference_length(self, energy):
-        self._reference_values["energy"] = energy 
+    def reference_energy(self, energy, unit=None):
+        if isinstance(energy, u.array.unyt_quantity):
+            self._reference_values["energy"] = energy
+        elif isinstance(unit, str) and (isinstance(energy, float) or isinstance(energy, int)):
+            self._reference_values["energy"] = energy * getattr(u, unit)
+        else:
+            raise ReferenceUnitError(f"Invalid reference energy input.Please provide reference energy (number) and "
+                                     f"unit (string) or pass energy value as an {str(u.array.unyt_quantity)}.")
 
     @reference_mass.setter
-    def reference_length(self, mass, unit=None):
-        self._reference_values["mass"] = mass
-
+    def reference_mass(self, mass, unit=None):
+        if isinstance(mass, u.array.unyt_quantity):
+            self._reference_values["mass"] = mass
+        elif isinstance(unit, str) and (isinstance(mass, float) or isinstance(mass, int)):
+            self._reference_values["mass"] = mass * getattr(u, unit)
+        else:
+            raise ReferenceUnitError(f"Invalid reference mass input.Please provide reference mass (number) and "
+                                     f"unit (string) or pass mass value as an {str(u.array.unyt_quantity)}.")
 
     @reference_values.setter
     def reference_values(self, ref_value_dict):
+        ref_keys = ["length", "mass", "energy"]
+        for k in ref_keys:
+            if k not in ref_value_dict.keys():
+                raise ValueError(f"Missing reference for {k}.")
+            if not isinstance(ref_value_dict[k], u.array.unyt_quantity):
+                raise ReferenceUnitError(f"{k} reference value must be of type {str(u.array.unyt_quantity)}")
         self._reference_values = ref_value_dict
 
     @property
