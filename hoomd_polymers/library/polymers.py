@@ -19,14 +19,14 @@ class PolyEthylene(Polymer):
     length : int; required
         The number of monomer repeat units in the chain
     """
-    def __init__(self, lengths, n_mols, **kwargs):
+    def __init__(self, lengths, num_mols, **kwargs):
         smiles = "CC"
         bond_indices = [2, 6]
         bond_length = 0.145
         bond_orientation = [None, None]
         super(PolyEthylene, self).__init__(
                 lengths=lengths,
-                n_mols=n_mols,
+                num_mols=num_mols,
                 smiles=smiles,
                 bond_indices=bond_indices,
                 bond_length=bond_length,
@@ -43,7 +43,7 @@ class PPS(Polymer):
     length : int; required
         The number of monomer repeat units in the chain
     """
-    def __init__(self, lengths, n_mols, **kwargs):
+    def __init__(self, lengths, num_mols, **kwargs):
         smiles = "c1ccc(S)cc1"
         file = None
         bond_indices = [7, 10]
@@ -51,7 +51,7 @@ class PPS(Polymer):
         bond_orientation = [[0, 0, 1], [0, 0, -1]]
         super(PPS, self).__init__(
                 lengths=lengths,
-                n_mols=n_mols,
+                num_mols=num_mols,
                 smiles=smiles,
                 file=file,
                 bond_indices=bond_indices,
@@ -79,7 +79,7 @@ class PEKK(CoPolymer):
     def __init__(
             self,
             lengths,
-            n_mols,
+            num_mols,
             force_field=None,
             sequence=None,
             random_sequence=False,
@@ -91,7 +91,7 @@ class PEKK(CoPolymer):
                 monomer_A=PEKK_meta,
                 monomer_B=PEKK_para,
                 lengths=lengths,
-                n_mols=n_mols,
+                num_mols=num_mols,
                 force_field=force_field,
                 sequence=sequence,
                 random_sequence=random_sequence,
@@ -111,7 +111,7 @@ class PEKK_para(Polymer):
     length : int; required
         The number of monomer repeat units in the chain
     """
-    def __init__(self, lengths, n_mols):
+    def __init__(self, lengths, num_mols):
         smiles = "c1ccc(Oc2ccc(C(=O)c3ccc(C(=O))cc3)cc2)cc1"
         file = os.path.join(MON_DIR, "pekk_para.mol2")
         bond_indices = [35, 36]
@@ -119,7 +119,7 @@ class PEKK_para(Polymer):
         bond_orientation = [[0, 0, -1], [0, 0, 1]]
         super(PEKK_para, self).__init__(
                 lengths=lengths,
-                n_mols=n_mols,
+                num_mols=num_mols,
                 smiles=smiles,
                 file=file,
                 bond_indices=bond_indices,
@@ -138,7 +138,7 @@ class PEKK_meta(Polymer):
     length : int; required
         The number of monomer repeat units in the chain
     """
-    def __init__(self, lengths, n_mols):
+    def __init__(self, lengths, num_mols):
         smiles = "c1cc(Oc2ccc(C(=O)c3cc(C(=O))ccc3)cc2)ccc1"
         file = os.path.join(MON_DIR, "pekk_meta.mol2")
         bond_indices = [35, 36]
@@ -146,7 +146,7 @@ class PEKK_meta(Polymer):
         bond_orientation = [[0, 0, -1], [0, 0, 1]]
         super(PEKK_meta, self).__init__(
                 lengths=lengths,
-                n_mols=n_mols,
+                num_mols=num_mols,
                 smiles=smiles,
                 file=file,
                 bond_indices=bond_indices,
@@ -172,14 +172,14 @@ class LJChain:
     def __init__(
             self,
             lengths,
-            n_mols,
+            num_mols,
             bead_sequence=["A"],
             bead_mass={"A": 1.0},
             bond_lengths={"A-A": 1.0},
     ):
         super(LJChain, self).__init__()
         self.lengths = check_return_iterable(lengths)
-        self.n_mols = check_return_iterable(n_mols)
+        self.num_mols = check_return_iterable(num_mols)
         self.bead_sequence = bead_sequence
         self.bead_mass = bead_mass
         self.bond_lengths = bond_lengths
@@ -218,7 +218,7 @@ class LJChain:
     def _generate(self):
         molecules = []
         for idx, length in enumerate(self.lengths):
-            for i in range(self.n_mols[idx]):
+            for i in range(self.num_mols[idx]):
                 mol = self._build(length=length)
                 molecules.append(mol)
         return molecules

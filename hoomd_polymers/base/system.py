@@ -56,17 +56,17 @@ class System(ABC):
         self.all_molecules = []
 
         # Collecting all molecules
-        self.n_mol_types = 0
+        self.n_mol_types = 0 
         for mol_item in self._molecules:
             if isinstance(mol_item, Molecule):
                 mol_item.assign_mol_name(str(self.n_mol_types))
-                self.n_mol_types += 1
                 self.all_molecules.extend(mol_item.molecules)
                 if mol_item.force_field:
                     if mol_item.ff_type == FF_Types.Hoomd:
                         self._hoomd_forcefield.extend(mol_item.force_field)
                     else:
                         self._gmso_forcefields_dict[str(self.n_mol_types)] = xml_to_gmso_ff(mol_item.force_field)
+                self.n_mol_types += 1
             elif isinstance(mol_item, mb.Compound):
                 mol_item.name = str(self.n_mol_types)
                 self.all_molecules.append(mol_item)
@@ -336,9 +336,9 @@ class Pack(System):
     def __init__(
             self,
             molecules: Union[List, Molecule],
-            force_field: Optional[Union[List, str]],
             density: float,
             r_cut: float,
+            force_field: Optional[Union[List, str]]=None,
             auto_scale=False,
             base_units=None,
             packing_expand_factor=5,
@@ -384,13 +384,17 @@ class Lattice(System):
     """
     def __init__(
             self,
-            molecules,
-            density,
+            molecules: Union[List, Molecule],
+            density: float,
+            r_cut: float,
             x,
             y,
             n,
             basis_vector=[0.5, 0.5, 0],
             z_adjust=1.0,
+            force_field: Optional[Union[List, str]]=None,
+            auto_scale=False,
+            base_units=None,
     ):
         self.x = x
         self.y = y
