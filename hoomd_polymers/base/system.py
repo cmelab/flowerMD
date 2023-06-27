@@ -244,7 +244,12 @@ class System(ABC):
         return snap
 
     def _apply_forcefield(self):
-        self.gmso_system = apply(self.gmso_system, self._gmso_forcefields_dict)
+        self.gmso_system = apply(
+                self.gmso_system,
+                self._gmso_forcefields_dict,
+                identify_connections=True,
+                use_molecule_info=True
+        )
         if self.auto_scale:
             epsilons = [s.atom_type.parameters["epsilon"] for s in self.gmso_system.sites]
             sigmas = [s.atom_type.parameters["sigma"] for s in self.gmso_system.sites]

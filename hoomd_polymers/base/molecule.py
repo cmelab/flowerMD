@@ -177,6 +177,7 @@ class Molecule:
         for mol in self.molecules:
             mol.name = name
 
+
 class Polymer(Molecule):
     def __init__(
             self,
