@@ -37,6 +37,9 @@ class System(ABC):
             r_cut: float,
             force_field=None,
             auto_scale=False,
+            remove_hydrogens=False,
+            remove_charges=False,
+            scale_charges=False,
             base_units=None
     ):
         self._molecules = check_return_iterable(molecules)
@@ -46,14 +49,16 @@ class System(ABC):
         self.density = density
         self.r_cut = r_cut
         self.auto_scale = auto_scale
+        self.remove_hydrogens = remove_hydrogens
+        self.remove_charges = remove_charges
+        self.scale_charges = scale_charges
         self.base_units = base_units
         self.target_box = None
-        self.typed_system = None
+        self.all_molecules = []
         self._hoomd_snapshot = None
         self._hoomd_forcefield = []
         self._reference_values = dict()
         self._gmso_forcefields_dict = dict()
-        self.all_molecules = []
 
         # Collecting all molecules
         self.n_mol_types = 0 
@@ -170,17 +175,13 @@ class System(ABC):
 
     @property
     def hoomd_snapshot(self):
-        if not self._hoomd_snapshot:
-            self._hoomd_snapshot = self._create_hoomd_snapshot()
         return self._hoomd_snapshot
     
     @property
     def hoomd_forcefield(self):
-        if not self._hoomd_forcefield:
-            self._hoomd_forcefield = self._create_hoomd_forcefield()
         return self._hoomd_forcefield
 
-    def remove_hydrogens(self):
+    def _remove_hydrogens(self):
         """Call this method to remove hydrogen atoms from the system.
         The masses and charges of the hydrogens are absorbed into 
         the heavy atoms they were bonded to.
@@ -208,12 +209,6 @@ class System(ABC):
                 self._hoomd_snapshot = self._create_hoomd_snapshot()
             if self._hoomd_forcefield and self.gmso_system.is_typed():
                 self._hoomd_forcefield = self._create_hoomd_forcefield()
-
-    def remove_charges(self):
-        pass
-
-    def scale_charges(self):
-        pass
 
     def to_gsd(self, file_name):
         with gsd.hoomd.open(file_name, "wb") as traj:
@@ -257,6 +252,18 @@ class System(ABC):
             self._reference_values["energy"] = np.max(epsilons) * epsilons[0].unit_array
             self._reference_values["length"] = np.max(sigmas) * sigmas[0].unit_array
             self._reference_values["mass"] = np.max(masses) * masses[0].unit_array.to("amu")
+
+        if self.remove_charges:
+            #TODO: Remove charges from self.gmso_system
+
+        if self.scale_charges and not self.remove_charges:
+            #TODO: Scale charges from self.gmso_system
+
+        if self.remove_hydrogens:
+            self._remove_hydrogens()
+        # Create the forcefield and snapshot attributes
+        self._hoomd_snapshot = self._create_hoomd_snapshot()
+        self._hoomd_forcefield = self._create_hoomd_forcefield()
 
     def set_target_box(
             self, x_constraint=None, y_constraint=None, z_constraint=None
