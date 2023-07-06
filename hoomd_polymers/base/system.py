@@ -328,10 +328,10 @@ class System(ABC):
         return L
 
 
-
 class Pack(System):
     """Uses PACKMOL via mbuild.packing.fill_box.
-    The box used for packing is expanded to allow PACKMOL to place all of the molecules.
+    The box used for packing is expanded to allow PACKMOL
+    to more easily place all of the molecules.
 
     Parameters
     ----------
