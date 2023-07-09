@@ -31,7 +31,6 @@ class Molecule:
         if self.force_field:
             self._validate_force_field()
 
-
     @property
     def molecules(self):
         """List of all instances of the molecule"""
@@ -53,7 +52,6 @@ class Molecule:
         topology_information = dict()
         topology_information["particle_types"] = self.particle_types
         topology_information["particle_charge"] = self.particle_charge
-        topology_information["hydrogen_types"] = self.hydrogen_types
         topology_information["particle_typeid"] = self.particle_typeid
         topology_information["pair_types"] = self.pairs
         topology_information["bond_types"] = self.bond_types
@@ -66,6 +64,8 @@ class Molecule:
         for comp in self.molecules:
             cg_comp = CG_Compound(comp, beads=beads, mapping=mapping)
             self._cg_molecules.append(cg_comp)
+        self.gmso_molecule = self._convert_to_gmso(self._cg_molecules[0])
+        self._identify_topology_information(self.gmso_molecule)
 
     def _load(self):
         if self.compound:
@@ -97,15 +97,12 @@ class Molecule:
 
     def _identify_particle_information(self, gmso_molecule):
         self.particle_types = []
-        self.hydrogen_types = []
         self.particle_typeid = []
         self.particle_charge = []
         for site in gmso_molecule.sites:
             p_name = getattr(site.atom_type, "name", None) or site.name
             if p_name not in self.particle_types:
                 self.particle_types.append(p_name)
-            if site.element.atomic_number == 1 and p_name not in self.hydrogen_types:
-                self.hydrogen_types.append(p_name)
             self.particle_typeid.append(self.particle_types.index(p_name))
             self.particle_charge.append(site.charge.to_value() if site.charge else 0)
 
