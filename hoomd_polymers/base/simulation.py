@@ -42,8 +42,6 @@ class Simulation(hoomd.simulation.Simulation):
         The file name to use for the .txt log file
     seed : int, default 42
         Seed passed to integrator when randomizing velocities.
-    restart : str, default None
-        Path to gsd file from which to restart the simulation
 
     Methods
     -------
@@ -94,7 +92,6 @@ class Simulation(hoomd.simulation.Simulation):
             return self.operations.integrator.forces
         else:
             return self._forcefield
-
 
     @property
     def reference_length(self):
@@ -165,7 +162,6 @@ class Simulation(hoomd.simulation.Simulation):
             warnings.warn("Reference length is not specified. Using HOOMD's unit-less length instead. "
                           "You can set reference length value and unit with `reference_length()` method. ")
             return self.box_lengths_reduced
-
 
     @property
     def volume_reduced(self):
