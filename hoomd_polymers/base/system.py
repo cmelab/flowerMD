@@ -245,6 +245,12 @@ class System(ABC):
                 identify_connections=True,
                 use_molecule_info=True
         )
+        if self.remove_charges:
+            for site in self.gmso_system.sites:
+                site.charge = 0 
+        if self.scale_charges and not self.remove_charges:
+            pass
+            #TODO: Scale charges from self.gmso_system
         if self.auto_scale:
             epsilons = [s.atom_type.parameters["epsilon"] for s in self.gmso_system.sites]
             sigmas = [s.atom_type.parameters["sigma"] for s in self.gmso_system.sites]
@@ -252,12 +258,6 @@ class System(ABC):
             self._reference_values["energy"] = np.max(epsilons) * epsilons[0].unit_array
             self._reference_values["length"] = np.max(sigmas) * sigmas[0].unit_array
             self._reference_values["mass"] = np.max(masses) * masses[0].unit_array.to("amu")
-
-        if self.remove_charges:
-            #TODO: Remove charges from self.gmso_system
-
-        if self.scale_charges and not self.remove_charges:
-            #TODO: Scale charges from self.gmso_system
 
         if self.remove_hydrogens:
             self._remove_hydrogens()
@@ -352,6 +352,9 @@ class Pack(System):
             r_cut: float,
             force_field: Optional[Union[List, str]]=None,
             auto_scale=False,
+            remove_hydrogens=False,
+            remove_charges=False,
+            scale_charges=False,
             base_units=None,
             packing_expand_factor=5,
             edge=0.2,
@@ -364,6 +367,9 @@ class Pack(System):
                 force_field=force_field,
                 r_cut=r_cut,
                 auto_scale=auto_scale,
+                remove_hydrogens=remove_hydrogens,
+                remove_charges=remove_charges,
+                scale_charges=scale_charges,
                 base_units=base_units
         )
 
@@ -399,19 +405,33 @@ class Lattice(System):
             molecules: Union[List, Molecule],
             density: float,
             r_cut: float,
-            x,
-            y,
-            n,
+            x: float,
+            y: float,
+            n: int,
             basis_vector=[0.5, 0.5, 0],
             z_adjust=1.0,
             force_field: Optional[Union[List, str]]=None,
             auto_scale=False,
+            remove_hydrogens=False,
+            remove_charges=False,
+            scale_charges=False,
             base_units=None,
     ):
         self.x = x
         self.y = y
         self.n = n
         self.basis_vector = basis_vector
+        super(Lattice, self).__init__(
+                molecules=molecules,
+                density=density,
+                force_field=force_field,
+                r_cut=r_cut,
+                auto_scale=auto_scale,
+                remove_hydrogens=remove_hydrogens,
+                remove_charges=remove_charges,
+                scale_charges=scale_charges,
+                base_units=base_units
+        )
         super(Lattice, self).__init__(molecules=molecules, density=density)
 
     def _build_system(self):
