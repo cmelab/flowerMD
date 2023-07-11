@@ -10,10 +10,8 @@ from gmso.external import from_mbuild, to_parmed, from_parmed, to_gsd_snapshot, 
 from gmso.parameterization import apply
 
 from hoomd_polymers.base.molecule import Molecule
-from hoomd_polymers.utils import check_return_iterable
-from hoomd_polymers.utils.base_types import FF_Types
-from hoomd_polymers.utils.exceptions import MoleculeLoadError, ReferenceUnitError
-from hoomd_polymers.utils.ff_utils import xml_to_gmso_ff
+from hoomd_polymers.utils import xml_to_gmso_ff, check_return_iterable, FF_Types
+from hoomd_polymers.utils.exceptions import MoleculeLoadError, ReferenceUnitError, ForceFieldError
 
 
 class System(ABC):
@@ -66,6 +64,7 @@ class System(ABC):
             if isinstance(mol_item, Molecule):
                 mol_item.assign_mol_name(str(self.n_mol_types))
                 self.all_molecules.extend(mol_item.molecules)
+                # if ff is provided in Molecule class
                 if mol_item.force_field:
                     if mol_item.ff_type == FF_Types.Hoomd:
                         self._hoomd_forcefield.extend(mol_item.force_field)
@@ -90,9 +89,15 @@ class System(ABC):
             for i in range(self.n_mol_types):
                 if not self._gmso_forcefields_dict.get(str(i)):
                     if i < len(self._force_field):
-                        self._gmso_forcefields_dict[str(i)] = xml_to_gmso_ff(self._force_field[i])
+                        # if there is a ff for each molecule type
+                        ff_index = i
                     else:
-                        self._gmso_forcefields_dict[str(i)] = xml_to_gmso_ff(self._force_field[0])
+                        # if there is only one ff for all molecule types
+                        ff_index = 0
+                    if getattr(self._force_field[ff_index], "gmso_ff"):
+                        self._gmso_forcefields_dict[str(i)] = self._force_field[ff_index].gmso_ff
+                    else:
+                        raise ForceFieldError(msg=f"GMSO Force field in {self._force_field[ff_index]} is not provided.")
         self.system = self._build_system()
         self.gmso_system = self._convert_to_gmso()
         self._apply_forcefield()
