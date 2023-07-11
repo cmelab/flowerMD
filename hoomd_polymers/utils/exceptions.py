@@ -50,3 +50,8 @@ class MoleculeLoadError(Exception):
 class ReferenceUnitError(Exception):
     def __init__(self, msg):
         super().__init__(msg)
+
+
+class ForceFieldError(Exception):
+    def __init__(self, msg):
+        super().__init__(msg)
