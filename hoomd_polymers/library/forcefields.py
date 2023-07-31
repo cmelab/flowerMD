@@ -106,3 +106,4 @@ class BeadSpring:
                 periodic_dihedral.params[dih_type] = self.dihedrals[dih_type]
             forces.append(periodic_dihedral)
         return forces
+
