@@ -108,3 +108,7 @@ class BaseTest:
             dihedrals = self.benzene_hoomd_dihedral(include_hydrogen=include_hydrogen)
             return [pairs, bonds, angles, dihedrals]
         return _hoomd_ff
+
+    @pytest.fixture()
+    def monomer_coc_smiles(self):
+        return "COC"

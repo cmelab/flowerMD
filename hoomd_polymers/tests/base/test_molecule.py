@@ -1,6 +1,6 @@
 import pytest
 
-from hoomd_polymers import Molecule
+from hoomd_polymers import Molecule, Polymer
 from hoomd_polymers.tests import BaseTest
 from hoomd_polymers.utils import FF_Types, exceptions
 
@@ -123,3 +123,30 @@ class TestMolecule(BaseTest):
         with pytest.raises(exceptions.MissingCoulombPotentialError):
             molecule = Molecule(num_mols=2, force_field=hoomd_ff,
                                 compound=typed_molecule.gmso_molecule)
+
+
+class TestPolymer(BaseTest):
+    def test_polymer_COC(self, monomer_coc_smiles):
+        polymer = Polymer(lengths=3, num_mols=1, smiles=monomer_coc_smiles,
+                          bond_indices=[3, -1], bond_length=0.15,
+                          bond_orientation=[None, None])
+        assert polymer.n_particles == 23
+        assert polymer.n_bonds == 22
+        assert ('O', 'C', 'C') in polymer.topology_information["angle_types"]
+        assert ('O', 'C', 'C', 'O') in polymer.topology_information[
+            "dihedral_types"]
+
+    def test_polymer_COC_different_chain_lengths(self, monomer_coc_smiles):
+        polymer = Polymer(lengths=[3, 4], num_mols=[1, 1],
+                          smiles=monomer_coc_smiles,
+                          bond_indices=[3, -1], bond_length=0.15,
+                          bond_orientation=[None, None])
+        assert polymer.n_particles == 53
+
+    def test_polymer_COC_different_num_mol(self, monomer_coc_smiles):
+        polymer = Polymer(lengths=3, num_mols=[1, 2],
+                          smiles=monomer_coc_smiles,
+                          bond_indices=[3, -1], bond_length=0.15,
+                          bond_orientation=[None, None])
+        assert polymer.n_particles == 23
+        ## should this give 3 polymers of length 3 or 1 polymer of length 3?
