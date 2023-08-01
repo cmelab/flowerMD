@@ -1,35 +1,110 @@
 import os
 
+import hoomd
+import mbuild as mb
 import pytest
+from gmso.external.convert_mbuild import from_mbuild
 
-from hoomd_polymers.systems import *
-from hoomd_polymers.molecules import *
-from hoomd_polymers.forcefields import *
-
+# from hoomd_polymers.systems import *
+# from hoomd_polymers.molecules import *
+# from hoomd_polymers.forcefields import *
+ASSETS_DIR = os.path.join(os.path.dirname(__file__), "assets")
 
 class BaseTest:
-    @pytest.fixture(autouse=True)
-    def initdir(self, tmpdir):
-        tmpdir.chdir()
+    # @pytest.fixture(autouse=True)
+    # def initdir(self, tmpdir):
+    #     tmpdir.chdir()
+    #
+    # @pytest.fixture()
+    # def polyethylene_system(self):
+    #     system = Pack(
+    #             molecule=PolyEthylene,
+    #             n_mols=5,
+    #             mol_kwargs={"length": 5},
+    #             density=0.5
+    #     )
+    #     system.apply_forcefield(forcefield=GAFF(), remove_hydrogens=False)
+    #     return system
+    #
+    # @pytest.fixture()
+    # def ua_polyethylene_system(self):
+    #     system = Pack(
+    #             molecule=PolyEthylene,
+    #             n_mols=5,
+    #             mol_kwargs={"length": 5},
+    #             density=0.5
+    #     )
+    #     system.apply_forcefield(forcefield=GAFF(), remove_hydrogens=True)
+    #     return system
 
     @pytest.fixture()
-    def polyethylene_system(self):
-        system = Pack(
-                molecule=PolyEthylene,
-                n_mols=5,
-                mol_kwargs={"length": 5},
-                density=0.5
-        )
-        system.apply_forcefield(forcefield=GAFF(), remove_hydrogens=False)
-        return system
+    def benzene_mb(self):
+        benzene = mb.load("c1ccccc1", smiles=True)
+        return benzene
 
     @pytest.fixture()
-    def ua_polyethylene_system(self):
-        system = Pack(
-                molecule=PolyEthylene,
-                n_mols=5,
-                mol_kwargs={"length": 5},
-                density=0.5
-        )
-        system.apply_forcefield(forcefield=GAFF(), remove_hydrogens=True)
-        return system
+    def benzene_smiles(self):
+        return "c1ccccc1"
+
+    @pytest.fixture()
+    def benzene_mol2(self):
+        return os.path.join(ASSETS_DIR, "benzene.mol2")
+
+    @pytest.fixture()
+    def benzene_gmso(self, benzene_mb):
+        topology = from_mbuild(benzene_mb)
+        topology.identify_connections()
+        return topology
+
+    @pytest.fixture()
+    def benzene_xml(self):
+        return os.path.join(ASSETS_DIR, "benzene_oplsaa.xml")
+
+    def benzene_hoomd_pair(self, include_hydrogen=True, invalid_pair=False):
+        cell = hoomd.md.nlist.Cell(buffer=0.4)
+        lj = hoomd.md.pair.LJ(nlist=cell)
+        if invalid_pair:
+            lj.params[('C', 'N')] = dict(epsilon=0.35, sigma=0.29)
+            lj.r_cut[('C', 'N')] = 2.5
+        else:
+            lj.params[('C', 'C')] = dict(epsilon=0.35, sigma=0.29)
+            lj.r_cut[('C', 'C')] = 2.5
+        if include_hydrogen:
+            lj.params[('C', 'H')] = dict(epsilon=0.35, sigma=0.29)
+            lj.r_cut[('C', 'H')] = 2.5
+            lj.params[('H', 'H')] = dict(epsilon=0.35, sigma=0.65)
+            lj.r_cut[('H', 'H')] = 2.5
+
+        return lj
+
+    def benzene_hoomd_bond(self, include_hydrogen=True):
+        bond = hoomd.md.bond.Harmonic()
+        bond.params['C-C'] = dict(k=3.0, r0=2.38)
+        if include_hydrogen:
+            bond.params['C-H'] = dict(k=3.0, r0=2.38)
+        return bond
+
+    def benzene_hoomd_angle(self, include_hydrogen=True):
+        angle = hoomd.md.angle.Harmonic()
+        angle.params['C-C-C'] = dict(k=3.0, t0=0.7851)
+        if include_hydrogen:
+            angle.params['C-C-H'] = dict(k=3.0, t0=0.7851)
+        return angle
+
+    def benzene_hoomd_dihedral(self, include_hydrogen=True):
+        harmonic = hoomd.md.dihedral.Periodic()
+        harmonic.params['C-C-C-C'] = dict(k=3.0, d=0, n=1)
+        if include_hydrogen:
+            harmonic.params['C-C-C-H'] = dict(k=3.0, d=0, n=1)
+            harmonic.params['H-C-C-H'] = dict(k=3.0, d=-1, n=3, phi0=0)
+        return harmonic
+
+    @pytest.fixture()
+    def benzene_hoomd_ff(self):
+        def _hoomd_ff(include_hydrogen, invalid_pair=False):
+            pairs = self.benzene_hoomd_pair(include_hydrogen=include_hydrogen, invalid_pair=invalid_pair)
+            bonds = self.benzene_hoomd_bond(include_hydrogen=include_hydrogen)
+            angles = self.benzene_hoomd_angle(include_hydrogen=include_hydrogen)
+            dihedrals = self.benzene_hoomd_dihedral(include_hydrogen=include_hydrogen)
+            return [pairs, bonds, angles, dihedrals]
+        return _hoomd_ff
