@@ -74,6 +74,17 @@ def _validate_hoomd_ff(forcefields, topology_information, ignore_hydrogen=True):
             dihedral_forces.append(force)
         elif isinstance(force, hoomd.md.long_range.pppm.Coulomb):
             coulomb_forces.append(force)
+    # check if all the required forcefields are present
+    if topology_information["pair_types"] and not pair_forces:
+        raise MissingPairPotentialError(connection=topology_information["pair_types"], potential_class=str(hoomd.md.pair.LJ))
+    if topology_information["bond_types"] and not bond_forces:
+        raise MissingBondPotentialError(connection=topology_information["bond_types"], potential_class=str(hoomd.md.bond.Bond))
+    if topology_information["angle_types"] and not angle_forces:
+        raise MissingAnglePotentialError(connection=topology_information["angle_types"], potential_class=str(hoomd.md.angle.Angle))
+    if topology_information["dihedral_types"] and not dihedral_forces:
+        raise MissingDihedralPotentialError(connection=topology_information["dihedral_types"], potential_class=str(hoomd.md.dihedral.Dihedral))
+    if any(topology_information["particle_charge"]) and not coulomb_forces:
+        raise MissingCoulombPotentialError(potential_class=str(hoomd.md.long_range.pppm.Coulomb))
 
     for f in pair_forces:
         params = list(map(list, f.params.keys()))
@@ -118,5 +129,4 @@ def _validate_hoomd_ff(forcefields, topology_information, ignore_hydrogen=True):
             if not (dihedral_dir1 in params or dihedral_dir2 in params):
                 raise MissingDihedralPotentialError(connection=dihedral_dir1, potential_class=type(f))
 
-    if any(topology_information["particle_charge"]) and not coulomb_forces:
-        raise MissingCoulombPotentialError(potential_class=str(hoomd.md.long_range.pppm.Coulomb))
+
