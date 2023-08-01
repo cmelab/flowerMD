@@ -1,12 +1,12 @@
 class MissingPotentialError(Exception):
-    def __init__(self, connection=None, potential_class=None):
+    def __init__(self, connection="", potential_class=None):
         self.connection = connection
         self.potential_class = potential_class
         msg = self._generate_msg()
         super().__init__(msg)
 
     def _generate_msg(self):
-        return f"Missing potential for {self.connection} {self.potential_type} in {self.potential_class}."
+        return f"Missing {self.potential_class} potential for {self.connection} {self.potential_type}"
 
     @property
     def potential_type(self):
