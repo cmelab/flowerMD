@@ -4,7 +4,8 @@ import random
 from typing import List
 
 import mbuild as mb
-from gmso.external.convert_mbuild import from_mbuild
+from gmso.external.convert_mbuild import from_mbuild, to_mbuild
+from gmso.core.topology import Topology
 from grits import CG_Compound
 from mbuild.lib.recipes import Polymer as mbPolymer
 
@@ -16,7 +17,7 @@ from hoomd_polymers.utils.ff_utils import find_xml_ff, apply_xml_ff, _validate_h
 
 class Molecule:
     def __init__(self, num_mols, force_field=None, smiles=None, file=None, compound=None):
-        self.n_mols = check_return_iterable(num_mols)
+        self.n_mols = num_mols
         self.force_field = force_field
         self.smiles = smiles
         self.file = file
@@ -51,6 +52,7 @@ class Molecule:
     def topology_information(self):
         topology_information = dict()
         topology_information["particle_types"] = self.particle_types
+        topology_information["hydrogen_types"] = self.hydrogen_types
         topology_information["particle_charge"] = self.particle_charge
         topology_information["particle_typeid"] = self.particle_typeid
         topology_information["pair_types"] = self.pairs
@@ -71,6 +73,8 @@ class Molecule:
         if self.compound:
             if isinstance(self.compound, mb.Compound):
                 return self.compound
+            if isinstance(self.compound, Topology):
+                return to_mbuild(self.compound)
             else:
                 raise MoleculeLoadError(msg=f"Unsupported compound type {type(self.compound)}. "
                                             f"Supported compound types are: {str(mb.Compound)}")
@@ -97,12 +101,15 @@ class Molecule:
 
     def _identify_particle_information(self, gmso_molecule):
         self.particle_types = []
+        self.hydrogen_types = []
         self.particle_typeid = []
         self.particle_charge = []
         for site in gmso_molecule.sites:
             p_name = getattr(site.atom_type, "name", None) or site.name
             if p_name not in self.particle_types:
                 self.particle_types.append(p_name)
+            if site.element.atomic_number == 1 and p_name not in self.hydrogen_types:
+                self.hydrogen_types.append(p_name)
             self.particle_typeid.append(self.particle_types.index(p_name))
             self.particle_charge.append(site.charge.to_value() if site.charge else 0)
 
@@ -192,6 +199,7 @@ class Polymer(Molecule):
         self.bond_indices = bond_indices
         self.bond_length = bond_length
         self.bond_orientation = bond_orientation
+        num_mols = check_return_iterable(num_mols)
         super(Polymer, self).__init__(
                 num_mols=num_mols,
                 smiles=smiles,
@@ -262,7 +270,7 @@ class CoPolymer(Molecule):
         self.lengths = lengths
         self.monomer_A = monomer_A(lengths=[1], n_mols=[1])
         self.monomer_B = monomer_B(lengths=[1], n_mols=[1])
-        self.num_mols = num_mols
+        self.num_mols = check_return_iterable(num_mols)
         self.sequence = sequence
         self.random_sequence = random_sequence
         self.AB_ratio = AB_ratio
@@ -273,7 +281,7 @@ class CoPolymer(Molecule):
         self.file = [self.monomer_A.file, self.monomer_B.file]
         random.seed(self.seed)
         super(CoPolymer, self).__init__(
-                n_mols=num_mols,
+                num_mols=num_mols,
                 smiles=self.smiles,
                 file=self.file,
                 force_field=force_field
