@@ -49,6 +49,18 @@ class Molecule:
         self._mapping = mapping_array
 
     @property
+    def n_particles(self):
+        n_particles = 0
+        for molecule in self.molecules:
+            n_particles += molecule.n_particles
+        return n_particles
+    @property
+    def n_bonds(self):
+        n_bonds = 0
+        for molecule in self.molecules:
+            n_bonds += molecule.n_bonds
+        return n_bonds
+    @property
     def topology_information(self):
         topology_information = dict()
         topology_information["particle_types"] = self.particle_types
