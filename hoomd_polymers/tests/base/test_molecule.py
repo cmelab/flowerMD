@@ -1,6 +1,6 @@
 import pytest
 
-from hoomd_polymers import Molecule, Polymer
+from hoomd_polymers import Molecule, Polymer, CoPolymer
 from hoomd_polymers.tests import BaseTest
 from hoomd_polymers.utils import FF_Types, exceptions
 
@@ -142,11 +142,151 @@ class TestPolymer(BaseTest):
                           bond_indices=[3, -1], bond_length=0.15,
                           bond_orientation=[None, None])
         assert polymer.n_particles == 53
+        assert len(polymer.molecules[0].labels['monomer']) == 3
+        assert len(polymer.molecules[1].labels['monomer']) == 4
 
     def test_polymer_COC_different_num_mol(self, monomer_coc_smiles):
-        polymer = Polymer(lengths=3, num_mols=[1, 2],
+        polymer = Polymer(lengths=[3, 2], num_mols=[1, 2],
                           smiles=monomer_coc_smiles,
                           bond_indices=[3, -1], bond_length=0.15,
                           bond_orientation=[None, None])
-        assert polymer.n_particles == 23
-        ## should this give 3 polymers of length 3 or 1 polymer of length 3?
+        assert polymer.n_particles == 55
+        assert len(polymer.molecules[0].labels['monomer']) == 3
+        assert len(polymer.molecules[1].labels['monomer']) == 2
+        assert len(polymer.molecules[2].labels['monomer']) == 2
+
+    def test_polymer_COC_unequal_num_mol_length(self):
+        with pytest.raises(ValueError):
+            Polymer(lengths=[3], num_mols=[1, 2],
+                              smiles=['CO', 'COC'],
+                              bond_indices=[3, -1], bond_length=0.15,
+                              bond_orientation=[None, None])
+
+    def test_copolymer_COC_CC_with_sequence(self, monomer_coc_smiles):
+        class COC(Polymer):
+            def __init__(self, lengths, num_mols, **kwargs):
+                smiles = monomer_coc_smiles
+                bond_indices = [3, -1]
+                bond_length = 0.15
+                bond_orientation = [None, None]
+                super().__init__(
+                    lengths=lengths, num_mols=num_mols,
+                    smiles=smiles, bond_indices=bond_indices,
+                    bond_length=bond_length, bond_orientation=bond_orientation,
+                    **kwargs)
+
+        class CC(Polymer):
+            def __init__(self, lengths, num_mols, **kwargs):
+                smiles = 'CC'
+                bond_indices = [2, -2]
+                bond_length = 0.15
+                bond_orientation = [None, None]
+                super().__init__(
+                    lengths=lengths, num_mols=num_mols,
+                    smiles=smiles, bond_indices=bond_indices,
+                    bond_length=bond_length, bond_orientation=bond_orientation,
+                    **kwargs)
+
+        copolymer = CoPolymer(monomer_A=COC, monomer_B=CC,
+                              lengths=1, num_mols=1, sequence="ABA")
+        assert copolymer.n_particles == 22
+        assert ('C', 'C', 'C', 'C') in copolymer.topology_information[
+            "dihedral_types"]
+
+    def test_copolymer_COC_CC_with_sequence_different_chain_lengths(self,
+                                                                    monomer_coc_smiles):
+        class COC(Polymer):
+            def __init__(self, lengths, num_mols, **kwargs):
+                smiles = monomer_coc_smiles
+                bond_indices = [3, -1]
+                bond_length = 0.15
+                bond_orientation = [None, None]
+                super().__init__(
+                    lengths=lengths, num_mols=num_mols,
+                    smiles=smiles, bond_indices=bond_indices,
+                    bond_length=bond_length, bond_orientation=bond_orientation,
+                    **kwargs)
+
+        class CC(Polymer):
+            def __init__(self, lengths, num_mols, **kwargs):
+                smiles = 'CC'
+                bond_indices = [2, -2]
+                bond_length = 0.15
+                bond_orientation = [None, None]
+                super().__init__(
+                    lengths=lengths, num_mols=num_mols,
+                    smiles=smiles, bond_indices=bond_indices,
+                    bond_length=bond_length, bond_orientation=bond_orientation,
+                    **kwargs)
+
+        copolymer = CoPolymer(monomer_A=COC, monomer_B=CC,
+                              lengths=[2, 3], num_mols=[1, 1], sequence="ABA")
+
+        assert copolymer.molecules[0].n_particles == 42
+        assert copolymer.molecules[1].n_particles == 62
+
+    def test_copolymer_COC_CC_with_sequence_different_num_mol(self,
+                                                              monomer_coc_smiles):
+        class COC(Polymer):
+            def __init__(self, lengths, num_mols, **kwargs):
+                smiles = monomer_coc_smiles
+                bond_indices = [3, -1]
+                bond_length = 0.15
+                bond_orientation = [None, None]
+                super().__init__(
+                    lengths=lengths, num_mols=num_mols,
+                    smiles=smiles, bond_indices=bond_indices,
+                    bond_length=bond_length, bond_orientation=bond_orientation,
+                    **kwargs)
+
+        class CC(Polymer):
+            def __init__(self, lengths, num_mols, **kwargs):
+                smiles = 'CC'
+                bond_indices = [2, -2]
+                bond_length = 0.15
+                bond_orientation = [None, None]
+                super().__init__(
+                    lengths=lengths, num_mols=num_mols,
+                    smiles=smiles, bond_indices=bond_indices,
+                    bond_length=bond_length, bond_orientation=bond_orientation,
+                    **kwargs)
+
+        copolymer = CoPolymer(monomer_A=COC, monomer_B=CC,
+                              lengths=[2, 3], num_mols=[1, 2], sequence="ABA")
+
+        assert copolymer.molecules[0].n_particles == 42
+        assert copolymer.molecules[1].n_particles == 62
+        assert copolymer.molecules[2].n_particles == 62
+
+    def test_copolymer_COC_CC_random_sequence(self, monomer_coc_smiles):
+        class COC(Polymer):
+            def __init__(self, lengths, num_mols, **kwargs):
+                smiles = monomer_coc_smiles
+                bond_indices = [3, -1]
+                bond_length = 0.15
+                bond_orientation = [None, None]
+                super().__init__(
+                    lengths=lengths, num_mols=num_mols,
+                    smiles=smiles, bond_indices=bond_indices,
+                    bond_length=bond_length, bond_orientation=bond_orientation,
+                    **kwargs)
+
+        class CC(Polymer):
+            def __init__(self, lengths, num_mols, **kwargs):
+                smiles = 'CC'
+                bond_indices = [2, -2]
+                bond_length = 0.15
+                bond_orientation = [None, None]
+                super().__init__(
+                    lengths=lengths, num_mols=num_mols,
+                    smiles=smiles, bond_indices=bond_indices,
+                    bond_length=bond_length, bond_orientation=bond_orientation,
+                    **kwargs)
+
+        copolymer = CoPolymer(monomer_A=COC, monomer_B=CC,
+                              lengths=[3], num_mols=[1], random_sequence=True, seed=42)
+        # sequence is BAA
+        assert copolymer.n_particles == 22
+        assert ('O', 'C', 'C', 'O') in copolymer.topology_information[
+            "dihedral_types"]
+
