@@ -212,6 +212,8 @@ class Polymer(Molecule):
         self.bond_length = bond_length
         self.bond_orientation = bond_orientation
         num_mols = check_return_iterable(num_mols)
+        if len(num_mols) != len(self.lengths):
+            raise ValueError("Number of molecules and lengths must be equal.")
         super(Polymer, self).__init__(
                 num_mols=num_mols,
                 smiles=smiles,
@@ -257,10 +259,9 @@ class CoPolymer(Molecule):
         Manually define the sequence of 'A' and 'B' monomers.
         Leave as None if generating random sequences.
         Example: sequence = "AABAABAAB"
-    random_sequence : bool; optional; default True
+    random_sequence : bool; optional; default False
         Creates a random 'A' 'B' sequence as a function
-        of the AB_ratio. Set to False when manually
-        defining sequence
+        of the AB_ratio.
     AB_ratio : float; optional; default 0.50
         The relative weight of A to B monomer types.
         Used when generating random sequences.
@@ -275,14 +276,16 @@ class CoPolymer(Molecule):
             num_mols,
             force_field=None,
             sequence=None,
-            random_sequence=True,
+            random_sequence=False,
             AB_ratio=0.50,
             seed=24
     ):
-        self.lengths = lengths
-        self.monomer_A = monomer_A(lengths=[1], n_mols=[1])
-        self.monomer_B = monomer_B(lengths=[1], n_mols=[1])
-        self.num_mols = check_return_iterable(num_mols)
+        self.lengths = check_return_iterable(lengths)
+        self.monomer_A = monomer_A(lengths=[1], num_mols=[1])
+        self.monomer_B = monomer_B(lengths=[1], num_mols=[1])
+        num_mols = check_return_iterable(num_mols)
+        if len(num_mols) != len(self.lengths):
+            raise ValueError("Number of molecules and lengths must be equal.")
         self.sequence = sequence
         self.random_sequence = random_sequence
         self.AB_ratio = AB_ratio
