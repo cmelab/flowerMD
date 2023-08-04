@@ -12,11 +12,13 @@ from mbuild.lib.recipes import Polymer as mbPolymer
 from hoomd_polymers.utils import check_return_iterable
 from hoomd_polymers.utils.base_types import FF_Types
 from hoomd_polymers.utils.exceptions import MoleculeLoadError
-from hoomd_polymers.utils.ff_utils import find_xml_ff, apply_xml_ff, _validate_hoomd_ff
+from hoomd_polymers.utils.ff_utils import find_xml_ff, apply_xml_ff, \
+    _validate_hoomd_ff
 
 
 class Molecule:
-    def __init__(self, num_mols, force_field=None, smiles=None, file=None, compound=None):
+    def __init__(self, num_mols, force_field=None, smiles=None, file=None,
+                 compound=None):
         self.n_mols = num_mols
         self.force_field = force_field
         self.smiles = smiles
@@ -38,7 +40,7 @@ class Molecule:
         if self._cg_molecules:
             return self._cg_molecules
         return self._molecules
-    
+
     @property
     def mapping(self):
         """Dictionary of particle index to bead mapping"""
@@ -54,12 +56,14 @@ class Molecule:
         for molecule in self.molecules:
             n_particles += molecule.n_particles
         return n_particles
+
     @property
     def n_bonds(self):
         n_bonds = 0
         for molecule in self.molecules:
             n_bonds += molecule.n_bonds
         return n_bonds
+
     @property
     def topology_information(self):
         topology_information = dict()
@@ -74,12 +78,17 @@ class Molecule:
         topology_information["improper_types"] = self.improper_types
         return topology_information
 
-    def coarse_grain(self, beads=None, mapping=None):
+    def coarse_grain(self, beads=None):
         for comp in self.molecules:
-            cg_comp = CG_Compound(comp, beads=beads, mapping=mapping)
-            self._cg_molecules.append(cg_comp)
-        self.gmso_molecule = self._convert_to_gmso(self._cg_molecules[0])
-        self._identify_topology_information(self.gmso_molecule)
+            cg_comp = CG_Compound(comp, beads=beads)
+            if cg_comp.mapping:
+                self._cg_molecules.append(cg_comp)
+            else:
+                raise ValueError("Unable to coarse grain the molecule. "
+                                 "Please check the bead types.")
+        if self._cg_molecules:
+            self.gmso_molecule = self._convert_to_gmso(self._cg_molecules[0])
+            self._identify_topology_information(self.gmso_molecule)
 
     def _load(self):
         if self.compound:
@@ -88,19 +97,23 @@ class Molecule:
             if isinstance(self.compound, Topology):
                 return to_mbuild(self.compound)
             else:
-                raise MoleculeLoadError(msg=f"Unsupported compound type {type(self.compound)}. "
-                                            f"Supported compound types are: {str(mb.Compound)}")
+                raise MoleculeLoadError(
+                    msg=f"Unsupported compound type {type(self.compound)}. "
+                        f"Supported compound types are: {str(mb.Compound)}")
         if self.file:
             if isinstance(self.file, str) and os.path.isfile(self.file):
                 return mb.load(self.file)
             else:
-                raise MoleculeLoadError(msg=f"Unable to load the molecule from file {self.file}.")
+                raise MoleculeLoadError(
+                    msg=f"Unable to load the molecule from file {self.file}.")
 
         if self.smiles:
             if isinstance(self.smiles, str):
                 return mb.load(self.smiles, smiles=True)
             else:
-                raise MoleculeLoadError(msg=f"Unable to load the molecule from smiles {self.smiles}.")
+                raise MoleculeLoadError(
+                    msg=f"Unable to load the molecule from smiles "
+                        f"{self.smiles}.")
 
     def _generate(self):
         for i in range(self.n_mols):
@@ -120,20 +133,24 @@ class Molecule:
             p_name = getattr(site.atom_type, "name", None) or site.name
             if p_name not in self.particle_types:
                 self.particle_types.append(p_name)
-            if site.element:
-                if site.element.atomic_number == 1 and p_name not in self.hydrogen_types:
-                    self.hydrogen_types.append(p_name)
+            if site.element and site.element.atomic_number == 1 and \
+                    p_name not in self.hydrogen_types:
+                self.hydrogen_types.append(p_name)
             self.particle_typeid.append(self.particle_types.index(p_name))
-            self.particle_charge.append(site.charge.to_value() if site.charge else 0)
+            self.particle_charge.append(
+                site.charge.to_value() if site.charge else 0)
 
     def _identify_pairs(self, particle_types):
-        self.pairs = set(itertools.combinations_with_replacement(particle_types, 2))
-        
+        self.pairs = set(
+            itertools.combinations_with_replacement(particle_types, 2))
+
     def _identify_bond_types(self, gmso_molecule):
         self.bond_types = set()
         for bond in gmso_molecule.bonds:
-            p1_name = getattr(bond.connection_members[0].atom_type, "name", None) or bond.connection_members[0].name
-            p2_name = getattr(bond.connection_members[1].atom_type, "name", None) or bond.connection_members[1].name
+            p1_name = getattr(bond.connection_members[0].atom_type, "name",
+                              None) or bond.connection_members[0].name
+            p2_name = getattr(bond.connection_members[1].atom_type, "name",
+                              None) or bond.connection_members[1].name
             bond_connections = [p1_name, p2_name]
             if not tuple(bond_connections[::-1]) in self.bond_types:
                 self.bond_types.add(tuple(bond_connections))
@@ -141,9 +158,12 @@ class Molecule:
     def _identify_angle_types(self, gmso_molecule):
         self.angle_types = set()
         for angle in gmso_molecule.angles:
-            p1_name = getattr(angle.connection_members[0].atom_type, "name", None) or angle.connection_members[0].name
-            p2_name = getattr(angle.connection_members[1].atom_type, "name", None) or angle.connection_members[1].name
-            p3_name = getattr(angle.connection_members[2].atom_type, "name", None) or angle.connection_members[2].name
+            p1_name = getattr(angle.connection_members[0].atom_type, "name",
+                              None) or angle.connection_members[0].name
+            p2_name = getattr(angle.connection_members[1].atom_type, "name",
+                              None) or angle.connection_members[1].name
+            p3_name = getattr(angle.connection_members[2].atom_type, "name",
+                              None) or angle.connection_members[2].name
             angle_connections = [p1_name, p2_name, p3_name]
             if not tuple(angle_connections[::-1]) in self.angle_types:
                 self.angle_types.add(tuple(angle_connections))
@@ -151,10 +171,14 @@ class Molecule:
     def _identify_dihedral_types(self, gmso_molecule):
         self.dihedral_types = set()
         for dihedral in gmso_molecule.dihedrals:
-            p1_name = getattr(dihedral.connection_members[0].atom_type, "name", None) or dihedral.connection_members[0].name
-            p2_name = getattr(dihedral.connection_members[1].atom_type, "name", None) or dihedral.connection_members[1].name
-            p3_name = getattr(dihedral.connection_members[2].atom_type, "name", None) or dihedral.connection_members[2].name
-            p4_name = getattr(dihedral.connection_members[3].atom_type, "name", None) or dihedral.connection_members[3].name
+            p1_name = getattr(dihedral.connection_members[0].atom_type, "name",
+                              None) or dihedral.connection_members[0].name
+            p2_name = getattr(dihedral.connection_members[1].atom_type, "name",
+                              None) or dihedral.connection_members[1].name
+            p3_name = getattr(dihedral.connection_members[2].atom_type, "name",
+                              None) or dihedral.connection_members[2].name
+            p4_name = getattr(dihedral.connection_members[3].atom_type, "name",
+                              None) or dihedral.connection_members[3].name
             dihedral_connections = [p1_name, p2_name, p3_name, p4_name]
             if not tuple(dihedral_connections[::-1]) in self.dihedral_types:
                 self.dihedral_types.add(tuple(dihedral_connections))
@@ -162,10 +186,14 @@ class Molecule:
     def _identify_improper_types(self, gmso_molecule):
         self.improper_types = set()
         for improper in gmso_molecule.impropers:
-            p1_name = getattr(improper.connection_members[0].atom_type, "name", None) or improper.connection_members[0].name
-            p2_name = getattr(improper.connection_members[1].atom_type, "name", None) or improper.connection_members[1].name
-            p3_name = getattr(improper.connection_members[2].atom_type, "name", None) or improper.connection_members[2].name
-            p4_name = getattr(improper.connection_members[3].atom_type, "name", None) or improper.connection_members[3].name
+            p1_name = getattr(improper.connection_members[0].atom_type, "name",
+                              None) or improper.connection_members[0].name
+            p2_name = getattr(improper.connection_members[1].atom_type, "name",
+                              None) or improper.connection_members[1].name
+            p3_name = getattr(improper.connection_members[2].atom_type, "name",
+                              None) or improper.connection_members[2].name
+            p4_name = getattr(improper.connection_members[3].atom_type, "name",
+                              None) or improper.connection_members[3].name
             improper_connections = [p1_name, p2_name, p3_name, p4_name]
             if not tuple(improper_connections[::-1]) in self.improper_types:
                 self.improper_types.add(tuple(improper_connections))
@@ -184,7 +212,7 @@ class Molecule:
             ff_xml_path, ff_type = find_xml_ff(self.force_field)
             self.ff_type = ff_type
             self.gmso_molecule = apply_xml_ff(ff_xml_path, self.gmso_molecule)
-            # Update topology information from typed gmso molecule after applying ff.
+            # Update topology information from typed gmso after applying ff.
             self._identify_topology_information(self.gmso_molecule)
         elif isinstance(self.force_field, List):
             _validate_hoomd_ff(self.force_field, self.topology_information)
@@ -216,11 +244,11 @@ class Polymer(Molecule):
         if len(num_mols) != len(self.lengths):
             raise ValueError("Number of molecules and lengths must be equal.")
         super(Polymer, self).__init__(
-                num_mols=num_mols,
-                smiles=smiles,
-                file=file,
-                force_field=force_field,
-                **kwargs
+            num_mols=num_mols,
+            smiles=smiles,
+            file=file,
+            force_field=force_field,
+            **kwargs
         )
 
     @property
@@ -230,10 +258,10 @@ class Polymer(Molecule):
     def _build(self, length):
         chain = mbPolymer()
         chain.add_monomer(
-                self.monomer,
-                indices=self.bond_indices,
-                separation=self.bond_length,
-                orientation=self.bond_orientation
+            self.monomer,
+            indices=self.bond_indices,
+            separation=self.bond_length,
+            orientation=self.bond_orientation
         )
         chain.build(n=length, sequence="A")
         return chain
@@ -269,6 +297,7 @@ class CoPolymer(Molecule):
     seed : int; optional; default 24
         Set the seed used when generating random sequences
     """
+
     def __init__(
             self,
             monomer_A,
@@ -297,12 +326,12 @@ class CoPolymer(Molecule):
         self.file = [self.monomer_A.file, self.monomer_B.file]
         random.seed(self.seed)
         super(CoPolymer, self).__init__(
-                num_mols=num_mols,
-                smiles=self.smiles,
-                file=self.file,
-                force_field=force_field
+            num_mols=num_mols,
+            smiles=self.smiles,
+            file=self.file,
+            force_field=force_field
         )
-    
+
     @property
     def A_ratio(self):
         return self._A_count / (self._A_count + self._B_count)
@@ -314,20 +343,20 @@ class CoPolymer(Molecule):
     def _build(self, length, sequence):
         chain = mbPolymer()
         chain.add_monomer(
-                self.monomer_A.monomer,
-                indices=self.monomer_A.bond_indices,
-                orientation=self.monomer_A.bond_orientation,
-                separation=self.monomer_A.bond_length
+            self.monomer_A.monomer,
+            indices=self.monomer_A.bond_indices,
+            orientation=self.monomer_A.bond_orientation,
+            separation=self.monomer_A.bond_length
         )
         chain.add_monomer(
-                self.monomer_B.monomer,
-                indices=self.monomer_B.bond_indices,
-                orientation=self.monomer_B.bond_orientation,
-                separation=self.monomer_B.bond_length
+            self.monomer_B.monomer,
+            indices=self.monomer_B.bond_indices,
+            orientation=self.monomer_B.bond_orientation,
+            separation=self.monomer_B.bond_length
         )
         chain.build(n=length, sequence=sequence)
         return chain
-    
+
     def _load(self):
         return None
 
@@ -336,9 +365,9 @@ class CoPolymer(Molecule):
             for i in range(self.n_mols[idx]):
                 if self.random_sequence:
                     sequence = random.choices(
-                            ["A", "B"],
-                            [self.AB_ratio, 1-self.AB_ratio],
-                            k=length
+                        ["A", "B"],
+                        [self.AB_ratio, 1 - self.AB_ratio],
+                        k=length
                     )
                     self._A_count += sequence.count("A")
                     self._B_count += sequence.count("B")

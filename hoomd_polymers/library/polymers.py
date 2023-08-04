@@ -6,7 +6,7 @@ from mbuild.coordinate_transform import z_axis_transform
 from mbuild.lib.recipes import Polymer as mbPolymer
 import numpy as np
 import hoomd_polymers
-from hoomd_polymers.library import MON_DIR
+from hoomd_polymers.assets import MON_DIR
 from hoomd_polymers import Polymer, CoPolymer
 from hoomd_polymers.utils import check_return_iterable
 
