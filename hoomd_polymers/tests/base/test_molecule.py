@@ -124,11 +124,37 @@ class TestMolecule(BaseTest):
             Molecule(num_mols=2, force_field=hoomd_ff,
                      compound=typed_molecule.gmso_molecule)
 
+    def test_coarse_grain_with_single_beads(self, benzene_smiles):
+        molecule = Molecule(num_mols=2, smiles=benzene_smiles)
+        molecule.coarse_grain(beads={"A": benzene_smiles})
+        assert molecule.topology_information["particle_types"] == ["A"]
+        assert molecule.n_particles == 2
+        assert molecule.n_bonds == 0
+
+    def test_coarse_grain_with_multiple_single_beads(self, octane_smiles,
+                                                     ethane_smiles):
+        molecule = Molecule(num_mols=2, smiles=octane_smiles)
+        molecule.coarse_grain(beads={"A": ethane_smiles})
+        assert molecule.molecules[0].n_particles == 4
+        assert molecule.topology_information["bond_types"] == {("A", "A")}
+
+    def test_coarse_grain_with_different_beads(self, pps_smiles,
+                                               benzene_smiles):
+        molecule = Molecule(num_mols=2, smiles=pps_smiles)
+        molecule.coarse_grain(beads={"A": benzene_smiles, "B": "S"})
+        assert molecule.molecules[0].n_particles == 2
+        assert molecule.topology_information["particle_types"] == ["A", "B"]
+        assert molecule.topology_information["bond_types"] == {("A", "B")}
+
+    def test_coarse_grain_invalid_beads(self, benzene_smiles):
+        molecule = Molecule(num_mols=2, smiles=benzene_smiles)
+        with pytest.raises(ValueError):
+            molecule.coarse_grain(beads={"A": "CO"})
 
 
 class TestPolymer(BaseTest):
-    def test_polymer(self, monomer_coc_smiles):
-        polymer = Polymer(lengths=3, num_mols=1, smiles=monomer_coc_smiles,
+    def test_polymer(self, coc_smiles):
+        polymer = Polymer(lengths=3, num_mols=1, smiles=coc_smiles,
                           bond_indices=[3, -1], bond_length=0.15,
                           bond_orientation=[None, None])
         assert polymer.n_particles == 23
@@ -137,18 +163,18 @@ class TestPolymer(BaseTest):
         assert ('O', 'C', 'C', 'O') in polymer.topology_information[
             "dihedral_types"]
 
-    def test_polymer_different_chain_lengths(self, monomer_coc_smiles):
+    def test_polymer_different_chain_lengths(self, coc_smiles):
         polymer = Polymer(lengths=[3, 4], num_mols=[1, 1],
-                          smiles=monomer_coc_smiles,
+                          smiles=coc_smiles,
                           bond_indices=[3, -1], bond_length=0.15,
                           bond_orientation=[None, None])
         assert polymer.n_particles == 53
         assert len(polymer.molecules[0].labels['monomer']) == 3
         assert len(polymer.molecules[1].labels['monomer']) == 4
 
-    def test_polymer_different_num_mol(self, monomer_coc_smiles):
+    def test_polymer_different_num_mol(self, coc_smiles):
         polymer = Polymer(lengths=[3, 2], num_mols=[1, 2],
-                          smiles=monomer_coc_smiles,
+                          smiles=coc_smiles,
                           bond_indices=[3, -1], bond_length=0.15,
                           bond_orientation=[None, None])
         assert polymer.n_particles == 55
@@ -156,10 +182,10 @@ class TestPolymer(BaseTest):
         assert len(polymer.molecules[1].labels['monomer']) == 2
         assert len(polymer.molecules[2].labels['monomer']) == 2
 
-    def test_polymer_unequal_num_mol_length(self, monomer_coc_smiles):
+    def test_polymer_unequal_num_mol_length(self, coc_smiles):
         with pytest.raises(ValueError):
             Polymer(lengths=[3], num_mols=[1, 2],
-                    smiles=monomer_coc_smiles,
+                    smiles=coc_smiles,
                     bond_indices=[3, -1], bond_length=0.15,
                     bond_orientation=[None, None])
 
@@ -167,7 +193,7 @@ class TestPolymer(BaseTest):
 class TestCopolymer(BaseTest):
     class COC(Polymer):
         def __init__(self, lengths, num_mols, **kwargs):
-            smiles = BaseTest.monomer_coc_smiles
+            smiles = BaseTest.coc_smiles
             bond_indices = [3, -1]
             bond_length = 0.15
             bond_orientation = [None, None]
@@ -179,7 +205,7 @@ class TestCopolymer(BaseTest):
 
     class CC(Polymer):
         def __init__(self, lengths, num_mols, **kwargs):
-            smiles = 'CC'
+            smiles = BaseTest.ethane_smiles
             bond_indices = [2, -2]
             bond_length = 0.15
             bond_orientation = [None, None]
