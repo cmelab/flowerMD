@@ -4,7 +4,7 @@ import forcefield_utilities as ffutils
 import foyer
 import hoomd
 
-from hoomd_polymers.library import FF_DIR
+from hoomd_polymers.assets import FF_DIR
 
 
 class GAFF(foyer.Forcefield):
