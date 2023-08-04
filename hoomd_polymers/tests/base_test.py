@@ -38,13 +38,29 @@ class BaseTest:
     #     return system
 
     @pytest.fixture()
-    def benzene_mb(self):
-        benzene = mb.load("c1ccccc1", smiles=True)
-        return benzene
-
-    @pytest.fixture()
     def benzene_smiles(self):
         return "c1ccccc1"
+
+    @pytest.fixture()
+    def coc_smiles(self):
+        return "COC"
+
+    @pytest.fixture()
+    def ethane_smiles(self):
+        return "CC"
+
+    @pytest.fixture()
+    def octane_smiles(self):
+        return "CCCCCCCC"
+
+    @pytest.fixture()
+    def pps_smiles(self):
+        return "c1ccc(S)cc1"
+
+    @pytest.fixture()
+    def benzene_mb(self, benzene_smiles):
+        benzene = mb.load(benzene_smiles, smiles=True)
+        return benzene
 
     @pytest.fixture()
     def benzene_mol2(self):
@@ -109,6 +125,3 @@ class BaseTest:
             return [pairs, bonds, angles, dihedrals]
         return _hoomd_ff
 
-    @pytest.fixture()
-    def monomer_coc_smiles(self):
-        return "COC"
