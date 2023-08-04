@@ -78,12 +78,17 @@ class Molecule:
         topology_information["improper_types"] = self.improper_types
         return topology_information
 
-    def coarse_grain(self, beads=None, mapping=None):
+    def coarse_grain(self, beads=None):
         for comp in self.molecules:
-            cg_comp = CG_Compound(comp, beads=beads, mapping=mapping)
-            self._cg_molecules.append(cg_comp)
-        self.gmso_molecule = self._convert_to_gmso(self._cg_molecules[0])
-        self._identify_topology_information(self.gmso_molecule)
+            cg_comp = CG_Compound(comp, beads=beads)
+            if cg_comp.mapping:
+                self._cg_molecules.append(cg_comp)
+            else:
+                raise ValueError("Unable to coarse grain the molecule. "
+                                 "Please check the bead types.")
+        if self._cg_molecules:
+            self.gmso_molecule = self._convert_to_gmso(self._cg_molecules[0])
+            self._identify_topology_information(self.gmso_molecule)
 
     def _load(self):
         if self.compound:
