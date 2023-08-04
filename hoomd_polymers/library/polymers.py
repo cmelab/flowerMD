@@ -155,7 +155,7 @@ class PEKK_meta(Polymer):
         )
     
 
-class LJChain:
+class LJChain(Polymer):
     """Creates a coarse-grained bead-spring polymer chain.
 
     Parameters
@@ -177,12 +177,10 @@ class LJChain:
             bead_mass={"A": 1.0},
             bond_lengths={"A-A": 1.0},
     ):
-        super(LJChain, self).__init__()
-        self.lengths = check_return_iterable(lengths)
-        self.num_mols = check_return_iterable(num_mols)
         self.bead_sequence = bead_sequence
         self.bead_mass = bead_mass
         self.bond_lengths = bond_lengths
+        super(LJChain, self).__init__(lengths=lengths, num_mols=num_mols)
 
     def _build(self, length):
         chain = mb.Compound()
@@ -214,11 +212,3 @@ class LJChain:
                     chain.add_bond([next_bead, last_bead])
                 last_bead = next_bead
         return chain
-
-    def _generate(self):
-        molecules = []
-        for idx, length in enumerate(self.lengths):
-            for i in range(self.num_mols[idx]):
-                mol = self._build(length=length)
-                molecules.append(mol)
-        return molecules

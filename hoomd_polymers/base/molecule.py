@@ -120,8 +120,9 @@ class Molecule:
             p_name = getattr(site.atom_type, "name", None) or site.name
             if p_name not in self.particle_types:
                 self.particle_types.append(p_name)
-            if site.element.atomic_number == 1 and p_name not in self.hydrogen_types:
-                self.hydrogen_types.append(p_name)
+            if site.element:
+                if site.element.atomic_number == 1 and p_name not in self.hydrogen_types:
+                    self.hydrogen_types.append(p_name)
             self.particle_typeid.append(self.particle_types.index(p_name))
             self.particle_charge.append(site.charge.to_value() if site.charge else 0)
 
