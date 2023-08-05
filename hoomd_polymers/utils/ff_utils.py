@@ -8,7 +8,7 @@ from .base_types import FF_Types
 from .exceptions import MissingPairPotentialError, MissingBondPotentialError, MissingAnglePotentialError, \
     MissingDihedralPotentialError, MissingCoulombPotentialError
 
-FF_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '../library/forcefields'))
+from hoomd_polymers.assets import FF_DIR
 
 
 def ff_xml_directory():

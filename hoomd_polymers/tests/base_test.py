@@ -5,6 +5,7 @@ import mbuild as mb
 import pytest
 from gmso.external.convert_mbuild import from_mbuild
 
+from hoomd_polymers import Molecule
 # from hoomd_polymers.systems import *
 # from hoomd_polymers.molecules import *
 # from hoomd_polymers.forcefields import *
@@ -38,13 +39,29 @@ class BaseTest:
     #     return system
 
     @pytest.fixture()
-    def benzene_mb(self):
-        benzene = mb.load("c1ccccc1", smiles=True)
-        return benzene
-
-    @pytest.fixture()
     def benzene_smiles(self):
         return "c1ccccc1"
+
+    @pytest.fixture()
+    def coc_smiles(self):
+        return "COC"
+
+    @pytest.fixture()
+    def ethane_smiles(self):
+        return "CC"
+
+    @pytest.fixture()
+    def octane_smiles(self):
+        return "CCCCCCCC"
+
+    @pytest.fixture()
+    def pps_smiles(self):
+        return "c1ccc(S)cc1"
+
+    @pytest.fixture(autouse=True)
+    def benzene_mb(self, benzene_smiles):
+        benzene = mb.load(benzene_smiles, smiles=True)
+        return benzene
 
     @pytest.fixture()
     def benzene_mol2(self):
@@ -110,5 +127,11 @@ class BaseTest:
         return _hoomd_ff
 
     @pytest.fixture()
-    def monomer_coc_smiles(self):
-        return "COC"
+    def benzene_molecule(self, benzene_mb):
+        benzene = Molecule(num_mols=5, compound=benzene_mb)
+        return benzene
+
+    @pytest.fixture()
+    def ethane_molecule(self, ethane_smiles):
+        ethane = Molecule(num_mols=3, smiles=ethane_smiles)
+        return ethane
