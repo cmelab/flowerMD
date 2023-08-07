@@ -42,6 +42,24 @@ class OPLS_AA_PPS(foyer.Forcefield):
         self.gmso_ff = ffutils.FoyerFFs().load(forcefield_files).to_gmso_ff()
 
 
+class OPLS_AA_BENZENE(foyer.Forcefield):
+    def __init__(self, forcefield_files=f"{FF_DIR}/benzene_opls.xml"):
+        super(OPLS_AA_BENZENE, self).__init__(forcefield_files=forcefield_files)
+        self.description = (
+            "Based on hoomd_polymers.forcefields.OPLS_AA. "
+            "Trimmed down to include only benzene parameters."
+        )
+        self.gmso_ff = ffutils.FoyerFFs().load(forcefield_files).to_gmso_ff()
+
+class OPLS_AA_DIMETHYLETHER(foyer.Forcefield):
+    def __init__(self, forcefield_files=f"{FF_DIR}/dimethylether_opls.xml"):
+        super(OPLS_AA_DIMETHYLETHER, self).__init__(forcefield_files=forcefield_files)
+        self.description = (
+            "Based on hoomd_polymers.forcefields.OPLS_AA. "
+            "Trimmed down to include only dimethyl ether parameters."
+        )
+        self.gmso_ff = ffutils.FoyerFFs().load(forcefield_files).to_gmso_ff()
+
 class FF_from_file(foyer.Forcefield):
     def __init__(self, xml_file):
         super(FF_from_file, self).__init__(forcefield_files=xml_file)
@@ -106,4 +124,3 @@ class BeadSpring:
                 periodic_dihedral.params[dih_type] = self.dihedrals[dih_type]
             forces.append(periodic_dihedral)
         return forces
-
