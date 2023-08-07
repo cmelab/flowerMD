@@ -7,7 +7,7 @@ import numpy as np
 import unyt as u
 import warnings
 
-from hoomd_polymers.sim.actions import UpdateWalls, StdOutLogger
+from hoomd_polymers.utils import UpdateWalls, StdOutLogger
 from hoomd_polymers.utils.exceptions import ReferenceUnitError
 
 
