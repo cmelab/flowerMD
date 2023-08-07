@@ -43,7 +43,7 @@ class BaseTest:
         return "c1ccccc1"
 
     @pytest.fixture()
-    def coc_smiles(self):
+    def dimethylether_smiles(self):
         return "COC"
 
     @pytest.fixture()
@@ -135,3 +135,13 @@ class BaseTest:
     def ethane_molecule(self, ethane_smiles):
         ethane = Molecule(num_mols=3, smiles=ethane_smiles)
         return ethane
+
+    @pytest.fixture()
+    def pps_molecule(self, pps_smiles):
+        pps = Molecule(num_mols=3, smiles=pps_smiles)
+        return pps
+
+    @pytest.fixture()
+    def dimethylether_molecule(self, dimethylether_smiles):
+        dimethylether = Molecule(num_mols=3, smiles=dimethylether_smiles)
+        return dimethylether

@@ -153,8 +153,8 @@ class TestMolecule(BaseTest):
 
 
 class TestPolymer(BaseTest):
-    def test_polymer(self, coc_smiles):
-        polymer = Polymer(lengths=3, num_mols=1, smiles=coc_smiles,
+    def test_polymer(self, dimethylether_smiles):
+        polymer = Polymer(lengths=3, num_mols=1, smiles=dimethylether_smiles,
                           bond_indices=[3, -1], bond_length=0.15,
                           bond_orientation=[None, None])
         assert polymer.n_particles == 23
@@ -163,18 +163,18 @@ class TestPolymer(BaseTest):
         assert ('O', 'C', 'C', 'O') in polymer.topology_information[
             "dihedral_types"]
 
-    def test_polymer_different_chain_lengths(self, coc_smiles):
+    def test_polymer_different_chain_lengths(self, dimethylether_smiles):
         polymer = Polymer(lengths=[3, 4], num_mols=[1, 1],
-                          smiles=coc_smiles,
+                          smiles=dimethylether_smiles,
                           bond_indices=[3, -1], bond_length=0.15,
                           bond_orientation=[None, None])
         assert polymer.n_particles == 53
         assert len(polymer.molecules[0].labels['monomer']) == 3
         assert len(polymer.molecules[1].labels['monomer']) == 4
 
-    def test_polymer_different_num_mol(self, coc_smiles):
+    def test_polymer_different_num_mol(self, dimethylether_smiles):
         polymer = Polymer(lengths=[3, 2], num_mols=[1, 2],
-                          smiles=coc_smiles,
+                          smiles=dimethylether_smiles,
                           bond_indices=[3, -1], bond_length=0.15,
                           bond_orientation=[None, None])
         assert polymer.n_particles == 55
@@ -182,10 +182,10 @@ class TestPolymer(BaseTest):
         assert len(polymer.molecules[1].labels['monomer']) == 2
         assert len(polymer.molecules[2].labels['monomer']) == 2
 
-    def test_polymer_unequal_num_mol_length(self, coc_smiles):
+    def test_polymer_unequal_num_mol_length(self, dimethylether_smiles):
         with pytest.raises(ValueError):
             Polymer(lengths=[3], num_mols=[1, 2],
-                    smiles=coc_smiles,
+                    smiles=dimethylether_smiles,
                     bond_indices=[3, -1], bond_length=0.15,
                     bond_orientation=[None, None])
 
@@ -193,7 +193,7 @@ class TestPolymer(BaseTest):
 class TestCopolymer(BaseTest):
     class COC(Polymer):
         def __init__(self, lengths, num_mols, **kwargs):
-            smiles = BaseTest.coc_smiles
+            smiles = BaseTest.dimethylether_smiles
             bond_indices = [3, -1]
             bond_length = 0.15
             bond_orientation = [None, None]
