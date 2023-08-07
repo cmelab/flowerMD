@@ -195,15 +195,19 @@ class System(ABC):
 
     @property
     def hoomd_snapshot(self):
+        if not self._hoomd_snapshot:
+            self._hoomd_snapshot = self._create_hoomd_snapshot()
         return self._hoomd_snapshot
 
     @property
     def hoomd_forcefield(self):
+        if not self._hoomd_forcefield:
+            self._hoomd_forcefield = self._create_hoomd_forcefield()
         return self._hoomd_forcefield
 
     def _remove_hydrogens(self):
         """Call this method to remove hydrogen atoms from the system.
-        The masses and charges of the hydrogens are absorbed into 
+        The masses and charges of the hydrogens are absorbed into
         the heavy atoms they were bonded to.
         """
         parmed_struc = to_parmed(self.gmso_system)
@@ -225,10 +229,6 @@ class System(ABC):
         )
         if len(hydrogens) > 0:
             self.gmso_system = from_parmed(parmed_struc)
-            if self._hoomd_snapshot:
-                self._hoomd_snapshot = self._create_hoomd_snapshot()
-            if self._hoomd_forcefield and self.gmso_system.is_typed():
-                self._hoomd_forcefield = self._create_hoomd_forcefield()
 
     def to_gsd(self, file_name):
         with gsd.hoomd.open(file_name, "wb") as traj:
@@ -259,12 +259,13 @@ class System(ABC):
         return snap
 
     def _apply_forcefield(self):
-        self.gmso_system = apply(
-            self.gmso_system,
-            self._gmso_forcefields_dict,
-            identify_connections=True,
-            use_molecule_info=True
-        )
+        if self._force_field:
+            self.gmso_system = apply(
+                self.gmso_system,
+                self._gmso_forcefields_dict,
+                identify_connections=True,
+                use_molecule_info=True
+            )
         if self.remove_charges:
             for site in self.gmso_system.sites:
                 site.charge = 0
@@ -286,9 +287,6 @@ class System(ABC):
 
         if self.remove_hydrogens:
             self._remove_hydrogens()
-        # Create the forcefield and snapshot attributes
-        self._hoomd_snapshot = self._create_hoomd_snapshot()
-        self._hoomd_forcefield = self._create_hoomd_forcefield()
 
     def set_target_box(
             self, x_constraint=None, y_constraint=None, z_constraint=None
