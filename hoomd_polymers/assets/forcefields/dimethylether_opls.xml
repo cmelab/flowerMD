@@ -1,8 +1,8 @@
 <ForceField name="OPLS-AA" version="0.0.3" combining_rule="geometric">
 <AtomTypes>
-<Type name="opls_181" class="CT" element="C" mass="12.011" def="[C;X4]([O;%opls_180])(H)(H)H" desc="C(H3OR), methyl ether" overrides=""/>
-<Type name="opls_180" class="OS" element="O" mass="15.999" def="[O;X2](C)C" desc="O, dialkyl ether" overrides=""/>
-<Type name="opls_185" class="HC" element="C" mass="12.011" def="HC[O;%opls_180]" desc="H(COR), alpha H ether" overrides=""/>
+<Type name="ct" class="CT" element="C" mass="12.011" def="[C;X4]([O;%os])(H)(H)H" desc="C(H3OR), methyl ether" overrides=""/>
+<Type name="os" class="OS" element="O" mass="15.999" def="[O;X2](C)C" desc="O, dialkyl ether" overrides=""/>
+<Type name="hc" class="HC" element="C" mass="12.011" def="HC[O;%os]" desc="H(COR), alpha H ether" overrides=""/>
 </AtomTypes>
 <HarmonicBondForce>
 <Bond class1="OS" class2="CT" length="0.141" k="267776.0"/>
@@ -18,8 +18,8 @@
 <Proper class1="CT" class2="OS" class3="CT" class4="HC" c0="1.58992" c1="4.76976" c2="0.0" c3="-6.35968" c4="0.0" c5="0.0"/>
 </RBTorsionForce>
 <NonbondedForce coulomb14scale="0.5" lj14scale="0.5">
-<Atom type="opls_181" charge="0.11" sigma="0.35" epsilon="0.276144"/>
-<Atom type="opls_180" charge="-0.4" sigma="0.29" epsilon="0.58576"/>
-<Atom type="opls_185" charge="0.03" sigma="0.25" epsilon="0.12552"/>
+<Atom type="ct" charge="0.11" sigma="0.35" epsilon="0.276144"/>
+<Atom type="os" charge="-0.4" sigma="0.29" epsilon="0.58576"/>
+<Atom type="hc" charge="0.03" sigma="0.25" epsilon="0.12552"/>
 </NonbondedForce>
 </ForceField>
