@@ -5,7 +5,7 @@ import mbuild as mb
 import pytest
 from gmso.external.convert_mbuild import from_mbuild
 
-from hoomd_polymers import Molecule
+from hoomd_polymers import Molecule, Polymer
 # from hoomd_polymers.systems import *
 # from hoomd_polymers.molecules import *
 # from hoomd_polymers.forcefields import *
@@ -145,3 +145,33 @@ class BaseTest:
     def dimethylether_molecule(self, dimethylether_smiles):
         dimethylether = Molecule(num_mols=3, smiles=dimethylether_smiles)
         return dimethylether
+
+    @pytest.fixture()
+    def PolyEthylene(self, ethane_smiles):
+        class _PolyEthylene(Polymer):
+            def __init__(self, lengths, num_mols, **kwargs):
+                smiles = ethane_smiles
+                bond_indices = [2, -2]
+                bond_length = 0.15
+                bond_orientation = [None, None]
+                super().__init__(
+                    lengths=lengths, num_mols=num_mols,
+                    smiles=smiles, bond_indices=bond_indices,
+                    bond_length=bond_length, bond_orientation=bond_orientation,
+                    **kwargs)
+        return _PolyEthylene
+
+    @pytest.fixture()
+    def PolyDME(self, dimethylether_smiles):
+        class _PolyDME(Polymer):
+            def __init__(self, lengths, num_mols, **kwargs):
+                smiles = dimethylether_smiles
+                bond_indices = [3, -1]
+                bond_length = 0.15
+                bond_orientation = [None, None]
+                super().__init__(
+                    lengths=lengths, num_mols=num_mols,
+                    smiles=smiles, bond_indices=bond_indices,
+                    bond_length=bond_length, bond_orientation=bond_orientation,
+                    **kwargs)
+        return _PolyDME
