@@ -6,10 +6,12 @@ import pytest
 from gmso.external.convert_mbuild import from_mbuild
 
 from hoomd_polymers import Molecule, Polymer
+
 # from hoomd_polymers.systems import *
 # from hoomd_polymers.molecules import *
 # from hoomd_polymers.forcefields import *
 ASSETS_DIR = os.path.join(os.path.dirname(__file__), "assets")
+
 
 class BaseTest:
     # @pytest.fixture(autouse=True)
@@ -119,32 +121,48 @@ class BaseTest:
     @pytest.fixture()
     def benzene_hoomd_ff(self):
         def _hoomd_ff(include_hydrogen, invalid_pair=False):
-            pairs = self.benzene_hoomd_pair(include_hydrogen=include_hydrogen, invalid_pair=invalid_pair)
+            pairs = self.benzene_hoomd_pair(include_hydrogen=include_hydrogen,
+                                            invalid_pair=invalid_pair)
             bonds = self.benzene_hoomd_bond(include_hydrogen=include_hydrogen)
             angles = self.benzene_hoomd_angle(include_hydrogen=include_hydrogen)
-            dihedrals = self.benzene_hoomd_dihedral(include_hydrogen=include_hydrogen)
+            dihedrals = self.benzene_hoomd_dihedral(
+                include_hydrogen=include_hydrogen)
             return [pairs, bonds, angles, dihedrals]
+
         return _hoomd_ff
 
     @pytest.fixture()
-    def benzene_molecule(self, benzene_mb):
-        benzene = Molecule(num_mols=5, compound=benzene_mb)
-        return benzene
+    def benzene_molecule(self, benzene_smiles):
+        def _benzene_molecule(n_mols):
+            benzene = Molecule(num_mols=n_mols, smiles=benzene_smiles)
+            return benzene
+
+        return _benzene_molecule
 
     @pytest.fixture()
     def ethane_molecule(self, ethane_smiles):
-        ethane = Molecule(num_mols=3, smiles=ethane_smiles)
-        return ethane
+        def _ethane_molecule(n_mols):
+            ethane = Molecule(num_mols=n_mols, smiles=ethane_smiles)
+            return ethane
+
+        return _ethane_molecule
 
     @pytest.fixture()
     def pps_molecule(self, pps_smiles):
-        pps = Molecule(num_mols=3, smiles=pps_smiles)
-        return pps
+        def _pps_molecule(n_mols):
+            pps = Molecule(num_mols=n_mols, smiles=pps_smiles)
+            return pps
+
+        return _pps_molecule
 
     @pytest.fixture()
     def dimethylether_molecule(self, dimethylether_smiles):
-        dimethylether = Molecule(num_mols=3, smiles=dimethylether_smiles)
-        return dimethylether
+        def _dimethylether_molecule(n_mols):
+            dimethylether = Molecule(num_mols=n_mols,
+                                     smiles=dimethylether_smiles)
+            return dimethylether
+
+        return _dimethylether_molecule
 
     @pytest.fixture()
     def PolyEthylene(self, ethane_smiles):
@@ -159,6 +177,7 @@ class BaseTest:
                     smiles=smiles, bond_indices=bond_indices,
                     bond_length=bond_length, bond_orientation=bond_orientation,
                     **kwargs)
+
         return _PolyEthylene
 
     @pytest.fixture()
@@ -174,4 +193,5 @@ class BaseTest:
                     smiles=smiles, bond_indices=bond_indices,
                     bond_length=bond_length, bond_orientation=bond_orientation,
                     **kwargs)
+
         return _PolyDME
