@@ -1,7 +1,7 @@
 from hoomd_polymers.tests import BaseTest
 from hoomd_polymers.library import OPLS_AA, GAFF, OPLS_AA_PPS, \
     OPLS_AA_DIMETHYLETHER
-from hoomd_polymers import Pack
+from hoomd_polymers import Pack, Lattice
 import hoomd
 import numpy as np
 
@@ -123,3 +123,10 @@ class TestSystem(BaseTest):
                       density=1.0, r_cut=2.5, auto_scale=True)
         assert np.allclose(system.reference_energy.to('kcal/mol').value, 0.1094,
                            atol=1e-3)
+
+    def test_lattice(self, PolyEthylene):
+        polyethylene = PolyEthylene(lengths=5, num_mols=5)
+        Lattice(molecules=[polyethylene], force_field=[OPLS_AA()], density=1.0,
+                r_cut=2.5, x=1, y=1, n=4)
+
+    # TODO: Add more lattice unit tests?
