@@ -60,6 +60,7 @@ class System(ABC):
         self._hoomd_forcefield = []
         self._reference_values = dict()
         self._gmso_forcefields_dict = dict()
+        self.gmso_system = None
 
         # Collecting all molecules
         self.n_mol_types = 0
@@ -120,10 +121,15 @@ class System(ABC):
 
     @property
     def n_particles(self):
+        if self.gmso_system:
+            return self.gmso_system.n_sites
         return sum([mol.n_particles for mol in self.all_molecules])
 
     @property
     def mass(self):
+        if self.gmso_system:
+            return sum(float(site.mass.to("amu").value) for site in
+                       self.gmso_system.sites)
         return sum(mol.mass for mol in self.all_molecules)
 
     @property
