@@ -440,7 +440,6 @@ class Lattice(System):
             y: float,
             n: int,
             basis_vector=[0.5, 0.5, 0],
-            z_adjust=1.0,
             force_field=None,
             auto_scale=False,
             remove_hydrogens=False,
@@ -463,7 +462,6 @@ class Lattice(System):
             scale_charges=scale_charges,
             base_units=base_units
         )
-        super(Lattice, self).__init__(molecules=molecules, density=density)
 
     def _build_system(self):
         next_idx = 0
@@ -482,8 +480,8 @@ class Lattice(System):
                 except IndexError:
                     pass
             layer.translate((self.x * i, 0, 0))
-            self.system.add(layer)
-        bounding_box = self.system.get_boundingbox()
+            system.add(layer)
+        bounding_box = system.get_boundingbox()
         x_len = bounding_box.lengths[0]
         y_len = bounding_box.lengths[1]
         self.set_target_box(x_constraint=x_len, y_constraint=y_len)
