@@ -93,7 +93,7 @@ class Molecule:
     def _load(self):
         if self.compound:
             if isinstance(self.compound, mb.Compound):
-                return self.compound
+                return mb.clone(mb.clone(self.compound))
             if isinstance(self.compound, Topology):
                 return to_mbuild(self.compound)
             else:
@@ -117,7 +117,7 @@ class Molecule:
 
     def _generate(self):
         for i in range(self.n_mols):
-            self._molecules.append(self._mb_molecule)
+            self._molecules.append(self._load())
 
     def _convert_to_gmso(self, mb_molecule):
         topology = from_mbuild(mb_molecule)
