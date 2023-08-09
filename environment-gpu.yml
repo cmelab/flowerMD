@@ -1,11 +1,11 @@
-name: fusion 
+name: hoomd-polymers 
 channels:
   - conda-forge
 dependencies:
   - foyer
   - freud
   - gmso >= 0.11.0
-  - gsd
+  - gsd<3.0
   - hoomd<4.0=*gpu*
   - mbuild
   - numpy
