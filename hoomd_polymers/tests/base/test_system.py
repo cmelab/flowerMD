@@ -124,9 +124,15 @@ class TestSystem(BaseTest):
         assert np.allclose(system.reference_energy.to('kcal/mol').value, 0.1094,
                            atol=1e-3)
 
-    def test_lattice(self, PolyEthylene):
+    def test_lattice_polymer(self, PolyEthylene):
         polyethylene = PolyEthylene(lengths=5, num_mols=5)
         Lattice(molecules=[polyethylene], force_field=[OPLS_AA()], density=1.0,
                 r_cut=2.5, x=1, y=1, n=4)
 
-    # TODO: Add more lattice unit tests?
+    # TODO: asserts for lattice?
+
+    def test_lattice_molecule(self, benzene_molecule):
+        benzene_mol = benzene_molecule(n_mols=32)
+        Lattice(molecules=[benzene_mol], force_field=OPLS_AA(),
+                         density=1.0,
+                         r_cut=2.5, x=1, y=1, n=4)
