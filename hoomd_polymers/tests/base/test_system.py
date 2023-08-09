@@ -126,11 +126,15 @@ class TestSystem(BaseTest):
                            atol=1e-3)
 
     # TODO: test system with base units.
-    def test_no_auto_scale(self, polyethylene):
+    def test_update_ref_values(self, polyethylene):
         polyethylene = polyethylene(lengths=5, num_mols=5)
         system = Pack(molecules=[polyethylene], force_field=[OPLS_AA()],
                       density=1.0, r_cut=2.5, auto_scale=False)
-        print(system.hoomd_forcefield)
+        system.reference_length = 1 * u.angstrom
+        system.reference_energy = 1 * u.kcal / u.mol
+        system.reference_mass = 1 * u.amu
+        assert np.allclose(system.hoomd_snapshot.configuration.box[:3],
+                           system.gmso_system.box.lengths.to('angstrom').value)
 
 
     def test_lattice_polymer(self, polyethylene):
