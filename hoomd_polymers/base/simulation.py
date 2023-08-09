@@ -183,6 +183,7 @@ class Simulation(hoomd.simulation.Simulation):
         else:
             warnings.warn("Reference mass is not specified. Using HOOMD's unit-less mass instead. "
                           "You can set reference mass value and unit with `reference_mass()` method. ")
+            return self.mass_reduced
 
     @property
     def density_reduced(self):
