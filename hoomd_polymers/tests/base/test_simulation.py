@@ -24,7 +24,7 @@ class TestSimulate(BaseTest):
         assert sim.density_reduced == sim.density
         assert sim.volume_reduced == sim.volume
         assert sim.mass_reduced == sim.mass
-    #
+
     # def test_reference_values(self, polyethylene_system):
     #     sim = Simulation(
     #             initial_state=polyethylene_system.hoomd_snapshot,
