@@ -7,6 +7,7 @@ from hoomd_polymers.library import OPLS_AA, GAFF, OPLS_AA_PPS, \
 from hoomd_polymers.tests import BaseTest
 import unyt as u
 
+
 class TestSystem(BaseTest):
     def test_single_mol_type(self, benzene_molecule):
         benzene_mols = benzene_molecule(n_mols=3)
@@ -135,7 +136,10 @@ class TestSystem(BaseTest):
         system.reference_mass = 1 * u.amu
         assert np.allclose(system.hoomd_snapshot.configuration.box[:3],
                            system.gmso_system.box.lengths.to('angstrom').value)
-
+        assert dict(system.hoomd_forcefield[3].params)['opls_135', 'opls_135'][
+                   'epsilon'] == \
+               system.gmso_system.sites[0].atom_type.parameters['epsilon'].to(
+                   'kcal/mol')
 
     def test_lattice_polymer(self, polyethylene):
         polyethylene = polyethylene(lengths=5, num_mols=5)
@@ -147,5 +151,5 @@ class TestSystem(BaseTest):
     def test_lattice_molecule(self, benzene_molecule):
         benzene_mol = benzene_molecule(n_mols=32)
         Lattice(molecules=[benzene_mol], force_field=OPLS_AA(),
-                         density=1.0,
-                         r_cut=2.5, x=1, y=1, n=4)
+                density=1.0,
+                r_cut=2.5, x=1, y=1, n=4)
