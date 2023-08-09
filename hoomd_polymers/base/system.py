@@ -53,12 +53,11 @@ class System(ABC):
         self.remove_hydrogens = remove_hydrogens
         self.remove_charges = remove_charges
         self.scale_charges = scale_charges
-        self.base_units = base_units
         self.target_box = None
         self.all_molecules = []
         self._hoomd_snapshot = None
         self._hoomd_forcefield = []
-        self._reference_values = dict()
+        self._reference_values = base_units
         self._gmso_forcefields_dict = dict()
         self.gmso_system = None
 
@@ -250,6 +249,7 @@ class System(ABC):
         ff, refs = to_hoomd_forcefield(
             top=self.gmso_system,
             r_cut=self.r_cut,
+            auto_scale=self.auto_scale,
             base_units=self._reference_values
         )
         for force in ff:
