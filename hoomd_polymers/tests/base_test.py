@@ -5,8 +5,8 @@ import mbuild as mb
 import pytest
 from gmso.external.convert_mbuild import from_mbuild
 
-from hoomd_polymers import Molecule, Polymer
-
+from hoomd_polymers import Molecule, Polymer, Pack
+from hoomd_polymers.library import OPLS_AA
 # from hoomd_polymers.systems import *
 # from hoomd_polymers.molecules import *
 # from hoomd_polymers.forcefields import *
@@ -165,7 +165,7 @@ class BaseTest:
         return _dimethylether_molecule
 
     @pytest.fixture()
-    def PolyEthylene(self, ethane_smiles):
+    def polyethylene(self, ethane_smiles):
         class _PolyEthylene(Polymer):
             def __init__(self, lengths, num_mols, **kwargs):
                 smiles = ethane_smiles
@@ -181,7 +181,7 @@ class BaseTest:
         return _PolyEthylene
 
     @pytest.fixture()
-    def PolyDME(self, dimethylether_smiles):
+    def polyDME(self, dimethylether_smiles):
         class _PolyDME(Polymer):
             def __init__(self, lengths, num_mols, **kwargs):
                 smiles = dimethylether_smiles
@@ -195,3 +195,11 @@ class BaseTest:
                     **kwargs)
 
         return _PolyDME
+
+    @pytest.fixture()
+    def polyethylene_system(self, polyethylene):
+        polyethylene = polyethylene(lengths=5, num_mols=5)
+        system = Pack(molecules=[polyethylene], density=0.5,
+                      r_cut=2.5,
+                      force_field=OPLS_AA(), auto_scale=True)
+        return system
