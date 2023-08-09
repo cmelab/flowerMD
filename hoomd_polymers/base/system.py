@@ -41,7 +41,7 @@ class System(ABC):
             remove_hydrogens=False,
             remove_charges=False,
             scale_charges=False,
-            base_units=None
+            base_units=dict()
     ):
         self._molecules = check_return_iterable(molecules)
         self._force_field = None
@@ -57,8 +57,7 @@ class System(ABC):
         self.all_molecules = []
         self._hoomd_snapshot = None
         self._hoomd_forcefield = []
-        self.base_units = base_units
-        self._reference_values = dict()
+        self._reference_values = base_units
         self._gmso_forcefields_dict = dict()
         self.gmso_system = None
 
@@ -251,7 +250,7 @@ class System(ABC):
             top=self.gmso_system,
             r_cut=self.r_cut,
             auto_scale=self.auto_scale,
-            base_units=self._reference_values if self.auto_scale else self.base_units
+            base_units=self._reference_values if self._reference_values else None
         )
         for force in ff:
             force_list.extend(ff[force])
@@ -261,7 +260,7 @@ class System(ABC):
         snap, refs = to_gsd_snapshot(
             top=self.gmso_system,
             auto_scale=self.auto_scale,
-            base_units=self._reference_values if self.auto_scale else self.base_units
+            base_units=self._reference_values if self._reference_values else None
         )
         return snap
 
@@ -386,7 +385,7 @@ class Pack(System):
             remove_hydrogens=False,
             remove_charges=False,
             scale_charges=False,
-            base_units=None,
+            base_units=dict(),
             packing_expand_factor=5,
             edge=0.2,
     ):
@@ -446,7 +445,7 @@ class Lattice(System):
             remove_hydrogens=False,
             remove_charges=False,
             scale_charges=False,
-            base_units=None,
+            base_units=dict(),
     ):
         self.x = x
         self.y = y
