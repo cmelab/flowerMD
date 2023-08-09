@@ -1,10 +1,11 @@
-from hoomd_polymers.tests import BaseTest
-from hoomd_polymers.library import OPLS_AA, GAFF, OPLS_AA_PPS, \
-    OPLS_AA_DIMETHYLETHER
-from hoomd_polymers import Pack, Lattice
 import hoomd
 import numpy as np
 
+from hoomd_polymers import Pack, Lattice
+from hoomd_polymers.library import OPLS_AA, GAFF, OPLS_AA_PPS, \
+    OPLS_AA_DIMETHYLETHER
+from hoomd_polymers.tests import BaseTest
+import unyt as u
 
 class TestSystem(BaseTest):
     def test_single_mol_type(self, benzene_molecule):
@@ -93,8 +94,8 @@ class TestSystem(BaseTest):
         assert np.allclose(system.mass,
                            ((12.011 * 6) + (1.008 * 6) + 32.06) * 20, atol=1e-4)
 
-    def test_ref_length(self, PolyEthylene):
-        polyethylene = PolyEthylene(lengths=5, num_mols=5)
+    def test_ref_length(self, polyethylene):
+        polyethylene = polyethylene(lengths=5, num_mols=5)
         system = Pack(molecules=[polyethylene], force_field=[GAFF()],
                       density=1.0, r_cut=2.5, auto_scale=True)
 
@@ -106,8 +107,8 @@ class TestSystem(BaseTest):
         assert np.allclose(calc_box[1], system.box.Ly, atol=1e-2)
         assert np.allclose(calc_box[2], system.box.Lz, atol=1e-2)
 
-    def test_ref_mass(self, PolyEthylene):
-        polyethylene = PolyEthylene(lengths=5, num_mols=5)
+    def test_ref_mass(self, polyethylene):
+        polyethylene = polyethylene(lengths=5, num_mols=5)
         system = Pack(molecules=[polyethylene], force_field=[GAFF()],
                       density=1.0, r_cut=2.5, auto_scale=True)
         total_red_mass = sum(system.hoomd_snapshot.particles.mass)
@@ -117,15 +118,23 @@ class TestSystem(BaseTest):
             atol=1e-1
         )
 
-    def test_ref_energy(self, PolyEthylene):
-        polyethylene = PolyEthylene(lengths=5, num_mols=5)
+    def test_ref_energy(self, polyethylene):
+        polyethylene = polyethylene(lengths=5, num_mols=5)
         system = Pack(molecules=[polyethylene], force_field=[GAFF()],
                       density=1.0, r_cut=2.5, auto_scale=True)
         assert np.allclose(system.reference_energy.to('kcal/mol').value, 0.1094,
                            atol=1e-3)
 
-    def test_lattice_polymer(self, PolyEthylene):
-        polyethylene = PolyEthylene(lengths=5, num_mols=5)
+    # TODO: test system with base units.
+    def test_no_auto_scale(self, polyethylene):
+        polyethylene = polyethylene(lengths=5, num_mols=5)
+        system = Pack(molecules=[polyethylene], force_field=[OPLS_AA()],
+                      density=1.0, r_cut=2.5, auto_scale=False)
+        print(system.hoomd_forcefield)
+
+
+    def test_lattice_polymer(self, polyethylene):
+        polyethylene = polyethylene(lengths=5, num_mols=5)
         Lattice(molecules=[polyethylene], force_field=[OPLS_AA()], density=1.0,
                 r_cut=2.5, x=1, y=1, n=4)
 
