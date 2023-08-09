@@ -1,11 +1,11 @@
 import pickle
+import warnings
 
 import gsd.hoomd
 import hoomd
 import hoomd.md
 import numpy as np
 import unyt as u
-import warnings
 
 from hoomd_polymers.utils import UpdateWalls, StdOutLogger
 from hoomd_polymers.utils.exceptions import ReferenceUnitError
@@ -156,8 +156,8 @@ class Simulation(hoomd.simulation.Simulation):
 
     @property
     def box_lengths(self):
-        if self._reference_values["length"]:
-            return self.box_lengths_reduced * self._reference_values["length"]
+        if self.reference_length:
+            return self.box_lengths_reduced * self.reference_length
         else:
             warnings.warn("Reference length is not specified. Using HOOMD's unit-less length instead. "
                           "You can set reference length value and unit with `reference_length()` method. ")
@@ -178,8 +178,8 @@ class Simulation(hoomd.simulation.Simulation):
 
     @property
     def mass(self):
-        if self._reference_values["mass"]:
-            return self.mass_reduced * self._reference_values["mass"]
+        if self.reference_mass:
+            return self.mass_reduced * self.reference_mass
         else:
             warnings.warn("Reference mass is not specified. Using HOOMD's unit-less mass instead. "
                           "You can set reference mass value and unit with `reference_mass()` method. ")
