@@ -4,8 +4,8 @@ import random
 from typing import List
 
 import mbuild as mb
-from gmso.external.convert_mbuild import from_mbuild, to_mbuild
 from gmso.core.topology import Topology
+from gmso.external.convert_mbuild import from_mbuild, to_mbuild
 from grits import CG_Compound
 from mbuild.lib.recipes import Polymer as mbPolymer
 

@@ -191,36 +191,36 @@ class TestPolymer(BaseTest):
 
 
 class TestCopolymer(BaseTest):
-    def test_copolymer_with_sequence(self, PolyEthylene, PolyDME):
-        copolymer = CoPolymer(monomer_A=PolyDME,
-                              monomer_B=PolyEthylene,
+    def test_copolymer_with_sequence(self, polyethylene, polyDME):
+        copolymer = CoPolymer(monomer_A=polyDME,
+                              monomer_B=polyethylene,
                               lengths=1, num_mols=1, sequence="ABA")
         assert copolymer.n_particles == 22
         assert ('C', 'C', 'C', 'C') in copolymer.topology_information[
             "dihedral_types"]
 
-    def test_copolymer_with_sequence_different_chain_lengths(self, PolyEthylene,
-                                                             PolyDME):
-        copolymer = CoPolymer(monomer_A=PolyDME,
-                              monomer_B=PolyEthylene,
+    def test_copolymer_with_sequence_different_chain_lengths(self, polyethylene,
+                                                             polyDME):
+        copolymer = CoPolymer(monomer_A=polyDME,
+                              monomer_B=polyethylene,
                               lengths=[2, 3], num_mols=[1, 1], sequence="ABA")
 
         assert copolymer.molecules[0].n_particles == 42
         assert copolymer.molecules[1].n_particles == 62
 
-    def test_copolymer_with_sequence_different_num_mol(self, PolyEthylene,
-                                                       PolyDME):
-        copolymer = CoPolymer(monomer_A=PolyDME,
-                              monomer_B=PolyEthylene,
+    def test_copolymer_with_sequence_different_num_mol(self, polyethylene,
+                                                       polyDME):
+        copolymer = CoPolymer(monomer_A=polyDME,
+                              monomer_B=polyethylene,
                               lengths=[2, 3], num_mols=[1, 2], sequence="ABA")
 
         assert copolymer.molecules[0].n_particles == 42
         assert copolymer.molecules[1].n_particles == 62
         assert copolymer.molecules[2].n_particles == 62
 
-    def test_copolymer_random_sequence(self, PolyEthylene, PolyDME):
-        copolymer = CoPolymer(monomer_A=PolyDME,
-                              monomer_B=PolyEthylene,
+    def test_copolymer_random_sequence(self, polyethylene, polyDME):
+        copolymer = CoPolymer(monomer_A=polyDME,
+                              monomer_B=polyethylene,
                               lengths=[3], num_mols=[1], random_sequence=True,
                               seed=42)
         # sequence is BAA
