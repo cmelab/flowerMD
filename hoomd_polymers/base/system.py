@@ -200,14 +200,12 @@ class System(ABC):
 
     @property
     def hoomd_snapshot(self):
-        if not self._hoomd_snapshot:
-            self._hoomd_snapshot = self._create_hoomd_snapshot()
+        self._hoomd_snapshot = self._create_hoomd_snapshot()
         return self._hoomd_snapshot
 
     @property
     def hoomd_forcefield(self):
-        if not self._hoomd_forcefield:
-            self._hoomd_forcefield = self._create_hoomd_forcefield()
+        self._hoomd_forcefield = self._create_hoomd_forcefield()
         return self._hoomd_forcefield
 
     def _remove_hydrogens(self):
