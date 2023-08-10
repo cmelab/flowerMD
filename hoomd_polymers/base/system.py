@@ -276,18 +276,22 @@ class System(ABC):
         if self.scale_charges and not self.remove_charges:
             pass
             # TODO: Scale charges from self.gmso_system
-        if self.auto_scale:
-            epsilons = [s.atom_type.parameters["epsilon"] for s in
-                        self.gmso_system.sites]
-            sigmas = [s.atom_type.parameters["sigma"] for s in
-                      self.gmso_system.sites]
-            masses = [s.mass for s in self.gmso_system.sites]
-            self._reference_values["energy"] = np.max(epsilons) * epsilons[
-                0].unit_array
-            self._reference_values["length"] = np.max(sigmas) * sigmas[
-                0].unit_array
-            self._reference_values["mass"] = np.max(masses) * masses[
-                0].unit_array.to("amu")
+        epsilons = [s.atom_type.parameters["epsilon"] for s in
+                    self.gmso_system.sites]
+        sigmas = [s.atom_type.parameters["sigma"] for s in
+                  self.gmso_system.sites]
+        masses = [s.mass for s in self.gmso_system.sites]
+
+        energy_scale = np.max(epsilons) if self.auto_scale else 1.0
+        length_scale = np.max(sigmas) if self.auto_scale else 1.0
+        mass_scale = np.max(masses) if self.auto_scale else 1.0
+
+        self._reference_values["energy"] = energy_scale * epsilons[
+            0].unit_array
+        self._reference_values["length"] = length_scale * sigmas[
+            0].unit_array
+        self._reference_values["mass"] = mass_scale * masses[
+            0].unit_array.to("amu")
 
         if self.remove_hydrogens:
             self._remove_hydrogens()
@@ -471,7 +475,9 @@ class Lattice(System):
                     comp1 = self.all_molecules[next_idx]
                     comp2 = self.all_molecules[next_idx + 1]
                     comp2.translate(self.basis_vector)
-                    unit_cell = mb.Compound(subcompounds=[comp1, comp2])
+                    # TODO: what if comp1 and comp2 have different names?
+                    unit_cell = mb.Compound(subcompounds=[comp1, comp2],
+                                            name=comp1.name)
                     unit_cell.translate((0, self.y * j, 0))
                     layer.add(unit_cell)
                     next_idx += 2
