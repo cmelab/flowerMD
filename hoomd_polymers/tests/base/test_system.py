@@ -126,8 +126,7 @@ class TestSystem(BaseTest):
         assert np.allclose(system.reference_energy.to('kcal/mol').value, 0.1094,
                            atol=1e-3)
 
-    # TODO: test system with base units.
-    def test_update_ref_values(self, polyethylene):
+    def test_ref_values_no_autoscale(self, polyethylene):
         polyethylene = polyethylene(lengths=5, num_mols=5)
         system = Pack(molecules=[polyethylene], force_field=[OPLS_AA()],
                       density=1.0, r_cut=2.5, auto_scale=False)
@@ -142,14 +141,24 @@ class TestSystem(BaseTest):
                    'kcal/mol')
 
     def test_lattice_polymer(self, polyethylene):
-        polyethylene = polyethylene(lengths=5, num_mols=5)
-        Lattice(molecules=[polyethylene], force_field=[OPLS_AA()], density=1.0,
-                r_cut=2.5, x=1, y=1, n=4)
+        polyethylene = polyethylene(lengths=2, num_mols=32)
+        system = Lattice(molecules=[polyethylene], force_field=[OPLS_AA()],
+                         density=1.0,
+                         r_cut=2.5, x=1, y=1, n=4, auto_scale=True)
 
-    # TODO: asserts for lattice?
+        assert system.n_mol_types == 1
+        assert len(system.all_molecules) == len(polyethylene.molecules)
+        assert len(system.hoomd_forcefield) > 0
+        assert system.n_particles == system.hoomd_snapshot.particles.N
+        assert system.reference_values.keys() == {'energy', 'length', 'mass'}
+        # TODO: specific asserts for lattice system?
 
     def test_lattice_molecule(self, benzene_molecule):
         benzene_mol = benzene_molecule(n_mols=32)
-        Lattice(molecules=[benzene_mol], force_field=OPLS_AA(),
-                density=1.0,
-                r_cut=2.5, x=1, y=1, n=4)
+        system = Lattice(molecules=[benzene_mol], force_field=OPLS_AA(),
+                         density=1.0, r_cut=2.5, x=1, y=1, n=4, auto_scale=True)
+        assert system.n_mol_types == 1
+        assert len(system.all_molecules) == len(benzene_mol.molecules)
+        assert len(system.hoomd_forcefield) > 0
+        assert system.n_particles == system.hoomd_snapshot.particles.N
+        assert system.reference_values.keys() == {'energy', 'length', 'mass'}
