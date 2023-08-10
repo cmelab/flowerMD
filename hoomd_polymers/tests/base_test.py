@@ -197,9 +197,9 @@ class BaseTest:
         return _PolyDME
 
     @pytest.fixture()
-    def polyethylene_system(self, polyethylene):
-        polyethylene = polyethylene(lengths=5, num_mols=5)
-        system = Pack(molecules=[polyethylene], density=0.5,
+    def benzene_system(self, benzene_mb):
+        benzene = Molecule(num_mols=5, compound=benzene_mb)
+        system = Pack(molecules=[benzene], density=0.5,
                       r_cut=2.5,
                       force_field=OPLS_AA(), auto_scale=True)
         return system
