@@ -1,14 +1,10 @@
 import os
-import random
 
 import mbuild as mb
 from mbuild.coordinate_transform import z_axis_transform
-from mbuild.lib.recipes import Polymer as mbPolymer
-import numpy as np
-import hoomd_polymers
-from hoomd_polymers.assets import MON_DIR
+
 from hoomd_polymers import Polymer, CoPolymer
-from hoomd_polymers.utils import check_return_iterable
+from hoomd_polymers.assets import MON_DIR
 
 
 class PolyEthylene(Polymer):
@@ -71,8 +67,9 @@ class PPS(Polymer):
 
 
 class PEEK(Polymer):
-    def __init__(self, length):
-        super(PEEK, self).__init__()
+    def __init__(self, lengths, num_mols, **kwargs):
+        super(PEEK, self).__init__(lengths=lengths,
+                num_mols=num_mols,)
 
 
 class PEKK(CoPolymer):
