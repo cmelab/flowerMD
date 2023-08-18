@@ -6,8 +6,8 @@ import gsd
 import mbuild as mb
 import numpy as np
 import unyt as u
-from gmso.external import from_mbuild, to_parmed, from_parmed, to_gsd_snapshot, \
-    to_hoomd_forcefield
+from gmso.external import from_mbuild, to_parmed, from_parmed, \
+    to_gsd_snapshot, to_hoomd_forcefield
 from gmso.parameterization import apply
 
 from hoomd_polymers.base.molecule import Molecule
@@ -87,7 +87,8 @@ class System(ABC):
                     else:
                         raise MoleculeLoadError(
                             msg=f"Unsupported compound type {type(sub_mol)}. "
-                                f"Supported compound types are: {str(mb.Compound)}")
+                                f"Supported compound types are: "
+                                f"{str(mb.Compound)}")
                 self.n_mol_types += 1
 
         # Collecting all force-fields only if xml force-field is provided
@@ -105,7 +106,9 @@ class System(ABC):
                             ff_index].gmso_ff
                     else:
                         raise ForceFieldError(
-                            msg=f"GMSO Force field in {self._force_field[ff_index]} is not provided.")
+                            msg=f"GMSO Force field in "
+                                f"{self._force_field[ff_index]} is not "
+                                f"provided.")
         self.system = self._build_system()
         self.gmso_system = self._convert_to_gmso()
         self._apply_forcefield()
@@ -160,8 +163,9 @@ class System(ABC):
             self._reference_values["length"] = length * getattr(u, unit)
         else:
             raise ReferenceUnitError(
-                f"Invalid reference length input.Please provide reference length (number) and "
-                f"unit (string) or pass length value as an {str(u.array.unyt_quantity)}.")
+                f"Invalid reference length input.Please provide reference "
+                f"length (number) and unit (string) or pass length value as "
+                f"an {str(u.array.unyt_quantity)}.")
 
     @reference_energy.setter
     def reference_energy(self, energy, unit=None):
@@ -172,8 +176,9 @@ class System(ABC):
             self._reference_values["energy"] = energy * getattr(u, unit)
         else:
             raise ReferenceUnitError(
-                f"Invalid reference energy input.Please provide reference energy (number) and "
-                f"unit (string) or pass energy value as an {str(u.array.unyt_quantity)}.")
+                f"Invalid reference energy input.Please provide reference "
+                f"energy (number) and unit (string) or pass energy value as "
+                f"an {str(u.array.unyt_quantity)}.")
 
     @reference_mass.setter
     def reference_mass(self, mass, unit=None):
@@ -184,8 +189,9 @@ class System(ABC):
             self._reference_values["mass"] = mass * getattr(u, unit)
         else:
             raise ReferenceUnitError(
-                f"Invalid reference mass input.Please provide reference mass (number) and "
-                f"unit (string) or pass mass value as an {str(u.array.unyt_quantity)}.")
+                f"Invalid reference mass input.Please provide reference "
+                f"mass (number) and unit (string) or pass mass value as an "
+                f"{str(u.array.unyt_quantity)}.")
 
     @reference_values.setter
     def reference_values(self, ref_value_dict):
@@ -195,7 +201,8 @@ class System(ABC):
                 raise ValueError(f"Missing reference for {k}.")
             if not isinstance(ref_value_dict[k], u.array.unyt_quantity):
                 raise ReferenceUnitError(
-                    f"{k} reference value must be of type {str(u.array.unyt_quantity)}")
+                    f"{k} reference value must be of type "
+                    f"{str(u.array.unyt_quantity)}")
         self._reference_values = ref_value_dict
 
     @property

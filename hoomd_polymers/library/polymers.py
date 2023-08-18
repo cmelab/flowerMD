@@ -15,19 +15,20 @@ class PolyEthylene(Polymer):
     length : int; required
         The number of monomer repeat units in the chain
     """
+
     def __init__(self, lengths, num_mols, **kwargs):
         smiles = "CC"
         bond_indices = [2, 6]
         bond_length = 0.145
         bond_orientation = [None, None]
         super(PolyEthylene, self).__init__(
-                lengths=lengths,
-                num_mols=num_mols,
-                smiles=smiles,
-                bond_indices=bond_indices,
-                bond_length=bond_length,
-                bond_orientation=bond_orientation,
-                **kwargs
+            lengths=lengths,
+            num_mols=num_mols,
+            smiles=smiles,
+            bond_indices=bond_indices,
+            bond_length=bond_length,
+            bond_orientation=bond_orientation,
+            **kwargs
         )
 
 
@@ -39,6 +40,7 @@ class PPS(Polymer):
     length : int; required
         The number of monomer repeat units in the chain
     """
+
     def __init__(self, lengths, num_mols, **kwargs):
         smiles = "c1ccc(S)cc1"
         file = None
@@ -46,22 +48,23 @@ class PPS(Polymer):
         bond_length = 0.176
         bond_orientation = [[0, 0, 1], [0, 0, -1]]
         super(PPS, self).__init__(
-                lengths=lengths,
-                num_mols=num_mols,
-                smiles=smiles,
-                file=file,
-                bond_indices=bond_indices,
-                bond_length=bond_length,
-                bond_orientation=bond_orientation,
-                **kwargs
+            lengths=lengths,
+            num_mols=num_mols,
+            smiles=smiles,
+            file=file,
+            bond_indices=bond_indices,
+            bond_length=bond_length,
+            bond_orientation=bond_orientation,
+            **kwargs
         )
+
     def _load(self):
         monomer = mb.load(self.smiles, smiles=True)
         # Need to align monomer along zx plane due to orientation of S-H bond
         z_axis_transform(
-                monomer,
-                point_on_z_axis=monomer[7],
-                point_on_zx_plane=monomer[4]
+            monomer,
+            point_on_z_axis=monomer[7],
+            point_on_zx_plane=monomer[4]
         )
         return monomer
 
@@ -69,7 +72,7 @@ class PPS(Polymer):
 class PEEK(Polymer):
     def __init__(self, lengths, num_mols, **kwargs):
         super(PEEK, self).__init__(lengths=lengths,
-                num_mols=num_mols,)
+                                   num_mols=num_mols, )
 
 
 class PEKK(CoPolymer):
@@ -85,16 +88,16 @@ class PEKK(CoPolymer):
             **kwargs
     ):
         super(PEKK, self).__init__(
-                monomer_A=PEKK_meta,
-                monomer_B=PEKK_para,
-                lengths=lengths,
-                num_mols=num_mols,
-                force_field=force_field,
-                sequence=sequence,
-                random_sequence=random_sequence,
-                AB_ratio=TI_ratio,
-                seed=seed,
-                **kwargs
+            monomer_A=PEKK_meta,
+            monomer_B=PEKK_para,
+            lengths=lengths,
+            num_mols=num_mols,
+            force_field=force_field,
+            sequence=sequence,
+            random_sequence=random_sequence,
+            AB_ratio=TI_ratio,
+            seed=seed,
+            **kwargs
         )
 
 
@@ -108,6 +111,7 @@ class PEKK_para(Polymer):
     length : int; required
         The number of monomer repeat units in the chain
     """
+
     def __init__(self, lengths, num_mols):
         smiles = "c1ccc(Oc2ccc(C(=O)c3ccc(C(=O))cc3)cc2)cc1"
         file = os.path.join(MON_DIR, "pekk_para.mol2")
@@ -115,15 +119,15 @@ class PEKK_para(Polymer):
         bond_length = 0.148
         bond_orientation = [[0, 0, -1], [0, 0, 1]]
         super(PEKK_para, self).__init__(
-                lengths=lengths,
-                num_mols=num_mols,
-                smiles=smiles,
-                file=file,
-                bond_indices=bond_indices,
-                bond_length=bond_length,
-                bond_orientation=bond_orientation
+            lengths=lengths,
+            num_mols=num_mols,
+            smiles=smiles,
+            file=file,
+            bond_indices=bond_indices,
+            bond_length=bond_length,
+            bond_orientation=bond_orientation
         )
-    
+
 
 class PEKK_meta(Polymer):
     """Creates a Poly(ether-ketone-ketone) (PEKK) chain.
@@ -135,6 +139,7 @@ class PEKK_meta(Polymer):
     length : int; required
         The number of monomer repeat units in the chain
     """
+
     def __init__(self, lengths, num_mols):
         smiles = "c1cc(Oc2ccc(C(=O)c3cc(C(=O))ccc3)cc2)ccc1"
         file = os.path.join(MON_DIR, "pekk_meta.mol2")
@@ -142,15 +147,15 @@ class PEKK_meta(Polymer):
         bond_length = 0.148
         bond_orientation = [[0, 0, -1], [0, 0, 1]]
         super(PEKK_meta, self).__init__(
-                lengths=lengths,
-                num_mols=num_mols,
-                smiles=smiles,
-                file=file,
-                bond_indices=bond_indices,
-                bond_length=bond_length,
-                bond_orientation=bond_orientation
+            lengths=lengths,
+            num_mols=num_mols,
+            smiles=smiles,
+            file=file,
+            bond_indices=bond_indices,
+            bond_length=bond_length,
+            bond_orientation=bond_orientation
         )
-    
+
 
 class LJChain(Polymer):
     """Creates a coarse-grained bead-spring polymer chain.
@@ -166,6 +171,7 @@ class LJChain(Polymer):
     bead_mass : dict; optional; default {"A": 1.0} 
         The mass of the bead types
     """
+
     def __init__(
             self,
             lengths,
@@ -187,8 +193,8 @@ class LJChain(Polymer):
                 mass = self.bead_mass.get(bead_type, None)
                 if not mass:
                     raise ValueError(
-                            f"The bead mass for {bead_type} was not given "
-                            "in the bead_mass dict."
+                        f"The bead mass for {bead_type} was not given "
+                        "in the bead_mass dict."
                     )
                 next_bead = mb.Compound(mass=mass, name=bead_type, charge=0)
                 chain.add(next_bead)
@@ -196,13 +202,14 @@ class LJChain(Polymer):
                     bead_pair = "-".join([last_bead.name, next_bead.name])
                     bond_length = self.bond_lengths.get(bead_pair, None)
                     if not bond_length:
-                        bead_pair_rev = "-".join([next_bead.name, last_bead.name])
+                        bead_pair_rev = "-".join(
+                            [next_bead.name, last_bead.name])
                         bond_length = self.bond_lengths.get(bead_pair_rev, None)
                         if not bond_length:
                             raise ValueError(
-                                    "The bond length for pair "
-                                    f"{bead_pair} or {bead_pair_rev} "
-                                    "is not found in the bond_lengths dict."
+                                "The bond length for pair "
+                                f"{bead_pair} or {bead_pair_rev} "
+                                "is not found in the bond_lengths dict."
                             )
                     new_pos = last_bead.xyz[0] + (0, 0, bond_length)
                     next_bead.translate_to(new_pos)
