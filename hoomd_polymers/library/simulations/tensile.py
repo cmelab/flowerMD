@@ -7,20 +7,20 @@ from hoomd_polymers.utils.actions import PullParticles
 
 class Tensile(Simulation):
     def __init__(
-            self,
-            initial_state,
-            forcefield,
-            tensile_axis,
-            fix_ratio=0.20,
-            r_cut=2.5,
-            dt=0.0001,
-            device=hoomd.device.auto_select(),
-            seed=42,
-            restart=None,
-            gsd_write_freq=1e4,
-            gsd_file_name="trajectory.gsd",
-            log_write_freq=1e3,
-            log_file_name="sim_data.txt"
+        self,
+        initial_state,
+        forcefield,
+        tensile_axis,
+        fix_ratio=0.20,
+        r_cut=2.5,
+        dt=0.0001,
+        device=hoomd.device.auto_select(),
+        seed=42,
+        restart=None,
+        gsd_write_freq=1e4,
+        gsd_file_name="trajectory.gsd",
+        log_write_freq=1e3,
+        log_file_name="sim_data.txt",
     ):
         super(Tensile, self).__init__(
             initial_state=initial_state,
@@ -32,14 +32,14 @@ class Tensile(Simulation):
             gsd_write_freq=gsd_write_freq,
             gsd_file_name=gsd_file_name,
             log_write_freq=log_write_freq,
-            log_file_name=log_file_name
+            log_file_name=log_file_name,
         )
         self.tensile_axis = tensile_axis.lower()
         self.fix_ratio = fix_ratio
         axis_array_dict = {
             "x": np.array([1, 0, 0]),
             "y": np.array([0, 1, 0]),
-            "z": np.array([0, 0, 1])
+            "z": np.array([0, 0, 1]),
         }
         axis_dict = {"x": 0, "y": 1, "z": 2}
         self._axis_index = axis_dict[self.tensile_axis]
@@ -64,8 +64,9 @@ class Tensile(Simulation):
 
     @property
     def strain(self):
-        delta_L = self.box_lengths_reduced[
-                      self._axis_index] - self.initial_length
+        delta_L = (
+            self.box_lengths_reduced[self._axis_index] - self.initial_length
+        )
         return delta_L / self.initial_length
 
     def run_tensile(self, strain, kT, n_steps, period):
@@ -83,13 +84,13 @@ class Tensile(Simulation):
             box2=final_box,
             variant=box_ramp,
             trigger=resize_trigger,
-            filter=hoomd.filter.Null()
+            filter=hoomd.filter.Null(),
         )
         particle_puller = PullParticles(
             shift_by=shift_by / 2,
             axis=self._axis_array,
             neg_filter=self.fix_left,
-            pos_filter=self.fix_right
+            pos_filter=self.fix_right,
         )
         particle_updater = hoomd.update.CustomUpdater(
             trigger=resize_trigger, action=particle_puller
@@ -98,6 +99,6 @@ class Tensile(Simulation):
         self.operations.updaters.append(particle_updater)
         self.set_integrator_method(
             integrator_method=hoomd.md.methods.NVE,
-            method_kwargs={"filter": self.integrate_group}
+            method_kwargs={"filter": self.integrate_group},
         )
         self.run(n_steps + 1)

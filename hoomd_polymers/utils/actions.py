@@ -15,7 +15,8 @@ class StdOutLogger(hoomd.custom.Action):
             eta = np.round((self.n_steps - current_step) / (60 * tps), 1)
             print(
                 f"Step {current_step} of {self.n_steps}; TPS: {tps}; ETA: "
-                f"{eta} minutes")
+                f"{eta} minutes"
+            )
 
 
 class PullParticles(hoomd.custom.Action):
@@ -29,8 +30,8 @@ class PullParticles(hoomd.custom.Action):
         with self._state.cpu_local_snapshot as snap:
             neg_filter = snap.particles.rtag[self.neg_filter.tags]
             pos_filter = snap.particles.rtag[self.pos_filter.tags]
-            snap.particles.position[neg_filter] -= (self.shift_by * self.axis)
-            snap.particles.position[pos_filter] += (self.shift_by * self.axis)
+            snap.particles.position[neg_filter] -= self.shift_by * self.axis
+            snap.particles.position[pos_filter] += self.shift_by * self.axis
 
 
 class UpdateWalls(hoomd.custom.Action):
@@ -64,4 +65,4 @@ class ScaleSigma(hoomd.custom.Action):
 
     def act(self, timestep):
         self.sim.adjust_sigma(shift_by=self.scale_factor)
-        lj_forces = self.sim._lj_force()
+        self.sim._lj_force()

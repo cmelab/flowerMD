@@ -3,7 +3,7 @@ import os
 import mbuild as mb
 from mbuild.coordinate_transform import z_axis_transform
 
-from hoomd_polymers import Polymer, CoPolymer
+from hoomd_polymers import CoPolymer, Polymer
 from hoomd_polymers.assets import MON_DIR
 
 
@@ -28,7 +28,7 @@ class PolyEthylene(Polymer):
             bond_indices=bond_indices,
             bond_length=bond_length,
             bond_orientation=bond_orientation,
-            **kwargs
+            **kwargs,
         )
 
 
@@ -55,37 +55,37 @@ class PPS(Polymer):
             bond_indices=bond_indices,
             bond_length=bond_length,
             bond_orientation=bond_orientation,
-            **kwargs
+            **kwargs,
         )
 
     def _load(self):
         monomer = mb.load(self.smiles, smiles=True)
         # Need to align monomer along zx plane due to orientation of S-H bond
         z_axis_transform(
-            monomer,
-            point_on_z_axis=monomer[7],
-            point_on_zx_plane=monomer[4]
+            monomer, point_on_z_axis=monomer[7], point_on_zx_plane=monomer[4]
         )
         return monomer
 
 
 class PEEK(Polymer):
     def __init__(self, lengths, num_mols, **kwargs):
-        super(PEEK, self).__init__(lengths=lengths,
-                                   num_mols=num_mols, )
+        super(PEEK, self).__init__(
+            lengths=lengths,
+            num_mols=num_mols,
+        )
 
 
 class PEKK(CoPolymer):
     def __init__(
-            self,
-            lengths,
-            num_mols,
-            force_field=None,
-            sequence=None,
-            random_sequence=False,
-            TI_ratio=0.50,
-            seed=24,
-            **kwargs
+        self,
+        lengths,
+        num_mols,
+        force_field=None,
+        sequence=None,
+        random_sequence=False,
+        TI_ratio=0.50,
+        seed=24,
+        **kwargs,
     ):
         super(PEKK, self).__init__(
             monomer_A=PEKK_meta,
@@ -97,7 +97,7 @@ class PEKK(CoPolymer):
             random_sequence=random_sequence,
             AB_ratio=TI_ratio,
             seed=seed,
-            **kwargs
+            **kwargs,
         )
 
 
@@ -125,7 +125,7 @@ class PEKK_para(Polymer):
             file=file,
             bond_indices=bond_indices,
             bond_length=bond_length,
-            bond_orientation=bond_orientation
+            bond_orientation=bond_orientation,
         )
 
 
@@ -153,7 +153,7 @@ class PEKK_meta(Polymer):
             file=file,
             bond_indices=bond_indices,
             bond_length=bond_length,
-            bond_orientation=bond_orientation
+            bond_orientation=bond_orientation,
         )
 
 
@@ -168,17 +168,17 @@ class LJChain(Polymer):
         The sequence of bead types in the chain.
     bond_length : dict; optional; default {"A-A": 1.0}
         The bond length between connected beads (units: nm)
-    bead_mass : dict; optional; default {"A": 1.0} 
+    bead_mass : dict; optional; default {"A": 1.0}
         The mass of the bead types
     """
 
     def __init__(
-            self,
-            lengths,
-            num_mols,
-            bead_sequence=["A"],
-            bead_mass={"A": 1.0},
-            bond_lengths={"A-A": 1.0},
+        self,
+        lengths,
+        num_mols,
+        bead_sequence=["A"],
+        bead_mass={"A": 1.0},
+        bond_lengths={"A-A": 1.0},
     ):
         self.bead_sequence = bead_sequence
         self.bead_mass = bead_mass
@@ -203,7 +203,8 @@ class LJChain(Polymer):
                     bond_length = self.bond_lengths.get(bead_pair, None)
                     if not bond_length:
                         bead_pair_rev = "-".join(
-                            [next_bead.name, last_bead.name])
+                            [next_bead.name, last_bead.name]
+                        )
                         bond_length = self.bond_lengths.get(bead_pair_rev, None)
                         if not bond_length:
                             raise ValueError(

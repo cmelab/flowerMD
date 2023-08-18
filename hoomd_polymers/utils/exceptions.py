@@ -6,8 +6,10 @@ class MissingPotentialError(Exception):
         super().__init__(msg)
 
     def _generate_msg(self):
-        return f"Missing {self.potential_class} potential for" \
-               f" {self.connection} {self.potential_type}"
+        return (
+            f"Missing {self.potential_class} potential for"
+            f" {self.connection} {self.potential_type}"
+        )
 
     @property
     def potential_type(self):
@@ -40,8 +42,10 @@ class MissingDihedralPotentialError(MissingPotentialError):
 
 class MissingCoulombPotentialError(MissingPotentialError):
     def _generate_msg(self):
-        return f"Missing Coulomb force {self.potential_class} " \
-               f"for electrostatic interactions."
+        return (
+            f"Missing Coulomb force {self.potential_class} "
+            f"for electrostatic interactions."
+        )
 
 
 class MoleculeLoadError(Exception):

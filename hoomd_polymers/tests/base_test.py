@@ -5,11 +5,9 @@ import mbuild as mb
 import pytest
 from gmso.external.convert_mbuild import from_mbuild
 
-from hoomd_polymers import Molecule, Polymer, Pack
-from hoomd_polymers.library import OPLS_AA, GAFF
-# from hoomd_polymers.systems import *
-# from hoomd_polymers.molecules import *
-# from hoomd_polymers.forcefields import *
+from hoomd_polymers import Molecule, Pack, Polymer
+from hoomd_polymers.library import OPLS_AA
+
 ASSETS_DIR = os.path.join(os.path.dirname(__file__), "assets")
 
 
@@ -29,7 +27,6 @@ class BaseTest:
     #     system.apply_forcefield(forcefield=GAFF(), remove_hydrogens=False)
     #     return system
     #
-
 
     @pytest.fixture()
     def benzene_smiles(self):
@@ -74,50 +71,52 @@ class BaseTest:
         cell = hoomd.md.nlist.Cell(buffer=0.4)
         lj = hoomd.md.pair.LJ(nlist=cell)
         if invalid_pair:
-            lj.params[('C', 'N')] = dict(epsilon=0.35, sigma=0.29)
-            lj.r_cut[('C', 'N')] = 2.5
+            lj.params[("C", "N")] = dict(epsilon=0.35, sigma=0.29)
+            lj.r_cut[("C", "N")] = 2.5
         else:
-            lj.params[('C', 'C')] = dict(epsilon=0.35, sigma=0.29)
-            lj.r_cut[('C', 'C')] = 2.5
+            lj.params[("C", "C")] = dict(epsilon=0.35, sigma=0.29)
+            lj.r_cut[("C", "C")] = 2.5
         if include_hydrogen:
-            lj.params[('C', 'H')] = dict(epsilon=0.35, sigma=0.29)
-            lj.r_cut[('C', 'H')] = 2.5
-            lj.params[('H', 'H')] = dict(epsilon=0.35, sigma=0.65)
-            lj.r_cut[('H', 'H')] = 2.5
+            lj.params[("C", "H")] = dict(epsilon=0.35, sigma=0.29)
+            lj.r_cut[("C", "H")] = 2.5
+            lj.params[("H", "H")] = dict(epsilon=0.35, sigma=0.65)
+            lj.r_cut[("H", "H")] = 2.5
 
         return lj
 
     def benzene_hoomd_bond(self, include_hydrogen=True):
         bond = hoomd.md.bond.Harmonic()
-        bond.params['C-C'] = dict(k=3.0, r0=2.38)
+        bond.params["C-C"] = dict(k=3.0, r0=2.38)
         if include_hydrogen:
-            bond.params['C-H'] = dict(k=3.0, r0=2.38)
+            bond.params["C-H"] = dict(k=3.0, r0=2.38)
         return bond
 
     def benzene_hoomd_angle(self, include_hydrogen=True):
         angle = hoomd.md.angle.Harmonic()
-        angle.params['C-C-C'] = dict(k=3.0, t0=0.7851)
+        angle.params["C-C-C"] = dict(k=3.0, t0=0.7851)
         if include_hydrogen:
-            angle.params['C-C-H'] = dict(k=3.0, t0=0.7851)
+            angle.params["C-C-H"] = dict(k=3.0, t0=0.7851)
         return angle
 
     def benzene_hoomd_dihedral(self, include_hydrogen=True):
         harmonic = hoomd.md.dihedral.Periodic()
-        harmonic.params['C-C-C-C'] = dict(k=3.0, d=0, n=1)
+        harmonic.params["C-C-C-C"] = dict(k=3.0, d=0, n=1)
         if include_hydrogen:
-            harmonic.params['C-C-C-H'] = dict(k=3.0, d=0, n=1)
-            harmonic.params['H-C-C-H'] = dict(k=3.0, d=-1, n=3, phi0=0)
+            harmonic.params["C-C-C-H"] = dict(k=3.0, d=0, n=1)
+            harmonic.params["H-C-C-H"] = dict(k=3.0, d=-1, n=3, phi0=0)
         return harmonic
 
     @pytest.fixture()
     def benzene_hoomd_ff(self):
         def _hoomd_ff(include_hydrogen, invalid_pair=False):
-            pairs = self.benzene_hoomd_pair(include_hydrogen=include_hydrogen,
-                                            invalid_pair=invalid_pair)
+            pairs = self.benzene_hoomd_pair(
+                include_hydrogen=include_hydrogen, invalid_pair=invalid_pair
+            )
             bonds = self.benzene_hoomd_bond(include_hydrogen=include_hydrogen)
             angles = self.benzene_hoomd_angle(include_hydrogen=include_hydrogen)
             dihedrals = self.benzene_hoomd_dihedral(
-                include_hydrogen=include_hydrogen)
+                include_hydrogen=include_hydrogen
+            )
             return [pairs, bonds, angles, dihedrals]
 
         return _hoomd_ff
@@ -149,8 +148,9 @@ class BaseTest:
     @pytest.fixture()
     def dimethylether_molecule(self, dimethylether_smiles):
         def _dimethylether_molecule(n_mols):
-            dimethylether = Molecule(num_mols=n_mols,
-                                     smiles=dimethylether_smiles)
+            dimethylether = Molecule(
+                num_mols=n_mols, smiles=dimethylether_smiles
+            )
             return dimethylether
 
         return _dimethylether_molecule
@@ -164,10 +164,14 @@ class BaseTest:
                 bond_length = 0.15
                 bond_orientation = [None, None]
                 super().__init__(
-                    lengths=lengths, num_mols=num_mols,
-                    smiles=smiles, bond_indices=bond_indices,
-                    bond_length=bond_length, bond_orientation=bond_orientation,
-                    **kwargs)
+                    lengths=lengths,
+                    num_mols=num_mols,
+                    smiles=smiles,
+                    bond_indices=bond_indices,
+                    bond_length=bond_length,
+                    bond_orientation=bond_orientation,
+                    **kwargs
+                )
 
         return _PolyEthylene
 
@@ -180,30 +184,41 @@ class BaseTest:
                 bond_length = 0.15
                 bond_orientation = [None, None]
                 super().__init__(
-                    lengths=lengths, num_mols=num_mols,
-                    smiles=smiles, bond_indices=bond_indices,
-                    bond_length=bond_length, bond_orientation=bond_orientation,
-                    **kwargs)
+                    lengths=lengths,
+                    num_mols=num_mols,
+                    smiles=smiles,
+                    bond_indices=bond_indices,
+                    bond_length=bond_length,
+                    bond_orientation=bond_orientation,
+                    **kwargs
+                )
 
         return _PolyDME
 
     @pytest.fixture()
     def benzene_system(self, benzene_mb):
         benzene = Molecule(num_mols=5, compound=benzene_mb)
-        system = Pack(molecules=[benzene], density=0.5,
-                      r_cut=2.5,
-                      force_field=OPLS_AA(), auto_scale=True)
+        system = Pack(
+            molecules=[benzene],
+            density=0.5,
+            r_cut=2.5,
+            force_field=OPLS_AA(),
+            auto_scale=True,
+        )
         return system
 
     @pytest.fixture()
     def polyethylene_system(self, polyethylene):
         polyethylene_mol = polyethylene(num_mols=5, lengths=5)
-        system = Pack(molecules=polyethylene_mol, density=0.5,
-                      r_cut=2.5,
-                      force_field=OPLS_AA(), auto_scale=True,
-                      remove_hydrogens=True)
+        system = Pack(
+            molecules=polyethylene_mol,
+            density=0.5,
+            r_cut=2.5,
+            force_field=OPLS_AA(),
+            auto_scale=True,
+            remove_hydrogens=True,
+        )
         return system
-
 
     # @pytest.fixture()
     # def ua_polyethylene_system(self):

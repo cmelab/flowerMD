@@ -1,4 +1,4 @@
-name: hoomd-polymers
+name: hoomd-polymers-dev
 channels:
   - conda-forge
 dependencies:
@@ -6,7 +6,7 @@ dependencies:
   - freud
   - gmso >= 0.11.0
   - gsd<3.0
-  - hoomd<4.0=*cpu*
+  - hoomd<4.0=*gpu*
   - mbuild
   - numpy
   - openbabel
@@ -16,6 +16,7 @@ dependencies:
   - pytest-cov
   - python=3.9
   - unyt
+  - pre-commit
   - pip:
       - git+https://github.com/cmelab/cmeutils.git@master
       - git+https://github.com/cmelab/grits.git@main

@@ -1,4 +1,3 @@
-from .molecule import Molecule, Polymer, CoPolymer
-from .system import System, Pack, Lattice
+from .molecule import CoPolymer, Molecule, Polymer
 from .simulation import Simulation
-
+from .system import Lattice, Pack, System

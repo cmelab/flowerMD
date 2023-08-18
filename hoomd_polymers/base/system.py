@@ -6,14 +6,22 @@ import gsd
 import mbuild as mb
 import numpy as np
 import unyt as u
-from gmso.external import from_mbuild, to_parmed, from_parmed, \
-    to_gsd_snapshot, to_hoomd_forcefield
+from gmso.external import (
+    from_mbuild,
+    from_parmed,
+    to_gsd_snapshot,
+    to_hoomd_forcefield,
+    to_parmed,
+)
 from gmso.parameterization import apply
 
 from hoomd_polymers.base.molecule import Molecule
-from hoomd_polymers.utils import xml_to_gmso_ff, check_return_iterable, FF_Types
-from hoomd_polymers.utils.exceptions import MoleculeLoadError, \
-    ReferenceUnitError, ForceFieldError
+from hoomd_polymers.utils import FF_Types, check_return_iterable, xml_to_gmso_ff
+from hoomd_polymers.utils.exceptions import (
+    ForceFieldError,
+    MoleculeLoadError,
+    ReferenceUnitError,
+)
 
 
 class System(ABC):
@@ -32,16 +40,16 @@ class System(ABC):
     """
 
     def __init__(
-            self,
-            molecules,
-            density: float,
-            r_cut: float,
-            force_field=None,
-            auto_scale=False,
-            remove_hydrogens=False,
-            remove_charges=False,
-            scale_charges=False,
-            base_units=dict()
+        self,
+        molecules,
+        density: float,
+        r_cut: float,
+        force_field=None,
+        auto_scale=False,
+        remove_hydrogens=False,
+        remove_charges=False,
+        scale_charges=False,
+        base_units=dict(),
     ):
         self._molecules = check_return_iterable(molecules)
         self._force_field = None
@@ -73,8 +81,8 @@ class System(ABC):
                         self._hoomd_forcefield.extend(mol_item.force_field)
                     else:
                         self._gmso_forcefields_dict[
-                            str(self.n_mol_types)] = xml_to_gmso_ff(
-                            mol_item.force_field)
+                            str(self.n_mol_types)
+                        ] = xml_to_gmso_ff(mol_item.force_field)
                 self.n_mol_types += 1
             elif isinstance(mol_item, mb.Compound):
                 mol_item.name = str(self.n_mol_types)
@@ -87,8 +95,9 @@ class System(ABC):
                     else:
                         raise MoleculeLoadError(
                             msg=f"Unsupported compound type {type(sub_mol)}. "
-                                f"Supported compound types are: "
-                                f"{str(mb.Compound)}")
+                            f"Supported compound types are: "
+                            f"{str(mb.Compound)}"
+                        )
                 self.n_mol_types += 1
 
         # Collecting all force-fields only if xml force-field is provided
@@ -103,12 +112,14 @@ class System(ABC):
                         ff_index = 0
                     if getattr(self._force_field[ff_index], "gmso_ff"):
                         self._gmso_forcefields_dict[str(i)] = self._force_field[
-                            ff_index].gmso_ff
+                            ff_index
+                        ].gmso_ff
                     else:
                         raise ForceFieldError(
                             msg=f"GMSO Force field in "
-                                f"{self._force_field[ff_index]} is not "
-                                f"provided.")
+                            f"{self._force_field[ff_index]} is not "
+                            f"provided."
+                        )
         self.system = self._build_system()
         self.gmso_system = self._convert_to_gmso()
         self._apply_forcefield()
@@ -130,8 +141,10 @@ class System(ABC):
     @property
     def mass(self):
         if self.gmso_system:
-            return sum(float(site.mass.to("amu").value) for site in
-                       self.gmso_system.sites)
+            return sum(
+                float(site.mass.to("amu").value)
+                for site in self.gmso_system.sites
+            )
         return sum(mol.mass for mol in self.all_molecules)
 
     @property
@@ -159,39 +172,45 @@ class System(ABC):
         if isinstance(length, u.array.unyt_quantity):
             self._reference_values["length"] = length
         elif isinstance(unit, str) and (
-                isinstance(length, float) or isinstance(length, int)):
+            isinstance(length, float) or isinstance(length, int)
+        ):
             self._reference_values["length"] = length * getattr(u, unit)
         else:
             raise ReferenceUnitError(
                 f"Invalid reference length input.Please provide reference "
                 f"length (number) and unit (string) or pass length value as "
-                f"an {str(u.array.unyt_quantity)}.")
+                f"an {str(u.array.unyt_quantity)}."
+            )
 
     @reference_energy.setter
     def reference_energy(self, energy, unit=None):
         if isinstance(energy, u.array.unyt_quantity):
             self._reference_values["energy"] = energy
         elif isinstance(unit, str) and (
-                isinstance(energy, float) or isinstance(energy, int)):
+            isinstance(energy, float) or isinstance(energy, int)
+        ):
             self._reference_values["energy"] = energy * getattr(u, unit)
         else:
             raise ReferenceUnitError(
                 f"Invalid reference energy input.Please provide reference "
                 f"energy (number) and unit (string) or pass energy value as "
-                f"an {str(u.array.unyt_quantity)}.")
+                f"an {str(u.array.unyt_quantity)}."
+            )
 
     @reference_mass.setter
     def reference_mass(self, mass, unit=None):
         if isinstance(mass, u.array.unyt_quantity):
             self._reference_values["mass"] = mass
         elif isinstance(unit, str) and (
-                isinstance(mass, float) or isinstance(mass, int)):
+            isinstance(mass, float) or isinstance(mass, int)
+        ):
             self._reference_values["mass"] = mass * getattr(u, unit)
         else:
             raise ReferenceUnitError(
                 f"Invalid reference mass input.Please provide reference "
                 f"mass (number) and unit (string) or pass mass value as an "
-                f"{str(u.array.unyt_quantity)}.")
+                f"{str(u.array.unyt_quantity)}."
+            )
 
     @reference_values.setter
     def reference_values(self, ref_value_dict):
@@ -202,7 +221,8 @@ class System(ABC):
             if not isinstance(ref_value_dict[k], u.array.unyt_quantity):
                 raise ReferenceUnitError(
                     f"{k} reference value must be of type "
-                    f"{str(u.array.unyt_quantity)}")
+                    f"{str(u.array.unyt_quantity)}"
+                )
         self._reference_values = ref_value_dict
 
     @property
@@ -234,9 +254,7 @@ class System(ABC):
             bonded_atom = h.bond_partners[0]
             bonded_atom.mass += h.mass
             bonded_atom.charge += h.charge
-        parmed_struc.strip(
-            [a.atomic_number == 1 for a in parmed_struc.atoms]
-        )
+        parmed_struc.strip([a.atomic_number == 1 for a in parmed_struc.atoms])
         if len(hydrogens) > 0:
             self.gmso_system = from_parmed(parmed_struc)
 
@@ -255,7 +273,9 @@ class System(ABC):
             top=self.gmso_system,
             r_cut=self.r_cut,
             auto_scale=self.auto_scale,
-            base_units=self._reference_values if self._reference_values else None
+            base_units=self._reference_values
+            if self._reference_values
+            else None,
         )
         for force in ff:
             force_list.extend(ff[force])
@@ -265,7 +285,9 @@ class System(ABC):
         snap, refs = to_gsd_snapshot(
             top=self.gmso_system,
             auto_scale=self.auto_scale,
-            base_units=self._reference_values if self._reference_values else None
+            base_units=self._reference_values
+            if self._reference_values
+            else None,
         )
         return snap
 
@@ -275,7 +297,7 @@ class System(ABC):
                 self.gmso_system,
                 self._gmso_forcefields_dict,
                 identify_connections=True,
-                use_molecule_info=True
+                use_molecule_info=True,
             )
         if self.remove_charges:
             for site in self.gmso_system.sites:
@@ -283,28 +305,29 @@ class System(ABC):
         if self.scale_charges and not self.remove_charges:
             pass
             # TODO: Scale charges from self.gmso_system
-        epsilons = [s.atom_type.parameters["epsilon"] for s in
-                    self.gmso_system.sites]
-        sigmas = [s.atom_type.parameters["sigma"] for s in
-                  self.gmso_system.sites]
+        epsilons = [
+            s.atom_type.parameters["epsilon"] for s in self.gmso_system.sites
+        ]
+        sigmas = [
+            s.atom_type.parameters["sigma"] for s in self.gmso_system.sites
+        ]
         masses = [s.mass for s in self.gmso_system.sites]
 
         energy_scale = np.max(epsilons) if self.auto_scale else 1.0
         length_scale = np.max(sigmas) if self.auto_scale else 1.0
         mass_scale = np.max(masses) if self.auto_scale else 1.0
 
-        self._reference_values["energy"] = energy_scale * epsilons[
-            0].unit_array
-        self._reference_values["length"] = length_scale * sigmas[
-            0].unit_array
-        self._reference_values["mass"] = mass_scale * masses[
-            0].unit_array.to("amu")
+        self._reference_values["energy"] = energy_scale * epsilons[0].unit_array
+        self._reference_values["length"] = length_scale * sigmas[0].unit_array
+        self._reference_values["mass"] = mass_scale * masses[0].unit_array.to(
+            "amu"
+        )
 
         if self.remove_hydrogens:
             self._remove_hydrogens()
 
     def set_target_box(
-            self, x_constraint=None, y_constraint=None, z_constraint=None
+        self, x_constraint=None, y_constraint=None, z_constraint=None
     ):
         """Set the target volume of the system during
         the initial shrink step.
@@ -326,11 +349,11 @@ class System(ABC):
             Lx = Ly = Lz = self._calculate_L()
         else:
             constraints = np.array([x_constraint, y_constraint, z_constraint])
-            fixed_L = constraints[np.where(constraints != None)]
+            fixed_L = constraints[np.where(constraints is not None)]
             # Conv from nm to cm for _calculate_L
             fixed_L *= 1e-7
             L = self._calculate_L(fixed_L=fixed_L)
-            constraints[np.where(constraints == None)] = L
+            constraints[np.where(constraints is None)] = L
             Lx, Ly, Lz = constraints
 
         self.target_box = np.array([Lx, Ly, Lz])
@@ -361,7 +384,7 @@ class System(ABC):
         """
         # Convert from amu to grams
         M = self.mass * 1.66054e-24
-        vol = (M / self.density)  # cm^3
+        vol = M / self.density  # cm^3
         if fixed_L is None:
             L = vol ** (1 / 3)
         else:
@@ -385,18 +408,18 @@ class Pack(System):
     """
 
     def __init__(
-            self,
-            molecules,
-            density: float,
-            r_cut: float,
-            force_field=None,
-            auto_scale=False,
-            remove_hydrogens=False,
-            remove_charges=False,
-            scale_charges=False,
-            base_units=dict(),
-            packing_expand_factor=5,
-            edge=0.2,
+        self,
+        molecules,
+        density: float,
+        r_cut: float,
+        force_field=None,
+        auto_scale=False,
+        remove_hydrogens=False,
+        remove_charges=False,
+        scale_charges=False,
+        base_units=dict(),
+        packing_expand_factor=5,
+        edge=0.2,
     ):
         self.packing_expand_factor = packing_expand_factor
         self.edge = edge
@@ -409,7 +432,7 @@ class Pack(System):
             remove_hydrogens=remove_hydrogens,
             remove_charges=remove_charges,
             scale_charges=scale_charges,
-            base_units=base_units
+            base_units=base_units,
         )
 
     def _build_system(self):
@@ -419,7 +442,7 @@ class Pack(System):
             n_compounds=[1 for i in self.all_molecules],
             box=list(self.target_box * self.packing_expand_factor),
             overlap=0.2,
-            edge=self.edge
+            edge=self.edge,
         )
         return system
 
@@ -441,20 +464,20 @@ class Lattice(System):
     """
 
     def __init__(
-            self,
-            molecules,
-            density: float,
-            r_cut: float,
-            x: float,
-            y: float,
-            n: int,
-            basis_vector=[0.5, 0.5, 0],
-            force_field=None,
-            auto_scale=False,
-            remove_hydrogens=False,
-            remove_charges=False,
-            scale_charges=False,
-            base_units=dict(),
+        self,
+        molecules,
+        density: float,
+        r_cut: float,
+        x: float,
+        y: float,
+        n: int,
+        basis_vector=[0.5, 0.5, 0],
+        force_field=None,
+        auto_scale=False,
+        remove_hydrogens=False,
+        remove_charges=False,
+        scale_charges=False,
+        base_units=dict(),
     ):
         self.x = x
         self.y = y
@@ -469,7 +492,7 @@ class Lattice(System):
             remove_hydrogens=remove_hydrogens,
             remove_charges=remove_charges,
             scale_charges=scale_charges,
-            base_units=base_units
+            base_units=base_units,
         )
 
     def _build_system(self):
@@ -483,8 +506,9 @@ class Lattice(System):
                     comp2 = self.all_molecules[next_idx + 1]
                     comp2.translate(self.basis_vector)
                     # TODO: what if comp1 and comp2 have different names?
-                    unit_cell = mb.Compound(subcompounds=[comp1, comp2],
-                                            name=comp1.name)
+                    unit_cell = mb.Compound(
+                        subcompounds=[comp1, comp2], name=comp1.name
+                    )
                     unit_cell.translate((0, self.y * j, 0))
                     layer.add(unit_cell)
                     next_idx += 2

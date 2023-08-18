@@ -24,7 +24,7 @@ jobs:
     steps:
     - name: Check out repository
       uses: actions/checkout@v2
- 
+
     - name: Build environment
       uses: conda-incubator/setup-miniconda@v2
       with:
@@ -32,7 +32,7 @@ jobs:
         miniforge-variant: Mambaforge
         miniforge-version: 4.9.2-4
         use-mamba: true
-    
+
     - name: Install package
       shell: bash -l {0}
       run: pip install -e .
@@ -40,7 +40,7 @@ jobs:
     - name: Run pytest with coverage report
       shell: bash -l {0}
       run: python -m pytest -rs -v --cov=./ --cov-report=xml
-          
+
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
       with:

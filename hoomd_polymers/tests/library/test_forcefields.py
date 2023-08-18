@@ -1,6 +1,13 @@
-from hoomd_polymers.library import GAFF, OPLS_AA, OPLS_AA_PPS, OPLS_AA_BENZENE, \
-    OPLS_AA_DIMETHYLETHER, FF_from_file, BeadSpring
 import os
+
+from hoomd_polymers.library import (
+    GAFF,
+    OPLS_AA,
+    OPLS_AA_BENZENE,
+    OPLS_AA_DIMETHYLETHER,
+    OPLS_AA_PPS,
+    FF_from_file,
+)
 from hoomd_polymers.tests.base_test import ASSETS_DIR
 
 
@@ -32,5 +39,3 @@ class TestForceFields:
 
     def test_BeadSpring(self):
         return NotImplementedError
-
-

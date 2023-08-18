@@ -1,2 +1,9 @@
-from .base import Molecule, Polymer, CoPolymer, System, Pack, Lattice, \
-    Simulation
+from .base import (
+    CoPolymer,
+    Lattice,
+    Molecule,
+    Pack,
+    Polymer,
+    Simulation,
+    System,
+)

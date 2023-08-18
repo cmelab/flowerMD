@@ -21,9 +21,7 @@ class GAFF(foyer.Forcefield):
 class OPLS_AA(foyer.Forcefield):
     def __init__(self, name="oplsaa"):
         super(OPLS_AA, self).__init__(name=name)
-        self.description = (
-            "opls-aa forcefield found in the Foyer package."
-        )
+        self.description = "opls-aa forcefield found in the Foyer package."
         self.gmso_ff = ffutils.FoyerFFs().load(name).to_gmso_ff()
 
 
@@ -55,7 +53,8 @@ class OPLS_AA_BENZENE(foyer.Forcefield):
 class OPLS_AA_DIMETHYLETHER(foyer.Forcefield):
     def __init__(self, forcefield_files=f"{FF_DIR}/dimethylether_opls.xml"):
         super(OPLS_AA_DIMETHYLETHER, self).__init__(
-            forcefield_files=forcefield_files)
+            forcefield_files=forcefield_files
+        )
         self.description = (
             "Based on hoomd_polymers.forcefields.OPLS_AA. "
             "Trimmed down to include only dimethyl ether parameters."
@@ -71,13 +70,13 @@ class FF_from_file(foyer.Forcefield):
 
 class BeadSpring:
     def __init__(
-            self,
-            r_cut,
-            beads,
-            bonds=None,
-            angles=None,
-            dihedrals=None,
-            exclusions=["bond", "1-3"]
+        self,
+        r_cut,
+        beads,
+        bonds=None,
+        angles=None,
+        dihedrals=None,
+        exclusions=["bond", "1-3"],
     ):
         self.beads = beads
         self.bonds = bonds
@@ -93,9 +92,7 @@ class BeadSpring:
         nlist = hoomd.md.nlist.Cell(buffer=0.40, exclusions=self.exclusions)
         lj = hoomd.md.pair.LJ(nlist=nlist)
         bead_types = [key for key in self.beads.keys()]
-        all_pairs = list(
-            itertools.combinations_with_replacement(bead_types, 2)
-        )
+        all_pairs = list(itertools.combinations_with_replacement(bead_types, 2))
         for pair in all_pairs:
             epsilon0 = self.beads[pair[0]]["epsilon"]
             epsilon1 = self.beads[pair[1]]["epsilon"]
