@@ -6,7 +6,7 @@ import pytest
 from gmso.external.convert_mbuild import from_mbuild
 
 from hoomd_polymers import Molecule, Polymer, Pack
-from hoomd_polymers.library import OPLS_AA
+from hoomd_polymers.library import OPLS_AA, GAFF
 # from hoomd_polymers.systems import *
 # from hoomd_polymers.molecules import *
 # from hoomd_polymers.forcefields import *
@@ -29,16 +29,7 @@ class BaseTest:
     #     system.apply_forcefield(forcefield=GAFF(), remove_hydrogens=False)
     #     return system
     #
-    # @pytest.fixture()
-    # def ua_polyethylene_system(self):
-    #     system = Pack(
-    #             molecule=PolyEthylene,
-    #             n_mols=5,
-    #             mol_kwargs={"length": 5},
-    #             density=0.5
-    #     )
-    #     system.apply_forcefield(forcefield=GAFF(), remove_hydrogens=True)
-    #     return system
+
 
     @pytest.fixture()
     def benzene_smiles(self):
@@ -203,3 +194,24 @@ class BaseTest:
                       r_cut=2.5,
                       force_field=OPLS_AA(), auto_scale=True)
         return system
+
+    @pytest.fixture()
+    def polyethylene_system(self, polyethylene):
+        polyethylene_mol = polyethylene(num_mols=5, lengths=5)
+        system = Pack(molecules=polyethylene_mol, density=0.5,
+                      r_cut=2.5,
+                      force_field=OPLS_AA(), auto_scale=True,
+                      remove_hydrogens=True)
+        return system
+
+
+    # @pytest.fixture()
+    # def ua_polyethylene_system(self):
+    #     system = Pack(
+    #             molecule=PolyEthylene,
+    #             n_mols=5,
+    #             mol_kwargs={"length": 5},
+    #             density=0.5
+    #     )
+    #     system.apply_forcefield(forcefield=GAFF(), remove_hydrogens=True)
+    #     return system
