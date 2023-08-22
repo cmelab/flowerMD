@@ -122,7 +122,10 @@ class System(ABC):
                         )
         self.system = self._build_system()
         self.gmso_system = self._convert_to_gmso()
-        self._apply_forcefield()
+        if self._force_field:
+            self._apply_forcefield()
+        if self.remove_hydrogens:
+            self._remove_hydrogens()
 
     @abstractmethod
     def _build_system(self):
@@ -292,13 +295,12 @@ class System(ABC):
         return snap
 
     def _apply_forcefield(self):
-        if self._force_field:
-            self.gmso_system = apply(
-                self.gmso_system,
-                self._gmso_forcefields_dict,
-                identify_connections=True,
-                use_molecule_info=True,
-            )
+        self.gmso_system = apply(
+            self.gmso_system,
+            self._gmso_forcefields_dict,
+            identify_connections=True,
+            use_molecule_info=True,
+        )
         if self.remove_charges:
             for site in self.gmso_system.sites:
                 site.charge = 0
@@ -322,9 +324,6 @@ class System(ABC):
         self._reference_values["mass"] = mass_scale * masses[0].unit_array.to(
             "amu"
         )
-
-        if self.remove_hydrogens:
-            self._remove_hydrogens()
 
     def set_target_box(
         self, x_constraint=None, y_constraint=None, z_constraint=None
