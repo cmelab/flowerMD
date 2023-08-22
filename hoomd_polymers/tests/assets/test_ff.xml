@@ -1,0 +1,10 @@
+<ForceField name="OPLS-AA" version="0.0.3" combining_rule="geometric">
+	<AtomTypes>
+		<Type name="_A" class="A" mass="1.0"  desc="particle A" overrides=""/>
+		<Type name="_B" class="B"  mass="1.0"  desc="particle B" overrides=""/>
+	</AtomTypes>
+	<NonbondedForce coulomb14scale="0.5" lj14scale="0.5">
+		<Atom type="_A" charge="0." sigma="0.2" epsilon="0.1"/>
+		<Atom type="_B" charge="0." sigma="0.3" epsilon="0.2"/>
+	</NonbondedForce>
+</ForceField>
