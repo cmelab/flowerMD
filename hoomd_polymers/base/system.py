@@ -321,7 +321,12 @@ class System(ABC):
 
         self._reference_values["energy"] = energy_scale * epsilons[0].unit_array
         self._reference_values["length"] = length_scale * sigmas[0].unit_array
-        self._reference_values["mass"] = mass_scale * u.g/u.mol
+        if self.auto_scale:
+            self._reference_values["mass"] = mass_scale * masses[
+                0
+            ].unit_array.to("amu")
+        else:
+            self._reference_values["mass"] = mass_scale * u.g / u.mol
 
     def set_target_box(
         self, x_constraint=None, y_constraint=None, z_constraint=None
