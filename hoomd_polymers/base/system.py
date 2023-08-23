@@ -300,6 +300,7 @@ class System(ABC):
             self._gmso_forcefields_dict,
             identify_connections=True,
             use_molecule_info=True,
+            identify_connected_components=False,
         )
         if self.remove_charges:
             for site in self.gmso_system.sites:
