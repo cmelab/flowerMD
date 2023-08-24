@@ -10,8 +10,8 @@ a focus on simulating soft matter systems.
 ### 1. Clone this repository: ###
 
 ```
-git clone git@github.com:chrisjonesbsu/hoomd-polymers.git
-cd hoomd-polymers
+git clone git@github.com:cmelab/hoomd-organics.git
+cd hoomd-organics
 ```
 
 ### 2. Set up and activate environment: ###
