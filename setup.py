@@ -108,7 +108,7 @@ setup(
             "library/*",
             "library/forcefields/*",
             "library/monomers/*",
-            "assets/*"
+            "assets/*",
         ]
     },
     install_requires=REQUIRED,
