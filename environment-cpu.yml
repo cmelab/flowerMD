@@ -1,4 +1,4 @@
-name: hoomd-polymers
+name: hoomd-organics
 channels:
   - conda-forge
 dependencies:

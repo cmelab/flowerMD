@@ -1,8 +1,8 @@
 import pytest
 
-from hoomd_polymers import CoPolymer, Molecule, Polymer
-from hoomd_polymers.tests import BaseTest
-from hoomd_polymers.utils import FF_Types, exceptions
+from hoomd_organics import CoPolymer, Molecule, Polymer
+from hoomd_organics.tests import BaseTest
+from hoomd_organics.utils import FF_Types, exceptions
 
 
 class TestMolecule(BaseTest):

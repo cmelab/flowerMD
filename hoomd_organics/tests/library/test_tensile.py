@@ -1,4 +1,4 @@
-from hoomd_polymers.tests import BaseTest
+from hoomd_organics.tests import BaseTest
 
 
 class TestTensileSimulation(BaseTest):

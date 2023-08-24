@@ -4,7 +4,7 @@ import forcefield_utilities as ffutils
 import hoomd
 from gmso.parameterization import apply
 
-from hoomd_polymers.assets import FF_DIR
+from hoomd_organics.assets import FF_DIR
 
 from .base_types import FF_Types
 from .exceptions import (

@@ -1,8 +1,8 @@
 import hoomd
 import numpy as np
 
-from hoomd_polymers.base.simulation import Simulation
-from hoomd_polymers.utils.actions import PullParticles
+from hoomd_organics.base.simulation import Simulation
+from hoomd_organics.utils.actions import PullParticles
 
 
 class Tensile(Simulation):

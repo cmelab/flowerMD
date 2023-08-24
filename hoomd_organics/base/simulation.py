@@ -7,8 +7,8 @@ import hoomd.md
 import numpy as np
 import unyt as u
 
-from hoomd_polymers.utils import StdOutLogger, UpdateWalls
-from hoomd_polymers.utils.exceptions import ReferenceUnitError
+from hoomd_organics.utils import StdOutLogger, UpdateWalls
+from hoomd_organics.utils.exceptions import ReferenceUnitError
 
 
 class Simulation(hoomd.simulation.Simulation):
