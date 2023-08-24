@@ -1,0 +1,23 @@
+<ForceField name="OPLS-AA" version="0.0.3" combining_rule="geometric">
+	<AtomTypes>
+		<Type name="opls_146" class="HA" element="H" mass="1.008" def="[H][C;%opls_145]" desc="benzene H" overrides=""/>
+		<Type name="opls_145" class="CA" element="C" mass="12.011" def="[C;X3;r6]1[C;X3;r6][C;X3;r6][C;X3;r6][C;X3;r6][C;X3;r6]1" desc="" overrides=""/>
+	</AtomTypes>
+	<HarmonicBondForce>
+		<Bond class1="CA" class2="CA" length="0.14" k="392459.2"/>
+		<Bond class1="CA" class2="HA" length="0.108" k="307105.6"/>
+	</HarmonicBondForce>
+	<HarmonicAngleForce>
+		<Angle class1="CA" class2="CA" class3="CA" angle="2.09439510239" k="527.184"/>
+		<Angle class1="CA" class2="CA" class3="HA" angle="2.09439510239" k="292.88"/>
+	</HarmonicAngleForce>
+	<RBTorsionForce>
+		<Proper class1="CA" class2="CA" class3="CA" class4="CA" c0="30.334" c1="0.0" c2="-30.334" c3="0.0" c4="0.0" c5="0.0"/>
+		<Proper class1="CA" class2="CA" class3="CA" class4="HA" c0="30.334" c1="0.0" c2="-30.334" c3="0.0" c4="0.0" c5="0.0"/>
+		<Proper class1="HA" class2="CA" class3="CA" class4="HA" c0="30.334" c1="0.0" c2="-30.334" c3="0.0" c4="0.0" c5="0.0"/>
+	</RBTorsionForce>
+	<NonbondedForce coulomb14scale="0.5" lj14scale="0.5">
+		<Atom type="opls_146" charge="0.115" sigma="0.242" epsilon="0.12552"/>
+		<Atom type="opls_145" charge="-0.115" sigma="0.355" epsilon="0.29288"/>
+	</NonbondedForce>
+</ForceField>

@@ -2,25 +2,25 @@
 [![codecov](https://codecov.io/gh/chrisjonesBSU/hoomd-polymers/branch/main/graph/badge.svg?token=86LY9WHSH6)](https://codecov.io/gh/chrisjonesBSU/hoomd-polymers)
 ## About
 
-Wrapper for [MoSDeF](https://github.com/mosdef-hub) packages and [Hoomd-Blue](https://github.com/glotzerlab/hoomd-blue) with 
+Wrapper for [MoSDeF](https://github.com/mosdef-hub) packages and [Hoomd-Blue](https://github.com/glotzerlab/hoomd-blue) with
 a focus on simulating soft matter systems.
 
 ## Installation
 
-### 1. Clone this repository: ###  
+### 1. Clone this repository: ###
 
 ```
-git clone git@github.com:chrisjonesbsu/hoomd-polymers.git  
-cd hoomd-polymers  
+git clone git@github.com:chrisjonesbsu/hoomd-polymers.git
+cd hoomd-polymers
 ```
 
-### 2. Set up and activate environment: ###  
+### 2. Set up and activate environment: ###
 #### a. Using HOOMD-blue from conda:
 ```
-conda env create -f environment-cpu.yml  
-conda activate hoomd-polymers 
+conda env create -f environment-cpu.yml
+conda activate hoomd-polymers
 python -m pip install .
-```  
+```
 
 ## Basic Usage
 #### Using the built in molecules, systems and forcefields:
