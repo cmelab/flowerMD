@@ -9,10 +9,10 @@ from gmso.external.convert_mbuild import from_mbuild, to_mbuild
 from grits import CG_Compound
 from mbuild.lib.recipes import Polymer as mbPolymer
 
-from hoomd_polymers.utils import check_return_iterable
-from hoomd_polymers.utils.base_types import FF_Types
-from hoomd_polymers.utils.exceptions import MoleculeLoadError
-from hoomd_polymers.utils.ff_utils import (
+from hoomd_organics.utils import check_return_iterable
+from hoomd_organics.utils.base_types import FF_Types
+from hoomd_organics.utils.exceptions import MoleculeLoadError
+from hoomd_organics.utils.ff_utils import (
     _validate_hoomd_ff,
     apply_xml_ff,
     find_xml_ff,
@@ -318,9 +318,9 @@ class CoPolymer(Molecule):
 
     Parameters
     ----------
-    monomer_A : hoomd_polymers.molecules.Polymer; required
+    monomer_A : hoomd_organics.molecules.Polymer; required
         Class of the A-type monomer
-    monomer_B : hoomd_polymers.molecules.Polymer: required
+    monomer_B : hoomd_organics.molecules.Polymer: required
         Class of the B-type monomer
     length : int; required
         The total number of monomers in the molecule

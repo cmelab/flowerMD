@@ -2,14 +2,14 @@ import hoomd
 import numpy as np
 import unyt as u
 
-from hoomd_polymers import Lattice, Pack
-from hoomd_polymers.library import (
+from hoomd_organics import Lattice, Pack
+from hoomd_organics.library import (
     GAFF,
     OPLS_AA,
     OPLS_AA_DIMETHYLETHER,
     OPLS_AA_PPS,
 )
-from hoomd_polymers.tests import BaseTest
+from hoomd_organics.tests import BaseTest
 
 
 class TestSystem(BaseTest):

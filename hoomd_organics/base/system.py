@@ -15,9 +15,9 @@ from gmso.external import (
 )
 from gmso.parameterization import apply
 
-from hoomd_polymers.base.molecule import Molecule
-from hoomd_polymers.utils import FF_Types, check_return_iterable, xml_to_gmso_ff
-from hoomd_polymers.utils.exceptions import (
+from hoomd_organics.base.molecule import Molecule
+from hoomd_organics.utils import FF_Types, check_return_iterable, xml_to_gmso_ff
+from hoomd_organics.utils.exceptions import (
     ForceFieldError,
     MoleculeLoadError,
     ReferenceUnitError,
@@ -29,7 +29,7 @@ class System(ABC):
 
     Parameters
     ----------
-    molecule : hoomd_polymers.molecule; required
+    molecule : hoomd_organics.molecule; required
     n_mols : int; required
         The number of times to replicate molecule in the system
     density : float; optional; default None

@@ -5,8 +5,8 @@ import mbuild as mb
 import pytest
 from gmso.external.convert_mbuild import from_mbuild
 
-from hoomd_polymers import Molecule, Pack, Polymer
-from hoomd_polymers.library import OPLS_AA
+from hoomd_organics import Molecule, Pack, Polymer
+from hoomd_organics.library import OPLS_AA
 
 ASSETS_DIR = os.path.join(os.path.dirname(__file__), "assets")
 

@@ -2,9 +2,9 @@ import os
 
 import gsd.hoomd
 
-from hoomd_polymers import Simulation
-from hoomd_polymers.modules.welding import Interface, SlabSimulation
-from hoomd_polymers.tests.base_test import BaseTest
+from hoomd_organics import Simulation
+from hoomd_organics.modules.welding import Interface, SlabSimulation
+from hoomd_organics.tests.base_test import BaseTest
 
 
 class TestWelding(BaseTest):
@@ -12,7 +12,7 @@ class TestWelding(BaseTest):
         sim = Simulation(
             initial_state=polyethylene_system.hoomd_snapshot,
             forcefield=polyethylene_system.hoomd_forcefield,
-            log_write_freq=2000
+            log_write_freq=2000,
         )
         sim.add_walls(wall_axis=(1, 0, 0), sigma=1, epsilon=1, r_cut=2)
         sim.run_update_volume(
@@ -47,7 +47,7 @@ class TestWelding(BaseTest):
         sim = SlabSimulation(
             initial_state=polyethylene_system.hoomd_snapshot,
             forcefield=polyethylene_system.hoomd_forcefield,
-            log_write_freq=2000
+            log_write_freq=2000,
         )
         assert sim._axis_array == (1, 0, 0)
         assert sim._axis_index == 0
@@ -58,7 +58,7 @@ class TestWelding(BaseTest):
             initial_state=polyethylene_system.hoomd_snapshot,
             forcefield=polyethylene_system.hoomd_forcefield,
             interface_axis="y",
-            log_write_freq=2000
+            log_write_freq=2000,
         )
         assert sim._axis_array == (0, 1, 0)
         assert sim._axis_index == 1
@@ -69,7 +69,7 @@ class TestWelding(BaseTest):
             initial_state=polyethylene_system.hoomd_snapshot,
             forcefield=polyethylene_system.hoomd_forcefield,
             interface_axis="z",
-            log_write_freq=2000
+            log_write_freq=2000,
         )
         assert sim._axis_array == (0, 0, 1)
         assert sim._axis_index == 2
@@ -79,7 +79,7 @@ class TestWelding(BaseTest):
         sim = SlabSimulation(
             initial_state=polyethylene_system.hoomd_snapshot,
             forcefield=polyethylene_system.hoomd_forcefield,
-            log_write_freq=2000
+            log_write_freq=2000,
         )
         sim.run_NVT(kT=1.0, tau_kt=0.01, n_steps=500)
         sim.save_restart_gsd()
@@ -88,8 +88,8 @@ class TestWelding(BaseTest):
             gsd_file="restart.gsd", interface_axis="x", gap=0.1
         )
         sim = SlabSimulation(
-                initial_state=interface.hoomd_snapshot,
-                forcefield=polyethylene_system.hoomd_forcefield,
+            initial_state=interface.hoomd_snapshot,
+            forcefield=polyethylene_system.hoomd_forcefield,
         )
         if os.path.isfile("restart.gsd"):
             os.remove("restart.gsd")

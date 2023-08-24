@@ -16,7 +16,7 @@ repos:
     - id: check-yaml
     - id: end-of-file-fixer
     - id: trailing-whitespace
-      exclude: 'hoomd_polymers/tests/assets/.* | hoomd_polymers/assets/.*'
+      exclude: 'hoomd_organics/tests/assets/.* | hoomd_organics/assets/.*'
 - repo: https://github.com/psf/black
   rev: 23.7.0
   hooks:
