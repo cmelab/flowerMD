@@ -25,10 +25,10 @@ python -m pip install .
 ## Basic Usage
 #### Using the built in molecules, systems and forcefields:
 ```
-from hoomd_polymers.molecules import PolyEthylene
-from hoomd_polymers.systems import Pack
-from hoomd_polymers.forcefields import GAFF
-from hoomd_polymers.sim import Simulation
+from hoomd-organics.molecules import PolyEthylene
+from hoomd-organics.systems import Pack
+from hoomd-organics.forcefields import GAFF
+from hoomd-organics.sim import Simulation
 
 pe_system = Pack(
         molecule=PolyEthylene,
@@ -49,8 +49,8 @@ pe_sim.run_NVT(kT=3.0, tau_kT=0.01, n_steps=1e6)
 #### Using with your own molecule and forcefield:
 ```
 import foyer
-from hoomd_polymers.systems import Pack
-from hoomd_polymers.sim import Simulation
+from hoomd-organics.systems import Pack
+from hoomd-organics.sim import Simulation
 
 def my_molecule(file_path):
     return mb.load(file_path)
