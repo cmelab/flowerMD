@@ -34,7 +34,6 @@ class Tensile(Simulation):
             log_write_freq=log_write_freq,
             log_file_name=log_file_name,
         )
-        self.tensile_axis = tensile_axis.lower()
         self.tensile_axis = np.asarray(tensile_axis)
         self.fix_ratio = fix_ratio
         self._axis_index = np.where(self.tensile_axis != 0)[0]
