@@ -20,7 +20,7 @@ class Tensile(Simulation):
         gsd_write_freq=1e4,
         gsd_file_name="trajectory.gsd",
         log_write_freq=1e3,
-        log_file_name="sim_data.txt",
+        log_file_name="log.txt",
     ):
         super(Tensile, self).__init__(
             initial_state=initial_state,
@@ -34,16 +34,9 @@ class Tensile(Simulation):
             log_write_freq=log_write_freq,
             log_file_name=log_file_name,
         )
-        self.tensile_axis = tensile_axis.lower()
+        self.tensile_axis = np.asarray(tensile_axis)
         self.fix_ratio = fix_ratio
-        axis_array_dict = {
-            "x": np.array([1, 0, 0]),
-            "y": np.array([0, 1, 0]),
-            "z": np.array([0, 0, 1]),
-        }
-        axis_dict = {"x": 0, "y": 1, "z": 2}
-        self._axis_index = axis_dict[self.tensile_axis]
-        self._axis_array = axis_array_dict[self.tensile_axis]
+        self._axis_index = np.where(self.tensile_axis != 0)[0]
         self.initial_box = self.box_lengths_reduced
         self.initial_length = self.initial_box[self._axis_index]
         self.fix_length = self.initial_length * fix_ratio
@@ -88,7 +81,7 @@ class Tensile(Simulation):
         )
         particle_puller = PullParticles(
             shift_by=shift_by / 2,
-            axis=self._axis_array,
+            axis=self.tensile_axis,
             neg_filter=self.fix_left,
             pos_filter=self.fix_right,
         )

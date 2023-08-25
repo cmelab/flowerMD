@@ -1,8 +1,10 @@
 import os
 
 import gsd.hoomd
+import hoomd
 
 from hoomd_organics import Simulation
+from hoomd_organics.modules.utils import add_void_particles
 from hoomd_organics.modules.welding import Interface, SlabSimulation
 from hoomd_organics.tests.base_test import BaseTest
 
@@ -93,3 +95,22 @@ class TestWelding(BaseTest):
         )
         if os.path.isfile("restart.gsd"):
             os.remove("restart.gsd")
+
+    def test_void_particle(self, polyethylene_system):
+        init_snap = polyethylene_system.hoomd_snapshot
+        init_num_particles = init_snap.particles.N
+        init_types = init_snap.particles.types
+        void_snap, ff = add_void_particles(
+            init_snap,
+            polyethylene_system.hoomd_forcefield,
+            void_diameter=0.4,
+            num_voids=1,
+            void_axis=(1, 0, 0),
+            epsilon=1,
+            r_cut=0.4,
+        )
+        assert init_num_particles == void_snap.particles.N - 1
+        lj = [i for i in ff if isinstance(i, hoomd.md.pair.LJ)][0]
+        for p_type in init_types:
+            assert lj.params[(p_type, "VOID")]["sigma"] == 0.4
+            assert lj.params[(p_type, "VOID")]["epsilon"] == 1

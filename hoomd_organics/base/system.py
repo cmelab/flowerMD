@@ -520,7 +520,14 @@ class Lattice(System):
             layer.translate((self.x * i, 0, 0))
             system.add(layer)
         bounding_box = system.get_boundingbox()
-        x_len = bounding_box.lengths[0]
-        y_len = bounding_box.lengths[1]
+        # Add lattice constants to box lengths to account for boundaries
+        x_len = bounding_box.lengths[0] + self.x
+        y_len = bounding_box.lengths[1] + self.y
+        z_len = bounding_box.lengths[2] + 0.2
         self.set_target_box(x_constraint=x_len, y_constraint=y_len)
+        # Center the lattice in its box
+        system.box = mb.box.Box(np.array([x_len, y_len, z_len]))
+        system.translate_to(
+            (system.box.Lx / 2, system.box.Ly / 2, system.box.Lz / 2)
+        )
         return system
