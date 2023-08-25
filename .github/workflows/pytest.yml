@@ -35,7 +35,7 @@ jobs:
 
     - name: Install package
       shell: bash -l {0}
-      run: pip install -e .
+      run: pip install .
 
     - name: Run pytest with coverage report
       shell: bash -l {0}
