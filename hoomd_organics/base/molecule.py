@@ -20,6 +20,7 @@ from hoomd_organics.utils.ff_utils import (
 
 
 class Molecule:
+    '''The base molecule class.'''
     def __init__(
         self, num_mols, force_field=None, smiles=None, file=None, compound=None
     ):
@@ -270,6 +271,7 @@ class Molecule:
 
 
 class Polymer(Molecule):
+    '''The base polymer class.'''
     def __init__(
         self,
         lengths,

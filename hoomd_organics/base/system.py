@@ -21,7 +21,8 @@ from hoomd_organics.utils.exceptions import ForceFieldError, MoleculeLoadError
 
 
 class System(ABC):
-    """Base class from which other systems inherit.
+    """
+    Base class from which other systems inherit.
 
     Parameters
     ----------
@@ -33,6 +34,7 @@ class System(ABC):
         target_box attribute. Can be useful when initializing
         systems at low denisty and running a shrink simulaton
         to acheive a target density.
+
     """
 
     def __init__(
