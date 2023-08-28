@@ -1,4 +1,4 @@
-name: hoomd-organics
+name: hoomd-organics-dev
 channels:
   - conda-forge
 dependencies:
