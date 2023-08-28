@@ -1,3 +1,7 @@
+'''utils.py
+   utility methods for hoomd-organics
+'''
+
 def check_return_iterable(obj):
     if isinstance(obj, dict):
         return [obj]

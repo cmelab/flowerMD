@@ -6,6 +6,8 @@ from hoomd_organics.base.simulation import Simulation
 
 
 class Interface:
+    '''For simulating interfaces.
+    '''
     def __init__(self, gsd_file, interface_axis, gap, wall_sigma=1.0):
         self.gsd_file = gsd_file
         self.axis = interface_axis.lower()
@@ -116,6 +118,7 @@ class Interface:
 
 
 class SlabSimulation(Simulation):
+    '''For simulating slabs'''
     def __init__(
         self,
         initial_state,
@@ -161,6 +164,7 @@ class SlabSimulation(Simulation):
 
 
 class WeldSimulation(Simulation):
+    '''For simulating a weld.'''
     def __init__(
         self,
         initial_state,
