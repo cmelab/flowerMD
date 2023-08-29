@@ -5,7 +5,7 @@ import mbuild as mb
 import pytest
 from gmso.external.convert_mbuild import from_mbuild
 
-from hoomd_organics import Molecule, Pack, Polymer
+from hoomd_organics import Molecule, Pack, Polymer, Simulation
 from hoomd_organics.library import OPLS_AA
 
 ASSETS_DIR = os.path.join(os.path.dirname(__file__), "assets")
@@ -204,13 +204,10 @@ class BaseTest:
         )
         return system
 
-    # @pytest.fixture()
-    # def ua_polyethylene_system(self):
-    #     system = Pack(
-    #             molecule=PolyEthylene,
-    #             n_mols=5,
-    #             mol_kwargs={"length": 5},
-    #             density=0.5
-    #     )
-    #     system.apply_forcefield(forcefield=GAFF(), remove_hydrogens=True)
-    #     return system
+    @pytest.fixture()
+    def benzene_simulation(self, benzene_system):
+        sim = Simulation(
+            initial_state=benzene_system.hoomd_snapshot,
+            forcefield=benzene_system.hoomd_forcefield,
+        )
+        return sim
