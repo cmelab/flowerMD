@@ -171,13 +171,21 @@ class System(ABC):
         return self._reference_values
 
     @reference_length.setter
-    def reference_length(self, length, unit=None):
+    def reference_length(self, length):
         if isinstance(length, u.array.unyt_quantity):
             self._reference_values["length"] = length
-        elif isinstance(unit, str) and (
-            isinstance(length, float) or isinstance(length, int)
-        ):
-            self._reference_values["length"] = length * getattr(u, unit)
+        elif isinstance(length, str) and len(length.split()) == 2:
+            value, unit = length.split()
+            if value.isnumeric() and hasattr(u, unit):
+                self._reference_values["length"] = float(value) * getattr(
+                    u, unit
+                )
+            else:
+                raise ReferenceUnitError(
+                    f"Invalid reference length input.Please provide reference "
+                    f"length (number) and unit (string) or pass length value "
+                    f"as an {str(u.array.unyt_quantity)}."
+                )
         else:
             raise ReferenceUnitError(
                 f"Invalid reference length input.Please provide reference "
@@ -186,13 +194,21 @@ class System(ABC):
             )
 
     @reference_energy.setter
-    def reference_energy(self, energy, unit=None):
+    def reference_energy(self, energy):
         if isinstance(energy, u.array.unyt_quantity):
             self._reference_values["energy"] = energy
-        elif isinstance(unit, str) and (
-            isinstance(energy, float) or isinstance(energy, int)
-        ):
-            self._reference_values["energy"] = energy * getattr(u, unit)
+        elif isinstance(energy, str) and len(energy.split()) == 2:
+            value, unit = energy.split()
+            if value.isnumeric() and hasattr(u, unit):
+                self._reference_values["energy"] = float(value) * getattr(
+                    u, unit
+                )
+            else:
+                raise ReferenceUnitError(
+                    f"Invalid reference energy input.Please provide reference "
+                    f"energy (number) and unit (string) or pass energy value "
+                    f"as an {str(u.array.unyt_quantity)}."
+                )
         else:
             raise ReferenceUnitError(
                 f"Invalid reference energy input.Please provide reference "
