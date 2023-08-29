@@ -151,6 +151,11 @@ class System(ABC):
         return sum(mol.mass for mol in self.all_molecules)
 
     @property
+    def net_charge(self):
+        if self.gmso_system:
+            return sum(site.charge for site in self.gmso_system.sites)
+
+    @property
     def box(self):
         return self.system.box
 
@@ -261,6 +266,15 @@ class System(ABC):
         if len(hydrogens) > 0:
             self.gmso_system = from_parmed(parmed_struc)
 
+    def _scale_charges(self):
+        """"""
+        charges = np.array([site.charge for site in self.gmso_system.sites])
+        net_charge = sum(charges)
+        abs_charge = sum(abs(charges))
+        charges -= abs(charges) * (net_charge / abs_charge)
+        for site in self.gmso_system.sites:
+            site.charge -= abs(site.charge) * (net_charge / abs_charge)
+
     def to_gsd(self, file_name):
         with gsd.hoomd.open(file_name, "wb") as traj:
             traj.append(self.hoomd_snapshot)
@@ -306,8 +320,7 @@ class System(ABC):
             for site in self.gmso_system.sites:
                 site.charge = 0
         if self.scale_charges and not self.remove_charges:
-            pass
-            # TODO: Scale charges from self.gmso_system
+            self._scale_charges()
         epsilons = [
             s.atom_type.parameters["epsilon"] for s in self.gmso_system.sites
         ]
