@@ -1,6 +1,8 @@
 import itertools
 
 import hoomd
+import numpy as np
+import torch
 
 
 class BeadSpring:
@@ -59,3 +61,46 @@ class BeadSpring:
                 periodic_dihedral.params[dih_type] = self.dihedrals[dih_type]
             forces.append(periodic_dihedral)
         return forces
+
+
+class TorchCustomForce(hoomd.md.force.Custom):
+    """
+    Custom force that uses a PyTorch model to predict the forces from particle
+    positions.
+    """
+
+    def __init__(self, model):
+        """
+
+        Parameters
+        ----------
+        model: torch.nn.Module
+            pretrained model that predicts forces
+        """
+        super().__init__()
+        # load ML model
+        self.device = torch.device(
+            "cuda:0" if torch.cuda.is_available() else "cpu"
+        )
+        self.model = model
+        self.model.to(self.device)
+        self.model.eval()
+
+    def set_forces(self, timestep):
+        """
+        Set the forces on all particles in the system.
+        """
+        # get positions for all particles
+        with self._state.cpu_local_snapshot as snap:
+            particle_rtags = snap.particles.rtag
+            positions = np.array(
+                snap.particles.position[particle_rtags], copy=True
+            )
+        positions_tensor = (
+            torch.from_numpy(positions).type(torch.FloatTensor).to(self.device)
+        )
+
+        predicted_force = self.model(positions_tensor)
+        predicted_force = predicted_force.cpu().detach().numpy()
+        with self.cpu_local_force_arrays as arrays:
+            arrays.force[particle_rtags] = predicted_force
