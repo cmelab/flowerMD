@@ -1,6 +1,7 @@
 name: hoomd-organics-dev
 channels:
   - conda-forge
+  - pytorch
 dependencies:
   - foyer
   - freud
@@ -17,6 +18,8 @@ dependencies:
   - python=3.9
   - unyt
   - pre-commit
+  - pytorch
+  - cpuonly
   - pip:
       - git+https://github.com/cmelab/cmeutils.git@master
       - git+https://github.com/cmelab/grits.git@main
