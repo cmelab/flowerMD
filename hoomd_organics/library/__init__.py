@@ -1,10 +1,10 @@
-from .forcefields import (
+from .forcefields.custom_forcefields import BeadSpring
+from .forcefields.xml_forcefields import (
     GAFF,
     OPLS_AA,
     OPLS_AA_BENZENE,
     OPLS_AA_DIMETHYLETHER,
     OPLS_AA_PPS,
-    BeadSpring,
     FF_from_file,
 )
 from .polymers import (
