@@ -1,5 +1,6 @@
 import hoomd
 import numpy as np
+import pytest
 import unyt as u
 
 from hoomd_organics import Lattice, Pack
@@ -10,6 +11,7 @@ from hoomd_organics.library import (
     OPLS_AA_PPS,
 )
 from hoomd_organics.tests import BaseTest
+from hoomd_organics.utils.exceptions import ReferenceUnitError
 
 
 class TestSystem(BaseTest):
@@ -184,7 +186,7 @@ class TestSystem(BaseTest):
         )
 
     def test_ref_values_no_autoscale(self, polyethylene):
-        polyethylene = polyethylene(lengths=5, num_mols=5)
+        polyethylene = polyethylene(lengths=5, num_mols=1)
         system = Pack(
             molecules=[polyethylene],
             force_field=[OPLS_AA()],
@@ -204,6 +206,58 @@ class TestSystem(BaseTest):
         ] == system.gmso_system.sites[0].atom_type.parameters["epsilon"].to(
             "kcal/mol"
         )
+
+    def test_set_ref_values(self, polyethylene):
+        polyethylene = polyethylene(lengths=5, num_mols=1)
+        system = Pack(
+            molecules=[polyethylene],
+            force_field=[OPLS_AA()],
+            density=1.0,
+            r_cut=2.5,
+            auto_scale=False,
+        )
+        ref_value_dict = {
+            "length": 1 * u.angstrom,
+            "energy": 3.0 * u.kcal / u.mol,
+            "mass": 1.25 * u.amu,
+        }
+        system.reference_values = ref_value_dict
+        assert system.reference_length == ref_value_dict["length"]
+        assert system.reference_energy == ref_value_dict["energy"]
+        assert system.reference_mass == ref_value_dict["mass"]
+
+    def test_set_ref_values_missing_key(self, polyethylene):
+        polyethylene = polyethylene(lengths=5, num_mols=1)
+        system = Pack(
+            molecules=[polyethylene],
+            force_field=[OPLS_AA()],
+            density=1.0,
+            r_cut=2.5,
+            auto_scale=False,
+        )
+        ref_value_dict = {
+            "length": 1 * u.angstrom,
+            "energy": 3.0 * u.kcal / u.mol,
+        }
+        with pytest.raises(ValueError):
+            system.reference_values = ref_value_dict
+
+    def test_set_ref_values_invalid_type(self, polyethylene):
+        polyethylene = polyethylene(lengths=5, num_mols=5)
+        system = Pack(
+            molecules=[polyethylene],
+            force_field=[OPLS_AA()],
+            density=1.0,
+            r_cut=2.5,
+            auto_scale=False,
+        )
+        ref_value_dict = {
+            "length": 1 * u.angstrom,
+            "energy": 3.0 * u.kcal / u.mol,
+            "mass": 1.25,
+        }
+        with pytest.raises(ReferenceUnitError):
+            system.reference_values = ref_value_dict
 
     def test_lattice_polymer(self, polyethylene):
         polyethylene = polyethylene(lengths=2, num_mols=32)
