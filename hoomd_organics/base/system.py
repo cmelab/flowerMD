@@ -150,7 +150,9 @@ class System(ABC):
 
     @property
     def net_charge(self):
-        return sum(site.charge for site in self.gmso_system.sites)
+        return sum(
+            site.charge if site.charge else 0 for site in self.gmso_system.sites
+        )
 
     @property
     def box(self):
@@ -265,7 +267,12 @@ class System(ABC):
 
     def _scale_charges(self):
         """"""
-        charges = np.array([site.charge for site in self.gmso_system.sites])
+        charges = np.array(
+            [
+                site.charge if site.charge else 0
+                for site in self.gmso_system.sites
+            ]
+        )
         net_charge = sum(charges)
         abs_charge = sum(abs(charges))
         for site in self.gmso_system.sites:
