@@ -14,7 +14,7 @@ from hoomd_organics.library import (
 from hoomd_organics.tests.base_test import ASSETS_DIR
 
 
-class TestForceFields:
+class TestXMLForceFields:
     def test_GAFF(self):
         ff = GAFF()
         assert ff.gmso_ff is not None
@@ -40,6 +40,8 @@ class TestForceFields:
         ff = FF_from_file(xml_file)
         assert ff.gmso_ff is not None
 
+
+class TestCustomForceFields:
     def test_BeadSpring(self):
         ff = BeadSpring(
             r_cut=2.5,
@@ -89,3 +91,7 @@ class TestForceFields:
             assert ff.hoomd_forcefield[3].params[param]["k"] == 100
             assert ff.hoomd_forcefield[3].params[param]["d"] == -1
             assert ff.hoomd_forcefield[3].params[param]["n"] == 1
+
+    def test_TorchCustomForce(self):
+        # TODO: Train a simple LJ and add it to BaseTest. Then test it here.
+        pass
