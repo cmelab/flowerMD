@@ -176,6 +176,26 @@ class BaseTest:
         return _PolyEthylene
 
     @pytest.fixture()
+    def pps(self, pps_smiles):
+        class _PPS(Polymer):
+            def __init__(self, lengths, num_mols, **kwargs):
+                smiles = pps_smiles
+                bond_indices = [7, 10]
+                bond_length = 0.176
+                bond_orientation = [[0, 0, 1], [0, 0, -1]]
+                super().__init__(
+                    lengths=lengths,
+                    num_mols=num_mols,
+                    smiles=smiles,
+                    bond_indices=bond_indices,
+                    bond_length=bond_length,
+                    bond_orientation=bond_orientation,
+                    **kwargs
+                )
+
+        return _PPS
+
+    @pytest.fixture()
     def polyDME(self, dimethylether_smiles):
         class _PolyDME(Polymer):
             def __init__(self, lengths, num_mols, **kwargs):
@@ -219,14 +239,3 @@ class BaseTest:
             remove_hydrogens=True,
         )
         return system
-
-    # @pytest.fixture()
-    # def ua_polyethylene_system(self):
-    #     system = Pack(
-    #             molecule=PolyEthylene,
-    #             n_mols=5,
-    #             mol_kwargs={"length": 5},
-    #             density=0.5
-    #     )
-    #     system.apply_forcefield(forcefield=GAFF(), remove_hydrogens=True)
-    #     return system
