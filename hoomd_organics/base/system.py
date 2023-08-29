@@ -137,9 +137,7 @@ class System(ABC):
 
     @property
     def n_particles(self):
-        if self.gmso_system:
-            return self.gmso_system.n_sites
-        return sum([mol.n_particles for mol in self.all_molecules])
+        return self.gmso_system.n_sites
 
     @property
     def mass(self):
@@ -152,8 +150,7 @@ class System(ABC):
 
     @property
     def net_charge(self):
-        if self.gmso_system:
-            return sum(site.charge for site in self.gmso_system.sites)
+        return sum(site.charge for site in self.gmso_system.sites)
 
     @property
     def box(self):
