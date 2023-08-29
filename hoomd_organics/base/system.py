@@ -229,23 +229,28 @@ class System(ABC):
 
     @reference_mass.setter
     def reference_mass(self, mass):
-        if isinstance(mass, u.array.unyt_quantity):
+        if (
+            isinstance(mass, u.array.unyt_quantity)
+            and mass.units.dimensions == u.dimensions.mass
+        ):
             self._reference_values["mass"] = mass
         elif isinstance(mass, str) and len(mass.split()) == 2:
             value, unit = mass.split()
             if value.isnumeric() and hasattr(u, unit):
-                self._reference_values["mass"] = float(value) * getattr(u, unit)
+                unit = getattr(u, unit)
+                if unit.dimensions == u.dimensions.mass:
+                    self._reference_values["mass"] = float(value) * unit
             else:
                 raise ReferenceUnitError(
                     f"Invalid reference mass input.Please provide reference "
-                    f"mass (number) and unit (string) or pass mass value as "
-                    f"an {str(u.array.unyt_quantity)}."
+                    f"mass (number) and mass unit (string) or pass mass value "
+                    f"as an {str(u.array.unyt_quantity)}."
                 )
         else:
             raise ReferenceUnitError(
                 f"Invalid reference mass input.Please provide reference "
-                f"mass (number) and unit (string) or pass mass value as an "
-                f"{str(u.array.unyt_quantity)}."
+                f"mass (number) and mass unit (string) or pass mass value as "
+                f"an {str(u.array.unyt_quantity)}."
             )
 
     @reference_values.setter
