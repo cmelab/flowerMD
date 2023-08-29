@@ -268,7 +268,6 @@ class System(ABC):
         charges = np.array([site.charge for site in self.gmso_system.sites])
         net_charge = sum(charges)
         abs_charge = sum(abs(charges))
-        charges -= abs(charges) * (net_charge / abs_charge)
         for site in self.gmso_system.sites:
             site.charge -= abs(site.charge) * (net_charge / abs_charge)
 
