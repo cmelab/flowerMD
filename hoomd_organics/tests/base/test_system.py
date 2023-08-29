@@ -580,3 +580,25 @@ class TestSystem(BaseTest):
         assert len(system.hoomd_forcefield) > 0
         assert system.n_particles == system.hoomd_snapshot.particles.N
         assert system.reference_values.keys() == {"energy", "length", "mass"}
+
+    def test_scale_charges(self, pps):
+        pps_mol = pps(num_mols=5, lengths=5)
+        no_scale = Pack(
+            molecules=pps_mol,
+            density=0.5,
+            r_cut=2.4,
+            force_field=OPLS_AA_PPS(),
+            auto_scale=True,
+            scale_charges=False,
+        )
+
+        with_scale = Pack(
+            molecules=pps_mol,
+            density=0.5,
+            r_cut=2.4,
+            force_field=OPLS_AA_PPS(),
+            auto_scale=True,
+            scale_charges=True,
+        )
+        assert abs(no_scale.net_charge.value) > abs(with_scale.net_charge.value)
+        assert np.allclose(0, with_scale.net_charge.value, atol=1e-30)
