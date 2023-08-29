@@ -198,25 +198,33 @@ class System(ABC):
 
     @reference_energy.setter
     def reference_energy(self, energy):
-        if isinstance(energy, u.array.unyt_quantity):
+        energy_dim = (
+            (u.dimensions.length**2)
+            * u.dimensions.mass
+            / u.dimensions.time**2
+        )
+        if (
+            isinstance(energy, u.array.unyt_quantity)
+            and energy.units.dimensions == energy_dim
+        ):
             self._reference_values["energy"] = energy
         elif isinstance(energy, str) and len(energy.split()) == 2:
             value, unit = energy.split()
             if value.isnumeric() and hasattr(u, unit):
-                self._reference_values["energy"] = float(value) * getattr(
-                    u, unit
-                )
+                unit = getattr(u, unit)
+                if unit.dimensions == energy_dim:
+                    self._reference_values["energy"] = float(value) * unit
             else:
                 raise ReferenceUnitError(
                     f"Invalid reference energy input.Please provide reference "
-                    f"energy (number) and unit (string) or pass energy value "
-                    f"as an {str(u.array.unyt_quantity)}."
+                    f"energy (number) and energy unit (string) or pass energy "
+                    f"value as an {str(u.array.unyt_quantity)}."
                 )
         else:
             raise ReferenceUnitError(
                 f"Invalid reference energy input.Please provide reference "
-                f"energy (number) and unit (string) or pass energy value as "
-                f"an {str(u.array.unyt_quantity)}."
+                f"energy (number) and energy unit (string) or pass energy "
+                f"value as an {str(u.array.unyt_quantity)}."
             )
 
     @reference_mass.setter
