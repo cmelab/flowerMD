@@ -319,6 +319,66 @@ class TestSystem(BaseTest):
         with pytest.raises(ReferenceUnitError):
             system.reference_length = "1.0 invalid_unit"
 
+    def test_set_ref_energy(self, polyethylene):
+        polyethylene = polyethylene(lengths=5, num_mols=1)
+        system = Pack(
+            molecules=[polyethylene],
+            force_field=[OPLS_AA()],
+            density=1.0,
+            r_cut=2.5,
+            auto_scale=False,
+        )
+        system.reference_energy = 1 * u.kcal / u.mol
+        assert system.reference_energy == 1 * u.kcal / u.mol
+
+    def test_set_ref_energy_invalid_type(self, polyethylene):
+        polyethylene = polyethylene(lengths=5, num_mols=1)
+        system = Pack(
+            molecules=[polyethylene],
+            force_field=[OPLS_AA()],
+            density=1.0,
+            r_cut=2.5,
+            auto_scale=False,
+        )
+        with pytest.raises(ReferenceUnitError):
+            system.reference_energy = 1.0
+
+    def test_ref_energy_string(self, polyethylene):
+        polyethylene = polyethylene(lengths=5, num_mols=1)
+        system = Pack(
+            molecules=[polyethylene],
+            force_field=[OPLS_AA()],
+            density=1.0,
+            r_cut=2.5,
+            auto_scale=False,
+        )
+        system.reference_energy = "1 kJ"
+        assert system.reference_energy == 1 * u.kJ
+
+    def test_ref_energy_invalid_string(self, polyethylene):
+        polyethylene = polyethylene(lengths=5, num_mols=1)
+        system = Pack(
+            molecules=[polyethylene],
+            force_field=[OPLS_AA()],
+            density=1.0,
+            r_cut=2.5,
+            auto_scale=False,
+        )
+        with pytest.raises(ReferenceUnitError):
+            system.reference_energy = "1.0"
+
+    def test_ref_energy_invalid_unit_string(self, polyethylene):
+        polyethylene = polyethylene(lengths=5, num_mols=1)
+        system = Pack(
+            molecules=[polyethylene],
+            force_field=[OPLS_AA()],
+            density=1.0,
+            r_cut=2.5,
+            auto_scale=False,
+        )
+        with pytest.raises(ReferenceUnitError):
+            system.reference_energy = "1.0 invalid_unit"
+
     def test_lattice_polymer(self, polyethylene):
         polyethylene = polyethylene(lengths=2, num_mols=32)
         system = Lattice(
