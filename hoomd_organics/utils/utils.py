@@ -15,16 +15,6 @@ def check_return_iterable(obj):
         return [obj]
 
 
-def scale_charges(charges):
-    net_charge = sum(charges)
-    abs_charge = sum([abs(charge) for charge in charges])
-    scaled_charges = []
-    for idx, charge in enumerate(charges):
-        new_charge = charge - (abs(charge) * (net_charge / abs_charge))
-        scaled_charges.append(new_charge)
-    return scaled_charges
-
-
 def validate_ref_value(ref_value, dimension):
     """Validates the reference value and checks the unit dimension.
     This function validates the reference value. The reference value can be
@@ -84,7 +74,7 @@ def validate_ref_value(ref_value, dimension):
 
     # if ref_value is an instance of unyt_quantity, check the dimension.
     if isinstance(ref_value, u.unyt_quantity) and _is_valid_dimension(
-        ref_value.units
+            ref_value.units
     ):
         return ref_value
     # if ref_value is a string, check if it is a number and if it is, check if
