@@ -1,4 +1,4 @@
-from .forcefields.custom_forcefields import BeadSpring
+from .forcefields.custom_forcefields import BeadSpring, TorchCustomForce
 from .forcefields.xml_forcefields import (
     GAFF,
     OPLS_AA,
