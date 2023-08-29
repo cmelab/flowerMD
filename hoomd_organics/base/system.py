@@ -172,25 +172,28 @@ class System(ABC):
 
     @reference_length.setter
     def reference_length(self, length):
-        if isinstance(length, u.array.unyt_quantity):
+        if (
+            isinstance(length, u.array.unyt_quantity)
+            and length.units.dimensions == u.dimensions.length
+        ):
             self._reference_values["length"] = length
         elif isinstance(length, str) and len(length.split()) == 2:
             value, unit = length.split()
             if value.isnumeric() and hasattr(u, unit):
-                self._reference_values["length"] = float(value) * getattr(
-                    u, unit
-                )
+                unit = getattr(u, unit)
+                if unit.dimensions == u.dimensions.length:
+                    self._reference_values["length"] = float(value) * unit
             else:
                 raise ReferenceUnitError(
                     f"Invalid reference length input.Please provide reference "
-                    f"length (number) and unit (string) or pass length value "
-                    f"as an {str(u.array.unyt_quantity)}."
+                    f"length (number) and length unit (string) or pass length "
+                    f"value as an {str(u.array.unyt_quantity)}."
                 )
         else:
             raise ReferenceUnitError(
                 f"Invalid reference length input.Please provide reference "
-                f"length (number) and unit (string) or pass length value as "
-                f"an {str(u.array.unyt_quantity)}."
+                f"length (number) and length unit (string) or pass length "
+                f"value as an {str(u.array.unyt_quantity)}."
             )
 
     @reference_energy.setter
