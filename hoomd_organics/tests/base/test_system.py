@@ -259,6 +259,66 @@ class TestSystem(BaseTest):
         with pytest.raises(ReferenceUnitError):
             system.reference_values = ref_value_dict
 
+    def test_set_ref_length(self, polyethylene):
+        polyethylene = polyethylene(lengths=5, num_mols=1)
+        system = Pack(
+            molecules=[polyethylene],
+            force_field=[OPLS_AA()],
+            density=1.0,
+            r_cut=2.5,
+            auto_scale=False,
+        )
+        system.reference_length = 1 * u.angstrom
+        assert system.reference_length == 1 * u.angstrom
+
+    def test_set_ref_length_invalid_type(self, polyethylene):
+        polyethylene = polyethylene(lengths=5, num_mols=5)
+        system = Pack(
+            molecules=[polyethylene],
+            force_field=[OPLS_AA()],
+            density=1.0,
+            r_cut=2.5,
+            auto_scale=False,
+        )
+        with pytest.raises(ReferenceUnitError):
+            system.reference_length = 1.0
+
+    def test_ref_length_string(self, polyethylene):
+        polyethylene = polyethylene(lengths=5, num_mols=1)
+        system = Pack(
+            molecules=[polyethylene],
+            force_field=[OPLS_AA()],
+            density=1.0,
+            r_cut=2.5,
+            auto_scale=False,
+        )
+        system.reference_length = "1 angstrom"
+        assert system.reference_length == 1 * u.angstrom
+
+    def test_ref_length_invalid_string(self, polyethylene):
+        polyethylene = polyethylene(lengths=5, num_mols=1)
+        system = Pack(
+            molecules=[polyethylene],
+            force_field=[OPLS_AA()],
+            density=1.0,
+            r_cut=2.5,
+            auto_scale=False,
+        )
+        with pytest.raises(ReferenceUnitError):
+            system.reference_length = "1.0"
+
+    def test_ref_length_invalid_unit_string(self, polyethylene):
+        polyethylene = polyethylene(lengths=5, num_mols=1)
+        system = Pack(
+            molecules=[polyethylene],
+            force_field=[OPLS_AA()],
+            density=1.0,
+            r_cut=2.5,
+            auto_scale=False,
+        )
+        with pytest.raises(ReferenceUnitError):
+            system.reference_length = "1.0 invalid_unit"
+
     def test_lattice_polymer(self, polyethylene):
         polyethylene = polyethylene(lengths=2, num_mols=32)
         system = Lattice(
