@@ -398,6 +398,18 @@ class TestSystem(BaseTest):
         system.reference_energy = "1 kJ"
         assert system.reference_energy == 1 * u.kJ
 
+    def test_ref_energy_string_comb_units(self, polyethylene):
+        polyethylene = polyethylene(lengths=5, num_mols=1)
+        system = Pack(
+            molecules=[polyethylene],
+            force_field=[OPLS_AA()],
+            density=1.0,
+            r_cut=2.5,
+            auto_scale=False,
+        )
+        system.reference_energy = "1 kcal/mol"
+        assert system.reference_energy == 1 * u.kcal / u.mol
+
     def test_ref_energy_invalid_string(self, polyethylene):
         polyethylene = polyethylene(lengths=5, num_mols=1)
         system = Pack(
