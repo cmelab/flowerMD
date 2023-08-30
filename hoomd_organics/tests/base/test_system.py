@@ -219,12 +219,31 @@ class TestSystem(BaseTest):
         ref_value_dict = {
             "length": 1 * u.angstrom,
             "energy": 3.0 * u.kcal / u.mol,
-            "mass": 1.25 * u.amu,
+            "mass": 1.25 * u.Unit("amu"),
         }
         system.reference_values = ref_value_dict
         assert system.reference_length == ref_value_dict["length"]
         assert system.reference_energy == ref_value_dict["energy"]
         assert system.reference_mass == ref_value_dict["mass"]
+
+    def test_set_ref_values_string(self, polyethylene):
+        polyethylene = polyethylene(lengths=5, num_mols=1)
+        system = Pack(
+            molecules=[polyethylene],
+            force_field=[OPLS_AA()],
+            density=1.0,
+            r_cut=2.5,
+            auto_scale=False,
+        )
+        ref_value_dict = {
+            "length": "1 angstrom",
+            "energy": "3 kcal/mol",
+            "mass": "1.25 amu",
+        }
+        system.reference_values = ref_value_dict
+        assert system.reference_length == 1 * u.angstrom
+        assert system.reference_energy == 3 * u.kcal / u.mol
+        assert system.reference_mass == 1.25 * u.amu
 
     def test_set_ref_values_missing_key(self, polyethylene):
         polyethylene = polyethylene(lengths=5, num_mols=1)
