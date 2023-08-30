@@ -456,7 +456,7 @@ class TestSystem(BaseTest):
             auto_scale=False,
         )
         with pytest.raises(ReferenceUnitError):
-            system.reference_length = "1.0 m"
+            system.reference_energy = "1.0 m"
 
     def test_set_ref_mass(self, polyethylene):
         polyethylene = polyethylene(lengths=5, num_mols=1)
@@ -541,7 +541,7 @@ class TestSystem(BaseTest):
             auto_scale=False,
         )
         with pytest.raises(ReferenceUnitError):
-            system.reference_length = "1.0 m"
+            system.reference_mass = "1.0 m"
 
     def test_lattice_polymer(self, polyethylene):
         polyethylene = polyethylene(lengths=2, num_mols=32)
