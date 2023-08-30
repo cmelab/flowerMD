@@ -172,69 +172,85 @@ class System(ABC):
 
     @reference_length.setter
     def reference_length(self, length):
-        if isinstance(length, u.array.unyt_quantity):
+        if (
+            isinstance(length, u.array.unyt_quantity)
+            and length.units.dimensions == u.dimensions.length
+        ):
             self._reference_values["length"] = length
         elif isinstance(length, str) and len(length.split()) == 2:
             value, unit = length.split()
             if value.isnumeric() and hasattr(u, unit):
-                self._reference_values["length"] = float(value) * getattr(
-                    u, unit
-                )
+                unit = getattr(u, unit)
+                if unit.dimensions == u.dimensions.length:
+                    self._reference_values["length"] = float(value) * unit
             else:
                 raise ReferenceUnitError(
                     f"Invalid reference length input.Please provide reference "
-                    f"length (number) and unit (string) or pass length value "
-                    f"as an {str(u.array.unyt_quantity)}."
+                    f"length (number) and length unit (string) or pass length "
+                    f"value as an {str(u.array.unyt_quantity)}."
                 )
         else:
             raise ReferenceUnitError(
                 f"Invalid reference length input.Please provide reference "
-                f"length (number) and unit (string) or pass length value as "
-                f"an {str(u.array.unyt_quantity)}."
+                f"length (number) and length unit (string) or pass length "
+                f"value as an {str(u.array.unyt_quantity)}."
             )
 
     @reference_energy.setter
     def reference_energy(self, energy):
-        if isinstance(energy, u.array.unyt_quantity):
+        energy_dim = (
+            (u.dimensions.length**2)
+            * u.dimensions.mass
+            / u.dimensions.time**2
+        )
+        if (
+            isinstance(energy, u.array.unyt_quantity)
+            and energy.units.dimensions == energy_dim
+        ):
             self._reference_values["energy"] = energy
         elif isinstance(energy, str) and len(energy.split()) == 2:
             value, unit = energy.split()
             if value.isnumeric() and hasattr(u, unit):
-                self._reference_values["energy"] = float(value) * getattr(
-                    u, unit
-                )
+                unit = getattr(u, unit)
+                if unit.dimensions == energy_dim:
+                    self._reference_values["energy"] = float(value) * unit
             else:
                 raise ReferenceUnitError(
                     f"Invalid reference energy input.Please provide reference "
-                    f"energy (number) and unit (string) or pass energy value "
-                    f"as an {str(u.array.unyt_quantity)}."
+                    f"energy (number) and energy unit (string) or pass energy "
+                    f"value as an {str(u.array.unyt_quantity)}."
                 )
         else:
             raise ReferenceUnitError(
                 f"Invalid reference energy input.Please provide reference "
-                f"energy (number) and unit (string) or pass energy value as "
-                f"an {str(u.array.unyt_quantity)}."
+                f"energy (number) and energy unit (string) or pass energy "
+                f"value as an {str(u.array.unyt_quantity)}."
             )
 
     @reference_mass.setter
     def reference_mass(self, mass):
-        if isinstance(mass, u.array.unyt_quantity):
+        if (
+            isinstance(mass, u.array.unyt_quantity)
+            and mass.units.dimensions == u.dimensions.mass
+        ):
             self._reference_values["mass"] = mass
         elif isinstance(mass, str) and len(mass.split()) == 2:
             value, unit = mass.split()
             if value.isnumeric() and hasattr(u, unit):
-                self._reference_values["mass"] = float(value) * getattr(u, unit)
+                unit = getattr(u, unit)
+                if unit.dimensions == u.dimensions.mass:
+                    self._reference_values["mass"] = float(value) * unit
             else:
                 raise ReferenceUnitError(
                     f"Invalid reference mass input.Please provide reference "
-                    f"mass (number) and unit (string) or pass mass value as "
-                    f"an {str(u.array.unyt_quantity)}."
+                    f"mass (number) and mass unit (string) or pass mass value "
+                    f"as an {str(u.array.unyt_quantity)}."
                 )
         else:
             raise ReferenceUnitError(
                 f"Invalid reference mass input.Please provide reference "
-                f"mass (number) and unit (string) or pass mass value as an "
-                f"{str(u.array.unyt_quantity)}."
+                f"mass (number) and mass unit (string) or pass mass value as "
+                f"an {str(u.array.unyt_quantity)}."
             )
 
     @reference_values.setter
