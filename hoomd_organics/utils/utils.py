@@ -56,7 +56,10 @@ def validate_ref_value(ref_value, dimension):
 
     def _parse_and_validate_unit(value, unit_str):
         if hasattr(u, unit_str):
-            u_unit = getattr(u, unit_str)
+            if unit_str == "amu":
+                u_unit = u.Unit("amu")
+            else:
+                u_unit = getattr(u, unit_str)
             if _is_valid_dimension(u_unit):
                 return float(value) * u_unit
         # if the unit contains "/" character, for example "g/mol", check if
@@ -73,6 +76,12 @@ def validate_ref_value(ref_value, dimension):
             f"{dimension.name} dimension."
         )
 
+    def _is_float(num):
+        try:
+            return float(num)
+        except ValueError:
+            raise ValueError("The reference value is not a number.")
+
     # if ref_value is an instance of unyt_quantity, check the dimension.
     if isinstance(ref_value, u.unyt_quantity) and _is_valid_dimension(
         ref_value.units
@@ -82,8 +91,7 @@ def validate_ref_value(ref_value, dimension):
     # the unit exists in unyt and has the correct dimension.
     elif isinstance(ref_value, str) and len(ref_value.split()) == 2:
         value, unit_str = ref_value.split()
-        if not value.isnumeric():
-            raise ReferenceUnitError("The reference value is not a number.")
+        value = _is_float(value)
         return _parse_and_validate_unit(value, unit_str)
     else:
         raise ReferenceUnitError(
