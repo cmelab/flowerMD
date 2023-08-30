@@ -14,7 +14,6 @@ def check_return_iterable(obj):
     except:  # noqa: E722
         return [obj]
 
-
 def validate_ref_value(ref_value, dimension):
     """Validates the reference value and checks the unit dimension.
     This function validates the reference value. The reference value can be
