@@ -49,7 +49,7 @@ def validate_ref_value(ref_value, dimension):
         if ref_unit.dimensions != dimension:
             raise ReferenceUnitError(
                 f"Invalid unit dimension. The reference "
-                f"value must be in {dimension.name} "
+                f"value must be in {dimension} "
                 f"dimension."
             )
         return True
@@ -73,7 +73,7 @@ def validate_ref_value(ref_value, dimension):
         raise ReferenceUnitError(
             f"Invalid reference value. Please provide "
             f"a reference value with unit of "
-            f"{dimension.name} dimension."
+            f"{dimension} dimension."
         )
 
     def _is_float(num):
@@ -97,5 +97,5 @@ def validate_ref_value(ref_value, dimension):
         raise ReferenceUnitError(
             f"Invalid reference value. Please provide "
             f"a reference value with unit of "
-            f"{dimension.name} dimension."
+            f"{dimension} dimension."
         )
