@@ -275,8 +275,11 @@ class System(ABC):
         )
         net_charge = sum(charges)
         abs_charge = sum(abs(charges))
-        for site in self.gmso_system.sites:
-            site.charge -= abs(site.charge) * (net_charge / abs_charge)
+        if abs_charge != 0:
+            for site in self.gmso_system.sites:
+                site.charge -= abs(site.charge if site.charge else 0) * (
+                    net_charge / abs_charge
+                )
 
     def to_gsd(self, file_name):
         with gsd.hoomd.open(file_name, "wb") as traj:
