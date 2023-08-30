@@ -178,12 +178,7 @@ class System(ABC):
 
     @reference_energy.setter
     def reference_energy(self, energy):
-        energy_dim = (
-            (u.dimensions.length**2)
-            * u.dimensions.mass
-            / u.dimensions.time**2
-        )
-        validated_energy = validate_ref_value(energy, energy_dim)
+        validated_energy = validate_ref_value(energy, u.dimensions.energy)
         self._reference_values["energy"] = validated_energy
 
     @reference_mass.setter
