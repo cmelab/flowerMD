@@ -90,7 +90,7 @@ class TestSystem(BaseTest):
             "sh",
         ]
 
-    def test_mol_from_mol2_ff_dictionary(self, benzene_molecule_mol2):
+    def test_system_from_mol2_mol_parameterization(self, benzene_molecule_mol2):
         benzene_mol = benzene_molecule_mol2(n_mols=3)
         system = Pack(
             molecules=[benzene_mol],
