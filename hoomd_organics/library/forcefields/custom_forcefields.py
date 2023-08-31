@@ -96,11 +96,31 @@ class TorchCustomForce(hoomd.md.force.Custom):
             positions = np.array(
                 snap.particles.position[particle_rtags], copy=True
             )
-        positions_tensor = (
-            torch.from_numpy(positions).type(torch.FloatTensor).to(self.device)
-        )
 
-        predicted_force = self.model(positions_tensor)
-        predicted_force = predicted_force.cpu().detach().numpy()
+        num_particles = len(positions)
+        predicted_force = []
+        for i, pos_1 in enumerate(positions):
+            pos_1_tensor = (
+                torch.from_numpy(pos_1)
+                .type(torch.FloatTensor)
+                .unsqueeze(0)
+                .to(self.device)
+            )
+            other_particles_idx = list(range(num_particles))
+            other_particles_idx.remove(i)
+            for pos_2 in positions[other_particles_idx]:
+                pos_2_tensor = (
+                    torch.from_numpy(pos_2)
+                    .type(torch.FloatTensor)
+                    .unsqueeze(0)
+                    .to(self.device)
+                )
+                predicted_force.append(
+                    self.model(pos_1_tensor, pos_2_tensor)
+                    .cpu()
+                    .detach()
+                    .numpy()
+                )
+
         with self.cpu_local_force_arrays as arrays:
             arrays.force[particle_rtags] = predicted_force
