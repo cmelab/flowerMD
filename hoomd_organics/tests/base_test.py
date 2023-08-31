@@ -114,6 +114,14 @@ class BaseTest:
         return _benzene_molecule
 
     @pytest.fixture()
+    def benzene_molecule_mol2(self, benzene_mol2):
+        def _benzene_molecule(n_mols):
+            benzene = Molecule(num_mols=n_mols, file=benzene_mol2)
+            return benzene
+
+        return _benzene_molecule
+
+    @pytest.fixture()
     def ethane_molecule(self, ethane_smiles):
         def _ethane_molecule(n_mols):
             ethane = Molecule(num_mols=n_mols, smiles=ethane_smiles)
