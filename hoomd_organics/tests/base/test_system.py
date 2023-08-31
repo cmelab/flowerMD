@@ -90,6 +90,19 @@ class TestSystem(BaseTest):
             "sh",
         ]
 
+    def test_mol_from_mol2_ff_dictionary(self, benzene_molecule_mol2):
+        benzene_mol = benzene_molecule_mol2(n_mols=3)
+        system = Pack(
+            molecules=[benzene_mol],
+            density=0.8,
+            r_cut=2.5,
+            force_field=OPLS_AA(),
+            auto_scale=True,
+        )
+        assert system.gmso_system.is_typed()
+        assert len(system.hoomd_forcefield) > 0
+        assert system.n_particles == system.hoomd_snapshot.particles.N
+
     def test_remove_hydrogen(self, benzene_molecule):
         benzene_mol = benzene_molecule(n_mols=3)
         system = Pack(
