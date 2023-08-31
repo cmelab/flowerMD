@@ -26,6 +26,7 @@ class TestSystem(BaseTest):
         )
         assert system.n_mol_types == 1
         assert len(system.all_molecules) == len(benzene_mols.molecules)
+        assert system.gmso_system.is_typed()
         assert len(system.hoomd_forcefield) > 0
         assert system.n_particles == system.hoomd_snapshot.particles.N
         assert system.hoomd_snapshot.particles.types == ["opls_145", "opls_146"]
@@ -47,6 +48,7 @@ class TestSystem(BaseTest):
         )
         assert system.all_molecules[0].name == "0"
         assert system.all_molecules[-1].name == "1"
+        assert system.gmso_system.is_typed()
         assert len(system.hoomd_forcefield) > 0
         assert system.n_particles == system.hoomd_snapshot.particles.N
         assert system.hoomd_snapshot.particles.types == [
@@ -74,6 +76,7 @@ class TestSystem(BaseTest):
         ) + len(pps_mol.molecules)
         assert system.all_molecules[0].name == "0"
         assert system.all_molecules[-1].name == "1"
+        assert system.gmso_system.is_typed()
         assert len(system.hoomd_forcefield) > 0
         for hoomd_force in system.hoomd_forcefield:
             if isinstance(hoomd_force, hoomd.md.pair.LJ):
@@ -113,6 +116,7 @@ class TestSystem(BaseTest):
             auto_scale=True,
             remove_hydrogens=True,
         )
+        assert system.gmso_system.is_typed()
         assert len(system.hoomd_forcefield) > 0
         assert list(system.hoomd_forcefield[0].params.keys()) == [
             ("opls_145", "opls_145")
