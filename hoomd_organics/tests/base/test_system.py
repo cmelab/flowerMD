@@ -219,12 +219,31 @@ class TestSystem(BaseTest):
         ref_value_dict = {
             "length": 1 * u.angstrom,
             "energy": 3.0 * u.kcal / u.mol,
-            "mass": 1.25 * u.amu,
+            "mass": 1.25 * u.Unit("amu"),
         }
         system.reference_values = ref_value_dict
         assert system.reference_length == ref_value_dict["length"]
         assert system.reference_energy == ref_value_dict["energy"]
         assert system.reference_mass == ref_value_dict["mass"]
+
+    def test_set_ref_values_string(self, polyethylene):
+        polyethylene = polyethylene(lengths=5, num_mols=1)
+        system = Pack(
+            molecules=[polyethylene],
+            force_field=[OPLS_AA()],
+            density=1.0,
+            r_cut=2.5,
+            auto_scale=False,
+        )
+        ref_value_dict = {
+            "length": "1 angstrom",
+            "energy": "3 kcal/mol",
+            "mass": "1.25 amu",
+        }
+        system.reference_values = ref_value_dict
+        assert system.reference_length == 1 * u.angstrom
+        assert system.reference_energy == 3 * u.kcal / u.mol
+        assert system.reference_mass == 1.25 * u.amu
 
     def test_set_ref_values_missing_key(self, polyethylene):
         polyethylene = polyethylene(lengths=5, num_mols=1)
@@ -379,6 +398,18 @@ class TestSystem(BaseTest):
         system.reference_energy = "1 kJ"
         assert system.reference_energy == 1 * u.kJ
 
+    def test_ref_energy_string_comb_units(self, polyethylene):
+        polyethylene = polyethylene(lengths=5, num_mols=1)
+        system = Pack(
+            molecules=[polyethylene],
+            force_field=[OPLS_AA()],
+            density=1.0,
+            r_cut=2.5,
+            auto_scale=False,
+        )
+        system.reference_energy = "1 kcal/mol"
+        assert system.reference_energy == 1 * u.kcal / u.mol
+
     def test_ref_energy_invalid_string(self, polyethylene):
         polyethylene = polyethylene(lengths=5, num_mols=1)
         system = Pack(
@@ -425,7 +456,7 @@ class TestSystem(BaseTest):
             auto_scale=False,
         )
         with pytest.raises(ReferenceUnitError):
-            system.reference_length = "1.0 m"
+            system.reference_energy = "1.0 m"
 
     def test_set_ref_mass(self, polyethylene):
         polyethylene = polyethylene(lengths=5, num_mols=1)
@@ -510,7 +541,7 @@ class TestSystem(BaseTest):
             auto_scale=False,
         )
         with pytest.raises(ReferenceUnitError):
-            system.reference_length = "1.0 m"
+            system.reference_mass = "1.0 m"
 
     def test_lattice_polymer(self, polyethylene):
         polyethylene = polyethylene(lengths=2, num_mols=32)
@@ -549,3 +580,25 @@ class TestSystem(BaseTest):
         assert len(system.hoomd_forcefield) > 0
         assert system.n_particles == system.hoomd_snapshot.particles.N
         assert system.reference_values.keys() == {"energy", "length", "mass"}
+
+    def test_scale_charges(self, pps):
+        pps_mol = pps(num_mols=5, lengths=5)
+        no_scale = Pack(
+            molecules=pps_mol,
+            density=0.5,
+            r_cut=2.4,
+            force_field=OPLS_AA_PPS(),
+            auto_scale=True,
+            scale_charges=False,
+        )
+
+        with_scale = Pack(
+            molecules=pps_mol,
+            density=0.5,
+            r_cut=2.4,
+            force_field=OPLS_AA_PPS(),
+            auto_scale=True,
+            scale_charges=True,
+        )
+        assert abs(no_scale.net_charge.value) > abs(with_scale.net_charge.value)
+        assert np.allclose(0, with_scale.net_charge.value, atol=1e-30)

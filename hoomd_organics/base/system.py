@@ -16,12 +16,13 @@ from gmso.external import (
 from gmso.parameterization import apply
 
 from hoomd_organics.base.molecule import Molecule
-from hoomd_organics.utils import FF_Types, check_return_iterable, xml_to_gmso_ff
-from hoomd_organics.utils.exceptions import (
-    ForceFieldError,
-    MoleculeLoadError,
-    ReferenceUnitError,
+from hoomd_organics.utils import (
+    FF_Types,
+    check_return_iterable,
+    validate_ref_value,
+    xml_to_gmso_ff,
 )
+from hoomd_organics.utils.exceptions import ForceFieldError, MoleculeLoadError
 
 
 class System(ABC):
@@ -137,9 +138,7 @@ class System(ABC):
 
     @property
     def n_particles(self):
-        if self.gmso_system:
-            return self.gmso_system.n_sites
-        return sum([mol.n_particles for mol in self.all_molecules])
+        return self.gmso_system.n_sites
 
     @property
     def mass(self):
@@ -149,6 +148,12 @@ class System(ABC):
                 for site in self.gmso_system.sites
             )
         return sum(mol.mass for mol in self.all_molecules)
+
+    @property
+    def net_charge(self):
+        return sum(
+            site.charge if site.charge else 0 for site in self.gmso_system.sites
+        )
 
     @property
     def box(self):
@@ -172,86 +177,18 @@ class System(ABC):
 
     @reference_length.setter
     def reference_length(self, length):
-        if (
-            isinstance(length, u.array.unyt_quantity)
-            and length.units.dimensions == u.dimensions.length
-        ):
-            self._reference_values["length"] = length
-        elif isinstance(length, str) and len(length.split()) == 2:
-            value, unit = length.split()
-            if value.isnumeric() and hasattr(u, unit):
-                unit = getattr(u, unit)
-                if unit.dimensions == u.dimensions.length:
-                    self._reference_values["length"] = float(value) * unit
-            else:
-                raise ReferenceUnitError(
-                    f"Invalid reference length input.Please provide reference "
-                    f"length (number) and length unit (string) or pass length "
-                    f"value as an {str(u.array.unyt_quantity)}."
-                )
-        else:
-            raise ReferenceUnitError(
-                f"Invalid reference length input.Please provide reference "
-                f"length (number) and length unit (string) or pass length "
-                f"value as an {str(u.array.unyt_quantity)}."
-            )
+        validated_length = validate_ref_value(length, u.dimensions.length)
+        self._reference_values["length"] = validated_length
 
     @reference_energy.setter
     def reference_energy(self, energy):
-        energy_dim = (
-            (u.dimensions.length**2)
-            * u.dimensions.mass
-            / u.dimensions.time**2
-        )
-        if (
-            isinstance(energy, u.array.unyt_quantity)
-            and energy.units.dimensions == energy_dim
-        ):
-            self._reference_values["energy"] = energy
-        elif isinstance(energy, str) and len(energy.split()) == 2:
-            value, unit = energy.split()
-            if value.isnumeric() and hasattr(u, unit):
-                unit = getattr(u, unit)
-                if unit.dimensions == energy_dim:
-                    self._reference_values["energy"] = float(value) * unit
-            else:
-                raise ReferenceUnitError(
-                    f"Invalid reference energy input.Please provide reference "
-                    f"energy (number) and energy unit (string) or pass energy "
-                    f"value as an {str(u.array.unyt_quantity)}."
-                )
-        else:
-            raise ReferenceUnitError(
-                f"Invalid reference energy input.Please provide reference "
-                f"energy (number) and energy unit (string) or pass energy "
-                f"value as an {str(u.array.unyt_quantity)}."
-            )
+        validated_energy = validate_ref_value(energy, u.dimensions.energy)
+        self._reference_values["energy"] = validated_energy
 
     @reference_mass.setter
     def reference_mass(self, mass):
-        if (
-            isinstance(mass, u.array.unyt_quantity)
-            and mass.units.dimensions == u.dimensions.mass
-        ):
-            self._reference_values["mass"] = mass
-        elif isinstance(mass, str) and len(mass.split()) == 2:
-            value, unit = mass.split()
-            if value.isnumeric() and hasattr(u, unit):
-                unit = getattr(u, unit)
-                if unit.dimensions == u.dimensions.mass:
-                    self._reference_values["mass"] = float(value) * unit
-            else:
-                raise ReferenceUnitError(
-                    f"Invalid reference mass input.Please provide reference "
-                    f"mass (number) and mass unit (string) or pass mass value "
-                    f"as an {str(u.array.unyt_quantity)}."
-                )
-        else:
-            raise ReferenceUnitError(
-                f"Invalid reference mass input.Please provide reference "
-                f"mass (number) and mass unit (string) or pass mass value as "
-                f"an {str(u.array.unyt_quantity)}."
-            )
+        validated_mass = validate_ref_value(mass, u.dimensions.mass)
+        self._reference_values["mass"] = validated_mass
 
     @reference_values.setter
     def reference_values(self, ref_value_dict):
@@ -259,12 +196,7 @@ class System(ABC):
         for k in ref_keys:
             if k not in ref_value_dict.keys():
                 raise ValueError(f"Missing reference for {k}.")
-            if not isinstance(ref_value_dict[k], u.array.unyt_quantity):
-                raise ReferenceUnitError(
-                    f"{k} reference value must be of type "
-                    f"{str(u.array.unyt_quantity)}"
-                )
-        self._reference_values = ref_value_dict
+            self.__setattr__(f"reference_{k}", ref_value_dict[k])
 
     @property
     def hoomd_snapshot(self):
@@ -298,6 +230,22 @@ class System(ABC):
         parmed_struc.strip([a.atomic_number == 1 for a in parmed_struc.atoms])
         if len(hydrogens) > 0:
             self.gmso_system = from_parmed(parmed_struc)
+
+    def _scale_charges(self):
+        """"""
+        charges = np.array(
+            [
+                site.charge if site.charge else 0
+                for site in self.gmso_system.sites
+            ]
+        )
+        net_charge = sum(charges)
+        abs_charge = sum(abs(charges))
+        if abs_charge != 0:
+            for site in self.gmso_system.sites:
+                site.charge -= abs(site.charge if site.charge else 0) * (
+                    net_charge / abs_charge
+                )
 
     def to_gsd(self, file_name):
         with gsd.hoomd.open(file_name, "wb") as traj:
@@ -344,8 +292,7 @@ class System(ABC):
             for site in self.gmso_system.sites:
                 site.charge = 0
         if self.scale_charges and not self.remove_charges:
-            pass
-            # TODO: Scale charges from self.gmso_system
+            self._scale_charges()
         epsilons = [
             s.atom_type.parameters["epsilon"] for s in self.gmso_system.sites
         ]
