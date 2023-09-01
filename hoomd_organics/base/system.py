@@ -2,6 +2,7 @@ import warnings
 from abc import ABC, abstractmethod
 from typing import List
 
+import gmso
 import gsd
 import mbuild as mb
 import numpy as np
@@ -213,23 +214,32 @@ class System(ABC):
         The masses and charges of the hydrogens are absorbed into
         the heavy atoms they were bonded to.
         """
-        parmed_struc = to_parmed(self.gmso_system)
         # Try by element first:
-        hydrogens = [a for a in parmed_struc.atoms if a.element == 1]
-        if len(hydrogens) == 0:  # Try by mass
-            hydrogens = [a for a in parmed_struc.atoms if a.mass == 1.008]
+        hydrogens = [
+                site for site in self.gmso_system.sites if
+                site.element.atomic_number == 1
+        ]
+        # If none found by element; try by mass
+        if len(hydrogens) == 0:
+            hydrogens = [
+                    site for site in self.gmso_system.sites if
+                    site.mass.to("amu").value == 1.008
+            ]
             if len(hydrogens) == 0:
                 warnings.warn(
                     "Hydrogen atoms could not be found by element or mass"
                 )
         for h in hydrogens:
-            h.atomic_number = 1
-            bonded_atom = h.bond_partners[0]
-            bonded_atom.mass += h.mass
-            bonded_atom.charge += h.charge
-        parmed_struc.strip([a.atomic_number == 1 for a in parmed_struc.atoms])
-        if len(hydrogens) > 0:
-            self.gmso_system = from_parmed(parmed_struc)
+            bond_connection = [
+                    conn for conn in h.connections if
+                    isinstance(conn, gmso.core.bond.Bond)
+            ][0]
+            # Add mass and charge to "heavy" atom
+            for site in bond_connection.connection_members:
+                if site is not h:
+                    site.mass += h.mass
+                    site.charge += h.charge
+            self.gmso_system.remove_site(h)
 
     def _scale_charges(self):
         """"""

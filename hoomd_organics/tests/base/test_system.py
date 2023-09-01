@@ -100,6 +100,7 @@ class TestSystem(BaseTest):
             auto_scale=True,
             remove_hydrogens=True,
         )
+        assert not any([s.element.atomic_number == 1 for s in system.gmso_system.sites])
         assert len(system.hoomd_forcefield) > 0
         assert list(system.hoomd_forcefield[0].params.keys()) == [
             ("opls_145", "opls_145")
