@@ -3,6 +3,7 @@ import itertools
 import hoomd
 import numpy as np
 import torch
+import torch.nn as nn
 
 
 class BeadSpring:
@@ -63,6 +64,43 @@ class BeadSpring:
         return forces
 
 
+class NN(nn.Module):
+    def __init__(self, hidden_dim, n_layers, act_fn="Tanh", dropout=0.5):
+        super(NN, self).__init__()
+        self.in_dim = 4  # (relative position vector, center-to-center distance)
+        self.out_dim = 1  # predicted energy
+        self.hidden_dim = hidden_dim
+
+        self.n_layers = n_layers
+        self.act_fn = act_fn
+        self.dropout = dropout
+
+        self.net = nn.Sequential(*self._get_net())
+
+    def _get_act_fn(self):
+        act = getattr(nn, self.act_fn)
+        return act()
+
+    def _get_net(self):
+        layers = [nn.Linear(self.in_dim, self.hidden_dim), self._get_act_fn()]
+        for i in range(self.n_layers - 1):
+            layers.append(nn.Linear(self.hidden_dim, self.hidden_dim))
+            layers.append(self._get_act_fn())
+            layers.append(nn.Dropout(p=self.dropout))
+        layers.append(nn.Linear(self.hidden_dim, self.out_dim))
+        return layers
+
+    def forward(self, pos_1, pos_2):
+        x = pos_1 - pos_2
+        r = torch.norm(x, dim=1, keepdim=True)
+        x = torch.cat((x, r), dim=1)
+        energy = self.net(x)
+        force = (-1.0) * torch.autograd.grad(
+            energy, pos_1, retain_graph=True, create_graph=True
+        )[0][0]
+        return force
+
+
 class TorchCustomForce(hoomd.md.force.Custom):
     """
     Custom force that uses a PyTorch model to predict the forces from particle
@@ -84,7 +122,6 @@ class TorchCustomForce(hoomd.md.force.Custom):
         )
         self.model = model
         self.model.to(self.device)
-        self.model.eval()
 
     def set_forces(self, timestep):
         """
@@ -92,13 +129,13 @@ class TorchCustomForce(hoomd.md.force.Custom):
         """
         # get positions for all particles
         with self._state.cpu_local_snapshot as snap:
-            particle_rtags = snap.particles.rtag
+            particle_rtags = np.copy(snap.particles.rtag)
             positions = np.array(
                 snap.particles.position[particle_rtags], copy=True
             )
 
         num_particles = len(positions)
-        predicted_force = []
+        particle_forces = []
         for i, pos_1 in enumerate(positions):
             pos_1_tensor = (
                 torch.from_numpy(pos_1)
@@ -108,6 +145,7 @@ class TorchCustomForce(hoomd.md.force.Custom):
             )
             other_particles_idx = list(range(num_particles))
             other_particles_idx.remove(i)
+            particle_force = 0
             for pos_2 in positions[other_particles_idx]:
                 pos_2_tensor = (
                     torch.from_numpy(pos_2)
@@ -115,12 +153,14 @@ class TorchCustomForce(hoomd.md.force.Custom):
                     .unsqueeze(0)
                     .to(self.device)
                 )
-                predicted_force.append(
+                pos_1_tensor.requires_grad = True
+                particle_force += (
                     self.model(pos_1_tensor, pos_2_tensor)
                     .cpu()
                     .detach()
                     .numpy()
                 )
+            particle_forces.append(particle_force)
 
         with self.cpu_local_force_arrays as arrays:
-            arrays.force[particle_rtags] = predicted_force
+            arrays.force[particle_rtags] = np.asarray(particle_forces)
