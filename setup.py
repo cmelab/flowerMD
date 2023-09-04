@@ -14,13 +14,13 @@ from shutil import rmtree
 from setuptools import Command, find_packages, setup
 
 # Package meta-data.
-NAME = "hoomd_polymers"
+NAME = "hoomd_organics"
 DESCRIPTION = (
     "Package making it easier to build and simulate polymers in Hoomd-Blue"
 )
-URL = "https://github.com/chrisjonesBSU/hoomd-polymers"
+URL = "https://github.com/cmelab/hoomd-organics"
 EMAIL = "chrisjones4@u.boisestate.edu"
-AUTHOR = "Chris Jones"
+AUTHOR = "CME Lab"
 REQUIRES_PYTHON = ">=3.9.0"
 VERSION = None
 
@@ -102,12 +102,13 @@ setup(
     #     'console_scripts': ['mycli=mymodule:cli'],
     # },
     package_data={
-        "hoomd_polymers": [
+        "hoomd_organics": [
             "modules/*",
             "sim/*",
             "library/*",
             "library/forcefields/*",
             "library/monomers/*",
+            "assets/*",
         ]
     },
     install_requires=REQUIRED,

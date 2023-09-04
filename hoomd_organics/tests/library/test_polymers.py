@@ -1,7 +1,7 @@
 import mbuild as mb
 import pytest
 
-from hoomd_polymers.library import (
+from hoomd_organics.library import (
     PEEK,
     PPS,
     LJChain,

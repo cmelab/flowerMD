@@ -15,13 +15,14 @@ from gmso.external import (
 )
 from gmso.parameterization import apply
 
-from hoomd_polymers.base.molecule import Molecule
-from hoomd_polymers.utils import FF_Types, check_return_iterable, xml_to_gmso_ff
-from hoomd_polymers.utils.exceptions import (
-    ForceFieldError,
-    MoleculeLoadError,
-    ReferenceUnitError,
+from hoomd_organics.base.molecule import Molecule
+from hoomd_organics.utils import (
+    FF_Types,
+    check_return_iterable,
+    validate_ref_value,
+    xml_to_gmso_ff,
 )
+from hoomd_organics.utils.exceptions import ForceFieldError, MoleculeLoadError
 
 
 class System(ABC):
@@ -29,7 +30,7 @@ class System(ABC):
 
     Parameters
     ----------
-    molecule : hoomd_polymers.molecule; required
+    molecule : hoomd_organics.molecule; required
     n_mols : int; required
         The number of times to replicate molecule in the system
     density : float; optional; default None
@@ -137,9 +138,7 @@ class System(ABC):
 
     @property
     def n_particles(self):
-        if self.gmso_system:
-            return self.gmso_system.n_sites
-        return sum([mol.n_particles for mol in self.all_molecules])
+        return self.gmso_system.n_sites
 
     @property
     def mass(self):
@@ -149,6 +148,12 @@ class System(ABC):
                 for site in self.gmso_system.sites
             )
         return sum(mol.mass for mol in self.all_molecules)
+
+    @property
+    def net_charge(self):
+        return sum(
+            site.charge if site.charge else 0 for site in self.gmso_system.sites
+        )
 
     @property
     def box(self):
@@ -171,49 +176,19 @@ class System(ABC):
         return self._reference_values
 
     @reference_length.setter
-    def reference_length(self, length, unit=None):
-        if isinstance(length, u.array.unyt_quantity):
-            self._reference_values["length"] = length
-        elif isinstance(unit, str) and (
-            isinstance(length, float) or isinstance(length, int)
-        ):
-            self._reference_values["length"] = length * getattr(u, unit)
-        else:
-            raise ReferenceUnitError(
-                f"Invalid reference length input.Please provide reference "
-                f"length (number) and unit (string) or pass length value as "
-                f"an {str(u.array.unyt_quantity)}."
-            )
+    def reference_length(self, length):
+        validated_length = validate_ref_value(length, u.dimensions.length)
+        self._reference_values["length"] = validated_length
 
     @reference_energy.setter
-    def reference_energy(self, energy, unit=None):
-        if isinstance(energy, u.array.unyt_quantity):
-            self._reference_values["energy"] = energy
-        elif isinstance(unit, str) and (
-            isinstance(energy, float) or isinstance(energy, int)
-        ):
-            self._reference_values["energy"] = energy * getattr(u, unit)
-        else:
-            raise ReferenceUnitError(
-                f"Invalid reference energy input.Please provide reference "
-                f"energy (number) and unit (string) or pass energy value as "
-                f"an {str(u.array.unyt_quantity)}."
-            )
+    def reference_energy(self, energy):
+        validated_energy = validate_ref_value(energy, u.dimensions.energy)
+        self._reference_values["energy"] = validated_energy
 
     @reference_mass.setter
-    def reference_mass(self, mass, unit=None):
-        if isinstance(mass, u.array.unyt_quantity):
-            self._reference_values["mass"] = mass
-        elif isinstance(unit, str) and (
-            isinstance(mass, float) or isinstance(mass, int)
-        ):
-            self._reference_values["mass"] = mass * getattr(u, unit)
-        else:
-            raise ReferenceUnitError(
-                f"Invalid reference mass input.Please provide reference "
-                f"mass (number) and unit (string) or pass mass value as an "
-                f"{str(u.array.unyt_quantity)}."
-            )
+    def reference_mass(self, mass):
+        validated_mass = validate_ref_value(mass, u.dimensions.mass)
+        self._reference_values["mass"] = validated_mass
 
     @reference_values.setter
     def reference_values(self, ref_value_dict):
@@ -221,12 +196,7 @@ class System(ABC):
         for k in ref_keys:
             if k not in ref_value_dict.keys():
                 raise ValueError(f"Missing reference for {k}.")
-            if not isinstance(ref_value_dict[k], u.array.unyt_quantity):
-                raise ReferenceUnitError(
-                    f"{k} reference value must be of type "
-                    f"{str(u.array.unyt_quantity)}"
-                )
-        self._reference_values = ref_value_dict
+            self.__setattr__(f"reference_{k}", ref_value_dict[k])
 
     @property
     def hoomd_snapshot(self):
@@ -260,6 +230,22 @@ class System(ABC):
         parmed_struc.strip([a.atomic_number == 1 for a in parmed_struc.atoms])
         if len(hydrogens) > 0:
             self.gmso_system = from_parmed(parmed_struc)
+
+    def _scale_charges(self):
+        """"""
+        charges = np.array(
+            [
+                site.charge if site.charge else 0
+                for site in self.gmso_system.sites
+            ]
+        )
+        net_charge = sum(charges)
+        abs_charge = sum(abs(charges))
+        if abs_charge != 0:
+            for site in self.gmso_system.sites:
+                site.charge -= abs(site.charge if site.charge else 0) * (
+                    net_charge / abs_charge
+                )
 
     def to_gsd(self, file_name):
         with gsd.hoomd.open(file_name, "wb") as traj:
@@ -306,8 +292,7 @@ class System(ABC):
             for site in self.gmso_system.sites:
                 site.charge = 0
         if self.scale_charges and not self.remove_charges:
-            pass
-            # TODO: Scale charges from self.gmso_system
+            self._scale_charges()
         epsilons = [
             s.atom_type.parameters["epsilon"] for s in self.gmso_system.sites
         ]
@@ -520,7 +505,14 @@ class Lattice(System):
             layer.translate((self.x * i, 0, 0))
             system.add(layer)
         bounding_box = system.get_boundingbox()
-        x_len = bounding_box.lengths[0]
-        y_len = bounding_box.lengths[1]
+        # Add lattice constants to box lengths to account for boundaries
+        x_len = bounding_box.lengths[0] + self.x
+        y_len = bounding_box.lengths[1] + self.y
+        z_len = bounding_box.lengths[2] + 0.2
         self.set_target_box(x_constraint=x_len, y_constraint=y_len)
+        # Center the lattice in its box
+        system.box = mb.box.Box(np.array([x_len, y_len, z_len]))
+        system.translate_to(
+            (system.box.Lx / 2, system.box.Ly / 2, system.box.Lz / 2)
+        )
         return system

@@ -1,5 +1,5 @@
-[![pytest](https://github.com/chrisjonesbsu/hoomd-polymers/actions/workflows/pytest.yml/badge.svg)](https://github.com/chrisjonesbsu/hoomd-polymers/actions/workflows/pytest.yml)
-[![codecov](https://codecov.io/gh/chrisjonesBSU/hoomd-polymers/branch/main/graph/badge.svg?token=86LY9WHSH6)](https://codecov.io/gh/chrisjonesBSU/hoomd-polymers)
+[![pytest](https://github.com/cmelab/hoomd-organics/actions/workflows/pytest.yml/badge.svg)](https://github.com/cmelab/hoomd-organics/actions/workflows/pytest.yml)
+[![codecov](https://codecov.io/gh/cmelab/hoomd-organics/branch/main/graph/badge.svg?token=86LY9WHSH6)](https://codecov.io/gh/cmelab/hoomd-organics)
 ## About
 
 Wrapper for [MoSDeF](https://github.com/mosdef-hub) packages and [Hoomd-Blue](https://github.com/glotzerlab/hoomd-blue) with
@@ -18,7 +18,7 @@ cd hoomd-organics
 #### a. Using HOOMD-blue from conda:
 ```
 conda env create -f environment-cpu.yml
-conda activate hoomd-polymers
+conda activate hoomd-organics
 python -m pip install .
 ```
 

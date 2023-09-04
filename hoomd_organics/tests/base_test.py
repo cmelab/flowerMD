@@ -5,29 +5,13 @@ import mbuild as mb
 import pytest
 from gmso.external.convert_mbuild import from_mbuild
 
-from hoomd_polymers import Molecule, Pack, Polymer
-from hoomd_polymers.library import OPLS_AA
+from hoomd_organics import Molecule, Pack, Polymer, Simulation
+from hoomd_organics.library import OPLS_AA
 
 ASSETS_DIR = os.path.join(os.path.dirname(__file__), "assets")
 
 
 class BaseTest:
-    # @pytest.fixture(autouse=True)
-    # def initdir(self, tmpdir):
-    #     tmpdir.chdir()
-    #
-    # @pytest.fixture()
-    # def polyethylene_system(self):
-    #     system = Pack(
-    #             molecule=PolyEthylene,
-    #             n_mols=5,
-    #             mol_kwargs={"length": 5},
-    #             density=0.5
-    #     )
-    #     system.apply_forcefield(forcefield=GAFF(), remove_hydrogens=False)
-    #     return system
-    #
-
     @pytest.fixture()
     def benzene_smiles(self):
         return "c1ccccc1"
@@ -130,6 +114,14 @@ class BaseTest:
         return _benzene_molecule
 
     @pytest.fixture()
+    def benzene_molecule_mol2(self, benzene_mol2):
+        def _benzene_molecule(n_mols):
+            benzene = Molecule(num_mols=n_mols, file=benzene_mol2)
+            return benzene
+
+        return _benzene_molecule
+
+    @pytest.fixture()
     def ethane_molecule(self, ethane_smiles):
         def _ethane_molecule(n_mols):
             ethane = Molecule(num_mols=n_mols, smiles=ethane_smiles)
@@ -176,6 +168,26 @@ class BaseTest:
         return _PolyEthylene
 
     @pytest.fixture()
+    def pps(self, pps_smiles):
+        class _PPS(Polymer):
+            def __init__(self, lengths, num_mols, **kwargs):
+                smiles = pps_smiles
+                bond_indices = [7, 10]
+                bond_length = 0.176
+                bond_orientation = [[0, 0, 1], [0, 0, -1]]
+                super().__init__(
+                    lengths=lengths,
+                    num_mols=num_mols,
+                    smiles=smiles,
+                    bond_indices=bond_indices,
+                    bond_length=bond_length,
+                    bond_orientation=bond_orientation,
+                    **kwargs
+                )
+
+        return _PPS
+
+    @pytest.fixture()
     def polyDME(self, dimethylether_smiles):
         class _PolyDME(Polymer):
             def __init__(self, lengths, num_mols, **kwargs):
@@ -220,13 +232,10 @@ class BaseTest:
         )
         return system
 
-    # @pytest.fixture()
-    # def ua_polyethylene_system(self):
-    #     system = Pack(
-    #             molecule=PolyEthylene,
-    #             n_mols=5,
-    #             mol_kwargs={"length": 5},
-    #             density=0.5
-    #     )
-    #     system.apply_forcefield(forcefield=GAFF(), remove_hydrogens=True)
-    #     return system
+    @pytest.fixture()
+    def benzene_simulation(self, benzene_system):
+        sim = Simulation(
+            initial_state=benzene_system.hoomd_snapshot,
+            forcefield=benzene_system.hoomd_forcefield,
+        )
+        return sim

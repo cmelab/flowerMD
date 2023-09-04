@@ -2,7 +2,7 @@ import gsd.hoomd
 import hoomd
 import numpy as np
 
-from hoomd_polymers.base.simulation import Simulation
+from hoomd_organics.base.simulation import Simulation
 
 
 class Interface:

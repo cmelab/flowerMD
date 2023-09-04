@@ -4,8 +4,8 @@ import pickle
 import hoomd
 import numpy as np
 
-from hoomd_polymers import Simulation
-from hoomd_polymers.tests import BaseTest
+from hoomd_organics import Simulation
+from hoomd_organics.tests import BaseTest
 
 
 class TestSimulate(BaseTest):

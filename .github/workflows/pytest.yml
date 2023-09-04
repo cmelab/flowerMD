@@ -5,13 +5,13 @@ on:
     # Action will run when any changes to these paths are pushed or pr'ed to master
     branches: [ main ]
     paths:
-      - hoomd_polymers/**
+      - hoomd_organics/**
       - environment-cpu.yml
       - .github/workflows/pytest.yml
   pull_request:
     branches: [ main ]
     paths:
-      - hoomd_polymers/**
+      - hoomd_organics/**
       - environment-cpu.yml
       - .github/workflows/pytest.yml
   # Allows workflow to be manually triggered
@@ -35,7 +35,7 @@ jobs:
 
     - name: Install package
       shell: bash -l {0}
-      run: pip install -e .
+      run: pip install .
 
     - name: Run pytest with coverage report
       shell: bash -l {0}

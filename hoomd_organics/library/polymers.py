@@ -3,8 +3,8 @@ import os
 import mbuild as mb
 from mbuild.coordinate_transform import z_axis_transform
 
-from hoomd_polymers import CoPolymer, Polymer
-from hoomd_polymers.assets import MON_DIR
+from hoomd_organics import CoPolymer, Polymer
+from hoomd_organics.assets import MON_DIR
 
 
 class PolyEthylene(Polymer):

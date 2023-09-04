@@ -1,12 +1,12 @@
-name: hoomd-polymers-dev
+name: hoomd-organics-dev
 channels:
   - conda-forge
 dependencies:
   - foyer
   - freud
-    #- gmso >= 0.11.0
+  - gmso>=0.11.1
   - gsd<3.0
-  - hoomd=3.11=*gpu*
+  - hoomd=3.11=*cpu*
   - mbuild
   - numpy
   - openbabel
@@ -20,4 +20,3 @@ dependencies:
   - pip:
       - git+https://github.com/cmelab/cmeutils.git@master
       - git+https://github.com/cmelab/grits.git@main
-      - git+https://github.com/mosdef-hub/gmso@main

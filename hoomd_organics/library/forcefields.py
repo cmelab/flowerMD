@@ -4,7 +4,7 @@ import forcefield_utilities as ffutils
 import foyer
 import hoomd
 
-from hoomd_polymers.assets import FF_DIR
+from hoomd_organics.assets import FF_DIR
 
 
 class GAFF(foyer.Forcefield):
@@ -29,7 +29,7 @@ class OPLS_AA_PPS(foyer.Forcefield):
     def __init__(self, forcefield_files=f"{FF_DIR}/pps_opls.xml"):
         super(OPLS_AA_PPS, self).__init__(forcefield_files=forcefield_files)
         self.description = (
-            "Based on hoomd_polymers.forcefields.OPLS_AA. "
+            "Based on hoomd_organics.forcefields.OPLS_AA. "
             "Trimmed down to include only PPS parameters. "
             "One missing parameter was added manually: "
             "<Angle class1=CA class2=S class3=CA angle=1.805 k=627.6/> "
@@ -44,7 +44,7 @@ class OPLS_AA_BENZENE(foyer.Forcefield):
     def __init__(self, forcefield_files=f"{FF_DIR}/benzene_opls.xml"):
         super(OPLS_AA_BENZENE, self).__init__(forcefield_files=forcefield_files)
         self.description = (
-            "Based on hoomd_polymers.forcefields.OPLS_AA. "
+            "Based on hoomd_organics.forcefields.OPLS_AA. "
             "Trimmed down to include only benzene parameters."
         )
         self.gmso_ff = ffutils.FoyerFFs().load(forcefield_files).to_gmso_ff()
@@ -56,7 +56,7 @@ class OPLS_AA_DIMETHYLETHER(foyer.Forcefield):
             forcefield_files=forcefield_files
         )
         self.description = (
-            "Based on hoomd_polymers.forcefields.OPLS_AA. "
+            "Based on hoomd_organics.forcefields.OPLS_AA. "
             "Trimmed down to include only dimethyl ether parameters."
         )
         self.gmso_ff = ffutils.FoyerFFs().load(forcefield_files).to_gmso_ff()

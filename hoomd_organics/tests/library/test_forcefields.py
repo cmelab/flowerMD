@@ -2,7 +2,7 @@ import os
 
 import hoomd
 
-from hoomd_polymers.library import (
+from hoomd_organics.library import (
     GAFF,
     OPLS_AA,
     OPLS_AA_BENZENE,
@@ -11,7 +11,7 @@ from hoomd_polymers.library import (
     BeadSpring,
     FF_from_file,
 )
-from hoomd_polymers.tests.base_test import ASSETS_DIR
+from hoomd_organics.tests.base_test import ASSETS_DIR
 
 
 class TestForceFields:
