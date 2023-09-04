@@ -18,3 +18,4 @@ dependencies:
   - pip:
       - git+https://github.com/cmelab/cmeutils.git@master
       - git+https://github.com/cmelab/grits.git@main
+      - git+https://github.com/cmelab/hoomd-organics.git@cecam
