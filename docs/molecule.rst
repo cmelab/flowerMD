@@ -1,3 +1,6 @@
+molecule
+-----------
+
 .. py:currentmodule:hoomd_organics
 
 .. rubric:: Details
