@@ -1,0 +1,19 @@
+FROM cmelab/gpuhoomd3conda:latest
+
+USER root
+
+RUN conda activate base
+
+WORKDIR /opt && chmod u+rwx .
+
+# install in base conda env
+RUN git clone https://github.com/cmelab/hoomd-organics && \
+    cd hoomd-organics && \
+    conda env update -n base -f environment-gpu.yml && \
+    conda clean --all --yes -f
+
+WORKDIR hoomd-organics
+
+RUN python -m pip install --user -e .
+
+USER icomse-software:icomse-software
