@@ -20,5 +20,4 @@ python:
         - requirements: docs/requirements.txt
 
 conda:
-    environment:
-        - environment-dev.yml
+    environment: environment-dev.yml
