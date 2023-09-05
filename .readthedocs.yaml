@@ -15,9 +15,7 @@ build:
 sphinx:
    configuration: docs/conf.py
 
-python:
-    install:
-        - requirements: docs/requirements.txt
-
 conda:
     environment: environment-dev.yml
+    install:
+        - requirements: docs/requirements.txt
