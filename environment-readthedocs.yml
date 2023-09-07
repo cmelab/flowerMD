@@ -1,4 +1,4 @@
-name: hoomd-organics-dev
+name: hoomd-organics-readthedocs
 channels:
   - conda-forge
 dependencies:
@@ -6,7 +6,7 @@ dependencies:
   - freud
     #- gmso >= 0.11.0
   - gsd<3.0
-  - hoomd=3.11=*gpu*
+  - hoomd=3.11=*cpu*
   - mbuild
   - numpy
   - openbabel
