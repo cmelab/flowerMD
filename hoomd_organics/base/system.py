@@ -74,7 +74,8 @@ class System(ABC):
         self.n_mol_types = 0
         for mol_item in self._molecules:
             if isinstance(mol_item, Molecule):
-                mol_item.assign_mol_name(str(self.n_mol_types))
+                if self._force_field:
+                    mol_item.assign_mol_name(str(self.n_mol_types))
                 self.all_molecules.extend(mol_item.molecules)
                 # if ff is provided in Molecule class
                 if mol_item.force_field:
