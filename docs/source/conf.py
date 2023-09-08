@@ -18,7 +18,22 @@ sys.path.insert(0, os.path.abspath('../..'))
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = ['sphinx.ext.autodoc', 'sphinx.ext.napoleon']
-autodoc_mock_imports = ['symengine']
+autodoc_mock_imports = ['cmeutils',
+                        'forcefield_utilities',
+                        'foyer',
+                        'freud',
+                        'gmso',
+                        'grits',
+                        'gsd',
+                        'hoomd',
+                        'mbuild',
+                        'numpy',
+                        'openbabel',
+                        'py3Dmol',
+                        'pydantic',
+                        'symengine',
+                        'sympy',
+                        'unyt']
 
 templates_path = ['_templates']
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
