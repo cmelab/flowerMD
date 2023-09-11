@@ -7,7 +7,7 @@ import hoomd.md
 import numpy as np
 import unyt as u
 
-from hoomd_organics.utils import StdOutLogger, UpdateWalls
+from hoomd_organics.utils import StdOutLogger, UpdateWalls, calculate_box_length
 from hoomd_organics.utils.exceptions import ReferenceUnitError
 
 
@@ -432,7 +432,9 @@ class Simulation(hoomd.simulation.Simulation):
                 Lz=final_box_lengths[2],
             )
         else:
-            pass
+            # TODO: should we convert the final_density to g/cm^3?
+            L = calculate_box_length(self.mass, final_density)
+            final_box = hoomd.Box(Lx=L, Ly=L, Lz=L)
 
         resize_trigger = hoomd.trigger.Periodic(period)
         box_ramp = hoomd.variant.Ramp(

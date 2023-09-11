@@ -18,6 +18,7 @@ from gmso.parameterization import apply
 from hoomd_organics.base.molecule import Molecule
 from hoomd_organics.utils import (
     FF_Types,
+    calculate_box_length,
     check_return_iterable,
     validate_ref_value,
     xml_to_gmso_ff,
@@ -360,7 +361,7 @@ class System(ABC):
 
     def _calculate_L(self, fixed_L=None):
         """Calculates the required box length(s) given the
-        mass of a sytem and the target density.
+        mass of a system and the target density.
 
         Box edge length constraints can be set by set_target_box().
         If constraints are set, this will solve for the required
@@ -374,18 +375,7 @@ class System(ABC):
             when solving for L
 
         """
-        # Convert from amu to grams
-        M = self.mass * 1.66054e-24
-        vol = M / self.density  # cm^3
-        if fixed_L is None:
-            L = vol ** (1 / 3)
-        else:
-            L = vol / np.prod(fixed_L)
-            if len(fixed_L) == 1:  # L is cm^2
-                L = L ** (1 / 2)
-        # Convert from cm back to nm
-        L *= 1e7
-        return L
+        return calculate_box_length(self.mass, self.density, fixed_L=fixed_L)
 
 
 class Pack(System):
