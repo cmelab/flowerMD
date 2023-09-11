@@ -62,7 +62,7 @@ class System(ABC):
         self.remove_hydrogens = remove_hydrogens
         self.remove_charges = remove_charges
         self.scale_charges = scale_charges
-        self.target_box = None
+        self._target_box = None
         self.all_molecules = []
         self._hoomd_snapshot = None
         self._hoomd_forcefield = []
@@ -208,6 +208,10 @@ class System(ABC):
         self._hoomd_forcefield = self._create_hoomd_forcefield()
         return self._hoomd_forcefield
 
+    @property
+    def target_box(self):
+        return self._target_box / self.reference_length
+
     def _remove_hydrogens(self):
         """Call this method to remove hydrogen atoms from the system.
         The masses and charges of the hydrogens are absorbed into
@@ -344,7 +348,7 @@ class System(ABC):
             constraints[np.where(constraints is None)] = L
             Lx, Ly, Lz = constraints
 
-        self.target_box = np.array([Lx, Ly, Lz])
+        self._target_box = np.array([Lx, Ly, Lz])
 
     def visualize(self):
         if self.system:
@@ -389,6 +393,21 @@ class Pack(System):
     The box used for packing is expanded to allow PACKMOL
     to more easily place all the molecules.
 
+    Warnings:
+    ---------
+    Note that the default `packing_expand_factor` for pack is 5, which means
+    that the box density will not be the same as the specified density. This is
+    because in some cases PACKMOL will not be able to fit all the molecules
+    into the box if the target box is too small, therefore, we need to expand
+    the box by a factor (default:5) to allow PACKMOL to fit all the molecules.
+
+    In order to get the
+    specified density there are two options:
+    1) set the `packing_expand_factor` to 1, which will not expand the box,
+     however, this may result in PACKMOL errors if the box is too small.
+    2) Update the box volume after creating the simulation object to the target
+    box length. This property is called `target_box`.
+
     Parameters
     ----------
     packing_expand_factor : int; optional, default 5
@@ -428,7 +447,7 @@ class Pack(System):
         system = mb.packing.fill_box(
             compound=self.all_molecules,
             n_compounds=[1 for i in self.all_molecules],
-            box=list(self.target_box * self.packing_expand_factor),
+            box=list(self._target_box * self.packing_expand_factor),
             overlap=0.2,
             edge=self.edge,
         )
