@@ -52,7 +52,7 @@ class Simulation(hoomd.simulation.Simulation):
         self,
         initial_state,
         forcefield=None,
-        reference_values=None,
+        reference_values=dict(),
         r_cut=2.5,
         dt=0.0001,
         device=hoomd.device.auto_select(),
@@ -84,8 +84,7 @@ class Simulation(hoomd.simulation.Simulation):
         self.integrator = None
         self._dt = dt
         self._reference_values = dict()
-        if reference_values is not None:
-            self._reference_values = reference_values
+        self._reference_values = reference_values
         self._integrate_group = hoomd.filter.All()
         self._wall_forces = dict()
         self._create_state(self.initial_state)
@@ -399,7 +398,8 @@ class Simulation(hoomd.simulation.Simulation):
         period,
         kT,
         tau_kt,
-        final_box_lengths,
+        final_box_lengths=None,
+        final_density=None,
         thermalize_particles=True,
     ):
         """Runs an NVT simulation while shrinking or expanding
@@ -415,20 +415,31 @@ class Simulation(hoomd.simulation.Simulation):
             The temperature to use during shrinking.
         tau_kt : float; required
             Thermostat coupling period (in simulation time units)
-        final_box_lengths : np.ndarray, shape=(3,), dtype=float; required
+        final_box_lengths : np.ndarray, shape=(3,), dtype=float; optional
             The final box edge lengths in (x, y, z) order
+        final_density : float; optional
+            The final density of the simulation
 
         """
+        if final_box_lengths is None and final_density is None:
+            raise ValueError(
+                "Must provide either final_box_lengths or final_density"
+            )
+        if final_box_lengths:
+            final_box = hoomd.Box(
+                Lx=final_box_lengths[0],
+                Ly=final_box_lengths[1],
+                Lz=final_box_lengths[2],
+            )
+        else:
+            pass
+
         resize_trigger = hoomd.trigger.Periodic(period)
         box_ramp = hoomd.variant.Ramp(
             A=0, B=1, t_start=self.timestep, t_ramp=int(n_steps)
         )
         initial_box = self.state.box
-        final_box = hoomd.Box(
-            Lx=final_box_lengths[0],
-            Ly=final_box_lengths[1],
-            Lz=final_box_lengths[2],
-        )
+
         box_resizer = hoomd.update.BoxResize(
             box1=initial_box,
             box2=final_box,
