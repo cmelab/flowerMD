@@ -52,6 +52,7 @@ class Simulation(hoomd.simulation.Simulation):
         self,
         initial_state,
         forcefield=None,
+        reference_values=None,
         r_cut=2.5,
         dt=0.0001,
         device=hoomd.device.auto_select(),
@@ -83,11 +84,30 @@ class Simulation(hoomd.simulation.Simulation):
         self.integrator = None
         self._dt = dt
         self._reference_values = dict()
+        if reference_values is not None:
+            self._reference_values = reference_values
         self._integrate_group = hoomd.filter.All()
         self._wall_forces = dict()
         self._create_state(self.initial_state)
         # Add a gsd and thermo props logger to sim operations
         self._add_hoomd_writers()
+
+    @classmethod
+    def from_system(cls, system, **kwargs):
+        """Initialize a simulation from a system object."""
+
+        return cls(
+            initial_state=system.state,
+            forcefield=system.hoomd_forcefield,
+            reference_values=system.reference_values,
+            **kwargs,
+        )
+
+    @classmethod
+    def from_init_state_forces(cls, init_state, forcefield, **kwargs):
+        """Initialize a simulation from an initial state object and a
+        list of HOOMD forces."""
+        return cls(initial_state=init_state, forcefield=forcefield, **kwargs)
 
     @property
     def forces(self):
