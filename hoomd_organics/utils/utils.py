@@ -1,3 +1,4 @@
+import numpy as np
 import unyt as u
 
 from hoomd_organics.utils.exceptions import ReferenceUnitError
@@ -89,3 +90,41 @@ def validate_ref_value(ref_value, dimension):
             f"a reference value with unit of "
             f"{dimension} dimension."
         )
+
+
+def calculate_box_length(mass, density, fixed_L=None):
+    """Calculates the required box length(s) given the
+    mass of a sytem and the target density.
+
+    Box edge length constraints can be set by set_target_box().
+    If constraints are set, this will solve for the required
+    lengths of the remaining non-constrained edges to match
+    the target density.
+
+    Parameters
+    ----------
+    mass : float, required
+        Mass of the system
+    density : float, required
+        Target density of the system
+    fixed_L : np.array, optional, defualt=None
+        Array of fixed box lengths to be accounted for
+        when solving for L
+
+    Returns
+    -------
+    L : float
+        Box edge length
+    """
+    # Convert from amu to grams
+    M = mass * 1.66054e-24
+    vol = M / density  # cm^3
+    if fixed_L is None:
+        L = vol ** (1 / 3)
+    else:
+        L = vol / np.prod(fixed_L)
+        if len(fixed_L) == 1:  # L is cm^2
+            L = L ** (1 / 2)
+    # Convert from cm back to nm
+    L *= 1e7
+    return L
