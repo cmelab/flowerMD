@@ -112,10 +112,10 @@ class Simulation(hoomd.simulation.Simulation):
         )
 
     @classmethod
-    def from_init_state(cls, init_state, forcefield, **kwargs):
+    def from_state(cls, initial_state, forcefield, **kwargs):
         """Initialize a simulation from an initial state object and a
         list of HOOMD forces."""
-        return cls(initial_state=init_state, forcefield=forcefield, **kwargs)
+        return cls(initial_state=initial_state, forcefield=forcefield, **kwargs)
 
     @property
     def forces(self):
@@ -434,7 +434,7 @@ class Simulation(hoomd.simulation.Simulation):
             raise ValueError(
                 "Must provide either final_box_lengths or final_density"
             )
-        if final_box_lengths:
+        if final_box_lengths is not None:
             final_box = hoomd.Box(
                 Lx=final_box_lengths[0],
                 Ly=final_box_lengths[1],
