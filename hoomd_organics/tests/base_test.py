@@ -6,7 +6,7 @@ import pytest
 from gmso.external.convert_mbuild import from_mbuild
 
 from hoomd_organics import Molecule, Pack, Polymer, Simulation
-from hoomd_organics.library import OPLS_AA
+from hoomd_organics.library import OPLS_AA, BeadSpring
 
 ASSETS_DIR = os.path.join(os.path.dirname(__file__), "assets")
 
@@ -122,11 +122,6 @@ class BaseTest:
         return _benzene_molecule
 
     @pytest.fixture()
-    def benzene_cg(self, benzene_molecule, benzene_smiles):
-        benzene_molecule.coarse_grain(beads={"A": benzene_smiles})
-        return benzene_molecule
-
-    @pytest.fixture()
     def ethane_molecule(self, ethane_smiles):
         def _ethane_molecule(n_mols):
             ethane = Molecule(num_mols=n_mols, smiles=ethane_smiles)
@@ -225,6 +220,18 @@ class BaseTest:
         return system
 
     @pytest.fixture()
+    def benzene_cg_system(self, benzene_molecule, benzene_smiles):
+        benzene_mols = benzene_molecule(n_mols=10)
+        benzene_mols.coarse_grain(beads={"A": benzene_smiles})
+        system = Pack(
+            molecules=[benzene_mols],
+            density=0.01,
+            r_cut=2.5,
+            auto_scale=False,
+        )
+        return system
+
+    @pytest.fixture()
     def polyethylene_system(self, polyethylene):
         polyethylene_mol = polyethylene(num_mols=5, lengths=5)
         system = Pack(
@@ -244,3 +251,13 @@ class BaseTest:
             forcefield=benzene_system.hoomd_forcefield,
         )
         return sim
+
+    @pytest.fixture()
+    def cg_single_bead_ff(self):
+        ff = BeadSpring(
+            r_cut=2.5,
+            beads={
+                "A": dict(epsilon=1.0, sigma=1.0),
+            },
+        )
+        return ff.hoomd_forcefield
