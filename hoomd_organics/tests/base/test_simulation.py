@@ -92,7 +92,7 @@ class TestSimulate(BaseTest):
             tau_kt=0.01,
             n_steps=500,
             period=1,
-            final_box_lengths=sim.box_lengths * 0.5,
+            final_box_lengths=sim.box_lengths_reduced * 0.5,
         )
 
     def test_update_volume_walls(self, benzene_system):
@@ -103,7 +103,7 @@ class TestSimulate(BaseTest):
             tau_kt=0.01,
             n_steps=500,
             period=5,
-            final_box_lengths=sim.box_lengths * 0.5,
+            final_box_lengths=sim.box_lengths_reduced * 0.5,
         )
 
     def test_change_methods(self, benzene_system):
