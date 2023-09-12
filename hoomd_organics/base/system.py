@@ -2,18 +2,11 @@ import warnings
 from abc import ABC, abstractmethod
 from typing import List
 
-import gmso
 import gsd
 import mbuild as mb
 import numpy as np
 import unyt as u
-from gmso.external import (
-    from_mbuild,
-    from_parmed,
-    to_gsd_snapshot,
-    to_hoomd_forcefield,
-    to_parmed,
-)
+from gmso.external import from_mbuild, to_gsd_snapshot, to_hoomd_forcefield
 from gmso.parameterization import apply
 
 from hoomd_organics.base.molecule import Molecule
@@ -216,30 +209,31 @@ class System(ABC):
         """
         # Try by element first:
         hydrogens = [
-                site for site in self.gmso_system.sites if
-                site.element.atomic_number == 1
+            site
+            for site in self.gmso_system.sites
+            if site.element.atomic_number == 1
         ]
         # If none found by element; try by mass
         if len(hydrogens) == 0:
             hydrogens = [
-                    site for site in self.gmso_system.sites if
-                    site.mass.to("amu").value == 1.008
+                site
+                for site in self.gmso_system.sites
+                if site.mass.to("amu").value == 1.008
             ]
             if len(hydrogens) == 0:
                 warnings.warn(
                     "Hydrogen atoms could not be found by element or mass"
                 )
         for h in hydrogens:
-            bond_connection = [
-                    conn for conn in h.connections if
-                    isinstance(conn, gmso.core.bond.Bond)
-            ][0]
-            # Add mass and charge to "heavy" atom
-            for site in bond_connection.connection_members:
+            # Find bond and other site in bond, add mass and charge
+            h_bond = self.gmso_system.iter_connections_by_site(
+                site=h, connections=["bonds"]
+            )
+            for site in h_bond.connection_members:
                 if site is not h:
                     site.mass += h.mass
                     site.charge += h.charge
-            self.gmso_system.remove_site(h)
+            self.gmso_system.remove_site(site=h)
 
     def _scale_charges(self):
         """"""
