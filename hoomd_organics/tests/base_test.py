@@ -225,7 +225,7 @@ class BaseTest:
         benzene_mols.coarse_grain(beads={"A": benzene_smiles})
         system = Pack(
             molecules=[benzene_mols],
-            density=0.01,
+            density=0.5,
             r_cut=2.5,
             auto_scale=False,
         )
