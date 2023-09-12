@@ -11,8 +11,17 @@ from hoomd_organics.tests import BaseTest
 class TestSimulate(BaseTest):
     def test_initialize_from_system(self, benzene_system):
         sim = Simulation.from_system(benzene_system)
+        sim.run_NVT(kT=1.0, tau_kt=0.01, n_steps=500)
         assert len(sim.forces) == len(benzene_system.hoomd_forcefield)
         assert sim.reference_values == benzene_system.reference_values
+
+    def test_initialize_from_system_no_ff(
+        self, benzene_cg_system, cg_single_bead_ff
+    ):
+        sim = Simulation.from_system(
+            benzene_cg_system, forcefield=cg_single_bead_ff
+        )
+        sim.run_NVT(kT=0.1, tau_kt=10, n_steps=500)
 
     def test_initialize_from_state(self, benzene_system):
         Simulation.from_state(
