@@ -85,7 +85,7 @@ class TestSimulate(BaseTest):
         sim.run_displacement_cap(n_steps=500, maximum_displacement=1e-4)
         assert isinstance(sim.method, hoomd.md.methods.DisplacementCapped)
 
-    def test_update_volume(self, benzene_system):
+    def test_update_volume_target_box(self, benzene_system):
         sim = Simulation.from_system(benzene_system)
         sim.run_update_volume(
             kT=1.0,
