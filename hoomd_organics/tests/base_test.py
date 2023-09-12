@@ -122,6 +122,11 @@ class BaseTest:
         return _benzene_molecule
 
     @pytest.fixture()
+    def benzene_cg(self, benzene_molecule, benzene_smiles):
+        benzene_molecule.coarse_grain(beads={"A": benzene_smiles})
+        return benzene_molecule
+
+    @pytest.fixture()
     def ethane_molecule(self, ethane_smiles):
         def _ethane_molecule(n_mols):
             ethane = Molecule(num_mols=n_mols, smiles=ethane_smiles)
