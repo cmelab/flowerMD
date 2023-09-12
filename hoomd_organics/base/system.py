@@ -286,8 +286,8 @@ class System(ABC):
             self.gmso_system,
             self._gmso_forcefields_dict,
             identify_connections=True,
-            use_molecule_info=True,
-            identify_connected_components=False,
+            speedup_by_moltag=True,
+            speedup_by_molgraph=False,
         )
         if self.remove_charges:
             for site in self.gmso_system.sites:
@@ -308,12 +308,7 @@ class System(ABC):
 
         self._reference_values["energy"] = energy_scale * epsilons[0].unit_array
         self._reference_values["length"] = length_scale * sigmas[0].unit_array
-        if self.auto_scale:
-            self._reference_values["mass"] = mass_scale * masses[
-                0
-            ].unit_array.to("amu")
-        else:
-            self._reference_values["mass"] = mass_scale * u.g / u.mol
+        self._reference_values["mass"] = mass_scale * masses[0].unit_array
 
     def set_target_box(
         self, x_constraint=None, y_constraint=None, z_constraint=None
