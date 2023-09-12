@@ -215,7 +215,10 @@ class System(ABC):
 
     @property
     def target_box(self):
-        return self._target_box / self.reference_length.value
+        if self.reference_length:
+            return self._target_box / self.reference_length.value
+        else:
+            return self._target_box
 
     def _remove_hydrogens(self):
         """Call this method to remove hydrogen atoms from the system.
