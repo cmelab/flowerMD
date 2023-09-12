@@ -116,7 +116,7 @@ class Simulation(hoomd.simulation.Simulation):
             )
 
     @classmethod
-    def from_state(cls, initial_state, forcefield, **kwargs):
+    def from_snapshot_forces(cls, initial_state, forcefield, **kwargs):
         """Initialize a simulation from an initial state object and a
         list of HOOMD forces."""
         return cls(initial_state=initial_state, forcefield=forcefield, **kwargs)

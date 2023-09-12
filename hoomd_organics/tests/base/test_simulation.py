@@ -29,14 +29,14 @@ class TestSimulate(BaseTest):
             Simulation.from_system(benzene_cg_system)
 
     def test_initialize_from_state(self, benzene_system):
-        Simulation.from_state(
+        Simulation.from_snapshot_forces(
             initial_state=benzene_system.hoomd_snapshot,
             forcefield=benzene_system.hoomd_forcefield,
             reference_values=benzene_system.reference_values,
         )
 
     def test_no_reference_values(self, benzene_system):
-        sim = Simulation.from_state(
+        sim = Simulation.from_snapshot_forces(
             initial_state=benzene_system.hoomd_snapshot,
             forcefield=benzene_system.hoomd_forcefield,
         )
@@ -202,6 +202,8 @@ class TestSimulate(BaseTest):
         sim.pickle_forcefield("forcefield.pickle")
         f = open("forcefield.pickle", "rb")
         hoomd_ff = pickle.load(f)
-        Simulation.from_state(initial_state="restart.gsd", forcefield=hoomd_ff)
+        Simulation.from_snapshot_forces(
+            initial_state="restart.gsd", forcefield=hoomd_ff
+        )
         os.remove("forcefield.pickle")
         os.remove("restart.gsd")
