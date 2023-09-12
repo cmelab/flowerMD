@@ -96,20 +96,23 @@ class Simulation(hoomd.simulation.Simulation):
         """Initialize a simulation from a system object."""
 
         if system.hoomd_forcefield:
-            forcefield = system.hoomd_forcefield
+            return cls(
+                initial_state=system.hoomd_snapshot,
+                forcefield=system.hoomd_forcefield,
+                reference_values=system.reference_values,
+                **kwargs,
+            )
         elif kwargs["forcefield"]:
-            forcefield = kwargs["forcefield"]
+            return cls(
+                initial_state=system.hoomd_snapshot,
+                reference_values=system.reference_values,
+                **kwargs,
+            )
         else:
             raise ValueError(
                 "No forcefield provided. Please provide a forcefield "
                 "or a system with a forcefield."
             )
-        return cls(
-            initial_state=system.hoomd_snapshot,
-            forcefield=forcefield,
-            reference_values=system.reference_values,
-            **kwargs,
-        )
 
     @classmethod
     def from_state(cls, initial_state, forcefield, **kwargs):
