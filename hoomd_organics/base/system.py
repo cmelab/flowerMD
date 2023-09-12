@@ -374,7 +374,12 @@ class System(ABC):
             when solving for L
 
         """
-        return calculate_box_length(self.mass, self.density, fixed_L=fixed_L)
+        mass_quantity = u.unyt_quantity(self.mass, u.g / u.mol)
+        density_quantity = u.unyt_quantity(self.density, u.g / u.cm**3)
+        L = calculate_box_length(
+            mass_quantity, density_quantity, fixed_L=fixed_L
+        )
+        return L.to("nm").value
 
 
 class Pack(System):

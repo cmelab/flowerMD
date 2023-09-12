@@ -103,9 +103,9 @@ def calculate_box_length(mass, density, fixed_L=None):
 
     Parameters
     ----------
-    mass : float, required
+    mass : unyt.unyt_quantity, required
         Mass of the system
-    density : float, required
+    density : unyt.unyt_quantity, required
         Target density of the system
     fixed_L : np.array, optional, defualt=None
         Array of fixed box lengths to be accounted for
@@ -116,8 +116,8 @@ def calculate_box_length(mass, density, fixed_L=None):
     L : float
         Box edge length
     """
-    # Convert from amu to grams
-    M = mass * 1.66054e-24
+    # Convert mass to grams
+    M = mass.to("g")
     vol = M / density  # cm^3
     if fixed_L is None:
         L = vol ** (1 / 3)
@@ -125,6 +125,5 @@ def calculate_box_length(mass, density, fixed_L=None):
         L = vol / np.prod(fixed_L)
         if len(fixed_L) == 1:  # L is cm^2
             L = L ** (1 / 2)
-    # Convert from cm back to nm
-    L *= 1e7
+    # L is cm
     return L
