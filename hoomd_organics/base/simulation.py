@@ -449,8 +449,17 @@ class Simulation(hoomd.simulation.Simulation):
                 Lz=final_box_lengths[2],
             )
         else:
-            # TODO: should we convert the final_density to g/cm^3?
-            L = calculate_box_length(self.mass, final_density)
+            if self.reference_values is None:
+                raise ReferenceUnitError(
+                    "Missing simulation units. Please "
+                    "provide units for mass, length, and"
+                    " energy."
+                )
+
+            density_quantity = u.unyt_quantity(final_density, u.g / u.cm**3)
+            L = calculate_box_length(self.mass, density_quantity)
+            # convert L from cm to reference units
+            L = (L.to(self.reference_length.unit) * self.reference_length).value
             final_box = hoomd.Box(Lx=L, Ly=L, Lz=L)
 
         resize_trigger = hoomd.trigger.Periodic(period)
