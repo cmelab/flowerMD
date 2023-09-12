@@ -3,6 +3,7 @@ import pickle
 
 import hoomd
 import numpy as np
+import pytest
 
 from hoomd_organics import Simulation
 from hoomd_organics.tests import BaseTest
@@ -15,13 +16,17 @@ class TestSimulate(BaseTest):
         assert len(sim.forces) == len(benzene_system.hoomd_forcefield)
         assert sim.reference_values == benzene_system.reference_values
 
-    def test_initialize_from_system_no_ff(
+    def test_initialize_from_system_separate_ff(
         self, benzene_cg_system, cg_single_bead_ff
     ):
         sim = Simulation.from_system(
             benzene_cg_system, forcefield=cg_single_bead_ff
         )
         sim.run_NVT(kT=0.1, tau_kt=10, n_steps=500)
+
+    def test_initialize_from_system_missing_ff(self, benzene_cg_system):
+        with pytest.raises(ValueError):
+            Simulation.from_system(benzene_cg_system)
 
     def test_initialize_from_state(self, benzene_system):
         Simulation.from_state(

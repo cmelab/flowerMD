@@ -103,7 +103,7 @@ class Simulation(hoomd.simulation.Simulation):
                 reference_values=system.reference_values,
                 **kwargs,
             )
-        elif kwargs["forcefield"]:
+        elif kwargs.get("forcefield", None):
             return cls(
                 initial_state=system.hoomd_snapshot,
                 reference_values=system.reference_values,
