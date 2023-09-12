@@ -226,13 +226,13 @@ class System(ABC):
                 )
         for h in hydrogens:
             # Find bond and other site in bond, add mass and charge
-            h_bond = self.gmso_system.iter_connections_by_site(
+            for bond in self.gmso_system.iter_connections_by_site(
                 site=h, connections=["bonds"]
-            )
-            for site in h_bond.connection_members:
-                if site is not h:
-                    site.mass += h.mass
-                    site.charge += h.charge
+            ):
+                for site in bond.connection_members:
+                    if site is not h:
+                        site.mass += h.mass
+                        site.charge += h.charge
             self.gmso_system.remove_site(site=h)
 
     def _scale_charges(self):
@@ -289,8 +289,8 @@ class System(ABC):
             self.gmso_system,
             self._gmso_forcefields_dict,
             identify_connections=True,
-            use_molecule_info=True,
-            identify_connected_components=False,
+            speedup_by_moltag=True,
+            speedup_by_molgraph=False,
         )
         if self.remove_charges:
             for site in self.gmso_system.sites:
