@@ -93,7 +93,8 @@ class Simulation(hoomd.simulation.Simulation):
 
     @classmethod
     def from_system(cls, system, **kwargs):
-        """Initialize a simulation from a system object."""
+        """Initialize a simulation from a `hoomd_organics.base.System`
+        object."""
 
         if system.hoomd_forcefield:
             return cls(
@@ -435,7 +436,11 @@ class Simulation(hoomd.simulation.Simulation):
         """
         if final_box_lengths is None and final_density is None:
             raise ValueError(
-                "Must provide either final_box_lengths or final_density"
+                "Must provide either `final_box_lengths` or `final_density`"
+            )
+        if final_box_lengths is not None and final_density is not None:
+            raise ValueError(
+                "Cannot provide both `final_box_lengths` and `final_density`."
             )
         if final_box_lengths is not None:
             final_box = hoomd.Box(
@@ -687,7 +692,7 @@ class Simulation(hoomd.simulation.Simulation):
         )
 
         logger = hoomd.logging.Logger(categories=["scalar", "string"])
-        logger.add(self, quantities=["timestep", "tps"])
+        logger.add(self, quantitietes=["timestep", "tps"])
         thermo_props = hoomd.md.compute.ThermodynamicQuantities(
             filter=self.integrate_group
         )
