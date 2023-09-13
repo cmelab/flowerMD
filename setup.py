@@ -109,6 +109,8 @@ setup(
             "library/forcefields/*",
             "library/monomers/*",
             "assets/*",
+            "assets/forcefields/*.{xml,mol2}",
+            "assets/molecule_files/*.{xml,mol2}"
         ]
     },
     install_requires=REQUIRED,
