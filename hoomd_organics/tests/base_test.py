@@ -209,10 +209,10 @@ class BaseTest:
 
     @pytest.fixture()
     def benzene_system(self, benzene_mb):
-        benzene = Molecule(num_mols=5, compound=benzene_mb)
+        benzene = Molecule(num_mols=20, compound=benzene_mb)
         system = Pack(
             molecules=[benzene],
-            density=0.5,
+            density=0.2,
             r_cut=2.5,
             force_field=OPLS_AA(),
             auto_scale=True,
