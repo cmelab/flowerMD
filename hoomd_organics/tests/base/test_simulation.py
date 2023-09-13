@@ -4,6 +4,7 @@ import pickle
 import hoomd
 import numpy as np
 import pytest
+import unyt as u
 
 from hoomd_organics import Simulation
 from hoomd_organics.tests import BaseTest
@@ -104,6 +105,17 @@ class TestSimulate(BaseTest):
             n_steps=500,
             period=5,
             final_box_lengths=sim.box_lengths_reduced * 0.5,
+        )
+
+    def test_update_volume_density(self, benzene_system):
+        sim = Simulation.from_system(benzene_system)
+        sim.run_update_volume(
+            kT=1.0, tau_kt=0.01, n_steps=500, period=1, final_density=0.1
+        )
+        assert np.isclose(
+            sim.density.to(u.g / u.cm**3).value,
+            (0.1 * (u.g / u.cm**3)).value,
+            atol=1e-4,
         )
 
     def test_change_methods(self, benzene_system):
