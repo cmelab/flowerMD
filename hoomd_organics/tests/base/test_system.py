@@ -26,6 +26,7 @@ class TestSystem(BaseTest):
         )
         assert system.n_mol_types == 1
         assert len(system.all_molecules) == len(benzene_mols.molecules)
+        assert system.gmso_system.is_typed()
         assert len(system.hoomd_forcefield) > 0
         assert system.n_particles == system.hoomd_snapshot.particles.N
         assert system.hoomd_snapshot.particles.types == ["opls_145", "opls_146"]
@@ -47,6 +48,7 @@ class TestSystem(BaseTest):
         )
         assert system.all_molecules[0].name == "0"
         assert system.all_molecules[-1].name == "1"
+        assert system.gmso_system.is_typed()
         assert len(system.hoomd_forcefield) > 0
         assert system.n_particles == system.hoomd_snapshot.particles.N
         assert system.hoomd_snapshot.particles.types == [
@@ -74,6 +76,7 @@ class TestSystem(BaseTest):
         ) + len(pps_mol.molecules)
         assert system.all_molecules[0].name == "0"
         assert system.all_molecules[-1].name == "1"
+        assert system.gmso_system.is_typed()
         assert len(system.hoomd_forcefield) > 0
         for hoomd_force in system.hoomd_forcefield:
             if isinstance(hoomd_force, hoomd.md.pair.LJ):
@@ -90,6 +93,19 @@ class TestSystem(BaseTest):
             "sh",
         ]
 
+    def test_system_from_mol2_mol_parameterization(self, benzene_molecule_mol2):
+        benzene_mol = benzene_molecule_mol2(n_mols=3)
+        system = Pack(
+            molecules=[benzene_mol],
+            density=0.8,
+            r_cut=2.5,
+            force_field=OPLS_AA(),
+            auto_scale=True,
+        )
+        assert system.gmso_system.is_typed()
+        assert len(system.hoomd_forcefield) > 0
+        assert system.n_particles == system.hoomd_snapshot.particles.N
+
     def test_remove_hydrogen(self, benzene_molecule):
         benzene_mol = benzene_molecule(n_mols=3)
         system = Pack(
@@ -100,7 +116,10 @@ class TestSystem(BaseTest):
             auto_scale=True,
             remove_hydrogens=True,
         )
-        assert not any([s.element.atomic_number == 1 for s in system.gmso_system.sites])
+        assert not any(
+            [s.element.atomic_number == 1 for s in system.gmso_system.sites]
+        )
+        assert system.gmso_system.is_typed()
         assert len(system.hoomd_forcefield) > 0
         assert list(system.hoomd_forcefield[0].params.keys()) == [
             ("opls_145", "opls_145")
