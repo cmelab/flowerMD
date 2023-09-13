@@ -1,3 +1,4 @@
+import copy
 import os
 import pickle
 
@@ -117,6 +118,25 @@ class TestSimulate(BaseTest):
             (0.1 * (u.g / u.cm**3)).value,
             atol=1e-4,
         )
+
+    def test_update_volume_by_density_factor(self, benzene_system):
+        sim = Simulation.from_system(benzene_system)
+        init_density = copy.deepcopy(sim.density)
+        sim.run_update_volume(
+            kT=1.0,
+            tau_kt=0.01,
+            n_steps=500,
+            period=1,
+            final_density=sim.density * 5,
+        )
+        assert np.isclose(
+            sim.density.value, (init_density * 5).value, atol=1e-4
+        )
+
+    def test_update_volume_missing_values(self, benzene_system):
+        sim = Simulation.from_system(benzene_system)
+        with pytest.raises(ValueError):
+            sim.run_update_volume(kT=1.0, tau_kt=0.01, n_steps=500, period=1)
 
     def test_change_methods(self, benzene_system):
         sim = Simulation.from_system(benzene_system)
