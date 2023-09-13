@@ -130,6 +130,27 @@ class TestSystem(BaseTest):
         )
         assert system.hoomd_snapshot.particles.types == ["opls_145"]
 
+    def test_add_mass_charges(self, benzene_molecule):
+        benzene_mols = benzene_molecule(n_mols=1)
+        system = Pack(
+            molecules=[benzene_mols],
+            density=0.8,
+            r_cut=2.5,
+            force_field=OPLS_AA(),
+            auto_scale=False,
+            remove_hydrogens=True,
+            scale_charges=False,
+        )
+        for site in system.gmso_system.sites:
+            assert site.mass.value == (12.011 + 1.008)
+            assert site.charge == 0
+
+        snap = system.hoomd_snapshot
+        assert np.allclose(
+            sum(snap.particles.mass), 6 * (12.011 + 1.008), atol=1e-4
+        )
+        assert sum(snap.particles.charge) == 0
+
     def test_target_box(self, benzene_molecule):
         benzene_mol = benzene_molecule(n_mols=3)
         low_density_system = Pack(
