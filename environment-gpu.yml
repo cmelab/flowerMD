@@ -5,7 +5,6 @@ dependencies:
   - boltons
   - foyer
   - freud
-    #- gmso>=0.11.1
   - gsd<3.0
   - hoomd=3.11=*gpu*
   - mbuild
@@ -16,7 +15,7 @@ dependencies:
   - pytest
   - pytest-cov
   - python=3.9
-  - unyt<=2.9.2
+  - unyt
   - symengine
   - python-symengine
   - sympy
