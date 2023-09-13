@@ -456,7 +456,12 @@ class Simulation(hoomd.simulation.Simulation):
                     " energy."
                 )
 
-            density_quantity = u.unyt_quantity(final_density, u.g / u.cm**3)
+            if isinstance(final_density, u.unyt_quantity):
+                density_quantity = final_density.to(u.g / u.cm**3)
+            else:
+                density_quantity = u.unyt_quantity(
+                    final_density, u.g / u.cm**3
+                )
             L = calculate_box_length(self.mass, density_quantity)
             # convert L from cm to reference units
             L = (
