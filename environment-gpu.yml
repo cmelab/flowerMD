@@ -15,7 +15,11 @@ dependencies:
   - pytest-cov
   - python=3.9
   - unyt
+  - sympy
+  - boltons
+  - symengine
+  - python-symengine
   - pip:
       - git+https://github.com/cmelab/cmeutils.git@master
       - git+https://github.com/cmelab/grits.git@main
-      - git+https://github.com/mosdef-hub/gmso@main
+      - git+https://github.com/mosdef-hub/gmso.git@main
