@@ -381,6 +381,7 @@ class Simulation(hoomd.simulation.Simulation):
         tau_kt,
         final_box_lengths,
         thermalize_particles=True,
+        write_at_start=True,
     ):
         """Runs an NVT simulation while shrinking or expanding
         the simulation volume to the given final volume.
@@ -397,6 +398,10 @@ class Simulation(hoomd.simulation.Simulation):
             Thermostat coupling period (in simulation time units)
         final_box_lengths : np.ndarray, shape=(3,), dtype=float; required
             The final box edge lengths in (x, y, z) order
+        write_at_start : bool; optional default True
+            When set to True, triggers writers that evaluate to True
+            for the initial step to execute before the next simulation
+            time step.
 
         """
         resize_trigger = hoomd.trigger.Periodic(period)
@@ -439,7 +444,7 @@ class Simulation(hoomd.simulation.Simulation):
             action=std_out_logger,
         )
         self.operations.updaters.append(std_out_logger_printer)
-        self.run(n_steps + 1)
+        self.run(steps=n_steps + 1, write_at_start=write_at_start)
         self.operations.updaters.remove(std_out_logger_printer)
 
     def run_langevin(
@@ -451,6 +456,7 @@ class Simulation(hoomd.simulation.Simulation):
         default_gamma=1.0,
         default_gamma_r=(1.0, 1.0, 1.0),
         thermalize_particles=True,
+        write_at_start=True,
     ):
         """"""
         self.set_integrator_method(
@@ -472,7 +478,7 @@ class Simulation(hoomd.simulation.Simulation):
             action=std_out_logger,
         )
         self.operations.updaters.append(std_out_logger_printer)
-        self.run(n_steps)
+        self.run(steps=n_steps, write_at_start=write_at_start)
         self.operations.updaters.remove(std_out_logger_printer)
 
     def run_NPT(
@@ -487,6 +493,7 @@ class Simulation(hoomd.simulation.Simulation):
         rescale_all=False,
         gamma=0.0,
         thermalize_particles=True,
+        write_at_start=True,
     ):
         """"""
         self.set_integrator_method(
@@ -512,10 +519,17 @@ class Simulation(hoomd.simulation.Simulation):
             action=std_out_logger,
         )
         self.operations.updaters.append(std_out_logger_printer)
-        self.run(n_steps)
+        self.run(steps=n_steps, write_at_start=write_at_start)
         self.operations.updaters.remove(std_out_logger_printer)
 
-    def run_NVT(self, n_steps, kT, tau_kt, thermalize_particles=True):
+    def run_NVT(
+        self,
+        n_steps,
+        kT,
+        tau_kt,
+        thermalize_particles=True,
+        write_at_start=True,
+    ):
         """"""
         self.set_integrator_method(
             integrator_method=hoomd.md.methods.NVT,
@@ -533,10 +547,10 @@ class Simulation(hoomd.simulation.Simulation):
             action=std_out_logger,
         )
         self.operations.updaters.append(std_out_logger_printer)
-        self.run(n_steps)
+        self.run(steps=n_steps, write_at_start=write_at_start)
         self.operations.updaters.remove(std_out_logger_printer)
 
-    def run_NVE(self, n_steps):
+    def run_NVE(self, n_steps, write_at_start=True):
         """"""
         self.set_integrator_method(
             integrator_method=hoomd.md.methods.NVE,
@@ -548,10 +562,15 @@ class Simulation(hoomd.simulation.Simulation):
             action=std_out_logger,
         )
         self.operations.updaters.append(std_out_logger_printer)
-        self.run(n_steps)
+        self.run(steps=n_steps, write_at_start=write_at_start)
         self.operations.updaters.remove(std_out_logger_printer)
 
-    def run_displacement_cap(self, n_steps, maximum_displacement=1e-3):
+    def run_displacement_cap(
+        self,
+        n_steps,
+        maximum_displacement=1e-3,
+        write_at_start=True,
+    ):
         """NVE based integrator that Puts a cap on the maximum displacement
         per time step.
 
@@ -581,7 +600,7 @@ class Simulation(hoomd.simulation.Simulation):
             action=std_out_logger,
         )
         self.operations.updaters.append(std_out_logger_printer)
-        self.run(n_steps)
+        self.run(steps=n_steps, write_at_start=write_at_start)
         self.operations.updaters.remove(std_out_logger_printer)
 
     def temperature_ramp(self, n_steps, kT_start, kT_final):
