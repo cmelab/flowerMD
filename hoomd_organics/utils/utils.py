@@ -122,7 +122,7 @@ def calculate_box_length(mass, density, fixed_L=None):
         L = vol ** (1 / 3)
     else:
         L = vol / np.prod(fixed_L)
-        if len(fixed_L) == 1:  # L is cm^2
+        if fixed_L.size == 1:  # L is cm^2
             L = L ** (1 / 2)
     # L is cm
     return L
