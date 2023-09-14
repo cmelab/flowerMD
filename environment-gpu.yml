@@ -2,9 +2,9 @@ name: hoomd-organics
 channels:
   - conda-forge
 dependencies:
+  - boltons
   - foyer
   - freud
-  - gmso>=0.11.1
   - gsd<3.0
   - hoomd=3.11=*gpu*
   - mbuild
@@ -16,6 +16,10 @@ dependencies:
   - pytest-cov
   - python=3.9
   - unyt
+  - symengine
+  - python-symengine
+  - sympy
   - pip:
+      - git+https://github.com/mosdef-hub/gmso.git@main
       - git+https://github.com/cmelab/cmeutils.git@master
       - git+https://github.com/cmelab/grits.git@main
