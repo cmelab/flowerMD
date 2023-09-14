@@ -449,7 +449,7 @@ class Simulation(hoomd.simulation.Simulation):
                 Lz=final_box_lengths[2],
             )
         else:
-            if self.reference_values is None:
+            if not self.reference_values:
                 raise ReferenceUnitError(
                     "Missing simulation units. Please "
                     "provide units for mass, length, and"
