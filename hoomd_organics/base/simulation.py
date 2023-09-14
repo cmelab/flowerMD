@@ -7,7 +7,12 @@ import hoomd.md
 import numpy as np
 import unyt as u
 
-from hoomd_organics.utils import StdOutLogger, UpdateWalls, calculate_box_length
+from hoomd_organics.utils import (
+    StdOutLogger,
+    UpdateWalls,
+    calculate_box_length,
+    validate_ref_value,
+)
 from hoomd_organics.utils.exceptions import ReferenceUnitError
 
 
@@ -145,50 +150,19 @@ class Simulation(hoomd.simulation.Simulation):
         return self._reference_values
 
     @reference_length.setter
-    def reference_length(self, length, unit=None):
-        if isinstance(length, u.array.unyt_quantity):
-            self._reference_values["length"] = length
-        elif isinstance(unit, str) and (
-            isinstance(length, float) or isinstance(length, int)
-        ):
-            self._reference_values["length"] = length * getattr(u, unit)
-        else:
-            raise ReferenceUnitError(
-                f"Invalid reference length input.Please provide reference "
-                f"length (number) and unit (string) or pass length value as an "
-                f"{str(u.array.unyt_quantity)}."
-            )
+    def reference_length(self, length):
+        validated_length = validate_ref_value(length, u.dimensions.length)
+        self._reference_values["length"] = validated_length
 
     @reference_energy.setter
-    def reference_energy(self, energy, unit=None):
-        if isinstance(energy, u.array.unyt_quantity):
-            self._reference_values["energy"] = energy
-        elif isinstance(unit, str) and (
-            isinstance(energy, float) or isinstance(energy, int)
-        ):
-            self._reference_values["energy"] = energy * getattr(u, unit)
-        else:
-            raise ReferenceUnitError(
-                f"Invalid reference energy input.Please provide reference "
-                f"energy (number) and unit (string) or pass energy value as an "
-                f"{str(u.array.unyt_quantity)}."
-            )
+    def reference_energy(self, energy):
+        validated_energy = validate_ref_value(energy, u.dimensions.energy)
+        self._reference_values["energy"] = validated_energy
 
     @reference_mass.setter
-    def reference_mass(self, mass, unit=None):
-        if isinstance(mass, u.array.unyt_quantity):
-            self._reference_values["mass"] = mass
-        elif isinstance(unit, str) and (
-            isinstance(mass, float) or isinstance(mass, int)
-        ):
-            self._reference_values["mass"] = mass * getattr(u, unit)
-        else:
-            raise ReferenceUnitError(
-                f"Invalid reference mass input.Please provide reference "
-                f"mass (number) and "
-                f"unit (string) or pass mass value as an "
-                f"{str(u.array.unyt_quantity)}."
-            )
+    def reference_mass(self, mass):
+        validated_mass = validate_ref_value(mass, u.dimensions.mass)
+        self._reference_values["mass"] = validated_mass
 
     @reference_values.setter
     def reference_values(self, ref_value_dict):
@@ -196,12 +170,7 @@ class Simulation(hoomd.simulation.Simulation):
         for k in ref_keys:
             if k not in ref_value_dict.keys():
                 raise ValueError(f"Missing reference for {k}.")
-            if not isinstance(ref_value_dict[k], u.array.unyt_quantity):
-                raise ReferenceUnitError(
-                    f"{k} reference value must be of type "
-                    f"{str(u.array.unyt_quantity)}"
-                )
-        self._reference_values = ref_value_dict
+            self.__setattr__(f"reference_{k}", ref_value_dict[k])
 
     @property
     def box_lengths_reduced(self):
