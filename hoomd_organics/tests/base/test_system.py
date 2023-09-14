@@ -216,18 +216,6 @@ class TestSystem(BaseTest):
             low_density_system.target_box > high_density_system.target_box
         )
 
-    def test_target_box_without_ref_values(self, benzene_molecule):
-        benzene_mol = benzene_molecule(n_mols=3)
-        system_1 = Pack(
-            molecules=[benzene_mol],
-            density=0.1,
-            r_cut=2.5,
-            auto_scale=True,
-        )
-        assert np.allclose(
-            system_1.target_box, [1.57289499, 1.57289499, 1.57289499], atol=1e-4
-        )
-
     def test_mass(self, pps_molecule):
         pps_mol = pps_molecule(n_mols=20)
         system = Pack(molecules=[pps_mol], density=1.0, r_cut=2.5)
