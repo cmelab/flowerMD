@@ -57,6 +57,45 @@ class TestSimulate(BaseTest):
         assert np.isclose(float(sim.mass.value), benzene_system.mass, atol=1e-4)
         assert np.allclose(benzene_system.box.lengths, sim.box_lengths.value)
 
+    def test_set_ref_values(self, benzene_system):
+        sim = Simulation(
+            initial_state=benzene_system.hoomd_snapshot,
+            forcefield=benzene_system.hoomd_forcefield,
+        )
+        ref_value_dict = {
+            "length": 1 * u.angstrom,
+            "energy": 3.0 * u.kcal / u.mol,
+            "mass": 1.25 * u.Unit("amu"),
+        }
+        sim.reference_values = ref_value_dict
+        assert sim.reference_length == ref_value_dict["length"]
+        assert sim.reference_energy == ref_value_dict["energy"]
+        assert sim.reference_mass == ref_value_dict["mass"]
+
+    def test_set_ref_length(self, benzene_system):
+        sim = Simulation(
+            initial_state=benzene_system.hoomd_snapshot,
+            forcefield=benzene_system.hoomd_forcefield,
+        )
+        sim.reference_length = 1 * u.angstrom
+        assert sim.reference_length == 1 * u.angstrom
+
+    def test_set_ref_energy(self, benzene_system):
+        sim = Simulation(
+            initial_state=benzene_system.hoomd_snapshot,
+            forcefield=benzene_system.hoomd_forcefield,
+        )
+        sim.reference_energy = 3.0 * u.kcal / u.mol
+        assert sim.reference_energy == 3.0 * u.kcal / u.mol
+
+    def test_set_ref_mass(self, benzene_system):
+        sim = Simulation(
+            initial_state=benzene_system.hoomd_snapshot,
+            forcefield=benzene_system.hoomd_forcefield,
+        )
+        sim.reference_mass = 1.25 * u.amu
+        assert sim.reference_mass == 1.25 * u.amu
+
     def test_NVT(self, benzene_system):
         sim = Simulation.from_system(benzene_system)
         sim.run_NVT(kT=1.0, tau_kt=0.01, n_steps=500)
