@@ -344,11 +344,11 @@ class System(ABC):
             Lx = Ly = Lz = self._calculate_L()
         else:
             constraints = np.array([x_constraint, y_constraint, z_constraint])
-            fixed_L = constraints[np.where(constraints is not None)]
+            fixed_L = constraints[np.not_equal(constraints, None).nonzero()]
             # Conv from nm to cm for _calculate_L
             fixed_L *= 1e-7
             L = self._calculate_L(fixed_L=fixed_L)
-            constraints[np.where(constraints is None)] = L
+            constraints[np.equal(constraints, None).nonzero()] = L
             Lx, Ly, Lz = constraints
 
         self._target_box = np.array([Lx, Ly, Lz])
