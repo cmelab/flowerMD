@@ -377,7 +377,7 @@ class System(ABC):
             when solving for L
 
         """
-        mass_quantity = u.unyt_quantity(self.mass, u.g / u.mol)
+        mass_quantity = u.unyt_quantity(self.mass, u.g / u.mol).to("g")
         density_quantity = u.unyt_quantity(self.density, u.g / u.cm**3)
         L = calculate_box_length(
             mass_quantity, density_quantity, fixed_L=fixed_L

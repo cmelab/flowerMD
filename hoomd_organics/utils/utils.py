@@ -116,9 +116,8 @@ def calculate_box_length(mass, density, fixed_L=None):
     L : float
         Box edge length
     """
-    # Convert mass to grams
-    M = mass.to("g")
-    vol = M / density  # cm^3
+
+    vol = mass / density  # cm^3
     if fixed_L is None:
         L = vol ** (1 / 3)
     else:
