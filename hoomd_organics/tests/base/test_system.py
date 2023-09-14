@@ -1,7 +1,9 @@
+import gmso
 import hoomd
 import numpy as np
 import pytest
 import unyt as u
+from unyt import Unit
 
 from hoomd_organics import Lattice, Pack
 from hoomd_organics.library import (
@@ -129,6 +131,49 @@ class TestSystem(BaseTest):
             == sum(mol.n_particles for mol in benzene_mol.molecules) - 3 * 6
         )
         assert system.hoomd_snapshot.particles.types == ["opls_145"]
+
+    def test_remove_hydrogen_no_atomic_num(self, benzene_molecule):
+        benzene_mol = benzene_molecule(n_mols=1)
+        system = Pack(
+            molecules=[benzene_mol],
+            density=0.8,
+            r_cut=2.5,
+            force_field=OPLS_AA(),
+            auto_scale=True,
+            remove_hydrogens=False,
+        )
+        for site in system.gmso_system.sites:
+            if site.name == "H":
+                site.element = gmso.core.element.Element(
+                    symbol="C",
+                    name="carbon",
+                    atomic_number=12,
+                    mass=1.008 * Unit("amu"),
+                )
+
+        system._remove_hydrogens()
+        assert system.gmso_system.n_sites == 6
+
+    def test_remove_hydrogen_no_hydrogen(self, benzene_molecule):
+        benzene_mol = benzene_molecule(n_mols=1)
+        system = Pack(
+            molecules=[benzene_mol],
+            density=0.8,
+            r_cut=2.5,
+            force_field=OPLS_AA(),
+            auto_scale=True,
+            remove_hydrogens=False,
+        )
+        hydrogens = [
+            site
+            for site in system.gmso_system.sites
+            if site.element.atomic_number == 1
+        ]
+        for h_site in hydrogens:
+            system.gmso_system.remove_site(h_site)
+
+        with pytest.warns():
+            system._remove_hydrogens()
 
     def test_add_mass_charges(self, benzene_molecule):
         benzene_mols = benzene_molecule(n_mols=1)
