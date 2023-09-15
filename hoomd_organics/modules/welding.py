@@ -124,6 +124,8 @@ class SlabSimulation(Simulation):
         wall_epsilon=1.0,
         wall_r_cut=2.5,
         wall_r_extrap=0,
+        reference_values=dict(),
+        dt=0.0001,
         r_cut=2.5,
         seed=42,
         gsd_write_freq=1e4,
@@ -134,6 +136,7 @@ class SlabSimulation(Simulation):
         super(SlabSimulation, self).__init__(
             initial_state=initial_state,
             forcefield=forcefield,
+            reference_values=reference_values,
             r_cut=r_cut,
             seed=seed,
             gsd_write_freq=gsd_write_freq,
@@ -141,8 +144,7 @@ class SlabSimulation(Simulation):
             log_write_freq=log_write_freq,
             log_file_name=log_file_name,
         )
-        self.interface_axis = interface_axis
-        # self._axis_index = np.where(interface_axis != 0)[0]
+        self.interface_axis = np.asarray(interface_axis)
         self.add_walls(
             self.interface_axis,
             wall_sigma,
