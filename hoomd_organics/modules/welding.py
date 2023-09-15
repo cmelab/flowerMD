@@ -163,11 +163,13 @@ class WeldSimulation(Simulation):
         self,
         initial_state,
         forcefield,
-        interface_axis="x",
+        interface_axis=(1, 0, 0),
         wall_sigma=1.0,
         wall_epsilon=1.0,
         wall_r_cut=2.5,
         wall_r_extrap=0,
+        reference_values=dict(),
+        dt=0.0001,
         r_cut=2.5,
         seed=42,
         gsd_write_freq=1e4,
@@ -178,6 +180,8 @@ class WeldSimulation(Simulation):
         super(WeldSimulation, self).__init__(
             initial_state=initial_state,
             forcefield=forcefield,
+            reference_values=reference_values,
+            dt=dt,
             r_cut=r_cut,
             seed=seed,
             gsd_write_freq=gsd_write_freq,
@@ -185,9 +189,11 @@ class WeldSimulation(Simulation):
             log_write_freq=log_write_freq,
             log_file_name=log_file_name,
         )
-        axis_dict = {"x": (1, 0, 0), "y": (0, 1, 0), "z": (0, 0, 1)}
-        self.interface_axis = interface_axis.lower()
-        self.wall_axis = axis_dict[self.interface_axis]
+        self.interface_axis = interface_axis
         self.add_walls(
-            self.wall_axis, wall_sigma, wall_epsilon, wall_r_cut, wall_r_extrap
+            self.interface_axis,
+            wall_sigma,
+            wall_epsilon,
+            wall_r_cut,
+            wall_r_extrap
         )
