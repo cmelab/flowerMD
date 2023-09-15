@@ -195,5 +195,5 @@ class WeldSimulation(Simulation):
             wall_sigma,
             wall_epsilon,
             wall_r_cut,
-            wall_r_extrap
+            wall_r_extrap,
         )
