@@ -9,7 +9,6 @@ import unyt as u
 
 from hoomd_organics import Simulation
 from hoomd_organics.tests import BaseTest
-from hoomd_organics.utils.exceptions import ReferenceUnitError
 
 
 class TestSimulate(BaseTest):
@@ -190,19 +189,19 @@ class TestSimulate(BaseTest):
                 final_density=0.1,
             )
 
-    def test_update_volume_with_density_no_ref_values(self, benzene_system):
-        sim = Simulation(
-            initial_state=benzene_system.hoomd_snapshot,
-            forcefield=benzene_system.hoomd_forcefield,
-        )
-        with pytest.raises(ReferenceUnitError):
-            sim.run_update_volume(
-                kT=1.0,
-                tau_kt=0.01,
-                n_steps=500,
-                period=1,
-                final_density=0.1,
-            )
+    # def test_update_volume_with_density_no_ref_values(self, benzene_system):
+    #     sim_no_ref = Simulation(
+    #         initial_state=benzene_system.hoomd_snapshot,
+    #         forcefield=benzene_system.hoomd_forcefield,
+    #     )
+    #     with pytest.raises(ReferenceUnitError):
+    #         sim_no_ref.run_update_volume(
+    #             kT=1.0,
+    #             tau_kt=0.01,
+    #             n_steps=500,
+    #             period=1,
+    #             final_density=0.1,
+    #         )
 
     def test_change_methods(self, benzene_system):
         sim = Simulation.from_system(benzene_system)

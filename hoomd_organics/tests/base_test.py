@@ -12,6 +12,10 @@ ASSETS_DIR = os.path.join(os.path.dirname(__file__), "assets")
 
 
 class BaseTest:
+    @pytest.fixture(autouse=True)
+    def initdir(self, tmpdir):
+        tmpdir.chdir()
+
     @pytest.fixture()
     def benzene_smiles(self):
         return "c1ccccc1"
