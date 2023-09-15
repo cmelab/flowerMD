@@ -7,7 +7,12 @@ import hoomd.md
 import numpy as np
 import unyt as u
 
-from hoomd_organics.utils import StdOutLogger, UpdateWalls
+from hoomd_organics.utils import (
+    StdOutLogger,
+    UpdateWalls,
+    calculate_box_length,
+    validate_ref_value,
+)
 from hoomd_organics.utils.exceptions import ReferenceUnitError
 
 
@@ -52,6 +57,7 @@ class Simulation(hoomd.simulation.Simulation):
         self,
         initial_state,
         forcefield=None,
+        reference_values=dict(),
         r_cut=2.5,
         dt=0.0001,
         device=hoomd.device.auto_select(),
@@ -83,11 +89,42 @@ class Simulation(hoomd.simulation.Simulation):
         self.integrator = None
         self._dt = dt
         self._reference_values = dict()
+        self._reference_values = reference_values
         self._integrate_group = hoomd.filter.All()
         self._wall_forces = dict()
         self._create_state(self.initial_state)
         # Add a gsd and thermo props logger to sim operations
         self._add_hoomd_writers()
+
+    @classmethod
+    def from_system(cls, system, **kwargs):
+        """Initialize a simulation from a `hoomd_organics.base.System`
+        object."""
+
+        if system.hoomd_forcefield:
+            return cls(
+                initial_state=system.hoomd_snapshot,
+                forcefield=system.hoomd_forcefield,
+                reference_values=system.reference_values,
+                **kwargs,
+            )
+        elif kwargs.get("forcefield", None):
+            return cls(
+                initial_state=system.hoomd_snapshot,
+                reference_values=system.reference_values,
+                **kwargs,
+            )
+        else:
+            raise ValueError(
+                "No forcefield provided. Please provide a forcefield "
+                "or a system with a forcefield."
+            )
+
+    @classmethod
+    def from_snapshot_forces(cls, initial_state, forcefield, **kwargs):
+        """Initialize a simulation from an initial state object and a
+        list of HOOMD forces."""
+        return cls(initial_state=initial_state, forcefield=forcefield, **kwargs)
 
     @property
     def forces(self):
@@ -113,50 +150,19 @@ class Simulation(hoomd.simulation.Simulation):
         return self._reference_values
 
     @reference_length.setter
-    def reference_length(self, length, unit=None):
-        if isinstance(length, u.array.unyt_quantity):
-            self._reference_values["length"] = length
-        elif isinstance(unit, str) and (
-            isinstance(length, float) or isinstance(length, int)
-        ):
-            self._reference_values["length"] = length * getattr(u, unit)
-        else:
-            raise ReferenceUnitError(
-                f"Invalid reference length input.Please provide reference "
-                f"length (number) and unit (string) or pass length value as an "
-                f"{str(u.array.unyt_quantity)}."
-            )
+    def reference_length(self, length):
+        validated_length = validate_ref_value(length, u.dimensions.length)
+        self._reference_values["length"] = validated_length
 
     @reference_energy.setter
-    def reference_energy(self, energy, unit=None):
-        if isinstance(energy, u.array.unyt_quantity):
-            self._reference_values["energy"] = energy
-        elif isinstance(unit, str) and (
-            isinstance(energy, float) or isinstance(energy, int)
-        ):
-            self._reference_values["energy"] = energy * getattr(u, unit)
-        else:
-            raise ReferenceUnitError(
-                f"Invalid reference energy input.Please provide reference "
-                f"energy (number) and unit (string) or pass energy value as an "
-                f"{str(u.array.unyt_quantity)}."
-            )
+    def reference_energy(self, energy):
+        validated_energy = validate_ref_value(energy, u.dimensions.energy)
+        self._reference_values["energy"] = validated_energy
 
     @reference_mass.setter
-    def reference_mass(self, mass, unit=None):
-        if isinstance(mass, u.array.unyt_quantity):
-            self._reference_values["mass"] = mass
-        elif isinstance(unit, str) and (
-            isinstance(mass, float) or isinstance(mass, int)
-        ):
-            self._reference_values["mass"] = mass * getattr(u, unit)
-        else:
-            raise ReferenceUnitError(
-                f"Invalid reference mass input.Please provide reference "
-                f"mass (number) and "
-                f"unit (string) or pass mass value as an "
-                f"{str(u.array.unyt_quantity)}."
-            )
+    def reference_mass(self, mass):
+        validated_mass = validate_ref_value(mass, u.dimensions.mass)
+        self._reference_values["mass"] = validated_mass
 
     @reference_values.setter
     def reference_values(self, ref_value_dict):
@@ -164,12 +170,7 @@ class Simulation(hoomd.simulation.Simulation):
         for k in ref_keys:
             if k not in ref_value_dict.keys():
                 raise ValueError(f"Missing reference for {k}.")
-            if not isinstance(ref_value_dict[k], u.array.unyt_quantity):
-                raise ReferenceUnitError(
-                    f"{k} reference value must be of type "
-                    f"{str(u.array.unyt_quantity)}"
-                )
-        self._reference_values = ref_value_dict
+            self.__setattr__(f"reference_{k}", ref_value_dict[k])
 
     @property
     def box_lengths_reduced(self):
@@ -379,7 +380,8 @@ class Simulation(hoomd.simulation.Simulation):
         period,
         kT,
         tau_kt,
-        final_box_lengths,
+        final_box_lengths=None,
+        final_density=None,
         thermalize_particles=True,
     ):
         """Runs an NVT simulation while shrinking or expanding
@@ -395,20 +397,54 @@ class Simulation(hoomd.simulation.Simulation):
             The temperature to use during shrinking.
         tau_kt : float; required
             Thermostat coupling period (in simulation time units)
-        final_box_lengths : np.ndarray, shape=(3,), dtype=float; required
+        final_box_lengths : np.ndarray, shape=(3,), dtype=float; optional
             The final box edge lengths in (x, y, z) order
+        final_density : float; optional
+            The final density of the simulation
 
         """
+        if final_box_lengths is None and final_density is None:
+            raise ValueError(
+                "Must provide either `final_box_lengths` or `final_density`"
+            )
+        if final_box_lengths is not None and final_density is not None:
+            raise ValueError(
+                "Cannot provide both `final_box_lengths` and `final_density`."
+            )
+        if final_box_lengths is not None:
+            final_box = hoomd.Box(
+                Lx=final_box_lengths[0],
+                Ly=final_box_lengths[1],
+                Lz=final_box_lengths[2],
+            )
+        else:
+            if not self.reference_values:
+                raise ReferenceUnitError(
+                    "Missing simulation units. Please "
+                    "provide units for mass, length, and"
+                    " energy."
+                )
+
+            if isinstance(final_density, u.unyt_quantity):
+                density_quantity = final_density.to(u.g / u.cm**3)
+            else:
+                density_quantity = u.unyt_quantity(
+                    final_density, u.g / u.cm**3
+                )
+            mass_g = self.mass.to("g")
+            L = calculate_box_length(mass_g, density_quantity)
+            # convert L from cm to reference units
+            L = (
+                L.to(self.reference_length.units) / self.reference_length.value
+            ).value
+            final_box = hoomd.Box(Lx=L, Ly=L, Lz=L)
+
         resize_trigger = hoomd.trigger.Periodic(period)
         box_ramp = hoomd.variant.Ramp(
             A=0, B=1, t_start=self.timestep, t_ramp=int(n_steps)
         )
         initial_box = self.state.box
-        final_box = hoomd.Box(
-            Lx=final_box_lengths[0],
-            Ly=final_box_lengths[1],
-            Lz=final_box_lengths[2],
-        )
+
         box_resizer = hoomd.update.BoxResize(
             box1=initial_box,
             box2=final_box,
