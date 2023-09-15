@@ -12,6 +12,7 @@ from gmso.parameterization import apply
 from hoomd_organics.base.molecule import Molecule
 from hoomd_organics.utils import (
     FF_Types,
+    calculate_box_length,
     check_return_iterable,
     validate_ref_value,
     xml_to_gmso_ff,
@@ -56,7 +57,7 @@ class System(ABC):
         self.remove_hydrogens = remove_hydrogens
         self.remove_charges = remove_charges
         self.scale_charges = scale_charges
-        self.target_box = None
+        self._target_box = None
         self.all_molecules = []
         self._hoomd_snapshot = None
         self._hoomd_forcefield = []
@@ -68,7 +69,8 @@ class System(ABC):
         self.n_mol_types = 0
         for mol_item in self._molecules:
             if isinstance(mol_item, Molecule):
-                mol_item.assign_mol_name(str(self.n_mol_types))
+                if self._force_field:
+                    mol_item.assign_mol_name(str(self.n_mol_types))
                 self.all_molecules.extend(mol_item.molecules)
                 # if ff is provided in Molecule class
                 if mol_item.force_field:
@@ -199,8 +201,18 @@ class System(ABC):
 
     @property
     def hoomd_forcefield(self):
-        self._hoomd_forcefield = self._create_hoomd_forcefield()
-        return self._hoomd_forcefield
+        if self._force_field:
+            self._hoomd_forcefield = self._create_hoomd_forcefield()
+            return self._hoomd_forcefield
+        else:
+            return self._hoomd_forcefield
+
+    @property
+    def target_box(self):
+        if self.reference_length:
+            return self._target_box / self.reference_length.value
+        else:
+            return self._target_box
 
     def _remove_hydrogens(self):
         """Call this method to remove hydrogen atoms from the system.
@@ -311,12 +323,7 @@ class System(ABC):
 
         self._reference_values["energy"] = energy_scale * epsilons[0].unit_array
         self._reference_values["length"] = length_scale * sigmas[0].unit_array
-        if self.auto_scale:
-            self._reference_values["mass"] = mass_scale * masses[
-                0
-            ].unit_array.to("amu")
-        else:
-            self._reference_values["mass"] = mass_scale * u.g / u.mol
+        self._reference_values["mass"] = mass_scale * masses[0].unit_array
 
     def set_target_box(
         self, x_constraint=None, y_constraint=None, z_constraint=None
@@ -341,14 +348,14 @@ class System(ABC):
             Lx = Ly = Lz = self._calculate_L()
         else:
             constraints = np.array([x_constraint, y_constraint, z_constraint])
-            fixed_L = constraints[np.where(constraints is not None)]
+            fixed_L = constraints[np.not_equal(constraints, None).nonzero()]
             # Conv from nm to cm for _calculate_L
             fixed_L *= 1e-7
             L = self._calculate_L(fixed_L=fixed_L)
-            constraints[np.where(constraints is None)] = L
+            constraints[np.equal(constraints, None).nonzero()] = L
             Lx, Ly, Lz = constraints
 
-        self.target_box = np.array([Lx, Ly, Lz])
+        self._target_box = np.array([Lx, Ly, Lz])
 
     def visualize(self):
         if self.system:
@@ -360,7 +367,7 @@ class System(ABC):
 
     def _calculate_L(self, fixed_L=None):
         """Calculates the required box length(s) given the
-        mass of a sytem and the target density.
+        mass of a system and the target density.
 
         Box edge length constraints can be set by set_target_box().
         If constraints are set, this will solve for the required
@@ -374,24 +381,35 @@ class System(ABC):
             when solving for L
 
         """
-        # Convert from amu to grams
-        M = self.mass * 1.66054e-24
-        vol = M / self.density  # cm^3
-        if fixed_L is None:
-            L = vol ** (1 / 3)
-        else:
-            L = vol / np.prod(fixed_L)
-            if len(fixed_L) == 1:  # L is cm^2
-                L = L ** (1 / 2)
-        # Convert from cm back to nm
-        L *= 1e7
-        return L
+        mass_quantity = u.unyt_quantity(self.mass, u.g / u.mol).to("g")
+        density_quantity = u.unyt_quantity(self.density, u.g / u.cm**3)
+        if fixed_L is not None:
+            fixed_L = u.unyt_array(fixed_L, u.cm)
+        L = calculate_box_length(
+            mass_quantity, density_quantity, fixed_L=fixed_L
+        )
+        return L.to("nm").value
 
 
 class Pack(System):
     """Uses PACKMOL via mbuild.packing.fill_box.
     The box used for packing is expanded to allow PACKMOL
     to more easily place all the molecules.
+
+    Warnings:
+    ---------
+    Note that the default `packing_expand_factor` for pack is 5, which means
+    that the box density will not be the same as the specified density. This is
+    because in some cases PACKMOL will not be able to fit all the molecules
+    into the box if the target box is too small, therefore, we need to expand
+    the box by a factor (default:5) to allow PACKMOL to fit all the molecules.
+
+    In order to get the
+    specified density there are two options:
+    1) set the `packing_expand_factor` to 1, which will not expand the box,
+     however, this may result in PACKMOL errors if the box is too small.
+    2) Update the box volume after creating the simulation object to the target
+    box length. This property is called `target_box`.
 
     Parameters
     ----------
@@ -432,7 +450,7 @@ class Pack(System):
         system = mb.packing.fill_box(
             compound=self.all_molecules,
             n_compounds=[1 for i in self.all_molecules],
-            box=list(self.target_box * self.packing_expand_factor),
+            box=list(self._target_box * self.packing_expand_factor),
             overlap=0.2,
             edge=self.edge,
         )
