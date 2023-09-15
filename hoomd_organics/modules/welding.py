@@ -8,17 +8,16 @@ from hoomd_organics.base.simulation import Simulation
 class Interface:
     def __init__(self, gsd_file, interface_axis, gap, wall_sigma=1.0):
         self.gsd_file = gsd_file
-        self.axis = interface_axis.lower()
+        self.interface_axis = interface_axis
         self.gap = gap
         self.wall_sigma = wall_sigma
         self.hoomd_snapshot = self._build()
 
     def _build(self):
-        axis_dict = {"x": 0, "y": 1, "z": 2}
         gsd_file = gsd.hoomd.open(self.gsd_file)
         snap = gsd_file[-1]
         gsd_file.close()
-        axis_index = axis_dict[self.axis]
+        axis_index = np.where(self.interface_axis != 0)[0]
 
         interface = gsd.hoomd.Snapshot()
         interface.particles.N = snap.particles.N * 2
@@ -120,7 +119,7 @@ class SlabSimulation(Simulation):
         self,
         initial_state,
         forcefield,
-        interface_axis="x",
+        interface_axis=(1, 0, 0),
         wall_sigma=1.0,
         wall_epsilon=1.0,
         wall_r_cut=2.5,
@@ -128,9 +127,9 @@ class SlabSimulation(Simulation):
         r_cut=2.5,
         seed=42,
         gsd_write_freq=1e4,
-        gsd_file_name="weld.gsd",
+        gsd_file_name="trajectory.gsd",
         log_write_freq=1e3,
-        log_file_name="sim_data.txt",
+        log_file_name="log.txt",
     ):
         super(SlabSimulation, self).__init__(
             initial_state=initial_state,
@@ -142,13 +141,10 @@ class SlabSimulation(Simulation):
             log_write_freq=log_write_freq,
             log_file_name=log_file_name,
         )
-        self.interface_axis = interface_axis.lower()
-        axis_array_dict = {"x": (1, 0, 0), "y": (0, 1, 0), "z": (0, 0, 1)}
-        axis_dict = {"x": 0, "y": 1, "z": 2}
-        self._axis_array = axis_array_dict[self.interface_axis]
-        self._axis_index = axis_dict[self.interface_axis]
+        self.interface_axis = interface_axis
+        # self._axis_index = np.where(interface_axis != 0)[0]
         self.add_walls(
-            self._axis_array,
+            self.interface_axis,
             wall_sigma,
             wall_epsilon,
             wall_r_cut,
