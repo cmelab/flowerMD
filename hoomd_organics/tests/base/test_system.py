@@ -1,7 +1,9 @@
+import gmso
 import hoomd
 import numpy as np
 import pytest
 import unyt as u
+from unyt import Unit
 
 from hoomd_organics import Lattice, Pack
 from hoomd_organics.library import (
@@ -26,6 +28,7 @@ class TestSystem(BaseTest):
         )
         assert system.n_mol_types == 1
         assert len(system.all_molecules) == len(benzene_mols.molecules)
+        assert system.gmso_system.is_typed()
         assert len(system.hoomd_forcefield) > 0
         assert system.n_particles == system.hoomd_snapshot.particles.N
         assert system.hoomd_snapshot.particles.types == ["opls_145", "opls_146"]
@@ -47,6 +50,7 @@ class TestSystem(BaseTest):
         )
         assert system.all_molecules[0].name == "0"
         assert system.all_molecules[-1].name == "1"
+        assert system.gmso_system.is_typed()
         assert len(system.hoomd_forcefield) > 0
         assert system.n_particles == system.hoomd_snapshot.particles.N
         assert system.hoomd_snapshot.particles.types == [
@@ -74,6 +78,7 @@ class TestSystem(BaseTest):
         ) + len(pps_mol.molecules)
         assert system.all_molecules[0].name == "0"
         assert system.all_molecules[-1].name == "1"
+        assert system.gmso_system.is_typed()
         assert len(system.hoomd_forcefield) > 0
         for hoomd_force in system.hoomd_forcefield:
             if isinstance(hoomd_force, hoomd.md.pair.LJ):
@@ -90,6 +95,19 @@ class TestSystem(BaseTest):
             "sh",
         ]
 
+    def test_system_from_mol2_mol_parameterization(self, benzene_molecule_mol2):
+        benzene_mol = benzene_molecule_mol2(n_mols=3)
+        system = Pack(
+            molecules=[benzene_mol],
+            density=0.8,
+            r_cut=2.5,
+            force_field=OPLS_AA(),
+            auto_scale=True,
+        )
+        assert system.gmso_system.is_typed()
+        assert len(system.hoomd_forcefield) > 0
+        assert system.n_particles == system.hoomd_snapshot.particles.N
+
     def test_remove_hydrogen(self, benzene_molecule):
         benzene_mol = benzene_molecule(n_mols=3)
         system = Pack(
@@ -100,6 +118,10 @@ class TestSystem(BaseTest):
             auto_scale=True,
             remove_hydrogens=True,
         )
+        assert not any(
+            [s.element.atomic_number == 1 for s in system.gmso_system.sites]
+        )
+        assert system.gmso_system.is_typed()
         assert len(system.hoomd_forcefield) > 0
         assert list(system.hoomd_forcefield[0].params.keys()) == [
             ("opls_145", "opls_145")
@@ -109,6 +131,70 @@ class TestSystem(BaseTest):
             == sum(mol.n_particles for mol in benzene_mol.molecules) - 3 * 6
         )
         assert system.hoomd_snapshot.particles.types == ["opls_145"]
+
+    def test_remove_hydrogen_no_atomic_num(self, benzene_molecule):
+        benzene_mol = benzene_molecule(n_mols=1)
+        system = Pack(
+            molecules=[benzene_mol],
+            density=0.8,
+            r_cut=2.5,
+            force_field=OPLS_AA(),
+            auto_scale=True,
+            remove_hydrogens=False,
+        )
+        for site in system.gmso_system.sites:
+            if site.name == "H":
+                site.element = gmso.core.element.Element(
+                    symbol="C",
+                    name="carbon",
+                    atomic_number=12,
+                    mass=1.008 * Unit("amu"),
+                )
+
+        system._remove_hydrogens()
+        assert system.gmso_system.n_sites == 6
+
+    def test_remove_hydrogen_no_hydrogen(self, benzene_molecule):
+        benzene_mol = benzene_molecule(n_mols=1)
+        system = Pack(
+            molecules=[benzene_mol],
+            density=0.8,
+            r_cut=2.5,
+            force_field=OPLS_AA(),
+            auto_scale=True,
+            remove_hydrogens=False,
+        )
+        hydrogens = [
+            site
+            for site in system.gmso_system.sites
+            if site.element.atomic_number == 1
+        ]
+        for h_site in hydrogens:
+            system.gmso_system.remove_site(h_site)
+
+        with pytest.warns():
+            system._remove_hydrogens()
+
+    def test_add_mass_charges(self, benzene_molecule):
+        benzene_mols = benzene_molecule(n_mols=1)
+        system = Pack(
+            molecules=[benzene_mols],
+            density=0.8,
+            r_cut=2.5,
+            force_field=OPLS_AA(),
+            auto_scale=False,
+            remove_hydrogens=True,
+            scale_charges=False,
+        )
+        for site in system.gmso_system.sites:
+            assert site.mass.value == (12.011 + 1.008)
+            assert site.charge == 0
+
+        snap = system.hoomd_snapshot
+        assert np.allclose(
+            sum(snap.particles.mass), 6 * (12.011 + 1.008), atol=1e-4
+        )
+        assert sum(snap.particles.charge) == 0
 
     def test_target_box(self, benzene_molecule):
         benzene_mol = benzene_molecule(n_mols=3)

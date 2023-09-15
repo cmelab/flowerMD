@@ -1,7 +1,11 @@
 import pytest
 import unyt as u
 
-from hoomd_organics.utils import check_return_iterable, validate_ref_value
+from hoomd_organics.utils import (
+    calculate_box_length,
+    check_return_iterable,
+    validate_ref_value,
+)
 from hoomd_organics.utils.exceptions import ReferenceUnitError
 
 
@@ -38,3 +42,23 @@ class TestUtils:
 
         with pytest.raises(ValueError):
             validate_ref_value("test g", u.dimensions.mass)
+
+    def test_calculate_box_length(self):
+        mass = u.unyt_quantity(4.0, u.g)
+        density = u.unyt_quantity(0.5, u.g / u.cm**3)
+        box_length = calculate_box_length(mass, density)
+        assert box_length == 2.0 * u.cm
+
+    def test_calculate_box_length_fixed_l_1d(self):
+        mass = u.unyt_quantity(6.0, u.g)
+        density = u.unyt_quantity(0.5, u.g / u.cm**3)
+        fixed_L = u.unyt_quantity(3.0, u.cm)
+        box_length = calculate_box_length(mass, density, fixed_L=fixed_L)
+        assert box_length == 2.0 * u.cm
+
+    def test_calculate_box_length_fixed_l_2d(self):
+        mass = u.unyt_quantity(12.0, u.g)
+        density = u.unyt_quantity(0.5, u.g / u.cm**3)
+        fixed_L = u.unyt_array([3.0, 2.0], u.cm)
+        box_length = calculate_box_length(mass, density, fixed_L=fixed_L)
+        assert box_length == 4.0 * u.cm
