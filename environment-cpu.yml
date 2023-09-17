@@ -1,4 +1,4 @@
-name: hoomd-organics
+name: base
 channels:
   - conda-forge
 dependencies:
@@ -14,7 +14,6 @@ dependencies:
   - py3Dmol
   - pytest
   - pytest-cov
-  - python=3.9
   - unyt
   - symengine
   - python-symengine
@@ -23,3 +22,4 @@ dependencies:
       - git+https://github.com/mosdef-hub/gmso.git@main
       - git+https://github.com/cmelab/cmeutils.git@master
       - git+https://github.com/cmelab/grits.git@main
+      - git+https://github.com/cmelab/hoomd-organics.git@cecam
