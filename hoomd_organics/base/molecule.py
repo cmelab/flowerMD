@@ -1,3 +1,4 @@
+"""Base class for all hoomd-organics molecules, Polymers, and CoPolymers."""
 import itertools
 import os.path
 import random
@@ -20,7 +21,36 @@ from hoomd_organics.utils.ff_utils import (
 
 
 class Molecule:
-    '''The base molecule class.'''
+    """Base class for all hoomd-organics molecules.
+
+    The Molecule class generated molecules from the provided input and can be
+    used to initialize a molecular structure. This class also provides
+    information about the molecule topology, such as the number of particles,
+    bonds, angles, etc.
+
+    Parameters
+    ----------
+    num_mols : int; required
+        Number of molecules to generate.
+    force_field : str; optional; default None
+        The force field to apply to the molecule.
+        Note that setting force_field will not apply the forcefield to the
+        molecule. The forcefield in this step is just used for validation
+        purposes.
+    smiles : str; optional; default None
+        The smiles string of the molecule to generate.
+    file : str; optional; default None
+        The file path to the molecule to generate.
+        Supported file types are: .mol2, .pdb, .sdf
+    compound : mbuild Compound or GMSO Topology; optional; default None
+        The mbuild Compound or GMSO Topology of the molecule to generate.
+
+    Notes
+    -----
+    The molecule can be generated from either a smiles string, a file path,
+    or a mbuild Compound or GMSO Topology.
+    """
+
     def __init__(
         self, num_mols, force_field=None, smiles=None, file=None, compound=None
     ):
@@ -41,22 +71,24 @@ class Molecule:
 
     @property
     def molecules(self):
-        """List of all instances of the molecule"""
+        """List of all instances of the molecule."""
         if self._cg_molecules:
             return self._cg_molecules
         return self._molecules
 
     @property
     def mapping(self):
-        """Dictionary of particle index to bead mapping"""
+        """Dictionary of particle index to coarse grained bead mapping."""
         return self._mapping
 
     @mapping.setter
     def mapping(self, mapping_array):
+        """Set the bead mapping for coarse graining the molecule."""
         self._mapping = mapping_array
 
     @property
     def n_particles(self):
+        """Number of all particles in the molecule."""
         n_particles = 0
         for molecule in self.molecules:
             n_particles += molecule.n_particles
@@ -64,6 +96,7 @@ class Molecule:
 
     @property
     def n_bonds(self):
+        """Number of all bonds in the molecule."""
         n_bonds = 0
         for molecule in self.molecules:
             n_bonds += molecule.n_bonds
@@ -71,6 +104,19 @@ class Molecule:
 
     @property
     def topology_information(self):
+        """Dictionary of topology information for the molecule.
+
+        The dictionary contains the following keys:
+            particle_types: list of all particle types.
+            hydrogen_types: list of all hydrogen types.
+            particle_charge: list of all particle charges.
+            particle_typeid: list of all particle type indices.
+            pair_types: list of all unique particle pairs.
+            bond_types: list of all unique bond types.
+            angle_types: list of all unique angle types.
+            dihedral_types: list of all unique dihedral types.
+            improper_types: list of all unique improper types.
+        """
         topology_information = dict()
         topology_information["particle_types"] = self.particle_types
         topology_information["hydrogen_types"] = self.hydrogen_types
@@ -84,6 +130,19 @@ class Molecule:
         return topology_information
 
     def coarse_grain(self, beads=None):
+        """Coarse grain the molecule.
+
+        Parameters
+        ----------
+        beads : dict; optional; default None
+            A dictionary of bead names and their corresponding SMILES string.
+
+        Warnings
+        --------
+        The changes applied by coarse grain are in-place. All molecule
+        properties will be modified after coarse graining based on the bead
+        mapping.
+        """
         for comp in self.molecules:
             cg_comp = CG_Compound(comp, beads=beads)
             if cg_comp.mapping:
@@ -98,6 +157,7 @@ class Molecule:
             self._identify_topology_information(self.gmso_molecule)
 
     def _load(self):
+        """Load the molecule from the provided input."""
         if self.compound:
             if isinstance(self.compound, mb.Compound):
                 return mb.clone(mb.clone(self.compound))
@@ -126,15 +186,27 @@ class Molecule:
                 )
 
     def _generate(self):
+        """Generate all the molecules by replicating the loaded molecule."""
         for i in range(self.n_mols):
             self._molecules.append(self._load())
 
     def _convert_to_gmso(self, mb_molecule):
+        """Convert the mbuild molecule to a GMSO topology."""
         topology = from_mbuild(mb_molecule)
         topology.identify_connections()
         return topology
 
     def _identify_particle_information(self, gmso_molecule):
+        """Identify the particle information from the GMSO topology.
+
+        Particle information includes particle types, hydrogen types, particle
+        type indices, and particle charges.
+
+        Parameters
+        ----------
+        gmso_molecule : GMSO Topology; required
+            The GMSO topology of the molecule.
+        """
         self.particle_types = []
         self.hydrogen_types = []
         self.particle_typeid = []
@@ -155,11 +227,25 @@ class Molecule:
             )
 
     def _identify_pairs(self, particle_types):
+        """Identify all unique particle pairs from the particle types.
+
+        Parameters
+        ----------
+        particle_types : list; required
+            List of all particle types.
+        """
         self.pairs = set(
             itertools.combinations_with_replacement(particle_types, 2)
         )
 
     def _identify_bond_types(self, gmso_molecule):
+        """Identify all unique bond types from the GMSO topology.
+
+        Parameters
+        ----------
+        gmso_molecule : GMSO Topology; required
+            The GMSO topology of the molecule.
+        """
         self.bond_types = set()
         for bond in gmso_molecule.bonds:
             p1_name = (
@@ -175,6 +261,13 @@ class Molecule:
                 self.bond_types.add(tuple(bond_connections))
 
     def _identify_angle_types(self, gmso_molecule):
+        """Identify all unique angle types from the GMSO topology.
+
+        Parameters
+        ----------
+        gmso_molecule : GMSO Topology; required
+            The GMSO topology of the molecule.
+        """
         self.angle_types = set()
         for angle in gmso_molecule.angles:
             p1_name = (
@@ -194,6 +287,13 @@ class Molecule:
                 self.angle_types.add(tuple(angle_connections))
 
     def _identify_dihedral_types(self, gmso_molecule):
+        """Identify all unique dihedral types from the GMSO topology.
+
+        Parameters
+        ----------
+        gmso_molecule : GMSO Topology; required
+            The GMSO topology of the molecule.
+        """
         self.dihedral_types = set()
         for dihedral in gmso_molecule.dihedrals:
             p1_name = (
@@ -217,6 +317,13 @@ class Molecule:
                 self.dihedral_types.add(tuple(dihedral_connections))
 
     def _identify_improper_types(self, gmso_molecule):
+        """Identify all unique improper types from the GMSO topology.
+
+        Parameters
+        ----------
+        gmso_molecule : GMSO Topology; required
+            The GMSO topology of the molecule.
+        """
         self.improper_types = set()
         for improper in gmso_molecule.impropers:
             p1_name = (
@@ -240,6 +347,13 @@ class Molecule:
                 self.improper_types.add(tuple(improper_connections))
 
     def _identify_topology_information(self, gmso_molecule):
+        """Identify all topology information from the GMSO topology.
+
+        Parameters
+        ----------
+        gmso_molecule : GMSO Topology; required
+            The GMSO topology of the molecule.
+        """
         self._identify_particle_information(gmso_molecule)
         self._identify_pairs(self.particle_types)
         self._identify_bond_types(gmso_molecule)
@@ -248,6 +362,7 @@ class Molecule:
         self._identify_improper_types(gmso_molecule)
 
     def _validate_force_field(self):
+        """Validate the force field for the molecule."""
         self.ff_type = None
         if isinstance(self.force_field, str):
             ff_xml_path, ff_type = find_xml_ff(self.force_field)
@@ -260,6 +375,7 @@ class Molecule:
             self.ff_type = FF_Types.Hoomd
 
     def assign_mol_name(self, name):
+        """Assign a name to the molecule."""
         for mol in self.molecules:
             mol.name = name
             # TODO: This is a hack to make sure that the name of the children is
@@ -271,7 +387,28 @@ class Molecule:
 
 
 class Polymer(Molecule):
-    '''The base polymer class.'''
+    """Builds a polymer from a monomer.
+
+    Parameters
+    ----------
+    lengths : int; required
+        The total number of monomers in each chain.
+    num_mols : int; required
+        Number of chains to generate.
+    smiles : str; optional; default None
+        The smiles string of the monomer to generate.
+    file : str; optional; default None
+        The file path to the monomer to generate.
+    force_field : str; optional; default None
+        The force field to apply to the molecule.
+    bond_indices: list; optional; default None
+        The indices of the atoms to bond.
+    bond_length: float; optional; default None
+        The bond length between connected atoms (units: nm)
+    bond_orientation: list; optional; default None
+        The orientation of the bond between connected atoms.
+    """
+
     def __init__(
         self,
         lengths,
@@ -301,6 +438,7 @@ class Polymer(Molecule):
 
     @property
     def monomer(self):
+        """The monomer of the polymer."""
         return self._mb_molecule
 
     def _build(self, length):
@@ -382,10 +520,12 @@ class CoPolymer(Molecule):
 
     @property
     def A_ratio(self):
+        """The ratio of A monomers to B monomers in the CoPolymer."""
         return self._A_count / (self._A_count + self._B_count)
 
     @property
     def B_ratio(self):
+        """The ratio of B monomers to A monomers in the CoPolymer."""
         return self._B_count / (self._A_count + self._B_count)
 
     def _build(self, length, sequence):
