@@ -39,9 +39,9 @@ repos:
         - --max-line-length=80
       exclude: '__init__.py'
 
-#- repo: https://github.com/pycqa/pydocstyle
-#  rev: '6.3.0'
-#  hooks:
-#    - id: pydocstyle
-#      exclude: ^(cmeuitls/tests/|setup.py)
-#      args: [--convention=numpy]
+- repo: https://github.com/pycqa/pydocstyle
+  rev: '6.3.0'
+  hooks:
+    - id: pydocstyle
+      exclude: ^(hoomd_organics/tests/|setup.py)
+      args: [--convention=numpy]
