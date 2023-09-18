@@ -49,6 +49,7 @@ class Molecule:
     -----
     The molecule can be generated from either a smiles string, a file path,
     or a mbuild Compound or GMSO Topology.
+
     """
 
     def __init__(
@@ -116,6 +117,7 @@ class Molecule:
             angle_types: list of all unique angle types.
             dihedral_types: list of all unique dihedral types.
             improper_types: list of all unique improper types.
+
         """
         topology_information = dict()
         topology_information["particle_types"] = self.particle_types
@@ -142,6 +144,7 @@ class Molecule:
         The changes applied by coarse grain are in-place. All molecule
         properties will be modified after coarse graining based on the bead
         mapping.
+
         """
         for comp in self.molecules:
             cg_comp = CG_Compound(comp, beads=beads)
@@ -206,6 +209,7 @@ class Molecule:
         ----------
         gmso_molecule : GMSO Topology; required
             The GMSO topology of the molecule.
+
         """
         self.particle_types = []
         self.hydrogen_types = []
@@ -233,6 +237,7 @@ class Molecule:
         ----------
         particle_types : list; required
             List of all particle types.
+
         """
         self.pairs = set(
             itertools.combinations_with_replacement(particle_types, 2)
@@ -245,6 +250,7 @@ class Molecule:
         ----------
         gmso_molecule : GMSO Topology; required
             The GMSO topology of the molecule.
+
         """
         self.bond_types = set()
         for bond in gmso_molecule.bonds:
@@ -267,6 +273,7 @@ class Molecule:
         ----------
         gmso_molecule : GMSO Topology; required
             The GMSO topology of the molecule.
+
         """
         self.angle_types = set()
         for angle in gmso_molecule.angles:
@@ -293,6 +300,7 @@ class Molecule:
         ----------
         gmso_molecule : GMSO Topology; required
             The GMSO topology of the molecule.
+
         """
         self.dihedral_types = set()
         for dihedral in gmso_molecule.dihedrals:
@@ -323,6 +331,7 @@ class Molecule:
         ----------
         gmso_molecule : GMSO Topology; required
             The GMSO topology of the molecule.
+
         """
         self.improper_types = set()
         for improper in gmso_molecule.impropers:
@@ -353,6 +362,7 @@ class Molecule:
         ----------
         gmso_molecule : GMSO Topology; required
             The GMSO topology of the molecule.
+
         """
         self._identify_particle_information(gmso_molecule)
         self._identify_pairs(self.particle_types)
@@ -407,6 +417,7 @@ class Polymer(Molecule):
         The bond length between connected atoms (units: nm)
     bond_orientation: list; optional; default None
         The orientation of the bond between connected atoms.
+
     """
 
     def __init__(
@@ -482,6 +493,7 @@ class CoPolymer(Molecule):
         Used when generating random sequences.
     seed : int; optional; default 24
         Set the seed used when generating random sequences
+
     """
 
     def __init__(
