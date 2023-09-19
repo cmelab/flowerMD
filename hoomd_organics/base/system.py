@@ -543,7 +543,7 @@ class Pack(System):
 
 
     .. warning::
-    
+
         Note that the default `packing_expand_factor` for pack is 5, which means
         that the box density will not be the same as the specified density. This is
         because in some cases PACKMOL will not be able to fit all the molecules
