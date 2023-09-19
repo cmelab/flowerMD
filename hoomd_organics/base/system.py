@@ -318,6 +318,12 @@ class System(ABC):
 
         If reference length is set, the target box is in reduced units.
 
+        Notes
+        -----
+        The `target_box` property can be passed to
+        `hoomd_orgaics.base.Simulation.run_update_volume` method to reach the
+        target density.
+
         """
         if self.reference_length:
             return self._target_box / self.reference_length.value
@@ -360,7 +366,13 @@ class System(ABC):
             self.gmso_system.remove_site(site=h)
 
     def _scale_charges(self):
-        """Scale charges to net zero."""
+        """Scale charges to net zero.
+
+        If the net charge does not sum to zero after applying the forcefield,
+        this method equally shifts negative charges and positive charges
+        across all particles to reach a net charge of zero.
+
+        """
         charges = np.array(
             [
                 site.charge if site.charge else 0
