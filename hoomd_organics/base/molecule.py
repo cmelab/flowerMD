@@ -21,9 +21,9 @@ from hoomd_organics.utils.ff_utils import (
 
 
 class Molecule:
-    """Base class for all hoomd-organics molecules.
+    """Base class for all `hoomd-organics` molecules.
 
-    The Molecule class generated molecules from the provided input and can be
+    The Molecule class generates molecules from the provided input and can be
     used to initialize a molecular structure. This class also provides
     information about the molecule topology, such as the number of particles,
     bonds, angles, etc.
@@ -89,7 +89,7 @@ class Molecule:
 
     @property
     def n_particles(self):
-        """Number of all particles in the molecule."""
+        """Total number of particles in all of the molecules."""
         n_particles = 0
         for molecule in self.molecules:
             n_particles += molecule.n_particles
@@ -97,7 +97,7 @@ class Molecule:
 
     @property
     def n_bonds(self):
-        """Number of all bonds in the molecule."""
+        """Total number of bonds in all of the molecules."""
         n_bonds = 0
         for molecule in self.molecules:
             n_bonds += molecule.n_bonds
@@ -138,6 +138,15 @@ class Molecule:
         ----------
         beads : dict; optional; default None
             A dictionary of bead names and their corresponding SMILES string.
+
+        Examples
+        --------
+        Coarse grain atomistic benzene molecules into a single bead type called
+        "A".
+
+        >>> from hoomd_organics import Molecule
+        >>> benzene = Molecule(num_mols=10, smiles="c1ccccc1")
+        >>> benzene.coarse_grain(beads={"A": "c1ccccc1"})
 
         Warnings
         --------

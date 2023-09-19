@@ -30,7 +30,6 @@ class Simulation(hoomd.simulation.Simulation):
         to a GSD file to initialize a simulation from.
     forcefield : List of HOOMD force objects, default None
         List of HOOMD force objects to add to the integrator.
-
     reference_values : dict, default {}
         A dictionary of reference values for mass, length, and energy.
     r_cut : float, default 2.5
@@ -315,7 +314,7 @@ class Simulation(hoomd.simulation.Simulation):
 
         Parameters
         ----------
-        hoomd_nlist : hoomd.md.nlist.NList; required
+        hoomd_nlist : hoomd.md.nlist.NeighborList; required
             The neighbor list to use.
         buffer : float; optional default 0.4
             The buffer width to use for the neighbor list.
@@ -483,7 +482,7 @@ class Simulation(hoomd.simulation.Simulation):
             self.integrator.methods.append(new_method)
 
     def add_walls(self, wall_axis, sigma, epsilon, r_cut, r_extrap=0):
-        """Add LJ walls to the simulation.
+        """Add `hoomd.md.external.wall.LJ` forces to the simulation.
 
         Parameters
         ----------
@@ -725,8 +724,7 @@ class Simulation(hoomd.simulation.Simulation):
         thermalize_particles=True,
         write_at_start=True,
     ):
-        """
-        Run the simulation in NPT dynamics.
+        """Run the simulation in the NPT ensemble.
 
         Parameters
         ----------
@@ -795,8 +793,7 @@ class Simulation(hoomd.simulation.Simulation):
         thermalize_particles=True,
         write_at_start=True,
     ):
-        """
-        Run the simulation in NVT dynamics.
+        """Run the simulation in the NVT ensemble.
 
         Parameters
         ----------
@@ -838,8 +835,7 @@ class Simulation(hoomd.simulation.Simulation):
         self.operations.updaters.remove(std_out_logger_printer)
 
     def run_NVE(self, n_steps, write_at_start=True):
-        """
-        Run the simulation in NVE dynamics.
+        """Run the simulation in the NVE ensemble.
 
         Parameters
         ----------
@@ -931,10 +927,42 @@ class Simulation(hoomd.simulation.Simulation):
     def pickle_forcefield(self, file_path="forcefield.pickle"):
         """Pickle the list of HOOMD forces.
 
+        This method useful for saving the forcefield of a simulation to a file
+        and reusing it for restarting a simulation or running a different
+        simulation.
+
         Parameters
         ----------
         file_path : str; optional default "forcefield.pickle"
             The path to save the pickle file to.
+
+        Examples
+        --------
+        In this example, a simulation is initialized and run for 1000 steps. The
+        forcefield is then pickled and saved to a file. The forcefield is then
+        loaded from the pickle file and used to run a tensile simulation.
+
+        ::
+
+            from hoomd_organics import Pack, Simulation
+            from hoomd_organics.library import PPS, OPLS_AA_PPS, Tensile
+            import pickle
+
+            pps_mols = PPS(num_mols=10, lengths=5)
+            pps_system = Pack(molecules=[pps_mols], force_field=OPLS_AA_PPS(),
+                              r_cut=2.5, density=0.5, auto_scale=True,
+                              scale_charges=True)
+            sim = Simulation(initial_state=pps_system.hoomd_snapshot,
+                             forcefield=pps_system.hoomd_forcefield)
+            sim.run_NVT(n_steps=1e3, kT=1.0, tau_kt=1.0)
+            sim.pickle_forcefield("pps_forcefield.pickle")
+            with open("pps_forcefield.pickle", "rb") as f:
+                pps_forcefield = pickle.load(f)
+
+            tensile_sim = Tensile(initial_state=pps_system.hoomd_snapshot,
+                                  forcefield=pps_forcefield,
+                                   tensile_axis=(1, 0, 0))
+            tensile_sim.run_tensile(strain=0.05, kT=2.0, n_steps=1e3, period=10)
 
         """
         f = open(file_path, "wb")
@@ -943,10 +971,43 @@ class Simulation(hoomd.simulation.Simulation):
     def save_restart_gsd(self, file_path="restart.gsd"):
         """Save a GSD file of the current simulation state.
 
+        This method is useful for saving the state of a simulation to a file
+        and reusing it for restarting a simulation or running a different
+        simulation.
+
         Parameters
         ----------
         file_path : str; optional default "restart.gsd"
             The path to save the GSD file to.
+
+        Examples
+        --------
+        This example is similar to the example in `pickle_forcefield`. The only
+        difference is that the simulation state is also saved to a GSD file.
+
+        ::
+
+            from hoomd_organics import Pack, Simulation
+            from hoomd_organics.library import PPS, OPLS_AA_PPS, Tensile
+            import pickle
+
+            pps_mols = PPS(num_mols=10, lengths=5)
+            pps_system = Pack(molecules=[pps_mols], force_field=OPLS_AA_PPS(),
+                              r_cut=2.5, density=0.5, auto_scale=True,
+                              scale_charges=True)
+            sim = Simulation(initial_state=pps_system.hoomd_snapshot,
+                             forcefield=pps_system.hoomd_forcefield)
+            sim.run_NVT(n_steps=1e3, kT=1.0, tau_kt=1.0)
+            sim.pickle_forcefield("pps_forcefield.pickle")
+            sim.save_restart_gsd("pps_restart.gsd")
+            with open("pps_forcefield.pickle", "rb") as f:
+                pps_forcefield = pickle.load(f)
+
+            tensile_sim = Tensile(initial_state="pps_restart.gsd",
+                                  forcefield=pps_forcefield,
+                                  tensile_axis=(1, 0, 0))
+            tensile_sim.run_tensile(strain=0.05, kT=2.0, n_steps=1e3, period=10)
+
 
         """
         hoomd.write.GSD.write(self.state, filename=file_path)
