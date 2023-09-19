@@ -8,6 +8,8 @@ dependencies:
   - freud
   - gsd<3.0
   - hoomd=3.11=*cpu*
+  - MDanalysis=2.5.0
+  - nglview
   - mbuild
   - numpy
   - openbabel
