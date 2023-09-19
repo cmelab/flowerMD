@@ -63,6 +63,7 @@ class Tensile(Simulation):
         return delta_L / self.initial_length
 
     def run_tensile(self, strain, kT, n_steps, period):
+        self._thermalize_system(kT=kT)
         current_length = self.box_lengths_reduced[self._axis_index]
         final_length = current_length * (1 + strain)
         final_box = np.copy(self.box_lengths_reduced)
