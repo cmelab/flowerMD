@@ -119,8 +119,7 @@ class System(ABC):
                         )
         self.system = self._build_system()
         self.gmso_system = self._convert_to_gmso()
-        if self._force_field:
-            self._apply_forcefield()
+        self._apply_forcefield()
         if self.remove_hydrogens:
             self._remove_hydrogens()
 
@@ -196,16 +195,11 @@ class System(ABC):
 
     @property
     def hoomd_snapshot(self):
-        self._hoomd_snapshot = self._create_hoomd_snapshot()
         return self._hoomd_snapshot
 
     @property
     def hoomd_forcefield(self):
-        if self._force_field:
-            self._hoomd_forcefield = self._create_hoomd_forcefield()
-            return self._hoomd_forcefield
-        else:
-            return self._hoomd_forcefield
+        return self._hoomd_forcefield
 
     @property
     def target_box(self):
@@ -297,33 +291,41 @@ class System(ABC):
         return snap
 
     def _apply_forcefield(self):
-        self.gmso_system = apply(
-            self.gmso_system,
-            self._gmso_forcefields_dict,
-            identify_connections=True,
-            speedup_by_moltag=True,
-            speedup_by_molgraph=False,
-        )
-        if self.remove_charges:
-            for site in self.gmso_system.sites:
-                site.charge = 0
-        if self.scale_charges and not self.remove_charges:
-            self._scale_charges()
-        epsilons = [
-            s.atom_type.parameters["epsilon"] for s in self.gmso_system.sites
-        ]
-        sigmas = [
-            s.atom_type.parameters["sigma"] for s in self.gmso_system.sites
-        ]
-        masses = [s.mass for s in self.gmso_system.sites]
+        if self._force_field:
+            self.gmso_system = apply(
+                self.gmso_system,
+                self._gmso_forcefields_dict,
+                identify_connections=True,
+                speedup_by_moltag=True,
+                speedup_by_molgraph=False,
+            )
+            if self.remove_charges:
+                for site in self.gmso_system.sites:
+                    site.charge = 0
+            if self.scale_charges and not self.remove_charges:
+                self._scale_charges()
+            epsilons = [
+                s.atom_type.parameters["epsilon"]
+                for s in self.gmso_system.sites
+            ]
+            sigmas = [
+                s.atom_type.parameters["sigma"] for s in self.gmso_system.sites
+            ]
+            masses = [s.mass for s in self.gmso_system.sites]
 
-        energy_scale = np.max(epsilons) if self.auto_scale else 1.0
-        length_scale = np.max(sigmas) if self.auto_scale else 1.0
-        mass_scale = np.max(masses) if self.auto_scale else 1.0
+            energy_scale = np.max(epsilons) if self.auto_scale else 1.0
+            length_scale = np.max(sigmas) if self.auto_scale else 1.0
+            mass_scale = np.max(masses) if self.auto_scale else 1.0
 
-        self._reference_values["energy"] = energy_scale * epsilons[0].unit_array
-        self._reference_values["length"] = length_scale * sigmas[0].unit_array
-        self._reference_values["mass"] = mass_scale * masses[0].unit_array
+            self._reference_values["energy"] = (
+                energy_scale * epsilons[0].unit_array
+            )
+            self._reference_values["length"] = (
+                length_scale * sigmas[0].unit_array
+            )
+            self._reference_values["mass"] = mass_scale * masses[0].unit_array
+            self._hoomd_forcefield = self._create_hoomd_forcefield()
+        self._hoomd_snapshot = self._create_hoomd_snapshot()
 
     def set_target_box(
         self, x_constraint=None, y_constraint=None, z_constraint=None
