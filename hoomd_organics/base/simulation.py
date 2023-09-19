@@ -695,9 +695,6 @@ class Simulation(hoomd.simulation.Simulation):
         )
         logger = hoomd.logging.Logger(categories=["scalar", "string"])
         gsd_logger.add(self, quantities=["timestep", "tps"])
-        thermo_props = hoomd.md.compute.ThermodynamicQuantities(
-            filter=self.integrate_group
-        )
         logger.add(self, quantities=["timestep", "tps"])
         thermo_props = hoomd.md.compute.ThermodynamicQuantities(
             filter=self.integrate_group
