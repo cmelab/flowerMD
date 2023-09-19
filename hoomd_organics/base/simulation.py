@@ -689,23 +689,34 @@ class Simulation(hoomd.simulation.Simulation):
 
     def _add_hoomd_writers(self):
         """Creates gsd and log writers"""
-        gsd_writer = hoomd.write.GSD(
-            filename=self.gsd_file_name,
-            trigger=hoomd.trigger.Periodic(int(self.gsd_write_freq)),
-            mode="wb",
-            dynamic=["momentum"],
-        )
 
+        gsd_logger = hoomd.logging.Logger(
+            categories=["scalar", "string", "sequence"]
+        )
         logger = hoomd.logging.Logger(categories=["scalar", "string"])
+        gsd_logger.add(self, quantities=["timestep", "tps"])
+        thermo_props = hoomd.md.compute.ThermodynamicQuantities(
+            filter=self.integrate_group
+        )
         logger.add(self, quantities=["timestep", "tps"])
         thermo_props = hoomd.md.compute.ThermodynamicQuantities(
             filter=self.integrate_group
         )
         self.operations.computes.append(thermo_props)
+        gsd_logger.add(thermo_props, quantities=self.log_quantities)
         logger.add(thermo_props, quantities=self.log_quantities)
 
         for f in self._forcefield:
             logger.add(f, quantities=["energy"])
+            gsd_logger.add(f, quantities=["energy"])
+
+        gsd_writer = hoomd.write.GSD(
+            filename=self.gsd_file_name,
+            trigger=hoomd.trigger.Periodic(int(self.gsd_write_freq)),
+            mode="wb",
+            dynamic=["momentum"],
+            logger=gsd_logger,
+        )
 
         table_file = hoomd.write.Table(
             output=open(self.log_file_name, mode="w", newline="\n"),
