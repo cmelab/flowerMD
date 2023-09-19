@@ -6,42 +6,46 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = 'hoomd-organics'
-copyright = '2023, Chris Jones, Marjan Albooyeh, Rainier Barrett, Eric Jankowski'
-author = 'Chris Jones, Marjan Albooyeh, Rainier Barrett, Eric Jankowski'
+project = "hoomd-organics"
+copyright = (
+    "2023, Chris Jones, Marjan Albooyeh, Rainier Barrett, Eric Jankowski"
+)
+author = "Chris Jones, Marjan Albooyeh, Rainier Barrett, Eric Jankowski"
 
 import os
 import sys
-sys.path.insert(0, os.path.abspath('../..'))
+
+sys.path.insert(0, os.path.abspath("../.."))
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.napoleon']
-autodoc_mock_imports = ['cmeutils',
-                        'forcefield_utilities',
-                        'foyer',
-                        'freud',
-                        'gmso',
-                        'grits',
-                        'gsd',
-                        'hoomd',
-                        'mbuild',
-                        'numpy',
-                        'openbabel',
-                        'py3Dmol',
-                        'pydantic',
-                        'symengine',
-                        'sympy',
-                        'unyt']
+extensions = ["sphinx.ext.autodoc", "sphinx.ext.napoleon"]
+autodoc_mock_imports = [
+    "cmeutils",
+    "forcefield_utilities",
+    "foyer",
+    "freud",
+    "gmso",
+    "grits",
+    "gsd",
+    "hoomd",
+    "mbuild",
+    "numpy",
+    "openbabel",
+    "py3Dmol",
+    "pydantic",
+    "symengine",
+    "sympy",
+    "unyt",
+]
 
-templates_path = ['_templates']
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
-
+templates_path = ["_templates"]
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = 'sphinx_rtd_theme'
-html_static_path = ['_static']
+html_theme = "sphinx_rtd_theme"
+html_static_path = ["_static"]
