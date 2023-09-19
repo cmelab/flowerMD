@@ -1,4 +1,3 @@
-"""Base class for creating systems."""
 import warnings
 from abc import ABC, abstractmethod
 from typing import List
@@ -39,10 +38,6 @@ class System(ABC):
     density : float; required
         The desired density of the system (g/cm^3). Used to set the
         target_box attribute. Can be useful when initializing
-<<<<<<< HEAD
-        systems at low denisty and running a shrink simulaton
-        to acheive a target density.
-=======
         systems at low denisty and running a shrink simulation
         to achieve a target density.
     r_cut : float; required
@@ -66,7 +61,6 @@ class System(ABC):
         Dictionary of base units to use for scaling.
         Dictionary keys are "length", "mass", and "energy". Values should be a
         unyt array of the desired base unit.
->>>>>>> 6b63a99... complete system docstrings.
 
     """
 
@@ -533,27 +527,28 @@ class Pack(System):
     The box used for packing is expanded to allow PACKMOL
     to more easily place all the molecules.
 
-    Warnings:
-    ---------
-    Note that the default `packing_expand_factor` for pack is 5, which means
-    that the box density will not be the same as the specified density. This is
-    because in some cases PACKMOL will not be able to fit all the molecules
-    into the box if the target box is too small, therefore, we need to expand
-    the box by a factor (default:5) to allow PACKMOL to fit all the molecules.
-
-    In order to get the
-    specified density there are two options:
-    1) set the `packing_expand_factor` to 1, which will not expand the box,
-     however, this may result in PACKMOL errors if the box is too small.
-    2) Update the box volume after creating the simulation object to the target
-    box length. This property is called `target_box`.
-
     Parameters
     ----------
     packing_expand_factor : int; optional, default 5
         The factor by which to expand the box for packing.
     edge : float; optional, default 0.2
         The space (nm) between the edge of the box and the molecules.
+
+
+    .. warning::
+    
+        Note that the default `packing_expand_factor` for pack is 5, which means
+        that the box density will not be the same as the specified density. This is
+        because in some cases PACKMOL will not be able to fit all the molecules
+        into the box if the target box is too small, therefore, we need to expand
+        the box by a factor (default:5) to allow PACKMOL to fit all the molecules.
+
+        In order to get the specified density there are two options:
+
+        #. set the `packing_expand_factor` to 1, which will not expand the box. \
+        However, this may result in PACKMOL errors if the box is too small.
+        #. Update the box volume after creating the simulation object to the target \
+        box length. This property is called `target_box`.
 
     """
 
