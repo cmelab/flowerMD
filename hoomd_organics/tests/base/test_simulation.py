@@ -2,6 +2,7 @@ import copy
 import os
 import pickle
 
+import gsd.hoomd
 import hoomd
 import numpy as np
 import pytest
@@ -304,3 +305,53 @@ class TestSimulate(BaseTest):
         )
         os.remove("forcefield.pickle")
         os.remove("restart.gsd")
+
+    def test_gsd_logger(self, benzene_system):
+        sim = Simulation.from_system(benzene_system, gsd_write_freq=1)
+        sim.run_NVT(n_steps=5, kT=1.0, tau_kt=0.001)
+        expected_gsd_quantities = [
+            "hoomd_organics/base/simulation/Simulation/timestep",
+            "hoomd_organics/base/simulation/Simulation/tps",
+            "md/compute/ThermodynamicQuantities/kinetic_temperature",
+            "md/compute/ThermodynamicQuantities/potential_energy",
+            "md/compute/ThermodynamicQuantities/kinetic_energy",
+            "md/compute/ThermodynamicQuantities/volume",
+            "md/compute/ThermodynamicQuantities/pressure",
+            "md/compute/ThermodynamicQuantities/pressure_tensor",
+            "md/pair/Ewald/energy",
+            "md/pair/LJ/energy",
+            "md/long_range/pppm/Coulomb/energy",
+            "md/special_pair/Coulomb/energy",
+            "md/special_pair/LJ/energy",
+            "md/bond/Harmonic/energy",
+            "md/angle/Harmonic/energy",
+            "md/dihedral/OPLS/energy",
+        ]
+
+        with gsd.hoomd.open("trajectory.gsd") as traj:
+            snap = traj[-1]
+            log_keys = list(snap.log.keys())
+
+        assert sorted(expected_gsd_quantities) == sorted(log_keys)
+        expected_table_quantities = [
+            "hoomd_organicsbasesimulationSimulationtimestep",
+            "hoomd_organicsbasesimulationSimulationtps",
+            "mdcomputeThermodynamicQuantitieskinetic_temperature",
+            "mdcomputeThermodynamicQuantitiespotential_energy",
+            "mdcomputeThermodynamicQuantitieskinetic_energy",
+            "mdcomputeThermodynamicQuantitiesvolume",
+            "mdcomputeThermodynamicQuantitiespressure",
+            "mdpairEwaldenergy",
+            "mdpairLJenergy",
+            "mdlong_rangepppmCoulombenergy",
+            "mdspecial_pairCoulombenergy",
+            "mdspecial_pairLJenergy",
+            "mdbondHarmonicenergy",
+            "mdangleHarmonicenergy",
+            "mddihedralOPLSenergy",
+        ]
+        table = np.genfromtxt("sim_data.txt", names=True)
+        table_keys = list(table.dtype.fields.keys())
+        assert sorted(expected_table_quantities) == sorted(table_keys)
+
+        os.remove("trajectory.gsd")
