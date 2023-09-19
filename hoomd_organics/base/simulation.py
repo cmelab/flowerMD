@@ -1,3 +1,4 @@
+import inspect
 import pickle
 import warnings
 
@@ -333,6 +334,17 @@ class Simulation(hoomd.simulation.Simulation):
             elif shift_by:
                 lj_forces.params[k]["sigma"] = sigma + shift_by
 
+    def _initialize_thermostat(self, thermostat_kwargs):
+        """Initializes the thermostat used by the integrator."""
+        required_thermostat_kwargs = {}
+        for k in inspect.signature(self.thermostat).parameters:
+            if k not in thermostat_kwargs.keys():
+                raise ValueError(
+                    f"Missing required parameter {k} for thermostat."
+                )
+            required_thermostat_kwargs[k] = thermostat_kwargs[k]
+        return self.thermostat(**required_thermostat_kwargs)
+
     def set_integrator_method(self, integrator_method, method_kwargs):
         """Creates an initial (or updates the existing) method used by
         Hoomd's integrator. This doesn't need to be called directly;
@@ -474,11 +486,12 @@ class Simulation(hoomd.simulation.Simulation):
         )
         self.operations.updaters.append(box_resizer)
         self.set_integrator_method(
-            integrator_method=hoomd.md.methods.NVT,
+            integrator_method=hoomd.md.methods.ConstantVolume,
             method_kwargs={
-                "tau": tau_kt,
+                "thermostat": self._initialize_thermostat(
+                    {"kT": kT, "tau": tau_kt}
+                ),
                 "filter": self.integrate_group,
-                "kT": kT,
             },
         )
         if thermalize_particles:
@@ -503,7 +516,6 @@ class Simulation(hoomd.simulation.Simulation):
         self,
         n_steps,
         kT,
-        alpha,
         tally_reservoir_energy=False,
         default_gamma=1.0,
         default_gamma_r=(1.0, 1.0, 1.0),
@@ -516,7 +528,6 @@ class Simulation(hoomd.simulation.Simulation):
             method_kwargs={
                 "filter": self.integrate_group,
                 "kT": kT,
-                "alpha": alpha,
                 "tally_reservoir_energy": tally_reservoir_energy,
                 "default_gamma": default_gamma,
                 "default_gamma_r": default_gamma_r,
@@ -549,18 +560,18 @@ class Simulation(hoomd.simulation.Simulation):
     ):
         """"""
         self.set_integrator_method(
-            integrator_method=hoomd.md.methods.NPT,
+            integrator_method=hoomd.md.methods.ConstantPressure,
             method_kwargs={
-                "kT": kT,
                 "S": pressure,
-                "tau": tau_kt,
                 "tauS": tau_pressure,
                 "couple": couple,
                 "box_dof": box_dof,
                 "rescale_all": rescale_all,
                 "gamma": gamma,
                 "filter": self.integrate_group,
-                "kT": kT,
+                "thermostat": self._initialize_thermostat(
+                    {"kT": kT, "tau": tau_kt}
+                ),
             },
         )
         if thermalize_particles:
@@ -584,11 +595,12 @@ class Simulation(hoomd.simulation.Simulation):
     ):
         """"""
         self.set_integrator_method(
-            integrator_method=hoomd.md.methods.NVT,
+            integrator_method=hoomd.md.methods.ConstantVolume,
             method_kwargs={
-                "tau": tau_kt,
+                "thermostat": self._initialize_thermostat(
+                    {"kT": kT, "tau": tau_kt}
+                ),
                 "filter": self.integrate_group,
-                "kT": kT,
             },
         )
         if thermalize_particles:
@@ -605,7 +617,7 @@ class Simulation(hoomd.simulation.Simulation):
     def run_NVE(self, n_steps, write_at_start=True):
         """"""
         self.set_integrator_method(
-            integrator_method=hoomd.md.methods.NVE,
+            integrator_method=hoomd.md.methods.ConstantVolume,
             method_kwargs={"filter": self.integrate_group},
         )
         std_out_logger = StdOutLogger(n_steps=n_steps, sim=self)
