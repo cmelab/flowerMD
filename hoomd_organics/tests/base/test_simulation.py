@@ -355,3 +355,4 @@ class TestSimulate(BaseTest):
         assert sorted(expected_table_quantities) == sorted(table_keys)
 
         os.remove("trajectory.gsd")
+        os.remove("sim_data.txt")
