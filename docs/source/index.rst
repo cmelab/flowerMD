@@ -1,10 +1,6 @@
 Welcome to hoomd-organics's documentation!
 ==========================================
 
-.. automodule:: hoomd_organics
-    :members:
-    :undoc-members:
-
 .. toctree::
    :maxdepth: 1
    :caption: Contents:
