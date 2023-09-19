@@ -8,6 +8,7 @@ import numpy as np
 import unyt as u
 
 from hoomd_organics.utils import (
+    HOOMDThermostats,
     StdOutLogger,
     UpdateWalls,
     calculate_box_length,
@@ -95,6 +96,7 @@ class Simulation(hoomd.simulation.Simulation):
         self._create_state(self.initial_state)
         # Add a gsd and thermo props logger to sim operations
         self._add_hoomd_writers()
+        self._thermostat = HOOMDThermostats.BUSSI
 
     @classmethod
     def from_system(cls, system, **kwargs):
@@ -280,6 +282,20 @@ class Simulation(hoomd.simulation.Simulation):
                 "These will be set once one of the run functions "
                 "have been called for the first time."
             )
+
+    @property
+    def thermostat(self):
+        return self._thermostat
+
+    @thermostat.setter
+    def thermostat(self, thermostat):
+        if not issubclass(
+            self._thermostat, hoomd.md.methods.thermostats.Thermostat
+        ):
+            raise ValueError(
+                f"Invalid thermostat. Please choose from: {HOOMDThermostats}"
+            )
+        self._thermostat = thermostat
 
     def add_force(self, hoomd_force):
         """"""
