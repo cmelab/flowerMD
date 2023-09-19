@@ -31,6 +31,13 @@ class System(ABC):
     the list of HOOMD forces. These properties will be used to initialize the
     simulation object later.
 
+    System class is used to create a system of molecules and arrange them into
+    a box. If a force field is provided, the system will be parameterized.
+    Two important properties of the system are `hoomd_snapshot`, which is the
+    snapshot of the system in HOOMD format, and `hoomd_forcefield`, which is
+    the list of HOOMD forces. These properties will be used to initialize the
+    simulation object later.
+
     Parameters
     ----------
     molecules : hoomd_organics.Molecule or a list of Molecule objects; required
