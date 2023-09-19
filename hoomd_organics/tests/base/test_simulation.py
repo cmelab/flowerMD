@@ -98,7 +98,7 @@ class TestSimulate(BaseTest):
     def test_NVT(self, benzene_system):
         sim = Simulation.from_system(benzene_system)
         sim.run_NVT(kT=1.0, tau_kt=0.01, n_steps=500)
-        assert isinstance(sim.method, hoomd.md.methods.NVT)
+        assert isinstance(sim.method, hoomd.md.methods.ConstantVolume)
 
     def test_NPT(self, benzene_system):
         sim = Simulation.from_system(benzene_system)
@@ -109,17 +109,17 @@ class TestSimulate(BaseTest):
             tau_kt=0.001,
             tau_pressure=0.01,
         )
-        assert isinstance(sim.method, hoomd.md.methods.NPT)
+        assert isinstance(sim.method, hoomd.md.methods.ConstantPressure)
 
     def test_langevin(self, benzene_system):
         sim = Simulation.from_system(benzene_system)
-        sim.run_langevin(n_steps=500, kT=1.0, alpha=0.5)
+        sim.run_langevin(n_steps=500, kT=1.0)
         assert isinstance(sim.method, hoomd.md.methods.Langevin)
 
     def test_NVE(self, benzene_system):
         sim = Simulation.from_system(benzene_system)
         sim.run_NVE(n_steps=500)
-        assert isinstance(sim.method, hoomd.md.methods.NVE)
+        assert isinstance(sim.method, hoomd.md.methods.ConstantVolume)
 
     def test_displacement_cap(self, benzene_system):
         sim = Simulation.from_system(benzene_system)
@@ -206,11 +206,11 @@ class TestSimulate(BaseTest):
     def test_change_methods(self, benzene_system):
         sim = Simulation.from_system(benzene_system)
         sim.run_NVT(kT=1.0, tau_kt=0.01, n_steps=0)
-        assert isinstance(sim.method, hoomd.md.methods.NVT)
+        assert isinstance(sim.method, hoomd.md.methods.ConstantVolume)
         sim.run_NPT(
             kT=1.0, tau_kt=0.01, tau_pressure=0.1, pressure=0.001, n_steps=0
         )
-        assert isinstance(sim.method, hoomd.md.methods.NPT)
+        assert isinstance(sim.method, hoomd.md.methods.ConstantPressure)
 
     def test_change_dt(self, benzene_system):
         sim = Simulation.from_system(benzene_system)
