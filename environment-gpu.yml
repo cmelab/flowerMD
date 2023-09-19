@@ -4,6 +4,7 @@ channels:
 dependencies:
   - boltons
   - foyer
+  - fresnel
   - freud
   - gsd<3.0
   - hoomd=3.11=*gpu*
