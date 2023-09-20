@@ -124,7 +124,7 @@ class System(ABC):
         if self.remove_hydrogens:
             self._remove_hydrogens()
         self._hoomd_forcefield = (
-            self._create_hoomd_forcefield() if self._force_field else None
+            self._create_hoomd_forcefield() if self._force_field else [] 
         )
         self._hoomd_snapshot = self._create_hoomd_snapshot()
 
@@ -272,21 +272,18 @@ class System(ABC):
         return topology
 
     def _create_hoomd_forcefield(self):
-        if self._force_field:
-            force_list = []
-            ff, refs = to_hoomd_forcefield(
-                top=self.gmso_system,
-                r_cut=self.r_cut,
-                auto_scale=self.auto_scale,
-                base_units=self._reference_values
-                if self._reference_values
-                else None,
-            )
-            for force in ff:
-                force_list.extend(ff[force])
-            return force_list
-        else:
-            return []
+        force_list = []
+        ff, refs = to_hoomd_forcefield(
+            top=self.gmso_system,
+            r_cut=self.r_cut,
+            auto_scale=self.auto_scale,
+            base_units=self._reference_values
+            if self._reference_values
+            else None,
+        )
+        for force in ff:
+            force_list.extend(ff[force])
+        return force_list
 
     def _create_hoomd_snapshot(self):
         snap, refs = to_gsd_snapshot(
