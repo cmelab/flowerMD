@@ -227,7 +227,7 @@ class TestSystem(BaseTest):
         polyethylene = polyethylene(lengths=5, num_mols=5)
         system = Pack(
             molecules=[polyethylene],
-            force_field=[GAFF()],
+            force_field=[OPLS_AA()],
             density=1.0,
             r_cut=2.5,
             auto_scale=True,
@@ -246,7 +246,7 @@ class TestSystem(BaseTest):
         polyethylene = polyethylene(lengths=5, num_mols=5)
         system = Pack(
             molecules=[polyethylene],
-            force_field=[GAFF()],
+            force_field=[OPLS_AA()],
             density=1.0,
             r_cut=2.5,
             auto_scale=True,
@@ -262,13 +262,13 @@ class TestSystem(BaseTest):
         polyethylene = polyethylene(lengths=5, num_mols=5)
         system = Pack(
             molecules=[polyethylene],
-            force_field=[GAFF()],
+            force_field=[OPLS_AA()],
             density=1.0,
             r_cut=2.5,
             auto_scale=True,
         )
         assert np.allclose(
-            system.reference_energy.to("kcal/mol").value, 0.1094, atol=1e-3
+            system.reference_energy.to("kcal/mol").value, 0.066, atol=1e-3
         )
 
     def test_ref_values_no_autoscale(self, polyethylene):
