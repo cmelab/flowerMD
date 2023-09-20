@@ -739,7 +739,8 @@ class Simulation(hoomd.simulation.Simulation):
             filename=self.gsd_file_name,
             trigger=hoomd.trigger.Periodic(int(self.gsd_write_freq)),
             mode="wb",
-            dynamic=["momentum"],
+            dynamic=["momentum", "property"],
+            filter=self.integrate_group,
             logger=gsd_logger,
         )
 
