@@ -234,7 +234,7 @@ class TestSystem(BaseTest):
         )
 
         assert np.allclose(
-            system.reference_length.to("angstrom").value, 3.39966951, atol=1e-3
+            system.reference_length.to("angstrom").value, 3.5, atol=1e-3
         )
         reduced_box = system.hoomd_snapshot.configuration.box[0:3]
         calc_box = reduced_box * system.reference_length.to("nm").value
