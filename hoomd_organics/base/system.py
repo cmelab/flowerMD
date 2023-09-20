@@ -209,7 +209,7 @@ class System(ABC):
 
     @property
     def hoomd_forcefield(self):
-        if self._ff_refs != self.reference_values:
+        if self._ff_refs != self.reference_values and self._force_field:
             self._hoomd_forcefield = self._create_hoomd_forcefield()
         return self._hoomd_forcefield
 
