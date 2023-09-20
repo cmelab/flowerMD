@@ -121,6 +121,9 @@ class System(ABC):
         self.gmso_system = self._convert_to_gmso()
         if self._force_field:
             self._apply_forcefield()
+        if self.remove_hydrogens:
+            self._remove_hydrogens()
+        self._hoomd_forcefield = self._create_hoomd_forcefield() if self._force_field else None
         self._hoomd_snapshot = self._create_hoomd_snapshot()
 
     @abstractmethod
@@ -267,18 +270,21 @@ class System(ABC):
         return topology
 
     def _create_hoomd_forcefield(self):
-        force_list = []
-        ff, refs = to_hoomd_forcefield(
-            top=self.gmso_system,
-            r_cut=self.r_cut,
-            auto_scale=self.auto_scale,
-            base_units=self._reference_values
-            if self._reference_values
-            else None,
-        )
-        for force in ff:
-            force_list.extend(ff[force])
-        return force_list
+        if self._force_field:
+            force_list = []
+            ff, refs = to_hoomd_forcefield(
+                top=self.gmso_system,
+                r_cut=self.r_cut,
+                auto_scale=self.auto_scale,
+                base_units=self._reference_values
+                if self._reference_values
+                else None,
+            )
+            for force in ff:
+                force_list.extend(ff[force])
+            return force_list
+        else:
+            return []
 
     def _create_hoomd_snapshot(self):
         snap, refs = to_gsd_snapshot(
@@ -319,9 +325,6 @@ class System(ABC):
         self._reference_values["length"] = length_scale * sigmas[0].unit_array
         self._reference_values["mass"] = mass_scale * masses[0].unit_array
 
-        if self.remove_hydrogens:
-            self._remove_hydrogens()
-        self._hoomd_forcefield = self._create_hoomd_forcefield()
 
     def set_target_box(
         self, x_constraint=None, y_constraint=None, z_constraint=None
