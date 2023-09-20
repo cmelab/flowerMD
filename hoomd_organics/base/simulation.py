@@ -68,6 +68,7 @@ class Simulation(hoomd.simulation.Simulation):
         gsd_file_name="trajectory.gsd",
         log_write_freq=1e3,
         log_file_name="sim_data.txt",
+        thermostat=HOOMDThermostats.MTTK,
     ):
         super(Simulation, self).__init__(device, seed)
         self.initial_state = initial_state
@@ -97,7 +98,7 @@ class Simulation(hoomd.simulation.Simulation):
         self._create_state(self.initial_state)
         # Add a gsd and thermo props logger to sim operations
         self._add_hoomd_writers()
-        self._thermostat = HOOMDThermostats.BUSSI
+        self._thermostat = thermostat
 
     @classmethod
     def from_system(cls, system, **kwargs):
