@@ -6,12 +6,7 @@ import unyt as u
 from unyt import Unit
 
 from hoomd_organics import Lattice, Pack
-from hoomd_organics.library import (
-    GAFF,
-    OPLS_AA,
-    OPLS_AA_DIMETHYLETHER,
-    OPLS_AA_PPS,
-)
+from hoomd_organics.library import OPLS_AA, OPLS_AA_DIMETHYLETHER, OPLS_AA_PPS
 from hoomd_organics.tests import BaseTest
 from hoomd_organics.utils.exceptions import ReferenceUnitError
 
