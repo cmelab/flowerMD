@@ -266,6 +266,28 @@ class TestSystem(BaseTest):
             system.reference_energy.to("kcal/mol").value, 0.066, atol=1e-3
         )
 
+    def test_rebuild_snapshot(self, polyethylene):
+        polyethylene = polyethylene(lengths=5, num_mols=1)
+        system = Pack(
+            molecules=[polyethylene],
+            force_field=[OPLS_AA()],
+            density=1.0,
+            r_cut=2.5,
+            auto_scale=False,
+        )
+        assert system._snap_refs == system.reference_values
+        assert system._ff_refs == system.reference_values
+        init_snap = system.hoomd_snapshot
+        new_snap = system.hoomd_snapshot
+        assert init_snap == new_snap
+        system.reference_length = 1 * u.angstrom
+        system.reference_energy = 1 * u.kcal / u.mol
+        system.reference_mass = 1 * u.amu
+        assert system._snap_refs != system.reference_values
+        assert system._ff_refs != system.reference_values
+        new_snap = system.hoomd_snapshot
+        assert init_snap != new_snap
+
     def test_ref_values_no_autoscale(self, polyethylene):
         polyethylene = polyethylene(lengths=5, num_mols=1)
         system = Pack(
