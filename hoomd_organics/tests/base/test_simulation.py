@@ -309,6 +309,7 @@ class TestSimulate(BaseTest):
     def test_gsd_logger(self, benzene_system):
         sim = Simulation.from_system(benzene_system, gsd_write_freq=1)
         sim.run_NVT(n_steps=5, kT=1.0, tau_kt=0.001)
+        sim.operations.writers[-2].flush()
         expected_gsd_quantities = [
             "hoomd_organics/base/simulation/Simulation/timestep",
             "hoomd_organics/base/simulation/Simulation/tps",
