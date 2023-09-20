@@ -6,7 +6,7 @@ dependencies:
   - foyer
   - freud
   - gsd>=3.0
-  - hoomd=3.11=*gpu*
+  - hoomd=4.1=*gpu*
   - mbuild
   - numpy
   - openbabel
