@@ -7,7 +7,7 @@ dependencies:
   - fresnel
   - freud
   - gsd<3.0
-  - hoomd=3.11=*cpu*
+  - hoomd=4.1=*cpu*
   - mbuild
   - numpy
   - openbabel
