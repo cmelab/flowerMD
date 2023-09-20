@@ -90,4 +90,4 @@ class Tensile(Simulation):
         )
         self.operations.updaters.append(box_resizer)
         self.operations.updaters.append(particle_updater)
-        self.run_NVT(n_steps=n_steps+1, kT=kT, tau_kt=tau_kt)
+        self.run_NVT(n_steps=n_steps + 1, kT=kT, tau_kt=tau_kt)
