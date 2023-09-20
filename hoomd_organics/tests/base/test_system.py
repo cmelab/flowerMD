@@ -6,12 +6,7 @@ import unyt as u
 from unyt import Unit
 
 from hoomd_organics import Lattice, Pack
-from hoomd_organics.library import (
-    GAFF,
-    OPLS_AA,
-    OPLS_AA_DIMETHYLETHER,
-    OPLS_AA_PPS,
-)
+from hoomd_organics.library import OPLS_AA, OPLS_AA_DIMETHYLETHER, OPLS_AA_PPS
 from hoomd_organics.tests import BaseTest
 from hoomd_organics.utils.exceptions import ReferenceUnitError
 
@@ -227,14 +222,14 @@ class TestSystem(BaseTest):
         polyethylene = polyethylene(lengths=5, num_mols=5)
         system = Pack(
             molecules=[polyethylene],
-            force_field=[GAFF()],
+            force_field=[OPLS_AA()],
             density=1.0,
             r_cut=2.5,
             auto_scale=True,
         )
 
         assert np.allclose(
-            system.reference_length.to("angstrom").value, 3.39966951, atol=1e-3
+            system.reference_length.to("angstrom").value, 3.5, atol=1e-3
         )
         reduced_box = system.hoomd_snapshot.configuration.box[0:3]
         calc_box = reduced_box * system.reference_length.to("nm").value
@@ -246,7 +241,7 @@ class TestSystem(BaseTest):
         polyethylene = polyethylene(lengths=5, num_mols=5)
         system = Pack(
             molecules=[polyethylene],
-            force_field=[GAFF()],
+            force_field=[OPLS_AA()],
             density=1.0,
             r_cut=2.5,
             auto_scale=True,
@@ -262,14 +257,36 @@ class TestSystem(BaseTest):
         polyethylene = polyethylene(lengths=5, num_mols=5)
         system = Pack(
             molecules=[polyethylene],
-            force_field=[GAFF()],
+            force_field=[OPLS_AA()],
             density=1.0,
             r_cut=2.5,
             auto_scale=True,
         )
         assert np.allclose(
-            system.reference_energy.to("kcal/mol").value, 0.1094, atol=1e-3
+            system.reference_energy.to("kcal/mol").value, 0.066, atol=1e-3
         )
+
+    def test_rebuild_snapshot(self, polyethylene):
+        polyethylene = polyethylene(lengths=5, num_mols=1)
+        system = Pack(
+            molecules=[polyethylene],
+            force_field=[OPLS_AA()],
+            density=1.0,
+            r_cut=2.5,
+            auto_scale=False,
+        )
+        assert system._snap_refs == system.reference_values
+        assert system._ff_refs == system.reference_values
+        init_snap = system.hoomd_snapshot
+        new_snap = system.hoomd_snapshot
+        assert init_snap == new_snap
+        system.reference_length = 1 * u.angstrom
+        system.reference_energy = 1 * u.kcal / u.mol
+        system.reference_mass = 1 * u.amu
+        assert system._snap_refs != system.reference_values
+        assert system._ff_refs != system.reference_values
+        new_snap = system.hoomd_snapshot
+        assert init_snap != new_snap
 
     def test_ref_values_no_autoscale(self, polyethylene):
         polyethylene = polyethylene(lengths=5, num_mols=1)
