@@ -124,7 +124,7 @@ class System(ABC):
         if self.remove_hydrogens:
             self._remove_hydrogens()
         self._hoomd_forcefield = (
-            self._create_hoomd_forcefield() if self._force_field else [] 
+            self._create_hoomd_forcefield() if self._force_field else []
         )
         self._hoomd_snapshot = self._create_hoomd_snapshot()
 
