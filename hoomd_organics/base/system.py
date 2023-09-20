@@ -123,7 +123,9 @@ class System(ABC):
             self._apply_forcefield()
         if self.remove_hydrogens:
             self._remove_hydrogens()
-        self._hoomd_forcefield = self._create_hoomd_forcefield() if self._force_field else None
+        self._hoomd_forcefield = (
+            self._create_hoomd_forcefield() if self._force_field else None
+        )
         self._hoomd_snapshot = self._create_hoomd_snapshot()
 
     @abstractmethod
@@ -324,7 +326,6 @@ class System(ABC):
         self._reference_values["energy"] = energy_scale * epsilons[0].unit_array
         self._reference_values["length"] = length_scale * sigmas[0].unit_array
         self._reference_values["mass"] = mass_scale * masses[0].unit_array
-
 
     def set_target_box(
         self, x_constraint=None, y_constraint=None, z_constraint=None
