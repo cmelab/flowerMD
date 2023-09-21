@@ -5,7 +5,7 @@ dependencies:
   - boltons
   - foyer
   - freud>=2.13.1
-  - gsd<3.0
+  - gsd>=3.0
   - hoomd=4.1=*gpu*
   - mbuild
   - numpy
