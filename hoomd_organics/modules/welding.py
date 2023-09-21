@@ -1,12 +1,27 @@
+"""Module for simulating interfaces and welding."""
 import gsd.hoomd
 import hoomd
 import numpy as np
 
 from hoomd_organics.base.simulation import Simulation
+from hoomd_organics.utils import HOOMDThermostats
 
 
 class Interface:
-    """For simulating interfaces."""
+    """For creating an interface between two slabs.
+
+    Parameters
+    ----------
+    gsd_file : str
+        Path to gsd file containing the slab.
+    interface_axis : tuple
+        Axis along which the interface is to be created.
+    gap : float
+        Distance between the two slabs.
+    wall_sigma : float
+        Sigma parameter for the wall potential.
+
+    """
 
     def __init__(self, gsd_file, interface_axis, gap, wall_sigma=1.0):
         self.gsd_file = gsd_file
@@ -16,6 +31,7 @@ class Interface:
         self.hoomd_snapshot = self._build()
 
     def _build(self):
+        """Build the interface."""
         gsd_file = gsd.hoomd.open(self.gsd_file)
         snap = gsd_file[-1]
         gsd_file.close()
@@ -117,7 +133,22 @@ class Interface:
 
 
 class SlabSimulation(Simulation):
-    """For simulating slabs"""
+    """For simulating a slab.
+
+    Parameters
+    ----------
+    interface_axis : tuple, default=(1, 0, 0)
+        Axis along which the interface is to be created.
+    wall_sigma : float, default 1.0
+        Sigma parameter for the wall potential.
+    wall_epsilon : float, default 1.0
+        Epsilon parameter for the wall potential.
+    wall_r_cut : float, default 2.5
+        Cutoff radius for the wall potential.
+    wall_r_extrap : float, default 0
+        Extrapolation distance for the wall potential.
+
+    """
 
     def __init__(
         self,
@@ -134,6 +165,7 @@ class SlabSimulation(Simulation):
         gsd_file_name="trajectory.gsd",
         log_write_freq=1e3,
         log_file_name="log.txt",
+        thermostat=HOOMDThermostats.MTTK,
     ):
         super(SlabSimulation, self).__init__(
             initial_state=initial_state,
@@ -144,6 +176,7 @@ class SlabSimulation(Simulation):
             gsd_file_name=gsd_file_name,
             log_write_freq=log_write_freq,
             log_file_name=log_file_name,
+            thermostat=thermostat,
         )
         self.interface_axis = interface_axis
         # self._axis_index = np.where(interface_axis != 0)[0]
@@ -178,6 +211,7 @@ class WeldSimulation(Simulation):
         gsd_file_name="weld.gsd",
         log_write_freq=1e3,
         log_file_name="sim_data.txt",
+        thermostat=HOOMDThermostats.MTTK,
     ):
         super(WeldSimulation, self).__init__(
             initial_state=initial_state,
@@ -188,6 +222,7 @@ class WeldSimulation(Simulation):
             gsd_file_name=gsd_file_name,
             log_write_freq=log_write_freq,
             log_file_name=log_file_name,
+            thermostat=thermostat,
         )
         axis_dict = {"x": (1, 0, 0), "y": (0, 1, 0), "z": (0, 0, 1)}
         self.interface_axis = interface_axis.lower()
