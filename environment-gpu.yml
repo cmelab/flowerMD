@@ -4,7 +4,7 @@ channels:
 dependencies:
   - boltons
   - foyer
-  - freud
+  - freud>=2.13.1
   - gsd<3.0
   - hoomd=4.1=*gpu*
   - mbuild
