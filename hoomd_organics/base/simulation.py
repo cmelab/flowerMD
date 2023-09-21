@@ -50,6 +50,9 @@ class Simulation(hoomd.simulation.Simulation):
         Period to write simulation data to the log file.
     log_file_name : str, default "sim_data.txt"
         The file name to use for the .txt log file
+    thermostat : hoomd_organics.utils.HOOMDThermostats, default
+        HOOMDThermostats.MTTK
+        The thermostat to use for the simulation.
 
     """
 
@@ -389,10 +392,21 @@ class Simulation(hoomd.simulation.Simulation):
 
     @property
     def thermostat(self):
+        """The thermostat used for the simulation."""
         return self._thermostat
 
     @thermostat.setter
     def thermostat(self, thermostat):
+        """Set the thermostat used for the simulation.
+
+        The thermostat must be a selected from
+        `hoomd_organics.utils.HOOMDThermostats`.
+
+        Parameters
+        ----------
+        thermostat : hoomd_organics.utils.HOOMDThermostats; required
+            The type of thermostat to use.
+        """
         if not issubclass(
             self._thermostat, hoomd.md.methods.thermostats.Thermostat
         ):
@@ -474,7 +488,13 @@ class Simulation(hoomd.simulation.Simulation):
                 lj_forces.params[k]["sigma"] = sigma + shift_by
 
     def _initialize_thermostat(self, thermostat_kwargs):
-        """Initializes the thermostat used by the integrator."""
+        """Initialize the thermostat used by the simulation.
+
+        Parameters
+        ----------
+        thermostat_kwargs : dict; required
+            A dictionary of parameter:value for the thermostat.
+        """
         required_thermostat_kwargs = {}
         for k in inspect.signature(self.thermostat).parameters:
             if k not in thermostat_kwargs.keys():
