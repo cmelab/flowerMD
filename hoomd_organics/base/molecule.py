@@ -495,8 +495,7 @@ class CoPolymer(Molecule):
         Leave as None if generating random sequences.
         Example: sequence = "AABAABAAB"
     random_sequence : bool, default False
-        Creates a random 'A' 'B' sequence as a function
-        of the AB_ratio.
+        Creates a random 'A' 'B' sequence as a function of the AB_ratio.
     AB_ratio : float, default 0.50
         The relative weight of A to B monomer types.
         Used when generating random sequences.
