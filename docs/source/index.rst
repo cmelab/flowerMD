@@ -8,7 +8,6 @@ Welcome to hoomd-organics's documentation!
    molecule
    simulation
    system
-   utils
    welding
 
 

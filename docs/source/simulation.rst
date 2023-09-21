@@ -5,5 +5,5 @@ simulation
 
 .. rubric:: Details
 
-.. automodule:: hoomd_organics.base.system
+.. automodule:: hoomd_organics.base.simulation
     :members:

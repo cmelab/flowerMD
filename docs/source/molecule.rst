@@ -5,5 +5,9 @@ molecule
 
 .. rubric:: Details
 
-.. automodule:: hoomd_organics.base.molecule
+.. autoclass:: hoomd_organics.base.molecule.Molecule
     :members:
+
+.. autoclass:: hoomd_organics.base.molecule.Polymer
+
+.. autoclass:: hoomd_organics.base.molecule.CoPolymer
