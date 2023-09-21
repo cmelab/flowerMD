@@ -108,15 +108,24 @@ class Molecule:
         """Dictionary of topology information for the molecule.
 
         The dictionary contains the following keys:
-            particle_types: list of all particle types.
-            hydrogen_types: list of all hydrogen types.
-            particle_charge: list of all particle charges.
-            particle_typeid: list of all particle type indices.
-            pair_types: list of all unique particle pairs.
-            bond_types: list of all unique bond types.
-            angle_types: list of all unique angle types.
-            dihedral_types: list of all unique dihedral types.
-            improper_types: list of all unique improper types.
+
+            - `particle_types`: list of all particle types.
+
+            - `hydrogen_types`: list of all hydrogen types.
+
+            - `particle_charge`: list of all particle charges.
+
+            - `particle_typeid`: list of all particle type indices.
+
+            - `pair_types`: list of all unique particle pairs.
+
+            - `bond_types`: list of all unique bond types.
+
+            - `angle_types`: list of all unique angle types.
+
+            - `dihedral_types`: list of all unique dihedral types.
+
+            - `improper_types`: list of all unique improper types.
 
         """
         topology_information = dict()
@@ -393,7 +402,7 @@ class Molecule:
             _validate_hoomd_ff(self.force_field, self.topology_information)
             self.ff_type = FF_Types.Hoomd
 
-    def assign_mol_name(self, name):
+    def _assign_mol_name(self, name):
         """Assign a name to the molecule."""
         for mol in self.molecules:
             mol.name = name

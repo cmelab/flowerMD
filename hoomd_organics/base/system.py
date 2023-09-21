@@ -110,7 +110,7 @@ class System(ABC):
         for mol_item in self._molecules:
             if isinstance(mol_item, Molecule):
                 if self._force_field:
-                    mol_item.assign_mol_name(str(self.n_mol_types))
+                    mol_item._assign_mol_name(str(self.n_mol_types))
                 self.all_molecules.extend(mol_item.molecules)
                 # if ff is provided in Molecule class
                 if mol_item.force_field:
@@ -562,9 +562,10 @@ class Pack(System):
 
         In order to get the specified density there are two options:
 
-        #. set the `packing_expand_factor` to 1, which will not expand the box.
+        1. set the `packing_expand_factor` to 1, which will not expand the box.
         However, this may result in PACKMOL errors if the box is too small.
-        #. Update the box volume after creating the simulation object to the
+
+        2. Update the box volume after creating the simulation object to the
         target box length. This property is called `target_box`.
 
     """
