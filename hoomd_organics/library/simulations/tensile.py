@@ -16,7 +16,6 @@ class Tensile(Simulation):
     fix_ratio : float, default=0.20
         The ratio of the box length to fix at each end of the tensile axis.
 
-
     """
 
     def __init__(
@@ -73,12 +72,25 @@ class Tensile(Simulation):
 
     @property
     def strain(self):
+        """The current strain of the simulation."""
         delta_L = (
             self.box_lengths_reduced[self._axis_index] - self.initial_length
         )
         return delta_L / self.initial_length
 
-    def run_tensile(self, strain, kT, n_steps, period):
+    def run_tensile(self, strain, n_steps, period):
+        """Run a tensile test simulation.
+
+        Parameters
+        ----------
+        strain : float, required
+            The strain to apply to the simulation.
+        n_steps : int, required
+            The number of steps to run the simulation for.
+        period : int, required
+            The period of the strain application.
+
+        """
         current_length = self.box_lengths_reduced[self._axis_index]
         final_length = current_length * (1 + strain)
         final_box = np.copy(self.box_lengths_reduced)
