@@ -1,13 +1,21 @@
 molecule
 -----------
 
-.. py:currentmodule:hoomd_organics
+.. py:currentmodule:hoomd_organics.base.molecule
 
 .. rubric:: Details
 
-.. autoclass:: hoomd_organics.base.molecule.Molecule
-    :members:
+.. automodule:: hoomd_organics.base.molecule
+    :no-members:
 
-.. autoclass:: hoomd_organics.base.molecule.Polymer
+    .. autoclass:: Molecule()
+        :members:  molecules, mapping, n_particles, n_bonds, topology_information, coarse_grain
+        :no-index:
 
-.. autoclass:: hoomd_organics.base.molecule.CoPolymer
+    .. autoclass:: Polymer()
+        :members: monomer
+        :no-index:
+
+    .. autoclass:: CoPolymer()
+        :members: A_ratio, B_ratio
+        :no-index:

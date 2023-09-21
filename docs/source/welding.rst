@@ -1,7 +1,7 @@
 welding
 -------
 
-.. py:currentmodule:hoomd_organics
+.. py:currentmodule:hoomd_organics.modules
 
 .. rubric:: Details
 
