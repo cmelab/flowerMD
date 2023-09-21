@@ -30,7 +30,7 @@ class Simulation(hoomd.simulation.Simulation):
     initial_state : hoomd.snapshot.Snapshot or str, required
         A snapshot to initialize a simulation from, or a path
         to a GSD file to initialize a simulation from.
-    forcefield : List of HOOMD force objects, required
+    forcefield : List of hoomd.md.force.Force, required
         List of HOOMD force objects to add to the integrator.
     reference_values : dict, default {}
         A dictionary of reference values for mass, length, and energy.
