@@ -120,19 +120,14 @@ class BeadSpring:
     code can be used:
 
     ::
-        ff = BeadSpring(
-            r_cut=2.5,
-            beads={
-                "A": dict(epsilon=1.0, sigma=1.0),
-                "B": dict(epsilon=2.0, sigma=2.0),
-            },
-            bonds={
-                "A-A": dict(r0=1.1, k=300),
-                "A-B": dict(r0=1.1, k=300),
-            },
-            angles={"A-A-A": dict(t0=2.0, k=200), "A-B-A": dict(t0=2.0, k=200)},
-            dihedrals={"A-A-A-A": dict(phi0=0.0, k=100, d=-1, n=1)},
-        )
+
+        ff = BeadSpring(r_cut=2.5,
+                beads={"A": dict(epsilon=1.0, sigma=1.0),
+                       "B": dict(epsilon=2.0, sigma=2.0)},
+                bonds={"A-A": dict(r0=1.1, k=300), "A-B": dict(r0=1.1, k=300)},
+                angles={"A-A-A": dict(t0=2.0, k=200),
+                        "A-B-A": dict(t0=2.0, k=200)},
+                dihedrals={"A-A-A-A": dict(phi0=0.0, k=100, d=-1, n=1)})
 
     """
 
