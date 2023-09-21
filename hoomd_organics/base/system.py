@@ -1,3 +1,4 @@
+"""System class for arranging Molecules into a box."""
 import warnings
 from abc import ABC, abstractmethod
 from typing import List
@@ -40,31 +41,31 @@ class System(ABC):
 
     Parameters
     ----------
-    molecules : hoomd_organics.Molecule or a list of Molecule objects; required
+    molecules : hoomd_organics.Molecule or a list of Molecule objects, required
         The molecules to be placed in the system.
-    density : float; required
+    density : float, required
         The desired density of the system (g/cm^3). Used to set the
         target_box attribute. Can be useful when initializing
         systems at low denisty and running a shrink simulation
         to achieve a target density.
-    r_cut : float; required
+    r_cut : float, required
         The cutoff radius for the Lennard-Jones potential.
-    force_field : hoomd_organics.ForceField or a list of ForceField objects
-                ; optional, default=None
+    force_field : hoomd_organics.ForceField or a list of ForceField objects,
+                default=None
         The force field to be applied to the system for parameterization.
-    auto_scale : bool; optional, default=False
+    auto_scale : bool, default=False
         Set to true to use reduced simulation units.
         distance, mass, and energy are scaled by the largest value
         present in the system for each.
-    remove_hydrogens : bool; optional, default=False
+    remove_hydrogens : bool, default False
         Set to true to remove hydrogen atoms from the system.
         The masses and charges of the hydrogens are absorbed into
         the heavy atoms they were bonded to.
-    remove_charges : bool; optional, default=False
+    remove_charges : bool, default False
         Set to true to remove charges from the system.
-    scale_charges : bool; optional, default=False
+    scale_charges : bool, default False
         Set to true to scale charges to net zero.
-    base_units : dict; optional, default={}
+    base_units : dict, default {}
         Dictionary of base units to use for scaling.
         Dictionary keys are "length", "mass", and "energy". Values should be an
         unyt array of the desired base unit.
@@ -247,7 +248,7 @@ class System(ABC):
 
         Parameters
         ----------
-        length : string or unyt.unyt_quantity; required
+        length : string or unyt.unyt_quantity, required
             The reference length of the system.
             It can be provided in the following forms:
             1) A string with the format of "value unit", for example "1 nm".
@@ -264,7 +265,7 @@ class System(ABC):
 
         Parameters
         ----------
-        energy : string or unyt.unyt_quantity; required
+        energy : string or unyt.unyt_quantity, required
             The reference energy of the system.
             It can be provided in the following forms:
             1) A string with the format of "value unit", for example "1 kJ/mol".
@@ -281,7 +282,7 @@ class System(ABC):
 
         Parameters
         ----------
-        mass : string or unyt.unyt_quantity; required
+        mass : string or unyt.unyt_quantity, required
             The reference mass of the system.
             It can be provided in the following forms:
             1) A string with the format of "value unit", for example "1 amu".
@@ -298,7 +299,7 @@ class System(ABC):
 
         Parameters
         ----------
-        ref_value_dict : dict; required
+        ref_value_dict : dict, required
             A dictionary of reference values. The keys of the dictionary must
             be "length", "mass", and "energy". The values of the dictionary
             should follow the same format as the values of the reference
@@ -544,9 +545,9 @@ class Pack(System):
 
     Parameters
     ----------
-    packing_expand_factor : int; optional, default 5
+    packing_expand_factor : int, default 5
         The factor by which to expand the box for packing.
-    edge : float; optional, default 0.2
+    edge : float, default 0.2
         The space (nm) between the edge of the box and the molecules.
 
 
@@ -615,13 +616,13 @@ class Lattice(System):
 
     Parameters
     ----------
-    x : float; required
+    x : float, required
         The distance (nm) between lattice points in the x direction.
-    y : float; required
+    y : float, required
         The distance (nm) between lattice points in the y direction.
-    n : int; required
+    n : int, required
         The number of times to repeat the unit cell in x and y.
-    lattice_vector : array-like
+    basis_vector : array-like, default [0.5, 0.5, 0]
         The vector between points in the unit cell.
 
     """
