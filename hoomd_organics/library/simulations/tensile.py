@@ -1,11 +1,24 @@
+"""Tensile simulation class."""
 import hoomd
 import numpy as np
 
 from hoomd_organics.base.simulation import Simulation
-from hoomd_organics.utils.actions import PullParticles
+from hoomd_organics.utils import HOOMDThermostats, PullParticles
 
 
 class Tensile(Simulation):
+    """Tensile simulation class.
+
+    Parameters
+    ----------
+    tensile_axis : tuple of int, required
+        The axis along which to apply the tensile strain.
+    fix_ratio : float, default=0.20
+        The ratio of the box length to fix at each end of the tensile axis.
+
+
+    """
+
     def __init__(
         self,
         initial_state,
@@ -13,19 +26,21 @@ class Tensile(Simulation):
         tensile_axis,
         fix_ratio=0.20,
         r_cut=2.5,
+        reference_values=dict(),
         dt=0.0001,
         device=hoomd.device.auto_select(),
         seed=42,
-        restart=None,
         gsd_write_freq=1e4,
         gsd_file_name="trajectory.gsd",
         log_write_freq=1e3,
         log_file_name="log.txt",
+        thermostat=HOOMDThermostats.MTTK,
     ):
         super(Tensile, self).__init__(
             initial_state=initial_state,
             forcefield=forcefield,
             r_cut=r_cut,
+            reference_values=reference_values,
             dt=dt,
             device=device,
             seed=seed,
@@ -33,6 +48,7 @@ class Tensile(Simulation):
             gsd_file_name=gsd_file_name,
             log_write_freq=log_write_freq,
             log_file_name=log_file_name,
+            thermostat=thermostat,
         )
         self.tensile_axis = np.asarray(tensile_axis)
         self.fix_ratio = fix_ratio
