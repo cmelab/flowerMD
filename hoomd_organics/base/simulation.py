@@ -26,7 +26,7 @@ class Simulation(hoomd.simulation.Simulation):
 
     Parameters
     ----------
-    initial_state : gsd.hoomd.Snapshot or str
+    initial_state : gsd.hoomd.Frame or str
         A snapshot to initialize a simulation from, or a path
         to a GSD file to initialize a simulation from.
     forcefield : list
@@ -710,10 +710,12 @@ class Simulation(hoomd.simulation.Simulation):
             print("Initializing simulation state from a GSD file.")
             self.create_state_from_gsd(initial_state)
         elif isinstance(initial_state, hoomd.snapshot.Snapshot):
-            print("Initializing simulation state from a snapshot.")
+            print(
+                "Initializing simulation state from a hoomd.snapshot.Snapshot"
+            )
             self.create_state_from_snapshot(initial_state)
-        elif isinstance(initial_state, gsd.hoomd.Snapshot):
-            print("Initializing simulation state from a snapshot.")
+        elif isinstance(initial_state, gsd.hoomd.Frame):
+            print("Initializing simulation state from a gsd.hoomd.Frame.")
             self.create_state_from_snapshot(initial_state)
 
     def _add_hoomd_writers(self):
