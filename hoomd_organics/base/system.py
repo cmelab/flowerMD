@@ -66,7 +66,7 @@ class System(ABC):
         Set to true to scale charges to net zero.
     base_units : dict; optional, default={}
         Dictionary of base units to use for scaling.
-        Dictionary keys are "length", "mass", and "energy". Values should be a
+        Dictionary keys are "length", "mass", and "energy". Values should be an
         unyt array of the desired base unit.
 
     """
@@ -99,6 +99,9 @@ class System(ABC):
         self._hoomd_forcefield = []
         self._reference_values = base_units
         self._gmso_forcefields_dict = dict()
+        # Reference values used when last writing snapshot and forcefields
+        self._ff_refs = dict()
+        self._snap_refs = dict()
         self.gmso_system = None
 
         # Collecting all molecules
@@ -159,6 +162,10 @@ class System(ABC):
             self._apply_forcefield()
         if self.remove_hydrogens:
             self._remove_hydrogens()
+        self._hoomd_forcefield = (
+            self._create_hoomd_forcefield() if self._force_field else []
+        )
+        self._hoomd_snapshot = self._create_hoomd_snapshot()
 
     @abstractmethod
     def _build_system(self):
@@ -307,17 +314,16 @@ class System(ABC):
     @property
     def hoomd_snapshot(self):
         """The snapshot of the system in form of a HOOMD snapshot."""
-        self._hoomd_snapshot = self._create_hoomd_snapshot()
+        if self._snap_refs != self.reference_values:
+            self._hoomd_snapshot = self._create_hoomd_snapshot()
         return self._hoomd_snapshot
 
     @property
     def hoomd_forcefield(self):
         """List of HOOMD forces."""
-        if self._force_field:
+        if self._ff_refs != self.reference_values and self._force_field:
             self._hoomd_forcefield = self._create_hoomd_forcefield()
-            return self._hoomd_forcefield
-        else:
-            return self._hoomd_forcefield
+        return self._hoomd_forcefield
 
     @property
     def target_box(self):
@@ -418,6 +424,7 @@ class System(ABC):
         )
         for force in ff:
             force_list.extend(ff[force])
+        self._ff_refs = self._reference_values.copy()
         return force_list
 
     def _create_hoomd_snapshot(self):
@@ -429,6 +436,7 @@ class System(ABC):
             if self._reference_values
             else None,
         )
+        self._snap_refs = self._reference_values.copy()
         return snap
 
     def _apply_forcefield(self):
@@ -545,17 +553,18 @@ class Pack(System):
     .. warning::
 
         Note that the default `packing_expand_factor` for pack is 5, which means
-        that the box density will not be the same as the specified density. This is
-        because in some cases PACKMOL will not be able to fit all the molecules
-        into the box if the target box is too small, therefore, we need to expand
-        the box by a factor (default:5) to allow PACKMOL to fit all the molecules.
+        that the box density will not be the same as the specified density.
+        This is because in some cases PACKMOL will not be able to fit all the
+        molecules into the box if the target box is too small, therefore, we
+        need to expand the box by a factor (default:5) to allow PACKMOL to fit
+        all the molecules.
 
         In order to get the specified density there are two options:
 
-        #. set the `packing_expand_factor` to 1, which will not expand the box. \
+        #. set the `packing_expand_factor` to 1, which will not expand the box.
         However, this may result in PACKMOL errors if the box is too small.
-        #. Update the box volume after creating the simulation object to the target \
-        box length. This property is called `target_box`.
+        #. Update the box volume after creating the simulation object to the
+        target box length. This property is called `target_box`.
 
     """
 

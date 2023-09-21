@@ -2,6 +2,7 @@ import copy
 import os
 import pickle
 
+import gsd.hoomd
 import hoomd
 import numpy as np
 import pytest
@@ -98,7 +99,7 @@ class TestSimulate(BaseTest):
     def test_NVT(self, benzene_system):
         sim = Simulation.from_system(benzene_system)
         sim.run_NVT(kT=1.0, tau_kt=0.01, n_steps=500)
-        assert isinstance(sim.method, hoomd.md.methods.NVT)
+        assert isinstance(sim.method, hoomd.md.methods.ConstantVolume)
 
     def test_NPT(self, benzene_system):
         sim = Simulation.from_system(benzene_system)
@@ -109,17 +110,17 @@ class TestSimulate(BaseTest):
             tau_kt=0.001,
             tau_pressure=0.01,
         )
-        assert isinstance(sim.method, hoomd.md.methods.NPT)
+        assert isinstance(sim.method, hoomd.md.methods.ConstantPressure)
 
     def test_langevin(self, benzene_system):
         sim = Simulation.from_system(benzene_system)
-        sim.run_langevin(n_steps=500, kT=1.0, alpha=0.5)
+        sim.run_langevin(n_steps=500, kT=1.0)
         assert isinstance(sim.method, hoomd.md.methods.Langevin)
 
     def test_NVE(self, benzene_system):
         sim = Simulation.from_system(benzene_system)
         sim.run_NVE(n_steps=500)
-        assert isinstance(sim.method, hoomd.md.methods.NVE)
+        assert isinstance(sim.method, hoomd.md.methods.ConstantVolume)
 
     def test_displacement_cap(self, benzene_system):
         sim = Simulation.from_system(benzene_system)
@@ -206,11 +207,11 @@ class TestSimulate(BaseTest):
     def test_change_methods(self, benzene_system):
         sim = Simulation.from_system(benzene_system)
         sim.run_NVT(kT=1.0, tau_kt=0.01, n_steps=0)
-        assert isinstance(sim.method, hoomd.md.methods.NVT)
+        assert isinstance(sim.method, hoomd.md.methods.ConstantVolume)
         sim.run_NPT(
             kT=1.0, tau_kt=0.01, tau_pressure=0.1, pressure=0.001, n_steps=0
         )
-        assert isinstance(sim.method, hoomd.md.methods.NPT)
+        assert isinstance(sim.method, hoomd.md.methods.ConstantPressure)
 
     def test_change_dt(self, benzene_system):
         sim = Simulation.from_system(benzene_system)
@@ -304,3 +305,55 @@ class TestSimulate(BaseTest):
         )
         os.remove("forcefield.pickle")
         os.remove("restart.gsd")
+
+    def test_gsd_logger(self, benzene_system):
+        sim = Simulation.from_system(benzene_system, gsd_write_freq=1)
+        sim.run_NVT(n_steps=5, kT=1.0, tau_kt=0.001)
+        sim.operations.writers[-2].flush()
+        expected_gsd_quantities = [
+            "hoomd_organics/base/simulation/Simulation/timestep",
+            "hoomd_organics/base/simulation/Simulation/tps",
+            "md/compute/ThermodynamicQuantities/kinetic_temperature",
+            "md/compute/ThermodynamicQuantities/potential_energy",
+            "md/compute/ThermodynamicQuantities/kinetic_energy",
+            "md/compute/ThermodynamicQuantities/volume",
+            "md/compute/ThermodynamicQuantities/pressure",
+            "md/compute/ThermodynamicQuantities/pressure_tensor",
+            "md/pair/Ewald/energy",
+            "md/pair/LJ/energy",
+            "md/long_range/pppm/Coulomb/energy",
+            "md/special_pair/Coulomb/energy",
+            "md/special_pair/LJ/energy",
+            "md/bond/Harmonic/energy",
+            "md/angle/Harmonic/energy",
+            "md/dihedral/OPLS/energy",
+        ]
+
+        with gsd.hoomd.open("trajectory.gsd") as traj:
+            snap = traj[-1]
+            log_keys = list(snap.log.keys())
+
+        assert sorted(expected_gsd_quantities) == sorted(log_keys)
+        expected_table_quantities = [
+            "hoomd_organicsbasesimulationSimulationtimestep",
+            "hoomd_organicsbasesimulationSimulationtps",
+            "mdcomputeThermodynamicQuantitieskinetic_temperature",
+            "mdcomputeThermodynamicQuantitiespotential_energy",
+            "mdcomputeThermodynamicQuantitieskinetic_energy",
+            "mdcomputeThermodynamicQuantitiesvolume",
+            "mdcomputeThermodynamicQuantitiespressure",
+            "mdpairEwaldenergy",
+            "mdpairLJenergy",
+            "mdlong_rangepppmCoulombenergy",
+            "mdspecial_pairCoulombenergy",
+            "mdspecial_pairLJenergy",
+            "mdbondHarmonicenergy",
+            "mdangleHarmonicenergy",
+            "mddihedralOPLSenergy",
+        ]
+        table = np.genfromtxt("sim_data.txt", names=True)
+        table_keys = list(table.dtype.fields.keys())
+        assert sorted(expected_table_quantities) == sorted(table_keys)
+
+        os.remove("trajectory.gsd")
+        os.remove("sim_data.txt")

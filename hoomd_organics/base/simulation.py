@@ -1,4 +1,5 @@
 """Base simulation class for hoomd_organics."""
+import inspect
 import pickle
 import warnings
 
@@ -9,6 +10,7 @@ import numpy as np
 import unyt as u
 
 from hoomd_organics.utils import (
+    HOOMDThermostats,
     StdOutLogger,
     UpdateWalls,
     calculate_box_length,
@@ -25,7 +27,7 @@ class Simulation(hoomd.simulation.Simulation):
 
     Parameters
     ----------
-    initial_state : gsd.hoomd.Snapshot or str
+    initial_state : gsd.hoomd.Frame or str
         A snapshot to initialize a simulation from, or a path
         to a GSD file to initialize a simulation from.
     forcefield : List of HOOMD force objects, default None
@@ -64,6 +66,7 @@ class Simulation(hoomd.simulation.Simulation):
         gsd_file_name="trajectory.gsd",
         log_write_freq=1e3,
         log_file_name="sim_data.txt",
+        thermostat=HOOMDThermostats.MTTK,
     ):
         super(Simulation, self).__init__(device, seed)
         self.initial_state = initial_state
@@ -93,6 +96,7 @@ class Simulation(hoomd.simulation.Simulation):
         self._create_state(self.initial_state)
         # Add a gsd and thermo props logger to sim operations
         self._add_hoomd_writers()
+        self._thermostat = thermostat
 
     @classmethod
     def from_system(cls, system, **kwargs):
@@ -383,6 +387,20 @@ class Simulation(hoomd.simulation.Simulation):
                 "have been called for the first time."
             )
 
+    @property
+    def thermostat(self):
+        return self._thermostat
+
+    @thermostat.setter
+    def thermostat(self, thermostat):
+        if not issubclass(
+            self._thermostat, hoomd.md.methods.thermostats.Thermostat
+        ):
+            raise ValueError(
+                f"Invalid thermostat. Please choose from: {HOOMDThermostats}"
+            )
+        self._thermostat = thermostat
+
     def add_force(self, hoomd_force):
         """Add a force to the simulation.
 
@@ -454,6 +472,17 @@ class Simulation(hoomd.simulation.Simulation):
                 lj_forces.params[k]["sigma"] = sigma * scale_by
             elif shift_by:
                 lj_forces.params[k]["sigma"] = sigma + shift_by
+
+    def _initialize_thermostat(self, thermostat_kwargs):
+        """Initializes the thermostat used by the integrator."""
+        required_thermostat_kwargs = {}
+        for k in inspect.signature(self.thermostat).parameters:
+            if k not in thermostat_kwargs.keys():
+                raise ValueError(
+                    f"Missing required parameter {k} for thermostat."
+                )
+            required_thermostat_kwargs[k] = thermostat_kwargs[k]
+        return self.thermostat(**required_thermostat_kwargs)
 
     def set_integrator_method(self, integrator_method, method_kwargs):
         """Create an initial (or updates the existing) integrator method.
@@ -623,11 +652,12 @@ class Simulation(hoomd.simulation.Simulation):
         )
         self.operations.updaters.append(box_resizer)
         self.set_integrator_method(
-            integrator_method=hoomd.md.methods.NVT,
+            integrator_method=hoomd.md.methods.ConstantVolume,
             method_kwargs={
-                "tau": tau_kt,
+                "thermostat": self._initialize_thermostat(
+                    {"kT": kT, "tau": tau_kt}
+                ),
                 "filter": self.integrate_group,
-                "kT": kT,
             },
         )
         if thermalize_particles:
@@ -652,7 +682,6 @@ class Simulation(hoomd.simulation.Simulation):
         self,
         n_steps,
         kT,
-        alpha,
         tally_reservoir_energy=False,
         default_gamma=1.0,
         default_gamma_r=(1.0, 1.0, 1.0),
@@ -693,7 +722,6 @@ class Simulation(hoomd.simulation.Simulation):
             method_kwargs={
                 "filter": self.integrate_group,
                 "kT": kT,
-                "alpha": alpha,
                 "tally_reservoir_energy": tally_reservoir_energy,
                 "default_gamma": default_gamma,
                 "default_gamma_r": default_gamma_r,
@@ -760,18 +788,18 @@ class Simulation(hoomd.simulation.Simulation):
 
         """
         self.set_integrator_method(
-            integrator_method=hoomd.md.methods.NPT,
+            integrator_method=hoomd.md.methods.ConstantPressure,
             method_kwargs={
-                "kT": kT,
                 "S": pressure,
-                "tau": tau_kt,
                 "tauS": tau_pressure,
                 "couple": couple,
                 "box_dof": box_dof,
                 "rescale_all": rescale_all,
                 "gamma": gamma,
                 "filter": self.integrate_group,
-                "kT": kT,
+                "thermostat": self._initialize_thermostat(
+                    {"kT": kT, "tau": tau_kt}
+                ),
             },
         )
         if thermalize_particles:
@@ -816,11 +844,12 @@ class Simulation(hoomd.simulation.Simulation):
 
         """
         self.set_integrator_method(
-            integrator_method=hoomd.md.methods.NVT,
+            integrator_method=hoomd.md.methods.ConstantVolume,
             method_kwargs={
-                "tau": tau_kt,
+                "thermostat": self._initialize_thermostat(
+                    {"kT": kT, "tau": tau_kt}
+                ),
                 "filter": self.integrate_group,
-                "kT": kT,
             },
         )
         if thermalize_particles:
@@ -852,7 +881,7 @@ class Simulation(hoomd.simulation.Simulation):
 
         """
         self.set_integrator_method(
-            integrator_method=hoomd.md.methods.NVE,
+            integrator_method=hoomd.md.methods.ConstantVolume,
             method_kwargs={"filter": self.integrate_group},
         )
         std_out_logger = StdOutLogger(n_steps=n_steps, sim=self)
@@ -1057,31 +1086,41 @@ class Simulation(hoomd.simulation.Simulation):
             print("Initializing simulation state from a GSD file.")
             self.create_state_from_gsd(initial_state)
         elif isinstance(initial_state, hoomd.snapshot.Snapshot):
-            print("Initializing simulation state from a snapshot.")
+            print(
+                "Initializing simulation state from a hoomd.snapshot.Snapshot"
+            )
             self.create_state_from_snapshot(initial_state)
-        elif isinstance(initial_state, gsd.hoomd.Snapshot):
-            print("Initializing simulation state from a snapshot.")
+        elif isinstance(initial_state, gsd.hoomd.Frame):
+            print("Initializing simulation state from a gsd.hoomd.Frame.")
             self.create_state_from_snapshot(initial_state)
 
     def _add_hoomd_writers(self):
         """Create gsd and log writers."""
-        gsd_writer = hoomd.write.GSD(
-            filename=self.gsd_file_name,
-            trigger=hoomd.trigger.Periodic(int(self.gsd_write_freq)),
-            mode="wb",
-            dynamic=["momentum"],
+        gsd_logger = hoomd.logging.Logger(
+            categories=["scalar", "string", "sequence"]
         )
-
         logger = hoomd.logging.Logger(categories=["scalar", "string"])
+        gsd_logger.add(self, quantities=["timestep", "tps"])
         logger.add(self, quantities=["timestep", "tps"])
         thermo_props = hoomd.md.compute.ThermodynamicQuantities(
             filter=self.integrate_group
         )
         self.operations.computes.append(thermo_props)
+        gsd_logger.add(thermo_props, quantities=self.log_quantities)
         logger.add(thermo_props, quantities=self.log_quantities)
 
         for f in self._forcefield:
             logger.add(f, quantities=["energy"])
+            gsd_logger.add(f, quantities=["energy"])
+
+        gsd_writer = hoomd.write.GSD(
+            filename=self.gsd_file_name,
+            trigger=hoomd.trigger.Periodic(int(self.gsd_write_freq)),
+            mode="wb",
+            dynamic=["momentum", "property"],
+            filter=hoomd.filter.All(),
+            logger=gsd_logger,
+        )
 
         table_file = hoomd.write.Table(
             output=open(self.log_file_name, mode="w", newline="\n"),
