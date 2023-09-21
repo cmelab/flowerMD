@@ -2,13 +2,12 @@ Welcome to hoomd-organics's documentation!
 ==========================================
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
    :caption: Contents:
 
-   molecule
-   simulation
-   system
-   welding
+   base
+   modules
+   library
 
 
 
