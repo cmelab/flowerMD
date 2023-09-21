@@ -27,10 +27,10 @@ class Simulation(hoomd.simulation.Simulation):
 
     Parameters
     ----------
-    initial_state : gsd.hoomd.Frame or str
+    initial_state : hoomd.snapshot.Snapshot or str, required
         A snapshot to initialize a simulation from, or a path
         to a GSD file to initialize a simulation from.
-    forcefield : List of HOOMD force objects, default None
+    forcefield : List of HOOMD force objects, required
         List of HOOMD force objects to add to the integrator.
     reference_values : dict, default {}
         A dictionary of reference values for mass, length, and energy.
@@ -59,7 +59,7 @@ class Simulation(hoomd.simulation.Simulation):
     def __init__(
         self,
         initial_state,
-        forcefield=None,
+        forcefield,
         reference_values=dict(),
         r_cut=2.5,
         dt=0.0001,
@@ -107,7 +107,7 @@ class Simulation(hoomd.simulation.Simulation):
 
         Parameters
         ----------
-        system : hoomd_organics.base.System; required
+        system : hoomd_organics.base.System, required
             A `hoomd_organics.base.System` object.
 
         """
@@ -178,7 +178,7 @@ class Simulation(hoomd.simulation.Simulation):
 
         Parameters
         ----------
-        length : string or unyt.unyt_quantity; required
+        length : string or unyt.unyt_quantity, required
             The reference length of the system.
             It can be provided in the following forms:
             1) A string with the format of "value unit", for example "1 nm".
@@ -195,7 +195,7 @@ class Simulation(hoomd.simulation.Simulation):
 
         Parameters
         ----------
-        energy : string or unyt.unyt_quantity; required
+        energy : string or unyt.unyt_quantity, required
             The reference energy of the system.
             It can be provided in the following forms:
             1) A string with the format of "value unit", for example "1 kJ/mol".
@@ -212,7 +212,7 @@ class Simulation(hoomd.simulation.Simulation):
 
         Parameters
         ----------
-        mass : string or unyt.unyt_quantity; required
+        mass : string or unyt.unyt_quantity, required
             The reference mass of the system.
             It can be provided in the following forms:
             1) A string with the format of "value unit", for example "1 amu".
@@ -229,7 +229,7 @@ class Simulation(hoomd.simulation.Simulation):
 
         Parameters
         ----------
-        ref_value_dict : dict; required
+        ref_value_dict : dict, required
             A dictionary of reference values. The keys of the dictionary must
             be "length", "mass", and "energy". The values of the dictionary
             should follow the same format as the values of the reference
@@ -321,9 +321,9 @@ class Simulation(hoomd.simulation.Simulation):
 
         Parameters
         ----------
-        hoomd_nlist : hoomd.md.nlist.NeighborList; required
+        hoomd_nlist : hoomd.md.nlist.NeighborList, required
             The neighbor list to use.
-        buffer : float; optional default 0.4
+        buffer : float,  default 0.4
             The buffer width to use for the neighbor list.
 
         """
@@ -404,7 +404,7 @@ class Simulation(hoomd.simulation.Simulation):
 
         Parameters
         ----------
-        thermostat : hoomd_organics.utils.HOOMDThermostats; required
+        thermostat : hoomd_organics.utils.HOOMDThermostats, required
             The type of thermostat to use.
         """
         if not issubclass(
@@ -420,7 +420,7 @@ class Simulation(hoomd.simulation.Simulation):
 
         Parameters
         ----------
-        hoomd_force : hoomd.md.force.Force; required
+        hoomd_force : hoomd.md.force.Force, required
             The force to add to the simulation.
 
         """
@@ -433,7 +433,7 @@ class Simulation(hoomd.simulation.Simulation):
 
         Parameters
         ----------
-        hoomd_force : hoomd.md.force.Force; required
+        hoomd_force : hoomd.md.force.Force, required
             The force to remove from the simulation.
 
         """
@@ -446,11 +446,11 @@ class Simulation(hoomd.simulation.Simulation):
 
         Parameters
         ----------
-        scale_by : float; optional
+        scale_by : float, default None
             The factor to scale epsilon by.
-        shift_by : float; optional
+        shift_by : float, default None
             The amount to shift epsilon by.
-        type_filter : list of str; optional
+        type_filter : list of str, default None
             A list of particle pair types to apply the adjustment to.
 
         """
@@ -469,11 +469,11 @@ class Simulation(hoomd.simulation.Simulation):
 
         Parameters
         ----------
-        scale_by : float; optional
+        scale_by : float, default None
             The factor to scale sigma by.
-        shift_by : float; optional
+        shift_by : float, default None
             The amount to shift sigma by.
-        type_filter : list of str; optional
+        type_filter : list of str, default None
             A list of particle pair types to apply the adjustment to.
 
         """
@@ -492,7 +492,7 @@ class Simulation(hoomd.simulation.Simulation):
 
         Parameters
         ----------
-        thermostat_kwargs : dict; required
+        thermostat_kwargs : dict, required
             A dictionary of parameter:value for the thermostat.
         """
         required_thermostat_kwargs = {}
@@ -513,9 +513,9 @@ class Simulation(hoomd.simulation.Simulation):
 
         Parameters
         ----------
-        integrrator_method : hoomd.md.method; required
+        integrrator_method : hoomd.md.method, required
             Instance of one of the `hoomd.md.method` options.
-        method_kwargs : dict; required
+        method_kwargs : dict, required
             A diction of parameter:value for the integrator method used.
 
         """
@@ -535,15 +535,15 @@ class Simulation(hoomd.simulation.Simulation):
 
         Parameters
         ----------
-        wall_axis : np.ndarray, shape=(3,), dtype=float; required
+        wall_axis : np.ndarray, shape=(3,), dtype=float, required
             The axis of the wall in (x, y, z) order.
-        sigma : float; required
+        sigma : float, required
             The sigma parameter of the LJ wall.
-        epsilon : float; required
+        epsilon : float, required
             The epsilon parameter of the LJ wall.
-        r_cut : float; required
+        r_cut : float, required
             The cutoff radius of the LJ wall.
-        r_extrap : float; optional default 0
+        r_extrap : float, default 0
             The extrapolation radius of the LJ wall.
 
         """
@@ -577,7 +577,7 @@ class Simulation(hoomd.simulation.Simulation):
 
         Parameters
         ----------
-        wall_axis : np.ndarray, shape=(3,), dtype=float; required
+        wall_axis : np.ndarray, shape=(3,), dtype=float, required
             The axis of the wall in (x, y, z) order.
 
         """
@@ -608,15 +608,15 @@ class Simulation(hoomd.simulation.Simulation):
             Number of steps to run during volume update.
         period : int, required
             The number of steps ran between each box update iteration.
-        kT : int or hoomd.variant.Ramp; required
+        kT : int or hoomd.variant.Ramp, required
             The temperature to use during volume update.
-        tau_kt : float; required
+        tau_kt : float, required
             Thermostat coupling period (in simulation time units).
-        final_box_lengths : np.ndarray, shape=(3,), dtype=float; optional
+        final_box_lengths : np.ndarray, shape=(3,), dtype=float, default None
             The final box edge lengths in (x, y, z) order.
-        final_density : float; optional
+        final_density : float, default None
             The final density of the simulation in g/cm^3.
-        write_at_start : bool; optional default True
+        write_at_start : bool, default True
             When set to True, triggers writers that evaluate to True
             for the initial step to execute before the next simulation
             time step.
@@ -714,27 +714,21 @@ class Simulation(hoomd.simulation.Simulation):
         ----------
         n_steps : int, required
             Number of steps to run the simulation.
-        kT : int or hoomd.variant.Ramp; required
+        kT : int or hoomd.variant.Ramp, required
             The temperature to use during the simulation.
-        alpha : float; required
-            This parameter will be removed when updating to HOOMD 4.0
-        tally_reservoir_energy : bool; optional default False
+        tally_reservoir_energy : bool, default False
             When set to True, energy exchange between the thermal reservoir
              and the particles is tracked.
-        default_gamma : float; optional default 1.0
+        default_gamma : float, default 1.0
             The default drag coefficient to use for all particles.
-        default_gamma_r : tuple of floats; optional default (1.0, 1.0, 1.0)
+        default_gamma_r : tuple of floats, default (1.0, 1.0, 1.0)
             The default rotational drag coefficient to use for all particles.
-        thermalize_particles : bool; optional default True
+        thermalize_particles : bool, default True
             When set to True, assigns random velocities to all particles.
-        write_at_start : bool; optional default True
+        write_at_start : bool, default True
             When set to True, triggers writers that evaluate to True
             for the initial step to execute before the next simulation
             time step.
-
-        Warnings
-        --------
-        This docstring needs to be updated when updating to HOOMD 4.0.
 
         """
         self.set_integrator_method(
@@ -778,33 +772,29 @@ class Simulation(hoomd.simulation.Simulation):
         ----------
         n_steps: int, required
             Number of steps to run the simulation.
-        kT: int or hoomd.variant.Ramp; required
+        kT: int or hoomd.variant.Ramp, required
             The temperature to use during the simulation.
-        pressure: int or hoomd.variant.Ramp; required
+        pressure: int or hoomd.variant.Ramp, required
             The pressure to use during the simulation.
-        tau_kt: float; required
+        tau_kt: float, required
             Thermostat coupling period (in simulation time units).
-        tau_pressure: float; required
+        tau_pressure: float, required
             Barostat coupling period.
-        couple: str; optional default "xyz"
+        couple: str, default "xyz"
             Couplings of diagonal elements of the stress tensor/
         box_dof: list of bool;
                 optional default [True, True, True, False, False, False]
             Degrees of freedom of the box.
-        rescale_all: bool; optional default False
+        rescale_all: bool, default False
             Rescale all particles, not just those in the group.
-        gamma: float; optional default 0.0
+        gamma: float, default 0.0
             Friction constant for the box degrees of freedom,
-        thermalize_particles: bool; optional default True
+        thermalize_particles: bool, default True
             When set to True, assigns random velocities to all particles.
-        write_at_start : bool; optional default True
+        write_at_start : bool, default True
             When set to True, triggers writers that evaluate to True
             for the initial step to execute before the next simulation
             time step.
-
-        Warnings
-        --------
-        This docstring needs to be updated when updating to HOOMD 4.0.
 
         """
         self.set_integrator_method(
@@ -847,20 +837,16 @@ class Simulation(hoomd.simulation.Simulation):
         ----------
         n_steps: int, required
             Number of steps to run the simulation.
-        kT: int or hoomd.variant.Ramp; required
+        kT: int or hoomd.variant.Ramp, required
             The temperature to use during the simulation.
-        tau_kt: float; required
+        tau_kt: float, required
             Thermostat coupling period (in simulation time units).
-        thermalize_particles: bool; optional default True
+        thermalize_particles: bool, default True
             When set to True, assigns random velocities to all particles.
-        write_at_start : bool; optional default True
+        write_at_start : bool, default True
             When set to True, triggers writers that evaluate to True
             for the initial step to execute before the next simulation
             time step.
-
-        Warnings
-        --------
-        This docstring needs to be updated when updating to HOOMD 4.0.
 
         """
         self.set_integrator_method(
@@ -890,14 +876,10 @@ class Simulation(hoomd.simulation.Simulation):
         ----------
         n_steps: int, required
             Number of steps to run the simulation.
-        write_at_start : bool; optional default True
+        write_at_start : bool, default True
             When set to True, triggers writers that evaluate to True
             for the initial step to execute before the next simulation
             time step.
-
-        Warnings
-        --------
-        This docstring needs to be updated when updating to HOOMD 4.0.
 
         """
         self.set_integrator_method(
@@ -931,10 +913,10 @@ class Simulation(hoomd.simulation.Simulation):
         ----------
         n_steps : int, required
             Number of steps to run the simulation.
-        maximum_displacement : float; optional default 1e-3
+        maximum_displacement : float, default 1e-3
             Maximum displacement per step (length)
 
-        write_at_start : bool; optional default True
+        write_at_start : bool, default True
             When set to True, triggers writers that evaluate to True
             for the initial step to execute before the next simulation
             time step.
@@ -961,11 +943,11 @@ class Simulation(hoomd.simulation.Simulation):
 
         Parameters
         ----------
-        n_steps : int; required
+        n_steps : int, required
             The number of steps to ramp the temperature over.
-        kT_start : float; required
+        kT_start : float, required
             The starting temperature.
-        kT_final : float; required
+        kT_final : float, required
             The final temperature.
 
         """
@@ -982,7 +964,7 @@ class Simulation(hoomd.simulation.Simulation):
 
         Parameters
         ----------
-        file_path : str; optional default "forcefield.pickle"
+        file_path : str, default "forcefield.pickle"
             The path to save the pickle file to.
 
         Examples
@@ -1026,7 +1008,7 @@ class Simulation(hoomd.simulation.Simulation):
 
         Parameters
         ----------
-        file_path : str; optional default "restart.gsd"
+        file_path : str, default "restart.gsd"
             The path to save the GSD file to.
 
         Examples
@@ -1066,7 +1048,7 @@ class Simulation(hoomd.simulation.Simulation):
 
         Parameters
         ----------
-        kT : float or hoomd.variant.Ramp; required
+        kT : float or hoomd.variant.Ramp, required
             The temperature to use during the thermalization.
 
         """
