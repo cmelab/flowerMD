@@ -1,3 +1,4 @@
+"""All pre-defined forcefield classes for use in hoomd_organics."""
 import itertools
 
 import forcefield_utilities as ffutils
@@ -8,6 +9,8 @@ from hoomd_organics.assets import FF_DIR
 
 
 class GAFF(foyer.Forcefield):
+    """GAFF forcefield class."""
+
     def __init__(self, forcefield_files=f"{FF_DIR}/gaff.xml"):
         super(GAFF, self).__init__(forcefield_files=forcefield_files)
         self.description = (
@@ -19,6 +22,8 @@ class GAFF(foyer.Forcefield):
 
 
 class OPLS_AA(foyer.Forcefield):
+    """OPLS All Atom forcefield class."""
+
     def __init__(self, name="oplsaa"):
         super(OPLS_AA, self).__init__(name=name)
         self.description = "opls-aa forcefield found in the Foyer package."
@@ -26,6 +31,8 @@ class OPLS_AA(foyer.Forcefield):
 
 
 class OPLS_AA_PPS(foyer.Forcefield):
+    """OPLS All Atom for PPS molecule forcefield class."""
+
     def __init__(self, forcefield_files=f"{FF_DIR}/pps_opls.xml"):
         super(OPLS_AA_PPS, self).__init__(forcefield_files=forcefield_files)
         self.description = (
@@ -41,6 +48,8 @@ class OPLS_AA_PPS(foyer.Forcefield):
 
 
 class OPLS_AA_BENZENE(foyer.Forcefield):
+    """OPLS All Atom for benzene molecule forcefield class."""
+
     def __init__(self, forcefield_files=f"{FF_DIR}/benzene_opls.xml"):
         super(OPLS_AA_BENZENE, self).__init__(forcefield_files=forcefield_files)
         self.description = (
@@ -51,6 +60,8 @@ class OPLS_AA_BENZENE(foyer.Forcefield):
 
 
 class OPLS_AA_DIMETHYLETHER(foyer.Forcefield):
+    """OPLS All Atom for dimethyl ether molecule forcefield class."""
+
     def __init__(self, forcefield_files=f"{FF_DIR}/dimethylether_opls.xml"):
         super(OPLS_AA_DIMETHYLETHER, self).__init__(
             forcefield_files=forcefield_files
@@ -63,12 +74,68 @@ class OPLS_AA_DIMETHYLETHER(foyer.Forcefield):
 
 
 class FF_from_file(foyer.Forcefield):
+    """Forcefield class for loading a forcefield from an XML file."""
+
     def __init__(self, xml_file):
         super(FF_from_file, self).__init__(forcefield_files=xml_file)
         self.gmso_ff = ffutils.FoyerFFs().load(xml_file).to_gmso_ff()
 
 
 class BeadSpring:
+    """Bead-spring forcefield class.
+
+    Given a dictionary of bead types, this class creates a list
+    `hoomd.md.force.Force` objects to capture bonded and non-bonded
+    interactions between the beads.
+    For non-bonded interactions, a Lennard-Jones potential is used.
+    For bonds and angles, a harmonic potential is used.
+    For dihedrals, a periodic potential is used.
+
+    Parameters
+    ----------
+    r_cut : float, required
+        The cutoff radius for the LJ potential.
+    beads : dict, required
+        A dictionary of bead types. Each bead type should be a dictionary with
+        the keys "epsilon" and "sigma" that correspond to the LJ parameters.
+    bonds : dict, default None
+        A dictionary of bond types separated by a dash. Each bond type should
+        be a dictionary with the keys "r0" and "k" that correspond to the
+        harmonic bond parameters.
+    angles : dict, default None
+        A dictionary of angle types separated by a dash. Each angle type should
+        be a dictionary with the keys "t0" and "k" that correspond to the
+        harmonic angle parameters.
+    dihedrals : dict, default None
+        A dictionary of dihedral types separated by a dash. Each dihedral type
+        should be a dictionary with the keys "phi0", "k", "d", and "n" that
+        correspond to the periodic dihedral parameters.
+    exclusions : list, default ["bond", "1-3"]
+        A list of exclusions to use in the neighbor list. The default is to
+        exclude bonded and 1-3 interactions.
+
+    Examples
+    --------
+    For a simple bead-spring model with two bead types A and B, the following
+    code can be used:
+
+    ::
+        ff = BeadSpring(
+            r_cut=2.5,
+            beads={
+                "A": dict(epsilon=1.0, sigma=1.0),
+                "B": dict(epsilon=2.0, sigma=2.0),
+            },
+            bonds={
+                "A-A": dict(r0=1.1, k=300),
+                "A-B": dict(r0=1.1, k=300),
+            },
+            angles={"A-A-A": dict(t0=2.0, k=200), "A-B-A": dict(t0=2.0, k=200)},
+            dihedrals={"A-A-A-A": dict(phi0=0.0, k=100, d=-1, n=1)},
+        )
+
+    """
+
     def __init__(
         self,
         r_cut,
@@ -87,6 +154,7 @@ class BeadSpring:
         self.hoomd_forcefield = self._create_forcefield()
 
     def _create_forcefield(self):
+        """Create the hoomd force objects."""
         forces = []
         # Create pair force:
         nlist = hoomd.md.nlist.Cell(buffer=0.40, exclusions=self.exclusions)
