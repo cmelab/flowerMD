@@ -30,19 +30,19 @@ class Molecule:
 
     Parameters
     ----------
-    num_mols : int; required
+    num_mols : int, required
         Number of molecules to generate.
-    force_field : str; optional; default None
+    force_field : str, default None
         The force field to apply to the molecule.
         Note that setting force_field will not apply the forcefield to the
         molecule. The forcefield in this step is just used for validation
         purposes.
-    smiles : str; optional; default None
+    smiles : str, default None
         The smiles string of the molecule to generate.
-    file : str; optional; default None
+    file : str, default None
         The file path to the molecule to generate.
         Supported file types are: .mol2, .pdb, .sdf
-    compound : mbuild Compound or GMSO Topology; optional; default None
+    compound : mbuild Compound or GMSO Topology, default None
         The mbuild Compound or GMSO Topology of the molecule to generate.
 
     Notes
@@ -136,7 +136,7 @@ class Molecule:
 
         Parameters
         ----------
-        beads : dict; optional; default None
+        beads : dict, default None
             A dictionary of bead names and their corresponding SMILES string.
 
         Examples
@@ -216,7 +216,7 @@ class Molecule:
 
         Parameters
         ----------
-        gmso_molecule : GMSO Topology; required
+        gmso_molecule : GMSO Topology, required
             The GMSO topology of the molecule.
 
         """
@@ -244,7 +244,7 @@ class Molecule:
 
         Parameters
         ----------
-        particle_types : list; required
+        particle_types : list, required
             List of all particle types.
 
         """
@@ -257,7 +257,7 @@ class Molecule:
 
         Parameters
         ----------
-        gmso_molecule : GMSO Topology; required
+        gmso_molecule : GMSO Topology, required
             The GMSO topology of the molecule.
 
         """
@@ -280,7 +280,7 @@ class Molecule:
 
         Parameters
         ----------
-        gmso_molecule : GMSO Topology; required
+        gmso_molecule : GMSO Topology, required
             The GMSO topology of the molecule.
 
         """
@@ -307,7 +307,7 @@ class Molecule:
 
         Parameters
         ----------
-        gmso_molecule : GMSO Topology; required
+        gmso_molecule : GMSO Topology, required
             The GMSO topology of the molecule.
 
         """
@@ -338,7 +338,7 @@ class Molecule:
 
         Parameters
         ----------
-        gmso_molecule : GMSO Topology; required
+        gmso_molecule : GMSO Topology, required
             The GMSO topology of the molecule.
 
         """
@@ -369,7 +369,7 @@ class Molecule:
 
         Parameters
         ----------
-        gmso_molecule : GMSO Topology; required
+        gmso_molecule : GMSO Topology, required
             The GMSO topology of the molecule.
 
         """
@@ -410,21 +410,21 @@ class Polymer(Molecule):
 
     Parameters
     ----------
-    lengths : int; required
+    lengths : int, required
         The total number of monomers in each chain.
-    num_mols : int; required
+    num_mols : int, required
         Number of chains to generate.
-    smiles : str; optional; default None
+    smiles : str, default None
         The smiles string of the monomer to generate.
-    file : str; optional; default None
+    file : str, default None
         The file path to the monomer to generate.
-    force_field : str; optional; default None
+    force_field : str, default None
         The force field to apply to the molecule.
-    bond_indices: list; optional; default None
+    bond_indices: list, default None
         The indices of the atoms to bond.
-    bond_length: float; optional; default None
+    bond_length: float, default None
         The bond length between connected atoms (units: nm)
-    bond_orientation: list; optional; default None
+    bond_orientation: list, default None
         The orientation of the bond between connected atoms.
 
     """
@@ -484,23 +484,23 @@ class CoPolymer(Molecule):
 
     Parameters
     ----------
-    monomer_A : hoomd_organics.molecules.Polymer; required
+    monomer_A : hoomd_organics.molecules.Polymer, required
         Class of the A-type monomer
-    monomer_B : hoomd_organics.molecules.Polymer: required
+    monomer_B : hoomd_organics.molecules.Polymer, required
         Class of the B-type monomer
-    length : int; required
+    length : int, required
         The total number of monomers in the molecule
-    sequence : str; optional; default None
+    sequence : str, default None
         Manually define the sequence of 'A' and 'B' monomers.
         Leave as None if generating random sequences.
         Example: sequence = "AABAABAAB"
-    random_sequence : bool; optional; default False
+    random_sequence : bool, default False
         Creates a random 'A' 'B' sequence as a function
         of the AB_ratio.
-    AB_ratio : float; optional; default 0.50
+    AB_ratio : float, default 0.50
         The relative weight of A to B monomer types.
         Used when generating random sequences.
-    seed : int; optional; default 24
+    seed : int, default 24
         Set the seed used when generating random sequences
 
     """
