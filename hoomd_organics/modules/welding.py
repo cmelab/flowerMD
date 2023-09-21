@@ -19,7 +19,7 @@ class Interface:
         gsd_file.close()
         axis_index = np.where(self.interface_axis != 0)[0]
 
-        interface = gsd.hoomd.Snapshot()
+        interface = gsd.hoomd.Frame()
         interface.particles.N = snap.particles.N * 2
         interface.bonds.N = snap.bonds.N * 2
         interface.bonds.M = snap.bonds.M

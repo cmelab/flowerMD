@@ -5,8 +5,8 @@ dependencies:
   - boltons
   - foyer
   - fresnel
-  - freud
-  - gsd<3.0
+  - freud>=2.13.1
+  - gsd>=3.0
   - hoomd=4.1=*cpu*
   - mbuild
   - numpy
