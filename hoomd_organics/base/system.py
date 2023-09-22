@@ -41,9 +41,6 @@ class System(ABC):
         density: float,
         force_field=None,
         auto_scale=False,
-        # remove_hydrogens=False,
-        # remove_charges=False,
-        # scale_charges=False,
         base_units=dict(),
     ):
         self._molecules = check_return_iterable(molecules)
@@ -116,7 +113,9 @@ class System(ABC):
                             f"{self._force_field[ff_index]} is not "
                             f"provided."
                         )
+        # Create mBuild system
         self.system = self._build_system()
+        # Create GMSO topology
         self.gmso_system = self._convert_to_gmso()
 
     @abstractmethod
@@ -211,7 +210,7 @@ class System(ABC):
         else:
             return self._target_box
 
-    def _remove_hydrogens(self):
+    def remove_hydrogens(self):
         """Call this method to remove hydrogen atoms from the system.
         The masses and charges of the hydrogens are absorbed into
         the heavy atoms they were bonded to.
@@ -243,6 +242,9 @@ class System(ABC):
                         site.mass += h.mass
                         site.charge += h.charge
             self.gmso_system.remove_site(site=h)
+        # If a snap shot was already made, need to re-create it w/o hydrogens
+        if self._hoomd_snapshot:
+            self._create_hoomd_snapshot()
 
     def _scale_charges(self):
         """"""
@@ -344,6 +346,8 @@ class System(ABC):
             if self._force_field
             else []
         )
+        if remove_hydrogens:
+            self.remove_hydrogens()
         self._hoomd_snapshot = self._create_hoomd_snapshot()
 
     def set_target_box(
