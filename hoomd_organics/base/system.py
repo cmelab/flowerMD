@@ -39,12 +39,11 @@ class System(ABC):
         self,
         molecules,
         density: float,
-        r_cut: float,
         force_field=None,
         auto_scale=False,
-        remove_hydrogens=False,
-        remove_charges=False,
-        scale_charges=False,
+        # remove_hydrogens=False,
+        # remove_charges=False,
+        # scale_charges=False,
         base_units=dict(),
     ):
         self._molecules = check_return_iterable(molecules)
@@ -52,17 +51,14 @@ class System(ABC):
         if force_field:
             self._force_field = check_return_iterable(force_field)
         self.density = density
-        self.r_cut = r_cut
         self.auto_scale = auto_scale
-        self.remove_hydrogens = remove_hydrogens
-        self.remove_charges = remove_charges
-        self.scale_charges = scale_charges
-        self._target_box = None
         self.all_molecules = []
+        self._reference_values = base_units
         self._hoomd_snapshot = None
         self._hoomd_forcefield = []
-        self._reference_values = base_units
+        self.r_cut = None
         self._gmso_forcefields_dict = dict()
+        self._target_box = None
         # Reference values used when last writing snapshot and forcefields
         self._ff_refs = dict()
         self._snap_refs = dict()
@@ -122,14 +118,6 @@ class System(ABC):
                         )
         self.system = self._build_system()
         self.gmso_system = self._convert_to_gmso()
-        if self._force_field:
-            self._apply_forcefield()
-        if self.remove_hydrogens:
-            self._remove_hydrogens()
-        self._hoomd_forcefield = (
-            self._create_hoomd_forcefield() if self._force_field else []
-        )
-        self._hoomd_snapshot = self._create_hoomd_snapshot()
 
     @abstractmethod
     def _build_system(self):
@@ -160,6 +148,7 @@ class System(ABC):
 
     @property
     def box(self):
+        # TODO: Use gmso system here?
         return self.system.box
 
     @property
@@ -204,6 +193,8 @@ class System(ABC):
     @property
     def hoomd_snapshot(self):
         if self._snap_refs != self.reference_values:
+            self._hoomd_snapshot = self._create_hoomd_snapshot()
+        if self._hoomd_snapshot is None:  # Hasn't been created yet
             self._hoomd_snapshot = self._create_hoomd_snapshot()
         return self._hoomd_snapshot
 
@@ -278,11 +269,13 @@ class System(ABC):
         topology.identify_connections()
         return topology
 
-    def _create_hoomd_forcefield(self):
+    def _create_hoomd_forcefield(self, nlist_buffer, pppm_kwargs):
         force_list = []
         ff, refs = to_hoomd_forcefield(
             top=self.gmso_system,
             r_cut=self.r_cut,
+            nlist_buffer=nlist_buffer,
+            pppm_kwargs=pppm_kwargs,
             auto_scale=self.auto_scale,
             base_units=self._reference_values
             if self._reference_values
@@ -304,7 +297,17 @@ class System(ABC):
         self._snap_refs = self._reference_values.copy()
         return snap
 
-    def _apply_forcefield(self):
+    def apply_forcefield(
+        self,
+        r_cut,
+        auto_scale=False,
+        scale_charges=False,
+        remove_charges=False,
+        remove_hydrogens=False,
+        pppm_resolution=(8, 8, 8),
+        pppm_order=4,
+        nlist_buffer=0.4,
+    ):
         self.gmso_system = apply(
             self.gmso_system,
             self._gmso_forcefields_dict,
@@ -312,10 +315,10 @@ class System(ABC):
             speedup_by_moltag=True,
             speedup_by_molgraph=False,
         )
-        if self.remove_charges:
+        if remove_charges:
             for site in self.gmso_system.sites:
                 site.charge = 0
-        if self.scale_charges and not self.remove_charges:
+        if scale_charges and not remove_charges:
             self._scale_charges()
         epsilons = [
             s.atom_type.parameters["epsilon"] for s in self.gmso_system.sites
@@ -332,6 +335,16 @@ class System(ABC):
         self._reference_values["energy"] = energy_scale * epsilons[0].unit_array
         self._reference_values["length"] = length_scale * sigmas[0].unit_array
         self._reference_values["mass"] = mass_scale * masses[0].unit_array
+
+        pppm_kwargs = {"resolution": pppm_resolution, "order": pppm_order}
+        self._hoomd_forcefield = (
+            self._create_hoomd_forcefield(
+                nlist_buffer=nlist_buffer, pppm_kwargs=pppm_kwargs
+            )
+            if self._force_field
+            else []
+        )
+        self._hoomd_snapshot = self._create_hoomd_snapshot()
 
     def set_target_box(
         self, x_constraint=None, y_constraint=None, z_constraint=None
