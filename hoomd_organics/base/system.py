@@ -63,6 +63,9 @@ class System(ABC):
         self._hoomd_forcefield = []
         self._reference_values = base_units
         self._gmso_forcefields_dict = dict()
+        # Reference values used when last writing snapshot and forcefields
+        self._ff_refs = dict()
+        self._snap_refs = dict()
         self.gmso_system = None
 
         # Collecting all molecules
@@ -123,6 +126,10 @@ class System(ABC):
             self._apply_forcefield()
         if self.remove_hydrogens:
             self._remove_hydrogens()
+        self._hoomd_forcefield = (
+            self._create_hoomd_forcefield() if self._force_field else []
+        )
+        self._hoomd_snapshot = self._create_hoomd_snapshot()
 
     @abstractmethod
     def _build_system(self):
@@ -196,16 +203,15 @@ class System(ABC):
 
     @property
     def hoomd_snapshot(self):
-        self._hoomd_snapshot = self._create_hoomd_snapshot()
+        if self._snap_refs != self.reference_values:
+            self._hoomd_snapshot = self._create_hoomd_snapshot()
         return self._hoomd_snapshot
 
     @property
     def hoomd_forcefield(self):
-        if self._force_field:
+        if self._ff_refs != self.reference_values and self._force_field:
             self._hoomd_forcefield = self._create_hoomd_forcefield()
-            return self._hoomd_forcefield
-        else:
-            return self._hoomd_forcefield
+        return self._hoomd_forcefield
 
     @property
     def target_box(self):
@@ -284,6 +290,7 @@ class System(ABC):
         )
         for force in ff:
             force_list.extend(ff[force])
+        self._ff_refs = self._reference_values.copy()
         return force_list
 
     def _create_hoomd_snapshot(self):
@@ -294,6 +301,7 @@ class System(ABC):
             if self._reference_values
             else None,
         )
+        self._snap_refs = self._reference_values.copy()
         return snap
 
     def _apply_forcefield(self):

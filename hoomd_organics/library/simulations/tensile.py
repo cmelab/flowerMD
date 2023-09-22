@@ -91,7 +91,7 @@ class Tensile(Simulation):
         self.operations.updaters.append(box_resizer)
         self.operations.updaters.append(particle_updater)
         self.set_integrator_method(
-            integrator_method=hoomd.md.methods.NVE,
+            integrator_method=hoomd.md.methods.ConstantVolume,
             method_kwargs={"filter": self.integrate_group},
         )
         self.run(n_steps + 1)
