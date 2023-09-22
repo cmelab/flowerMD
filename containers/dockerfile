@@ -1,4 +1,4 @@
-FROM cmelab/gpuhoomd3conda:latest
+FROM cmelab/gpuhoomd4conda:latest
 
 USER root
 
