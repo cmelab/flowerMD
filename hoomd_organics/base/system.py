@@ -6,22 +6,18 @@ import gsd
 import mbuild as mb
 import numpy as np
 import unyt as u
-from gmso.external import (
-    from_mbuild,
-    from_parmed,
-    to_gsd_snapshot,
-    to_hoomd_forcefield,
-    to_parmed,
-)
+from gmso.external import from_mbuild, to_gsd_snapshot, to_hoomd_forcefield
 from gmso.parameterization import apply
 
 from hoomd_organics.base.molecule import Molecule
-from hoomd_organics.utils import FF_Types, check_return_iterable, xml_to_gmso_ff
-from hoomd_organics.utils.exceptions import (
-    ForceFieldError,
-    MoleculeLoadError,
-    ReferenceUnitError,
+from hoomd_organics.utils import (
+    FF_Types,
+    calculate_box_length,
+    check_return_iterable,
+    validate_ref_value,
+    xml_to_gmso_ff,
 )
+from hoomd_organics.utils.exceptions import ForceFieldError, MoleculeLoadError
 
 
 class System(ABC):
@@ -61,19 +57,23 @@ class System(ABC):
         self.remove_hydrogens = remove_hydrogens
         self.remove_charges = remove_charges
         self.scale_charges = scale_charges
-        self.target_box = None
+        self._target_box = None
         self.all_molecules = []
         self._hoomd_snapshot = None
         self._hoomd_forcefield = []
         self._reference_values = base_units
         self._gmso_forcefields_dict = dict()
+        # Reference values used when last writing snapshot and forcefields
+        self._ff_refs = dict()
+        self._snap_refs = dict()
         self.gmso_system = None
 
         # Collecting all molecules
         self.n_mol_types = 0
         for mol_item in self._molecules:
             if isinstance(mol_item, Molecule):
-                mol_item.assign_mol_name(str(self.n_mol_types))
+                if self._force_field:
+                    mol_item.assign_mol_name(str(self.n_mol_types))
                 self.all_molecules.extend(mol_item.molecules)
                 # if ff is provided in Molecule class
                 if mol_item.force_field:
@@ -126,6 +126,10 @@ class System(ABC):
             self._apply_forcefield()
         if self.remove_hydrogens:
             self._remove_hydrogens()
+        self._hoomd_forcefield = (
+            self._create_hoomd_forcefield() if self._force_field else []
+        )
+        self._hoomd_snapshot = self._create_hoomd_snapshot()
 
     @abstractmethod
     def _build_system(self):
@@ -137,9 +141,7 @@ class System(ABC):
 
     @property
     def n_particles(self):
-        if self.gmso_system:
-            return self.gmso_system.n_sites
-        return sum([mol.n_particles for mol in self.all_molecules])
+        return self.gmso_system.n_sites
 
     @property
     def mass(self):
@@ -149,6 +151,12 @@ class System(ABC):
                 for site in self.gmso_system.sites
             )
         return sum(mol.mass for mol in self.all_molecules)
+
+    @property
+    def net_charge(self):
+        return sum(
+            site.charge if site.charge else 0 for site in self.gmso_system.sites
+        )
 
     @property
     def box(self):
@@ -171,49 +179,19 @@ class System(ABC):
         return self._reference_values
 
     @reference_length.setter
-    def reference_length(self, length, unit=None):
-        if isinstance(length, u.array.unyt_quantity):
-            self._reference_values["length"] = length
-        elif isinstance(unit, str) and (
-            isinstance(length, float) or isinstance(length, int)
-        ):
-            self._reference_values["length"] = length * getattr(u, unit)
-        else:
-            raise ReferenceUnitError(
-                f"Invalid reference length input.Please provide reference "
-                f"length (number) and unit (string) or pass length value as "
-                f"an {str(u.array.unyt_quantity)}."
-            )
+    def reference_length(self, length):
+        validated_length = validate_ref_value(length, u.dimensions.length)
+        self._reference_values["length"] = validated_length
 
     @reference_energy.setter
-    def reference_energy(self, energy, unit=None):
-        if isinstance(energy, u.array.unyt_quantity):
-            self._reference_values["energy"] = energy
-        elif isinstance(unit, str) and (
-            isinstance(energy, float) or isinstance(energy, int)
-        ):
-            self._reference_values["energy"] = energy * getattr(u, unit)
-        else:
-            raise ReferenceUnitError(
-                f"Invalid reference energy input.Please provide reference "
-                f"energy (number) and unit (string) or pass energy value as "
-                f"an {str(u.array.unyt_quantity)}."
-            )
+    def reference_energy(self, energy):
+        validated_energy = validate_ref_value(energy, u.dimensions.energy)
+        self._reference_values["energy"] = validated_energy
 
     @reference_mass.setter
-    def reference_mass(self, mass, unit=None):
-        if isinstance(mass, u.array.unyt_quantity):
-            self._reference_values["mass"] = mass
-        elif isinstance(unit, str) and (
-            isinstance(mass, float) or isinstance(mass, int)
-        ):
-            self._reference_values["mass"] = mass * getattr(u, unit)
-        else:
-            raise ReferenceUnitError(
-                f"Invalid reference mass input.Please provide reference "
-                f"mass (number) and unit (string) or pass mass value as an "
-                f"{str(u.array.unyt_quantity)}."
-            )
+    def reference_mass(self, mass):
+        validated_mass = validate_ref_value(mass, u.dimensions.mass)
+        self._reference_values["mass"] = validated_mass
 
     @reference_values.setter
     def reference_values(self, ref_value_dict):
@@ -221,45 +199,75 @@ class System(ABC):
         for k in ref_keys:
             if k not in ref_value_dict.keys():
                 raise ValueError(f"Missing reference for {k}.")
-            if not isinstance(ref_value_dict[k], u.array.unyt_quantity):
-                raise ReferenceUnitError(
-                    f"{k} reference value must be of type "
-                    f"{str(u.array.unyt_quantity)}"
-                )
-        self._reference_values = ref_value_dict
+            self.__setattr__(f"reference_{k}", ref_value_dict[k])
 
     @property
     def hoomd_snapshot(self):
-        self._hoomd_snapshot = self._create_hoomd_snapshot()
+        if self._snap_refs != self.reference_values:
+            self._hoomd_snapshot = self._create_hoomd_snapshot()
         return self._hoomd_snapshot
 
     @property
     def hoomd_forcefield(self):
-        self._hoomd_forcefield = self._create_hoomd_forcefield()
+        if self._ff_refs != self.reference_values and self._force_field:
+            self._hoomd_forcefield = self._create_hoomd_forcefield()
         return self._hoomd_forcefield
+
+    @property
+    def target_box(self):
+        if self.reference_length:
+            return self._target_box / self.reference_length.value
+        else:
+            return self._target_box
 
     def _remove_hydrogens(self):
         """Call this method to remove hydrogen atoms from the system.
         The masses and charges of the hydrogens are absorbed into
         the heavy atoms they were bonded to.
         """
-        parmed_struc = to_parmed(self.gmso_system)
         # Try by element first:
-        hydrogens = [a for a in parmed_struc.atoms if a.element == 1]
-        if len(hydrogens) == 0:  # Try by mass
-            hydrogens = [a for a in parmed_struc.atoms if a.mass == 1.008]
+        hydrogens = [
+            site
+            for site in self.gmso_system.sites
+            if site.element.atomic_number == 1
+        ]
+        # If none found by element; try by mass
+        if len(hydrogens) == 0:
+            hydrogens = [
+                site
+                for site in self.gmso_system.sites
+                if site.mass.to("amu").value == 1.008
+            ]
             if len(hydrogens) == 0:
                 warnings.warn(
                     "Hydrogen atoms could not be found by element or mass"
                 )
         for h in hydrogens:
-            h.atomic_number = 1
-            bonded_atom = h.bond_partners[0]
-            bonded_atom.mass += h.mass
-            bonded_atom.charge += h.charge
-        parmed_struc.strip([a.atomic_number == 1 for a in parmed_struc.atoms])
-        if len(hydrogens) > 0:
-            self.gmso_system = from_parmed(parmed_struc)
+            # Find bond and other site in bond, add mass and charge
+            for bond in self.gmso_system.iter_connections_by_site(
+                site=h, connections=["bonds"]
+            ):
+                for site in bond.connection_members:
+                    if site is not h:
+                        site.mass += h.mass
+                        site.charge += h.charge
+            self.gmso_system.remove_site(site=h)
+
+    def _scale_charges(self):
+        """"""
+        charges = np.array(
+            [
+                site.charge if site.charge else 0
+                for site in self.gmso_system.sites
+            ]
+        )
+        net_charge = sum(charges)
+        abs_charge = sum(abs(charges))
+        if abs_charge != 0:
+            for site in self.gmso_system.sites:
+                site.charge -= abs(site.charge if site.charge else 0) * (
+                    net_charge / abs_charge
+                )
 
     def to_gsd(self, file_name):
         with gsd.hoomd.open(file_name, "wb") as traj:
@@ -282,6 +290,7 @@ class System(ABC):
         )
         for force in ff:
             force_list.extend(ff[force])
+        self._ff_refs = self._reference_values.copy()
         return force_list
 
     def _create_hoomd_snapshot(self):
@@ -292,6 +301,7 @@ class System(ABC):
             if self._reference_values
             else None,
         )
+        self._snap_refs = self._reference_values.copy()
         return snap
 
     def _apply_forcefield(self):
@@ -299,15 +309,14 @@ class System(ABC):
             self.gmso_system,
             self._gmso_forcefields_dict,
             identify_connections=True,
-            use_molecule_info=True,
-            identify_connected_components=False,
+            speedup_by_moltag=True,
+            speedup_by_molgraph=False,
         )
         if self.remove_charges:
             for site in self.gmso_system.sites:
                 site.charge = 0
         if self.scale_charges and not self.remove_charges:
-            pass
-            # TODO: Scale charges from self.gmso_system
+            self._scale_charges()
         epsilons = [
             s.atom_type.parameters["epsilon"] for s in self.gmso_system.sites
         ]
@@ -322,12 +331,7 @@ class System(ABC):
 
         self._reference_values["energy"] = energy_scale * epsilons[0].unit_array
         self._reference_values["length"] = length_scale * sigmas[0].unit_array
-        if self.auto_scale:
-            self._reference_values["mass"] = mass_scale * masses[
-                0
-            ].unit_array.to("amu")
-        else:
-            self._reference_values["mass"] = mass_scale * u.g / u.mol
+        self._reference_values["mass"] = mass_scale * masses[0].unit_array
 
     def set_target_box(
         self, x_constraint=None, y_constraint=None, z_constraint=None
@@ -352,14 +356,14 @@ class System(ABC):
             Lx = Ly = Lz = self._calculate_L()
         else:
             constraints = np.array([x_constraint, y_constraint, z_constraint])
-            fixed_L = constraints[np.where(constraints is not None)]
+            fixed_L = constraints[np.not_equal(constraints, None).nonzero()]
             # Conv from nm to cm for _calculate_L
             fixed_L *= 1e-7
             L = self._calculate_L(fixed_L=fixed_L)
-            constraints[np.where(constraints is None)] = L
+            constraints[np.equal(constraints, None).nonzero()] = L
             Lx, Ly, Lz = constraints
 
-        self.target_box = np.array([Lx, Ly, Lz])
+        self._target_box = np.array([Lx, Ly, Lz])
 
     def visualize(self):
         if self.system:
@@ -371,7 +375,7 @@ class System(ABC):
 
     def _calculate_L(self, fixed_L=None):
         """Calculates the required box length(s) given the
-        mass of a sytem and the target density.
+        mass of a system and the target density.
 
         Box edge length constraints can be set by set_target_box().
         If constraints are set, this will solve for the required
@@ -385,24 +389,35 @@ class System(ABC):
             when solving for L
 
         """
-        # Convert from amu to grams
-        M = self.mass * 1.66054e-24
-        vol = M / self.density  # cm^3
-        if fixed_L is None:
-            L = vol ** (1 / 3)
-        else:
-            L = vol / np.prod(fixed_L)
-            if len(fixed_L) == 1:  # L is cm^2
-                L = L ** (1 / 2)
-        # Convert from cm back to nm
-        L *= 1e7
-        return L
+        mass_quantity = u.unyt_quantity(self.mass, u.g / u.mol).to("g")
+        density_quantity = u.unyt_quantity(self.density, u.g / u.cm**3)
+        if fixed_L is not None:
+            fixed_L = u.unyt_array(fixed_L, u.cm)
+        L = calculate_box_length(
+            mass_quantity, density_quantity, fixed_L=fixed_L
+        )
+        return L.to("nm").value
 
 
 class Pack(System):
     """Uses PACKMOL via mbuild.packing.fill_box.
     The box used for packing is expanded to allow PACKMOL
     to more easily place all the molecules.
+
+    Warnings:
+    ---------
+    Note that the default `packing_expand_factor` for pack is 5, which means
+    that the box density will not be the same as the specified density. This is
+    because in some cases PACKMOL will not be able to fit all the molecules
+    into the box if the target box is too small, therefore, we need to expand
+    the box by a factor (default:5) to allow PACKMOL to fit all the molecules.
+
+    In order to get the
+    specified density there are two options:
+    1) set the `packing_expand_factor` to 1, which will not expand the box,
+     however, this may result in PACKMOL errors if the box is too small.
+    2) Update the box volume after creating the simulation object to the target
+    box length. This property is called `target_box`.
 
     Parameters
     ----------
@@ -443,7 +458,7 @@ class Pack(System):
         system = mb.packing.fill_box(
             compound=self.all_molecules,
             n_compounds=[1 for i in self.all_molecules],
-            box=list(self.target_box * self.packing_expand_factor),
+            box=list(self._target_box * self.packing_expand_factor),
             overlap=0.2,
             edge=self.edge,
         )

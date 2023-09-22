@@ -4,23 +4,22 @@ channels:
 dependencies:
   - boltons
   - foyer
-  - freud
-    #  - gmso>=0.11.0
-  - gsd<3.0
-  - hoomd=3.11=*gpu*
+  - freud>=2.13.1
+  - gsd>=3.0
+  - hoomd=4.1=*gpu*
   - mbuild
   - numpy
   - openbabel
   - pip
   - py3Dmol
-  - pydantic
   - pytest
   - pytest-cov
   - python=3.9
+  - unyt
   - symengine
   - python-symengine
-  - unyt
+  - sympy
   - pip:
+      - git+https://github.com/mosdef-hub/gmso.git@main
       - git+https://github.com/cmelab/cmeutils.git@master
       - git+https://github.com/cmelab/grits.git@main
-      - git+https://github.com/mosdef-hub/gmso@main

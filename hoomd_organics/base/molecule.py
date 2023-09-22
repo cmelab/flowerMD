@@ -261,6 +261,12 @@ class Molecule:
     def assign_mol_name(self, name):
         for mol in self.molecules:
             mol.name = name
+            # TODO: This is a hack to make sure that the name of the children is
+            # also updated, so that when converting to gmso, all the sites have
+            # the correct name. This needs additional investigation into gmso's
+            # convert mbuilder to gmso functionality.
+            for child in mol.children:
+                child.name = name
 
 
 class Polymer(Molecule):
