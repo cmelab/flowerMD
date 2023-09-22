@@ -499,16 +499,12 @@ class Lattice(System):
         self,
         molecules,
         density: float,
-        r_cut: float,
         x: float,
         y: float,
         n: int,
         basis_vector=[0.5, 0.5, 0],
         force_field=None,
         auto_scale=False,
-        remove_hydrogens=False,
-        remove_charges=False,
-        scale_charges=False,
         base_units=dict(),
     ):
         self.x = x
@@ -519,11 +515,7 @@ class Lattice(System):
             molecules=molecules,
             density=density,
             force_field=force_field,
-            r_cut=r_cut,
             auto_scale=auto_scale,
-            remove_hydrogens=remove_hydrogens,
-            remove_charges=remove_charges,
-            scale_charges=scale_charges,
             base_units=base_units,
         )
 
