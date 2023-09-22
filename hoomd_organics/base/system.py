@@ -53,7 +53,6 @@ class System(ABC):
         self._reference_values = base_units
         self._hoomd_snapshot = None
         self._hoomd_forcefield = []
-        self.r_cut = None
         self._gmso_forcefields_dict = dict()
         self._target_box = None
         # Reference values used when last writing snapshot and forcefields
@@ -271,11 +270,11 @@ class System(ABC):
         topology.identify_connections()
         return topology
 
-    def _create_hoomd_forcefield(self, nlist_buffer, pppm_kwargs):
+    def _create_hoomd_forcefield(self, r_cut, nlist_buffer, pppm_kwargs):
         force_list = []
         ff, refs = to_hoomd_forcefield(
             top=self.gmso_system,
-            r_cut=self.r_cut,
+            r_cut=r_cut,
             nlist_buffer=nlist_buffer,
             pppm_kwargs=pppm_kwargs,
             auto_scale=self.auto_scale,
@@ -352,7 +351,7 @@ class System(ABC):
 
         pppm_kwargs = {"resolution": pppm_resolution, "order": pppm_order}
         self._hoomd_forcefield = self._create_hoomd_forcefield(
-            nlist_buffer=nlist_buffer, pppm_kwargs=pppm_kwargs
+            r_cut=r_cut, nlist_buffer=nlist_buffer, pppm_kwargs=pppm_kwargs
         )
         self._hoomd_snapshot = self._create_hoomd_snapshot()
 
@@ -452,12 +451,8 @@ class Pack(System):
         self,
         molecules,
         density: float,
-        r_cut: float,
         force_field=None,
         auto_scale=False,
-        remove_hydrogens=False,
-        remove_charges=False,
-        scale_charges=False,
         base_units=dict(),
         packing_expand_factor=5,
         edge=0.2,
@@ -468,11 +463,7 @@ class Pack(System):
             molecules=molecules,
             density=density,
             force_field=force_field,
-            r_cut=r_cut,
             auto_scale=auto_scale,
-            remove_hydrogens=remove_hydrogens,
-            remove_charges=remove_charges,
-            scale_charges=scale_charges,
             base_units=base_units,
         )
 
