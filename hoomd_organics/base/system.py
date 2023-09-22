@@ -310,6 +310,12 @@ class System(ABC):
         pppm_order=4,
         nlist_buffer=0.4,
     ):
+        if not self._force_field:
+            # TODO: Better erorr message
+            raise ValueError(
+                "This method can only be used when the System is "
+                "initialized with an XML type forcefield."
+            )
         self.gmso_system = apply(
             self.gmso_system,
             self._gmso_forcefields_dict,
@@ -317,11 +323,14 @@ class System(ABC):
             speedup_by_moltag=True,
             speedup_by_molgraph=False,
         )
+
         if remove_charges:
             for site in self.gmso_system.sites:
                 site.charge = 0
+
         if scale_charges and not remove_charges:
             self._scale_charges()
+
         epsilons = [
             s.atom_type.parameters["epsilon"] for s in self.gmso_system.sites
         ]
@@ -338,16 +347,13 @@ class System(ABC):
         self._reference_values["length"] = length_scale * sigmas[0].unit_array
         self._reference_values["mass"] = mass_scale * masses[0].unit_array
 
-        pppm_kwargs = {"resolution": pppm_resolution, "order": pppm_order}
-        self._hoomd_forcefield = (
-            self._create_hoomd_forcefield(
-                nlist_buffer=nlist_buffer, pppm_kwargs=pppm_kwargs
-            )
-            if self._force_field
-            else []
-        )
         if remove_hydrogens:
             self.remove_hydrogens()
+
+        pppm_kwargs = {"resolution": pppm_resolution, "order": pppm_order}
+        self._hoomd_forcefield = self._create_hoomd_forcefield(
+            nlist_buffer=nlist_buffer, pppm_kwargs=pppm_kwargs
+        )
         self._hoomd_snapshot = self._create_hoomd_snapshot()
 
     def set_target_box(
