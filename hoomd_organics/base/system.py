@@ -50,6 +50,7 @@ class System(ABC):
         self.density = density
         self.auto_scale = auto_scale
         self.all_molecules = []
+        self.gmso_system = None
         self._reference_values = base_units
         self._hoomd_snapshot = None
         self._hoomd_forcefield = []
@@ -58,7 +59,7 @@ class System(ABC):
         # Reference values used when last writing snapshot and forcefields
         self._ff_refs = dict()
         self._snap_refs = dict()
-        self.gmso_system = None
+        self._ff_kwargs = dict()
 
         # Collecting all molecules
         self.n_mol_types = 0
@@ -198,8 +199,10 @@ class System(ABC):
 
     @property
     def hoomd_forcefield(self):
-        if self._ff_refs != self.reference_values and self._force_field:
-            self._hoomd_forcefield = self._create_hoomd_forcefield()
+        if self._ff_refs != self.reference_values:
+            self._hoomd_forcefield = self._create_hoomd_forcefield(
+                **self._ff_kwargs
+            )
         return self._hoomd_forcefield
 
     @property
@@ -350,6 +353,11 @@ class System(ABC):
             self.remove_hydrogens()
 
         pppm_kwargs = {"resolution": pppm_resolution, "order": pppm_order}
+        self._ff_kwargs = {
+            "r_cut": r_cut,
+            "nlist_buffer": nlist_buffer,
+            "pppm_kwargs": pppm_kwargs,
+        }
         self._hoomd_forcefield = self._create_hoomd_forcefield(
             r_cut=r_cut, nlist_buffer=nlist_buffer, pppm_kwargs=pppm_kwargs
         )

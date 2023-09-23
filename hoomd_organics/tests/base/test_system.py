@@ -144,7 +144,7 @@ class TestSystem(BaseTest):
                     mass=1.008 * Unit("amu"),
                 )
 
-        system._remove_hydrogens()
+        system.remove_hydrogens()
         assert system.gmso_system.n_sites == 6
 
     def test_remove_hydrogen_no_hydrogen(self, benzene_molecule):
@@ -165,7 +165,7 @@ class TestSystem(BaseTest):
             system.gmso_system.remove_site(h_site)
 
         with pytest.warns():
-            system._remove_hydrogens()
+            system.remove_hydrogens()
 
     def test_add_mass_charges(self, benzene_molecule):
         benzene_mols = benzene_molecule(n_mols=1)
@@ -211,7 +211,7 @@ class TestSystem(BaseTest):
 
     def test_mass(self, pps_molecule):
         pps_mol = pps_molecule(n_mols=20)
-        system = Pack(molecules=[pps_mol], density=1.0, r_cut=2.5)
+        system = Pack(molecules=[pps_mol], density=1.0)
         assert np.allclose(
             system.mass, ((12.011 * 6) + (1.008 * 6) + 32.06) * 20, atol=1e-4
         )
@@ -257,7 +257,6 @@ class TestSystem(BaseTest):
             molecules=[polyethylene],
             force_field=[OPLS_AA()],
             density=1.0,
-            r_cut=2.5,
             auto_scale=True,
         )
         system.apply_forcefield(r_cut=2.5)
