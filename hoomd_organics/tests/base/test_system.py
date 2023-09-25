@@ -8,7 +8,7 @@ from unyt import Unit
 from hoomd_organics import Lattice, Pack
 from hoomd_organics.library import OPLS_AA, OPLS_AA_DIMETHYLETHER, OPLS_AA_PPS
 from hoomd_organics.tests import BaseTest
-from hoomd_organics.utils.exceptions import ReferenceUnitError
+from hoomd_organics.utils.exceptions import ForceFieldError, ReferenceUnitError
 
 
 class TestSystem(BaseTest):
@@ -690,6 +690,24 @@ class TestSystem(BaseTest):
         assert system._ff_kwargs["nlist_buffer"] == 0.5
         assert system._ff_kwargs["pppm_kwargs"]["resolution"] == (4, 4, 4)
         assert system._ff_kwargs["pppm_kwargs"]["order"] == 3
+
+    def test_forcefield_list_hoomd_ff(self, polyethylene):
+        polyethylene = polyethylene(lengths=5, num_mols=1)
+        system = Pack(
+            molecules=[polyethylene],
+            force_field=[OPLS_AA()],
+            density=1.0,
+        )
+        system.apply_forcefield(r_cut=2.5, auto_scale=True)
+
+        hoomd_ff = system.hoomd_forcefield
+
+        with pytest.raises(ForceFieldError):
+            Pack(
+                molecules=[polyethylene],
+                force_field=hoomd_ff,
+                density=1.0,
+            )
 
     def test_lattice_polymer(self, polyethylene):
         polyethylene = polyethylene(lengths=2, num_mols=32)
