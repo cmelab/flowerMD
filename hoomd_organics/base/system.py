@@ -46,7 +46,7 @@ class System(ABC):
     density : float, required
         The desired density of the system (g/cm^3). Used to set the
         target_box attribute. Can be useful when initializing
-        systems at low denisty and running a shrink simulation
+        systems at low density and running a shrink simulation
         to achieve a target density.
     r_cut : float, required
         The cutoff radius for the Lennard-Jones potential.
