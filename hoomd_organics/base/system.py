@@ -138,7 +138,7 @@ class System(ABC):
                     else:
                         # if there is only one ff for all molecule types
                         ff_index = 0
-                    if getattr(self._force_field[ff_index], "gmso_ff"):
+                    if hasattr(self._force_field[ff_index], "gmso_ff"):
                         self._gmso_forcefields_dict[str(i)] = self._force_field[
                             ff_index
                         ].gmso_ff
@@ -242,6 +242,12 @@ class System(ABC):
             example, unyt.unyt_quantity(1, "nm").
 
         """
+        if self.auto_scale:
+            warnings.warn(
+                "`auto_scale` was set to True for this system. "
+                "Setting reference length manually disables auto "
+                "scaling."
+            )
         validated_length = validate_ref_value(length, u.dimensions.length)
         self._reference_values["length"] = validated_length
 
@@ -259,6 +265,12 @@ class System(ABC):
             example, unyt.unyt_quantity(1, "kJ/mol").
 
         """
+        if self.auto_scale:
+            warnings.warn(
+                "`auto_scale` was set to True for this system. "
+                "Setting reference energy manually disables auto "
+                "scaling."
+            )
         validated_energy = validate_ref_value(energy, u.dimensions.energy)
         self._reference_values["energy"] = validated_energy
 
@@ -276,6 +288,12 @@ class System(ABC):
             example, unyt.unyt_quantity(1, "amu").
 
         """
+        if self.auto_scale:
+            warnings.warn(
+                "`auto_scale` was set to True for this system. "
+                "Setting reference mass manually disables auto "
+                "scaling."
+            )
         validated_mass = validate_ref_value(mass, u.dimensions.mass)
         self._reference_values["mass"] = validated_mass
 
@@ -292,6 +310,13 @@ class System(ABC):
             length, mass, and energy.
 
         """
+        if self.auto_scale:
+            warnings.warn(
+                "`auto_scale` was set to True for this system. "
+                "Setting reference values manually disables auto "
+                "scaling."
+            )
+
         ref_keys = ["length", "mass", "energy"]
         for k in ref_keys:
             if k not in ref_value_dict.keys():
