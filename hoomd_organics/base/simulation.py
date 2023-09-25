@@ -1,3 +1,4 @@
+"""Base simulation class for hoomd_organics."""
 import inspect
 import pickle
 import warnings
@@ -26,19 +27,21 @@ class Simulation(hoomd.simulation.Simulation):
 
     Parameters
     ----------
-    initial_state : gsd.hoomd.Frame or str
+    initial_state : hoomd.snapshot.Snapshot or str, required
         A snapshot to initialize a simulation from, or a path
         to a GSD file to initialize a simulation from.
-    forcefield : list
-        List of hoomd force objects to add to the integrator.
+    forcefield : List of hoomd.md.force.Force, required
+        List of HOOMD force objects to add to the integrator.
+    reference_values : dict, default {}
+        A dictionary of reference values for mass, length, and energy.
     r_cut : float, default 2.5
-        Cutoff radius for potentials (in simulation distance units)
+        Cutoff radius for potentials (in simulation length units).
     dt : float, default 0.0001
-        Initial value for dt, the ize of simulation timestep
-    auto_scale : bool, default True
-        Set to true to use reduced simulation units.
-        distance, mass, and energy are scaled by the largest value
-        present in the system for each.
+        Initial value for dt, the size of simulation timestep.
+    device : hoomd.device, default hoomd.device.auto_select()
+        The CPU or GPU device to use for the simulation.
+    seed : int, default 42
+        Seed passed to integrator when randomizing velocities.
     gsd_write : int, default 1e4
         Period to write simulation snapshots to gsd file.
     gsd_file_name : str, default "trajectory.gsd"
@@ -47,18 +50,16 @@ class Simulation(hoomd.simulation.Simulation):
         Period to write simulation data to the log file.
     log_file_name : str, default "sim_data.txt"
         The file name to use for the .txt log file
-    seed : int, default 42
-        Seed passed to integrator when randomizing velocities.
-
-    Methods
-    -------
+    thermostat : hoomd_organics.utils.HOOMDThermostats, default
+        HOOMDThermostats.MTTK
+        The thermostat to use for the simulation.
 
     """
 
     def __init__(
         self,
         initial_state,
-        forcefield=None,
+        forcefield,
         reference_values=dict(),
         r_cut=2.5,
         dt=0.0001,
@@ -102,9 +103,14 @@ class Simulation(hoomd.simulation.Simulation):
 
     @classmethod
     def from_system(cls, system, **kwargs):
-        """Initialize a simulation from a `hoomd_organics.base.System`
-        object."""
+        """Initialize a simulation from a `hoomd_organics.base.System` object.
 
+        Parameters
+        ----------
+        system : hoomd_organics.base.System, required
+            A `hoomd_organics.base.System` object.
+
+        """
         if system.hoomd_forcefield:
             return cls(
                 initial_state=system.hoomd_snapshot,
@@ -126,12 +132,21 @@ class Simulation(hoomd.simulation.Simulation):
 
     @classmethod
     def from_snapshot_forces(cls, initial_state, forcefield, **kwargs):
-        """Initialize a simulation from an initial state object and a
-        list of HOOMD forces."""
+        """Initialize a simulation from an initial state and HOOMD forces.
+
+        Parameters
+        ----------
+        initial_state : gsd.hoomd.Snapshot or str
+            A snapshot to initialize a simulation from, or a path to a GSD file.
+        forcefield : List of HOOMD force objects, required
+            List of HOOMD force objects to add to the integrator.
+
+        """
         return cls(initial_state=initial_state, forcefield=forcefield, **kwargs)
 
     @property
     def forces(self):
+        """The list of forces in the simulation."""
         if self.integrator:
             return self.operations.integrator.forces
         else:
@@ -139,37 +154,88 @@ class Simulation(hoomd.simulation.Simulation):
 
     @property
     def reference_length(self):
+        """The reference length for the simulation."""
         return self._reference_values.get("length", None)
 
     @property
     def reference_mass(self):
+        """The reference mass for the simulation."""
         return self._reference_values.get("mass", None)
 
     @property
     def reference_energy(self):
+        """The reference energy for the simulation."""
         return self._reference_values.get("energy", None)
 
     @property
     def reference_values(self):
+        """The reference values for the simulation in form of a dictionary."""
         return self._reference_values
 
     @reference_length.setter
     def reference_length(self, length):
+        """Set the reference length of the system along with a unit of length.
+
+        Parameters
+        ----------
+        length : string or unyt.unyt_quantity, required
+            The reference length of the system.
+            It can be provided in the following forms:
+            1) A string with the format of "value unit", for example "1 nm".
+            2) A unyt.unyt_quantity object with the correct dimension. For
+            example, unyt.unyt_quantity(1, "nm").
+
+        """
         validated_length = validate_ref_value(length, u.dimensions.length)
         self._reference_values["length"] = validated_length
 
     @reference_energy.setter
     def reference_energy(self, energy):
+        """Set the reference energy of the system along with a unit of energy.
+
+        Parameters
+        ----------
+        energy : string or unyt.unyt_quantity, required
+            The reference energy of the system.
+            It can be provided in the following forms:
+            1) A string with the format of "value unit", for example "1 kJ/mol".
+            2) A unyt.unyt_quantity object with the correct dimension. For
+            example, unyt.unyt_quantity(1, "kJ/mol").
+
+        """
         validated_energy = validate_ref_value(energy, u.dimensions.energy)
         self._reference_values["energy"] = validated_energy
 
     @reference_mass.setter
     def reference_mass(self, mass):
+        """Set the reference mass of the system along with a unit of mass.
+
+        Parameters
+        ----------
+        mass : string or unyt.unyt_quantity, required
+            The reference mass of the system.
+            It can be provided in the following forms:
+            1) A string with the format of "value unit", for example "1 amu".
+            2) A unyt.unyt_quantity object with the correct dimension. For
+            example, unyt.unyt_quantity(1, "amu").
+
+        """
         validated_mass = validate_ref_value(mass, u.dimensions.mass)
         self._reference_values["mass"] = validated_mass
 
     @reference_values.setter
     def reference_values(self, ref_value_dict):
+        """Set all the reference values of the system at once as a dictionary.
+
+        Parameters
+        ----------
+        ref_value_dict : dict, required
+            A dictionary of reference values. The keys of the dictionary must
+            be "length", "mass", and "energy". The values of the dictionary
+            should follow the same format as the values of the reference
+            length, mass, and energy.
+
+        """
         ref_keys = ["length", "mass", "energy"]
         for k in ref_keys:
             if k not in ref_value_dict.keys():
@@ -178,11 +244,18 @@ class Simulation(hoomd.simulation.Simulation):
 
     @property
     def box_lengths_reduced(self):
+        """The simulation box lengths in reduced units."""
         box = self.state.box
         return np.array([box.Lx, box.Ly, box.Lz])
 
     @property
     def box_lengths(self):
+        """The simulation box lengths.
+
+        If reference length is set, the box lengths are scaled back to the
+        non-reduced values.
+
+        """
         if self.reference_length:
             return self.box_lengths_reduced * self.reference_length
         else:
@@ -195,19 +268,28 @@ class Simulation(hoomd.simulation.Simulation):
 
     @property
     def volume_reduced(self):
+        """The simulation volume in reduced units."""
         return np.prod(self.box_lengths_reduced)
 
     @property
     def volume(self):
+        """The simulation volume."""
         return np.prod(self.box_lengths)
 
     @property
     def mass_reduced(self):
+        """The total mass of the system in reduced units."""
         with self.state.cpu_local_snapshot as snap:
             return sum(snap.particles.mass)
 
     @property
     def mass(self):
+        """The total mass of the system.
+
+        If reference mass is set, the mass is scaled back to the non-reduced
+        value.
+
+        """
         if self.reference_mass:
             return self.mass_reduced * self.reference_mass
         else:
@@ -220,34 +302,48 @@ class Simulation(hoomd.simulation.Simulation):
 
     @property
     def density_reduced(self):
+        """The density of the system in reduced units."""
         return self.mass_reduced / self.volume_reduced
 
     @property
     def density(self):
+        """The density of the system."""
         return self.mass / self.volume
 
     @property
     def nlist(self):
-        """"""
+        """The neighbor list used by the Lennard-Jones pair force."""
         return self._lj_force().nlist
 
     @nlist.setter
     def nlist(self, hoomd_nlist, buffer=0.4):
-        """"""
+        """Set the neighbor list used by the Lennard-Jones pair force.
+
+        Parameters
+        ----------
+        hoomd_nlist : hoomd.md.nlist.NeighborList, required
+            The neighbor list to use.
+        buffer : float,  default 0.4
+            The buffer width to use for the neighbor list.
+
+        """
         self._lj_force().nlist = hoomd_nlist(buffer)
 
     @property
     def dt(self):
+        """The simulation timestep."""
         return self._dt
 
     @dt.setter
     def dt(self, value):
+        """Set the simulation timestep."""
         self._dt = value
         if self.integrator:
             self.operations.integrator.dt = self.dt
 
     @property
     def real_timestep(self):
+        """The simulation timestep in real units."""
         if self._reference_values.get("mass"):
             mass = self._reference_values["mass"].to("kg")
         else:
@@ -266,16 +362,25 @@ class Simulation(hoomd.simulation.Simulation):
 
     @property
     def integrate_group(self):
-        """"""
+        """The group of particles to apply the integrator to.
+
+        Default is all particles.
+        """
         return self._integrate_group
 
     @integrate_group.setter
     def integrate_group(self, group):
-        """"""
+        """Set the group of particles to apply the integrator to.
+
+        Checkout [HOOMD's documentation]
+        (https://hoomd-blue.readthedocs.io/en/stable/module-hoomd-filter.html)
+        for more information on Particle Filters.
+        """
         self._integrate_group = group
 
     @property
     def method(self):
+        """The integrator method used by the simulation."""
         if self.integrator:
             return self.operations.integrator.methods[0]
         else:
@@ -287,10 +392,21 @@ class Simulation(hoomd.simulation.Simulation):
 
     @property
     def thermostat(self):
+        """The thermostat used for the simulation."""
         return self._thermostat
 
     @thermostat.setter
     def thermostat(self, thermostat):
+        """Set the thermostat used for the simulation.
+
+        The thermostat must be a selected from
+        `hoomd_organics.utils.HOOMDThermostats`.
+
+        Parameters
+        ----------
+        thermostat : hoomd_organics.utils.HOOMDThermostats, required
+            The type of thermostat to use.
+        """
         if not issubclass(
             self._thermostat, hoomd.md.methods.thermostats.Thermostat
         ):
@@ -300,19 +416,44 @@ class Simulation(hoomd.simulation.Simulation):
         self._thermostat = thermostat
 
     def add_force(self, hoomd_force):
-        """"""
+        """Add a force to the simulation.
+
+        Parameters
+        ----------
+        hoomd_force : hoomd.md.force.Force, required
+            The force to add to the simulation.
+
+        """
         self._forcefield.append(hoomd_force)
         if self.integrator:
             self.integrator.forces.append(hoomd_force)
 
     def remove_force(self, hoomd_force):
-        """"""
+        """Remove a force from the simulation.
+
+        Parameters
+        ----------
+        hoomd_force : hoomd.md.force.Force, required
+            The force to remove from the simulation.
+
+        """
         self._forcefield.remove(hoomd_force)
         if self.integrator:
             self.integrator.forces.remove(hoomd_force)
 
     def adjust_epsilon(self, scale_by=None, shift_by=None, type_filter=None):
-        """"""
+        """Adjust the epsilon parameter of the Lennard-Jones pair force.
+
+        Parameters
+        ----------
+        scale_by : float, default None
+            The factor to scale epsilon by.
+        shift_by : float, default None
+            The amount to shift epsilon by.
+        type_filter : list of str, default None
+            A list of particle pair types to apply the adjustment to.
+
+        """
         lj_forces = self._lj_force()
         for k in lj_forces.params.keys():
             if type_filter and k not in type_filter:
@@ -324,7 +465,18 @@ class Simulation(hoomd.simulation.Simulation):
                 lj_forces.params[k]["epsilon"] = epsilon + shift_by
 
     def adjust_sigma(self, scale_by=None, shift_by=None, type_filter=None):
-        """"""
+        """Adjust the sigma parameter of the Lennard-Jones pair force.
+
+        Parameters
+        ----------
+        scale_by : float, default None
+            The factor to scale sigma by.
+        shift_by : float, default None
+            The amount to shift sigma by.
+        type_filter : list of str, default None
+            A list of particle pair types to apply the adjustment to.
+
+        """
         lj_forces = self._lj_force()
         for k in lj_forces.params.keys():
             if type_filter and k not in type_filter:
@@ -336,7 +488,13 @@ class Simulation(hoomd.simulation.Simulation):
                 lj_forces.params[k]["sigma"] = sigma + shift_by
 
     def _initialize_thermostat(self, thermostat_kwargs):
-        """Initializes the thermostat used by the integrator."""
+        """Initialize the thermostat used by the simulation.
+
+        Parameters
+        ----------
+        thermostat_kwargs : dict, required
+            A dictionary of parameter:value for the thermostat.
+        """
         required_thermostat_kwargs = {}
         for k in inspect.signature(self.thermostat).parameters:
             if k not in thermostat_kwargs.keys():
@@ -347,17 +505,18 @@ class Simulation(hoomd.simulation.Simulation):
         return self.thermostat(**required_thermostat_kwargs)
 
     def set_integrator_method(self, integrator_method, method_kwargs):
-        """Creates an initial (or updates the existing) method used by
-        Hoomd's integrator. This doesn't need to be called directly;
+        """Create an initial (or updates the existing) integrator method.
+
+        This doesn't need to be called directly;
         instead the various run functions use this method to update
         the integrator method as needed.
 
-        Parameters:
-        -----------
-        integrrator_method : hoomd.md.method; required
-            Instance of one of the hoomd.md.method options
-        method_kwargs : dict; required
-            A diction of parameter:value for the integrator method used
+        Parameters
+        ----------
+        integrrator_method : hoomd.md.method, required
+            Instance of one of the `hoomd.md.method` options.
+        method_kwargs : dict, required
+            A diction of parameter:value for the integrator method used.
 
         """
         if not self.integrator:  # Integrator and method not yet created
@@ -372,7 +531,22 @@ class Simulation(hoomd.simulation.Simulation):
             self.integrator.methods.append(new_method)
 
     def add_walls(self, wall_axis, sigma, epsilon, r_cut, r_extrap=0):
-        """"""
+        """Add `hoomd.md.external.wall.LJ` forces to the simulation.
+
+        Parameters
+        ----------
+        wall_axis : np.ndarray, shape=(3,), dtype=float, required
+            The axis of the wall in (x, y, z) order.
+        sigma : float, required
+            The sigma parameter of the LJ wall.
+        epsilon : float, required
+            The epsilon parameter of the LJ wall.
+        r_cut : float, required
+            The cutoff radius of the LJ wall.
+        r_extrap : float, default 0
+            The extrapolation radius of the LJ wall.
+
+        """
         wall_axis = np.asarray(wall_axis)
         wall_origin = wall_axis * self.box_lengths_reduced / 2
         wall_normal = -wall_axis
@@ -399,7 +573,14 @@ class Simulation(hoomd.simulation.Simulation):
         )
 
     def remove_walls(self, wall_axis):
-        """"""
+        """Remove LJ walls from the simulation.
+
+        Parameters
+        ----------
+        wall_axis : np.ndarray, shape=(3,), dtype=float, required
+            The axis of the wall in (x, y, z) order.
+
+        """
         wall_force = self._wall_forces[wall_axis][0]
         self.remove_force(wall_force)
 
@@ -414,27 +595,31 @@ class Simulation(hoomd.simulation.Simulation):
         thermalize_particles=True,
         write_at_start=True,
     ):
-        """Runs an NVT simulation while shrinking or expanding
-        the simulation volume to the given final volume.
+        """Run an NVT simulation while shrinking or expanding simulation box.
 
-        Parameters:
-        -----------
+        The simulation box is updated using `hoomd.update.BoxResize` and the
+        final box lengths are set to `final_box_lengths` or inferred from
+        `final_density` if `final_box_lengths` is not provided.
+
+
+        Parameters
+        ----------
         n_steps : int, required
-            Number of steps to run during shrinking
+            Number of steps to run during volume update.
         period : int, required
-            The number of steps ran between box updates
-        kT : int or hoomd.variant.Ramp; required
-            The temperature to use during shrinking.
-        tau_kt : float; required
-            Thermostat coupling period (in simulation time units)
-        final_box_lengths : np.ndarray, shape=(3,), dtype=float; optional
-            The final box edge lengths in (x, y, z) order
-        write_at_start : bool; optional default True
+            The number of steps ran between each box update iteration.
+        kT : int or hoomd.variant.Ramp, required
+            The temperature to use during volume update.
+        tau_kt : float, required
+            Thermostat coupling period (in simulation time units).
+        final_box_lengths : np.ndarray, shape=(3,), dtype=float, default None
+            The final box edge lengths in (x, y, z) order.
+        final_density : float, default None
+            The final density of the simulation in g/cm^3.
+        write_at_start : bool, default True
             When set to True, triggers writers that evaluate to True
             for the initial step to execute before the next simulation
             time step.
-        final_density : float; optional
-            The final density of the simulation
 
         """
         if final_box_lengths is None and final_density is None:
@@ -523,7 +708,29 @@ class Simulation(hoomd.simulation.Simulation):
         thermalize_particles=True,
         write_at_start=True,
     ):
-        """"""
+        """Run the simulation using the Langevin dynamics integrator.
+
+        Parameters
+        ----------
+        n_steps : int, required
+            Number of steps to run the simulation.
+        kT : int or hoomd.variant.Ramp, required
+            The temperature to use during the simulation.
+        tally_reservoir_energy : bool, default False
+            When set to True, energy exchange between the thermal reservoir
+             and the particles is tracked.
+        default_gamma : float, default 1.0
+            The default drag coefficient to use for all particles.
+        default_gamma_r : tuple of floats, default (1.0, 1.0, 1.0)
+            The default rotational drag coefficient to use for all particles.
+        thermalize_particles : bool, default True
+            When set to True, assigns random velocities to all particles.
+        write_at_start : bool, default True
+            When set to True, triggers writers that evaluate to True
+            for the initial step to execute before the next simulation
+            time step.
+
+        """
         self.set_integrator_method(
             integrator_method=hoomd.md.methods.Langevin,
             method_kwargs={
@@ -559,7 +766,37 @@ class Simulation(hoomd.simulation.Simulation):
         thermalize_particles=True,
         write_at_start=True,
     ):
-        """"""
+        """Run the simulation in the NPT ensemble.
+
+        Parameters
+        ----------
+        n_steps: int, required
+            Number of steps to run the simulation.
+        kT: int or hoomd.variant.Ramp, required
+            The temperature to use during the simulation.
+        pressure: int or hoomd.variant.Ramp, required
+            The pressure to use during the simulation.
+        tau_kt: float, required
+            Thermostat coupling period (in simulation time units).
+        tau_pressure: float, required
+            Barostat coupling period.
+        couple: str, default "xyz"
+            Couplings of diagonal elements of the stress tensor/
+        box_dof: list of bool;
+                optional default [True, True, True, False, False, False]
+            Degrees of freedom of the box.
+        rescale_all: bool, default False
+            Rescale all particles, not just those in the group.
+        gamma: float, default 0.0
+            Friction constant for the box degrees of freedom,
+        thermalize_particles: bool, default True
+            When set to True, assigns random velocities to all particles.
+        write_at_start : bool, default True
+            When set to True, triggers writers that evaluate to True
+            for the initial step to execute before the next simulation
+            time step.
+
+        """
         self.set_integrator_method(
             integrator_method=hoomd.md.methods.ConstantPressure,
             method_kwargs={
@@ -594,7 +831,24 @@ class Simulation(hoomd.simulation.Simulation):
         thermalize_particles=True,
         write_at_start=True,
     ):
-        """"""
+        """Run the simulation in the NVT ensemble.
+
+        Parameters
+        ----------
+        n_steps: int, required
+            Number of steps to run the simulation.
+        kT: int or hoomd.variant.Ramp, required
+            The temperature to use during the simulation.
+        tau_kt: float, required
+            Thermostat coupling period (in simulation time units).
+        thermalize_particles: bool, default True
+            When set to True, assigns random velocities to all particles.
+        write_at_start : bool, default True
+            When set to True, triggers writers that evaluate to True
+            for the initial step to execute before the next simulation
+            time step.
+
+        """
         self.set_integrator_method(
             integrator_method=hoomd.md.methods.ConstantVolume,
             method_kwargs={
@@ -616,7 +870,18 @@ class Simulation(hoomd.simulation.Simulation):
         self.operations.updaters.remove(std_out_logger_printer)
 
     def run_NVE(self, n_steps, write_at_start=True):
-        """"""
+        """Run the simulation in the NVE ensemble.
+
+        Parameters
+        ----------
+        n_steps: int, required
+            Number of steps to run the simulation.
+        write_at_start : bool, default True
+            When set to True, triggers writers that evaluate to True
+            for the initial step to execute before the next simulation
+            time step.
+
+        """
         self.set_integrator_method(
             integrator_method=hoomd.md.methods.ConstantVolume,
             method_kwargs={"filter": self.integrate_group},
@@ -636,8 +901,7 @@ class Simulation(hoomd.simulation.Simulation):
         maximum_displacement=1e-3,
         write_at_start=True,
     ):
-        """NVE based integrator that Puts a cap on the maximum displacement
-        per time step.
+        """NVE integrator with a cap on the maximum displacement per time step.
 
         DisplacementCapped method is mostly useful for initially relaxing a
         system with overlapping particles. Putting a cap on the max particle
@@ -645,11 +909,17 @@ class Simulation(hoomd.simulation.Simulation):
         Once the system is relaxed, other run methods (NVE, NVT, etc) can be
         used.
 
-        Parameters:
-        -----------
+        Parameters
+        ----------
         n_steps : int, required
-            Number of steps to run during shrinking
-        maximum_displacement : maximum displacement per step (length)
+            Number of steps to run the simulation.
+        maximum_displacement : float, default 1e-3
+            Maximum displacement per step (length)
+
+        write_at_start : bool, default True
+            When set to True, triggers writers that evaluate to True
+            for the initial step to execute before the next simulation
+            time step.
 
         """
         self.set_integrator_method(
@@ -669,18 +939,119 @@ class Simulation(hoomd.simulation.Simulation):
         self.operations.updaters.remove(std_out_logger_printer)
 
     def temperature_ramp(self, n_steps, kT_start, kT_final):
+        """Create a temperature ramp.
+
+        Parameters
+        ----------
+        n_steps : int, required
+            The number of steps to ramp the temperature over.
+        kT_start : float, required
+            The starting temperature.
+        kT_final : float, required
+            The final temperature.
+
+        """
         return hoomd.variant.Ramp(
             A=kT_start, B=kT_final, t_start=self.timestep, t_ramp=int(n_steps)
         )
 
     def pickle_forcefield(self, file_path="forcefield.pickle"):
+        """Pickle the list of HOOMD forces.
+
+        This method useful for saving the forcefield of a simulation to a file
+        and reusing it for restarting a simulation or running a different
+        simulation.
+
+        Parameters
+        ----------
+        file_path : str, default "forcefield.pickle"
+            The path to save the pickle file to.
+
+        Examples
+        --------
+        In this example, a simulation is initialized and run for 1000 steps. The
+        forcefield is then pickled and saved to a file. The forcefield is then
+        loaded from the pickle file and used to run a tensile simulation.
+
+        ::
+
+            from hoomd_organics import Pack, Simulation
+            from hoomd_organics.library import PPS, OPLS_AA_PPS, Tensile
+            import pickle
+
+            pps_mols = PPS(num_mols=10, lengths=5)
+            pps_system = Pack(molecules=[pps_mols], force_field=OPLS_AA_PPS(),
+                              r_cut=2.5, density=0.5, auto_scale=True,
+                              scale_charges=True)
+            sim = Simulation(initial_state=pps_system.hoomd_snapshot,
+                             forcefield=pps_system.hoomd_forcefield)
+            sim.run_NVT(n_steps=1e3, kT=1.0, tau_kt=1.0)
+            sim.pickle_forcefield("pps_forcefield.pickle")
+            with open("pps_forcefield.pickle", "rb") as f:
+                pps_forcefield = pickle.load(f)
+
+            tensile_sim = Tensile(initial_state=pps_system.hoomd_snapshot,
+                                  forcefield=pps_forcefield,
+                                   tensile_axis=(1, 0, 0))
+            tensile_sim.run_tensile(strain=0.05, kT=2.0, n_steps=1e3, period=10)
+
+        """
         f = open(file_path, "wb")
         pickle.dump(self._forcefield, f)
 
     def save_restart_gsd(self, file_path="restart.gsd"):
+        """Save a GSD file of the current simulation state.
+
+        This method is useful for saving the state of a simulation to a file
+        and reusing it for restarting a simulation or running a different
+        simulation.
+
+        Parameters
+        ----------
+        file_path : str, default "restart.gsd"
+            The path to save the GSD file to.
+
+        Examples
+        --------
+        This example is similar to the example in `pickle_forcefield`. The only
+        difference is that the simulation state is also saved to a GSD file.
+
+        ::
+
+            from hoomd_organics import Pack, Simulation
+            from hoomd_organics.library import PPS, OPLS_AA_PPS, Tensile
+            import pickle
+
+            pps_mols = PPS(num_mols=10, lengths=5)
+            pps_system = Pack(molecules=[pps_mols], force_field=OPLS_AA_PPS(),
+                              r_cut=2.5, density=0.5, auto_scale=True,
+                              scale_charges=True)
+            sim = Simulation(initial_state=pps_system.hoomd_snapshot,
+                             forcefield=pps_system.hoomd_forcefield)
+            sim.run_NVT(n_steps=1e3, kT=1.0, tau_kt=1.0)
+            sim.pickle_forcefield("pps_forcefield.pickle")
+            sim.save_restart_gsd("pps_restart.gsd")
+            with open("pps_forcefield.pickle", "rb") as f:
+                pps_forcefield = pickle.load(f)
+
+            tensile_sim = Tensile(initial_state="pps_restart.gsd",
+                                  forcefield=pps_forcefield,
+                                  tensile_axis=(1, 0, 0))
+            tensile_sim.run_tensile(strain=0.05, kT=2.0, n_steps=1e3, period=10)
+
+
+        """
         hoomd.write.GSD.write(self.state, filename=file_path)
 
     def _thermalize_system(self, kT):
+        """Assign random velocities to all particles.
+
+        Parameters
+        ----------
+        kT : float or hoomd.variant.Ramp, required
+            The temperature to use during the thermalization.
+
+        """
         if isinstance(kT, hoomd.variant.Ramp):
             self.state.thermalize_particle_momenta(
                 filter=self.integrate_group, kT=kT.range[0]
@@ -691,6 +1062,7 @@ class Simulation(hoomd.simulation.Simulation):
             )
 
     def _lj_force(self):
+        """Return the Lennard-Jones pair force."""
         if not self.integrator:
             lj_force = [
                 f
@@ -706,6 +1078,12 @@ class Simulation(hoomd.simulation.Simulation):
         return lj_force
 
     def _create_state(self, initial_state):
+        """Create the simulation state.
+
+        If initial_state is a snapshot, the state is created from the snapshot.
+        If initial_state is a GSD file, the state is created from the GSD file.
+
+        """
         if isinstance(initial_state, str):  # Load from a GSD file
             print("Initializing simulation state from a GSD file.")
             self.create_state_from_gsd(initial_state)
@@ -719,8 +1097,7 @@ class Simulation(hoomd.simulation.Simulation):
             self.create_state_from_snapshot(initial_state)
 
     def _add_hoomd_writers(self):
-        """Creates gsd and log writers"""
-
+        """Create gsd and log writers."""
         gsd_logger = hoomd.logging.Logger(
             categories=["scalar", "string", "sequence"]
         )
