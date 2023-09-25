@@ -462,6 +462,17 @@ class TestSystem(BaseTest):
         with pytest.raises(ReferenceUnitError):
             system.reference_length = "1.0 g"
 
+    def test_ref_length_auto_scale_true(self, polyethylene):
+        polyethylene = polyethylene(lengths=5, num_mols=1)
+        system = Pack(
+            molecules=[polyethylene],
+            force_field=[OPLS_AA()],
+            density=1.0,
+        )
+        system.apply_forcefield(r_cut=2.5, auto_scale=True)
+        system.reference_length = 1 * u.angstrom
+        assert system.reference_length == 1 * u.angstrom
+
     def test_set_ref_energy(self, polyethylene):
         polyethylene = polyethylene(lengths=5, num_mols=1)
         system = Pack(
@@ -550,6 +561,17 @@ class TestSystem(BaseTest):
         with pytest.raises(ReferenceUnitError):
             system.reference_energy = "1.0 m"
 
+    def test_set_ref_energy_auto_scale_true(self, polyethylene):
+        polyethylene = polyethylene(lengths=5, num_mols=1)
+        system = Pack(
+            molecules=[polyethylene],
+            force_field=[OPLS_AA()],
+            density=1.0,
+        )
+        system.apply_forcefield(r_cut=2.5, auto_scale=True)
+        system.reference_energy = 1 * u.kcal / u.mol
+        assert system.reference_energy == 1 * u.kcal / u.mol
+
     def test_set_ref_mass(self, polyethylene):
         polyethylene = polyethylene(lengths=5, num_mols=1)
         system = Pack(
@@ -627,6 +649,18 @@ class TestSystem(BaseTest):
         system.apply_forcefield(r_cut=2.5, auto_scale=False)
         with pytest.raises(ReferenceUnitError):
             system.reference_mass = "1.0 m"
+
+    def test_set_ref_mass_auto_scale_true(self, polyethylene):
+        polyethylene = polyethylene(lengths=5, num_mols=1)
+        system = Pack(
+            molecules=[polyethylene],
+            force_field=[OPLS_AA()],
+            density=1.0,
+        )
+        system.apply_forcefield(r_cut=2.5, auto_scale=True)
+
+        system.reference_mass = 1.0 * u.amu
+        assert system.reference_mass == 1.0 * u.amu
 
     def test_apply_forcefield_no_forcefield(self, polyethylene):
         polyethylene = polyethylene(lengths=5, num_mols=1)
