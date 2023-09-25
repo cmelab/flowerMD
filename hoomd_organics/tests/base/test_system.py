@@ -18,9 +18,8 @@ class TestSystem(BaseTest):
             molecules=[benzene_mols],
             density=0.8,
             force_field=OPLS_AA(),
-            auto_scale=True,
         )
-        system.apply_forcefield(r_cut=2.5)
+        system.apply_forcefield(r_cut=2.5, auto_scale=True)
         assert system.n_mol_types == 1
         assert len(system.all_molecules) == len(benzene_mols.molecules)
         assert system.gmso_system.is_typed()
@@ -36,9 +35,8 @@ class TestSystem(BaseTest):
             molecules=[benzene_mol, ethane_mol],
             density=0.8,
             force_field=OPLS_AA(),
-            auto_scale=True,
         )
-        system.apply_forcefield(r_cut=2.5)
+        system.apply_forcefield(r_cut=2.5, auto_scale=True)
         assert system.n_mol_types == 2
         assert len(system.all_molecules) == len(benzene_mol.molecules) + len(
             ethane_mol.molecules
@@ -64,9 +62,8 @@ class TestSystem(BaseTest):
             molecules=[dimethylether_mol, pps_mol],
             density=0.8,
             force_field=[OPLS_AA_DIMETHYLETHER(), OPLS_AA_PPS()],
-            auto_scale=True,
         )
-        system.apply_forcefield(r_cut=2.5)
+        system.apply_forcefield(r_cut=2.5, auto_scale=True)
         assert system.n_mol_types == 2
         assert len(system.all_molecules) == len(
             dimethylether_mol.molecules
@@ -372,6 +369,22 @@ class TestSystem(BaseTest):
         with pytest.raises(ReferenceUnitError):
             system.reference_values = ref_value_dict
 
+    def test_set_ref_values_auto_scale_true(self, polyethylene):
+        polyethylene = polyethylene(lengths=5, num_mols=5)
+        system = Pack(
+            molecules=[polyethylene],
+            force_field=[OPLS_AA()],
+            density=1.0,
+        )
+        system.apply_forcefield(r_cut=2.5, auto_scale=True)
+        ref_value_dict = {
+            "length": 1 * u.angstrom,
+            "energy": 3.0 * u.kcal / u.mol,
+            "mass": 1.25 * u.Unit("amu"),
+        }
+        with pytest.warns():
+            system.reference_values = ref_value_dict
+
     def test_set_ref_length(self, polyethylene):
         polyethylene = polyethylene(lengths=5, num_mols=1)
         system = Pack(
@@ -389,9 +402,8 @@ class TestSystem(BaseTest):
             molecules=[polyethylene],
             force_field=[OPLS_AA()],
             density=1.0,
-            auto_scale=False,
         )
-        system.apply_forcefield(r_cut=2.5)
+        system.apply_forcefield(r_cut=2.5, auto_scale=False)
         with pytest.raises(ReferenceUnitError):
             system.reference_length = 1.0
 
