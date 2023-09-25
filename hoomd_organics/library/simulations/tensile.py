@@ -14,7 +14,8 @@ class Tensile(Simulation):
     tensile_axis : tuple of int, required
         The axis along which to apply the tensile strain.
     fix_ratio : float, default=0.20
-        The ratio of the box length to fix at each end of the tensile axis.
+        The ratio of the box length to fix particles at each end
+        of the tensile axis.
 
     """
 

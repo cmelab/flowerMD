@@ -13,13 +13,14 @@ class Interface:
     Parameters
     ----------
     gsd_file : str
-        Path to gsd file containing the slab.
+        Path to gsd file of the slab.
     interface_axis : tuple
         Axis along which the interface is to be created.
-    gap : float
-        Distance between the two slabs.
+        The slab file is duplicated and translated along this axis.
+    gap : float, required
+        Distance (in simulation units) between the two slabs at the interface.
     wall_sigma : float
-        Sigma parameter for the wall potential.
+        Sigma parameter used for the wall potential when creating the slabs.
 
     """
 
@@ -31,7 +32,7 @@ class Interface:
         self.hoomd_snapshot = self._build()
 
     def _build(self):
-        """Build the interface."""
+        """Duplicates the slab and builds the interface."""
         gsd_file = gsd.hoomd.open(self.gsd_file)
         snap = gsd_file[-1]
         gsd_file.close()
@@ -133,12 +134,14 @@ class Interface:
 
 
 class SlabSimulation(Simulation):
-    """For simulating a slab.
+    """Runs a simulation which creates a slab to be used in
+    creating an interface system.
 
     Parameters
     ----------
     interface_axis : tuple, default=(1, 0, 0)
         Axis along which the interface is to be created.
+        The box edges along this axis will have a flat surface
     wall_sigma : float, default 1.0
         Sigma parameter for the wall potential.
     wall_epsilon : float, default 1.0
@@ -200,7 +203,7 @@ class SlabSimulation(Simulation):
 
 
 class WeldSimulation(Simulation):
-    """For simulating a weld."""
+    """For simulating welding of an interface joint."""
 
     def __init__(
         self,
