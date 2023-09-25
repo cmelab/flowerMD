@@ -5,11 +5,17 @@ System
 
 .. rubric:: Details
 
-.. autoclass:: hoomd_organics.base.system.System
-    :members: coarse_grain mapping molecules n_bonds
+.. automodule:: hoomd_organics.base.system
+    :no-members:
 
-.. autoclass:: hoomd_organics.base.system.Pack
-    :members:
+    .. autoclass:: System()
+        :members:
+        :no-index:
 
-.. autoclass:: hoomd_organics.base.system.Lattice
-    :members:
+    .. autoclass:: Pack()
+        :members:
+        :no-index:
+
+    .. autoclass:: Lattice()
+        :members:
+        :no-index:

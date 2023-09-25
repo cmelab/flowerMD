@@ -19,7 +19,7 @@ sys.path.insert(0, os.path.abspath("../.."))
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-extensions = ["sphinx.ext.autodoc", "sphinx.ext.napoleon", "nbsphinx"]
+extensions = ["nbsphinx", "sphinx.ext.autodoc", "sphinx.ext.napoleon"]
 autodoc_mock_imports = [
     "cmeutils",
     "forcefield_utilities",
@@ -37,10 +37,14 @@ autodoc_mock_imports = [
     "symengine",
     "sympy",
     "unyt",
+    "jupyter",
 ]
 
 templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
+nbsphinx_execute = "never"
+nbsphinx_allow_errors = True
+source_suffix = [".rst"]
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
