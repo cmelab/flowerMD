@@ -10,8 +10,21 @@ library-based approach to system initialization, making HOOMD-Organics agnostic
 to system identity, forcefield, and thermodynamic ensemble, and allowing
 for growth on an as-needed basis.
 
-GitHub Repository: https://github.com/cmelab/hoomd-organics
+Quick start
+===========
+.. toctree::
+    installation
 
+
+Resources
+=========
+
+`GitHub Repository <https://github.com/cmelab/hoomd-organics>`_: Source code and issue tracker.
+
+`Tutorials <https://github.com/cmelab/hoomd-organics/tree/main/tutorials>`_: Examples of how to use HOOMD-Organics.
+
+Python API
+==========
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
@@ -19,12 +32,7 @@ GitHub Repository: https://github.com/cmelab/hoomd-organics
    base
    modules
    library
-
-.. toctree::
-    :maxdepth: 1
-    :caption: Tutorials:
-
-    tutorials/Run_MD_Simulation
+   tutorials
 
 
 
