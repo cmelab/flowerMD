@@ -17,6 +17,8 @@ class TestTensileSimulation(BaseTest):
             n=4,
             auto_scale=True,
         )
+        system.apply_forcefield(r_cut=2.5)
+
         tensile_sim = Tensile(
             initial_state=system.hoomd_snapshot,
             forcefield=system.hoomd_forcefield,
