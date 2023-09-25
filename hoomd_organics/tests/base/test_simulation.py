@@ -151,11 +151,11 @@ class TestSimulate(BaseTest):
     def test_update_volume_density(self, benzene_system):
         sim = Simulation.from_system(benzene_system)
         sim.run_update_volume(
-            kT=1.0, tau_kt=0.01, n_steps=500, period=1, final_density=0.1
+            kT=1.0, tau_kt=0.01, n_steps=500, period=1, final_density=0.05
         )
         assert np.isclose(
             sim.density.to(u.g / u.cm**3).value,
-            (0.1 * (u.g / u.cm**3)).value,
+            (0.05 * (u.g / u.cm**3)).value,
             atol=1e-4,
         )
 

@@ -12,12 +12,13 @@ class TestTensileSimulation(BaseTest):
             molecules=[pps],
             force_field=[OPLS_AA_PPS()],
             density=1.0,
-            r_cut=2.5,
             x=1.2,
             y=1.2,
             n=4,
             auto_scale=True,
         )
+        system.apply_forcefield(r_cut=2.5)
+
         tensile_sim = Tensile(
             initial_state=system.hoomd_snapshot,
             forcefield=system.hoomd_forcefield,
