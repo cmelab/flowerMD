@@ -48,23 +48,9 @@ class System(ABC):
         target_box attribute. Can be useful when initializing
         systems at low density and running a shrink simulation
         to achieve a target density.
-    r_cut : float, required
-        The cutoff radius for the Lennard-Jones potential.
     force_field : hoomd_organics.ForceField or a list of ForceField objects,
                 default=None
         The force field to be applied to the system for parameterization.
-    auto_scale : bool, default=False
-        Set to true to use reduced simulation units.
-        distance, mass, and energy are scaled by the largest value
-        present in the system for each.
-    remove_hydrogens : bool, default False
-        Set to true to remove hydrogen atoms from the system.
-        The masses and charges of the hydrogens are absorbed into
-        the heavy atoms they were bonded to.
-    remove_charges : bool, default False
-        Set to true to remove charges from the system.
-    scale_charges : bool, default False
-        Set to true to scale charges to net zero.
     base_units : dict, default {}
         Dictionary of base units to use for scaling.
         Dictionary keys are "length", "mass", and "energy". Values should be an
@@ -90,7 +76,6 @@ class System(ABC):
         molecules,
         density: float,
         force_field=None,
-        auto_scale=False,
         base_units=dict(),
     ):
         self._molecules = check_return_iterable(molecules)
@@ -98,7 +83,6 @@ class System(ABC):
         if force_field:
             self._force_field = check_return_iterable(force_field)
         self.density = density
-        self.auto_scale = auto_scale
         self.all_molecules = []
         self.gmso_system = None
         self._reference_values = base_units
@@ -110,6 +94,7 @@ class System(ABC):
         self._ff_refs = dict()
         self._snap_refs = dict()
         self._ff_kwargs = dict()
+        self.auto_scale = False
 
         # Collecting all molecules
         self.n_mol_types = 0
@@ -383,7 +368,7 @@ class System(ABC):
                         site.mass += h.mass
                         site.charge += h.charge
             self.gmso_system.remove_site(site=h)
-        # If a snap shot was already made, need to re-create it w/o hydrogens
+        # If a snapshot was already made, need to re-create it w/o hydrogens
         if self._hoomd_snapshot:
             self._create_hoomd_snapshot()
 
@@ -428,7 +413,7 @@ class System(ABC):
             r_cut=r_cut,
             nlist_buffer=nlist_buffer,
             pppm_kwargs=pppm_kwargs,
-            auto_scale=self.auto_scale,
+            auto_scale=False,
             base_units=self._reference_values
             if self._reference_values
             else None,
@@ -442,7 +427,7 @@ class System(ABC):
         """Create a HOOMD snapshot."""
         snap, refs = to_gsd_snapshot(
             top=self.gmso_system,
-            auto_scale=self.auto_scale,
+            auto_scale=False,
             base_units=self._reference_values
             if self._reference_values
             else None,
@@ -492,6 +477,7 @@ class System(ABC):
             Neighborlist buffer for simulation cell.
 
         """
+        self.auto_scale = auto_scale
         if not self._force_field:
             # TODO: Better erorr message
             raise ValueError(
@@ -648,7 +634,6 @@ class Pack(System):
         molecules,
         density: float,
         force_field=None,
-        auto_scale=False,
         base_units=dict(),
         packing_expand_factor=5,
         edge=0.2,
@@ -659,7 +644,6 @@ class Pack(System):
             molecules=molecules,
             density=density,
             force_field=force_field,
-            auto_scale=auto_scale,
             base_units=base_units,
         )
 
@@ -702,7 +686,6 @@ class Lattice(System):
         n: int,
         basis_vector=[0.5, 0.5, 0],
         force_field=None,
-        auto_scale=False,
         base_units=dict(),
     ):
         self.x = x
@@ -713,7 +696,6 @@ class Lattice(System):
             molecules=molecules,
             density=density,
             force_field=force_field,
-            auto_scale=auto_scale,
             base_units=base_units,
         )
 
