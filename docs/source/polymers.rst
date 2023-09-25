@@ -1,4 +1,4 @@
-polymers
+Polymers
 -----------
 
 .. py:currentmodule:hoomd_organics.library
@@ -7,3 +7,4 @@ polymers
 
 .. automodule:: hoomd_organics.library.polymers
     :members:
+    :show-inheritance:

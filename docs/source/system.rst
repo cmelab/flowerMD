@@ -15,7 +15,9 @@ System
     .. autoclass:: Pack()
         :members:
         :no-index:
+        :show-inheritance:
 
     .. autoclass:: Lattice()
         :members:
         :no-index:
+        :show-inheritance:

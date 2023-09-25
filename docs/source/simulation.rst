@@ -1,4 +1,4 @@
-simulation
+Simulation
 -----------------
 
 .. py:currentmodule:hoomd_organics.base.simulation

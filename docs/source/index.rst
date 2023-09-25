@@ -23,11 +23,10 @@ Resources
 
 `Tutorials <https://github.com/cmelab/hoomd-organics/tree/main/tutorials>`_: Examples of how to use HOOMD-Organics.
 
-Python API
-==========
+
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: Python API
 
    base
    modules

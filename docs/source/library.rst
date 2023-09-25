@@ -16,3 +16,4 @@ Library
 
    polymers
    forcefields
+   simulations

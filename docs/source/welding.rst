@@ -1,4 +1,4 @@
-welding
+Welding
 -------
 
 .. py:currentmodule:hoomd_organics.modules
@@ -6,4 +6,18 @@ welding
 .. rubric:: Details
 
 .. automodule:: hoomd_organics.modules.welding
-    :members:
+    :no-members:
+
+    .. autoclass:: Interface()
+        :members:
+        :no-index:
+
+    .. autoclass:: SlabSimulation()
+        :members:
+        :no-index:
+        :show-inheritance:
+
+    .. autoclass:: WeldSimulation()
+        :members:
+        :no-index:
+        :show-inheritance:
