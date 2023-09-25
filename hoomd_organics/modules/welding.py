@@ -23,6 +23,7 @@ class Interface:
         Sigma parameter used for the wall potential when creating the slabs.
 
     """
+
     def __init__(self, gsd_file, interface_axis, gap, wall_sigma=1.0):
         self.gsd_file = gsd_file
         self.interface_axis = interface_axis
