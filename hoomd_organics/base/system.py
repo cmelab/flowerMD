@@ -70,6 +70,19 @@ class System(ABC):
         Dictionary keys are "length", "mass", and "energy". Values should be an
         unyt array of the desired base unit.
 
+    Warnings
+    --------
+    The ``force_field`` parameter in ``System`` class must be initialized
+    from the pre-defined force field classes in
+    ``hoomd_organics.library.forcefields`` module that are based on xml-based
+    force fields.
+
+    Forcefields defined as a list of `Hoomd.md.force.Force
+    <https://hoomd-blue.readthedocs.io/en/stable/module-md-force.html>`_ objects
+    must be directly passed to the ``hoomd_organics.Simulation`` class.
+    Please refer to the ``Simulation`` class documentation for more details.
+
+
     """
 
     def __init__(
