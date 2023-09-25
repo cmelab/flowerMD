@@ -134,8 +134,7 @@ class Interface:
 
 
 class SlabSimulation(Simulation):
-    """Runs a simulation which creates a slab to be used in
-    creating an interface system.
+    """Simulation which creates a slab for interface systems.
 
     Parameters
     ----------
