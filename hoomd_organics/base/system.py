@@ -89,12 +89,8 @@ class System(ABC):
         self,
         molecules,
         density: float,
-        r_cut: float,
         force_field=None,
         auto_scale=False,
-        remove_hydrogens=False,
-        remove_charges=False,
-        scale_charges=False,
         base_units=dict(),
     ):
         self._molecules = check_return_iterable(molecules)
@@ -102,21 +98,18 @@ class System(ABC):
         if force_field:
             self._force_field = check_return_iterable(force_field)
         self.density = density
-        self.r_cut = r_cut
         self.auto_scale = auto_scale
-        self.remove_hydrogens = remove_hydrogens
-        self.remove_charges = remove_charges
-        self.scale_charges = scale_charges
-        self._target_box = None
         self.all_molecules = []
+        self.gmso_system = None
+        self._reference_values = base_units
         self._hoomd_snapshot = None
         self._hoomd_forcefield = []
-        self._reference_values = base_units
         self._gmso_forcefields_dict = dict()
+        self._target_box = None
         # Reference values used when last writing snapshot and forcefields
         self._ff_refs = dict()
         self._snap_refs = dict()
-        self.gmso_system = None
+        self._ff_kwargs = dict()
 
         # Collecting all molecules
         self.n_mol_types = 0
@@ -170,16 +163,10 @@ class System(ABC):
                             f"{self._force_field[ff_index]} is not "
                             f"provided."
                         )
+        # Create mBuild system
         self.system = self._build_system()
+        # Create GMSO topology
         self.gmso_system = self._convert_to_gmso()
-        if self._force_field:
-            self._apply_forcefield()
-        if self.remove_hydrogens:
-            self._remove_hydrogens()
-        self._hoomd_forcefield = (
-            self._create_hoomd_forcefield() if self._force_field else []
-        )
-        self._hoomd_snapshot = self._create_hoomd_snapshot()
 
     @abstractmethod
     def _build_system(self):
@@ -216,6 +203,7 @@ class System(ABC):
     @property
     def box(self):
         """The box of the system."""
+        # TODO: Use gmso system here?
         return self.system.box
 
     @property
@@ -330,13 +318,17 @@ class System(ABC):
         """The snapshot of the system in form of a HOOMD snapshot."""
         if self._snap_refs != self.reference_values:
             self._hoomd_snapshot = self._create_hoomd_snapshot()
+        if self._hoomd_snapshot is None:  # Hasn't been created yet
+            self._hoomd_snapshot = self._create_hoomd_snapshot()
         return self._hoomd_snapshot
 
     @property
     def hoomd_forcefield(self):
         """List of HOOMD forces."""
         if self._ff_refs != self.reference_values and self._force_field:
-            self._hoomd_forcefield = self._create_hoomd_forcefield()
+            self._hoomd_forcefield = self._create_hoomd_forcefield(
+                **self._ff_kwargs
+            )
         return self._hoomd_forcefield
 
     @property
@@ -357,8 +349,8 @@ class System(ABC):
         else:
             return self._target_box
 
-    def _remove_hydrogens(self):
-        """Remove hydrogen atoms from the system.
+    def remove_hydrogens(self):
+        """Call this method to remove hydrogen atoms from the system.
 
         The masses and charges of the hydrogens are absorbed into
         the heavy atoms they were bonded to.
@@ -391,6 +383,9 @@ class System(ABC):
                         site.mass += h.mass
                         site.charge += h.charge
             self.gmso_system.remove_site(site=h)
+        # If a snap shot was already made, need to re-create it w/o hydrogens
+        if self._hoomd_snapshot:
+            self._create_hoomd_snapshot()
 
     def _scale_charges(self):
         """Scale charges to net zero.
@@ -425,12 +420,14 @@ class System(ABC):
         topology.identify_connections()
         return topology
 
-    def _create_hoomd_forcefield(self):
+    def _create_hoomd_forcefield(self, r_cut, nlist_buffer, pppm_kwargs):
         """Create a list of HOOMD forces."""
         force_list = []
         ff, refs = to_hoomd_forcefield(
             top=self.gmso_system,
-            r_cut=self.r_cut,
+            r_cut=r_cut,
+            nlist_buffer=nlist_buffer,
+            pppm_kwargs=pppm_kwargs,
             auto_scale=self.auto_scale,
             base_units=self._reference_values
             if self._reference_values
@@ -453,8 +450,54 @@ class System(ABC):
         self._snap_refs = self._reference_values.copy()
         return snap
 
-    def _apply_forcefield(self):
-        """Apply the forcefield to the system."""
+    def apply_forcefield(
+        self,
+        r_cut,
+        auto_scale=False,
+        scale_charges=False,
+        remove_charges=False,
+        remove_hydrogens=False,
+        pppm_resolution=(8, 8, 8),
+        pppm_order=4,
+        nlist_buffer=0.4,
+    ):
+        """Apply the forcefield to the system.
+
+        Parameters
+        ----------
+        r_cut : float
+            The cutoff radius for the Lennard-Jones interactions.
+
+        auto_scale : bool, default=False
+            Set to true to use reduced simulation units.
+            distance, mass, and energy are scaled by the largest value
+            present in the system for each.
+        scale_charges : bool, default False
+            Set to true to scale charges to net zero.
+        remove_charges : bool, default False
+            Set to true to remove charges from the system.
+        remove_hydrogens : bool, default False
+            Set to true to remove hydrogen atoms from the system.
+            The masses and charges of the hydrogens are absorbed into
+            the heavy atoms they were bonded to.
+        pppm_resolution : tuple, default=(8, 8, 8)
+            The resolution used in
+            `hoomd.md.long_range.pppm.make_pppm_coulomb_force` representing
+            number of grid points in the x, y, and z directions.
+        ppmp_order : int, default=4
+            The order used in
+            `hoomd.md.long_range.pppm.make_pppm_coulomb_force` representing
+            number of grid points in each direction to assign charges to.
+        nlist_buffer : float, default=0.4
+            Neighborlist buffer for simulation cell.
+
+        """
+        if not self._force_field:
+            # TODO: Better erorr message
+            raise ValueError(
+                "This method can only be used when the System is "
+                "initialized with an XML type forcefield."
+            )
         self.gmso_system = apply(
             self.gmso_system,
             self._gmso_forcefields_dict,
@@ -462,11 +505,14 @@ class System(ABC):
             speedup_by_moltag=True,
             speedup_by_molgraph=False,
         )
-        if self.remove_charges:
+
+        if remove_charges:
             for site in self.gmso_system.sites:
                 site.charge = 0
-        if self.scale_charges and not self.remove_charges:
+
+        if scale_charges and not remove_charges:
             self._scale_charges()
+
         epsilons = [
             s.atom_type.parameters["epsilon"] for s in self.gmso_system.sites
         ]
@@ -482,6 +528,20 @@ class System(ABC):
         self._reference_values["energy"] = energy_scale * epsilons[0].unit_array
         self._reference_values["length"] = length_scale * sigmas[0].unit_array
         self._reference_values["mass"] = mass_scale * masses[0].unit_array
+
+        if remove_hydrogens:
+            self.remove_hydrogens()
+
+        pppm_kwargs = {"resolution": pppm_resolution, "order": pppm_order}
+        self._ff_kwargs = {
+            "r_cut": r_cut,
+            "nlist_buffer": nlist_buffer,
+            "pppm_kwargs": pppm_kwargs,
+        }
+        self._hoomd_forcefield = self._create_hoomd_forcefield(
+            r_cut=r_cut, nlist_buffer=nlist_buffer, pppm_kwargs=pppm_kwargs
+        )
+        self._hoomd_snapshot = self._create_hoomd_snapshot()
 
     def set_target_box(
         self, x_constraint=None, y_constraint=None, z_constraint=None
@@ -587,12 +647,8 @@ class Pack(System):
         self,
         molecules,
         density: float,
-        r_cut: float,
         force_field=None,
         auto_scale=False,
-        remove_hydrogens=False,
-        remove_charges=False,
-        scale_charges=False,
         base_units=dict(),
         packing_expand_factor=5,
         edge=0.2,
@@ -603,11 +659,7 @@ class Pack(System):
             molecules=molecules,
             density=density,
             force_field=force_field,
-            r_cut=r_cut,
             auto_scale=auto_scale,
-            remove_hydrogens=remove_hydrogens,
-            remove_charges=remove_charges,
-            scale_charges=scale_charges,
             base_units=base_units,
         )
 
@@ -645,16 +697,12 @@ class Lattice(System):
         self,
         molecules,
         density: float,
-        r_cut: float,
         x: float,
         y: float,
         n: int,
         basis_vector=[0.5, 0.5, 0],
         force_field=None,
         auto_scale=False,
-        remove_hydrogens=False,
-        remove_charges=False,
-        scale_charges=False,
         base_units=dict(),
     ):
         self.x = x
@@ -665,11 +713,7 @@ class Lattice(System):
             molecules=molecules,
             density=density,
             force_field=force_field,
-            r_cut=r_cut,
             auto_scale=auto_scale,
-            remove_hydrogens=remove_hydrogens,
-            remove_charges=remove_charges,
-            scale_charges=scale_charges,
             base_units=base_units,
         )
 
