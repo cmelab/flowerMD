@@ -644,6 +644,33 @@ class TestSystem(BaseTest):
         with pytest.raises(ReferenceUnitError):
             system.reference_mass = "1.0 m"
 
+    def test_apply_forcefield_no_forcefield(self, polyethylene):
+        polyethylene = polyethylene(lengths=5, num_mols=1)
+        system = Pack(
+            molecules=[polyethylene],
+            force_field=None,
+            density=1.0,
+            auto_scale=False,
+        )
+        with pytest.raises(ValueError):
+            system.apply_forcefield(r_cut=2.5)
+
+    def test_forcefield_kwargs_attr(self, polyethylene):
+        polyethylene = polyethylene(lengths=5, num_mols=1)
+        system = Pack(
+            molecules=[polyethylene],
+            force_field=[OPLS_AA()],
+            density=1.0,
+            auto_scale=False,
+        )
+        system.apply_forcefield(
+            r_cut=2.5, nlist_buffer=0.5, pppm_resolution=(4, 4, 4), pppm_order=3
+        )
+        assert system._ff_kwargs["r_cut"] == 2.5
+        assert system._ff_kwargs["nlist_buffer"] == 0.5
+        assert system._ff_kwargs["pppm_kwargs"]["resolution"] == (4, 4, 4)
+        assert system._ff_kwargs["pppm_kwargs"]["order"] == 3
+
     def test_lattice_polymer(self, polyethylene):
         polyethylene = polyethylene(lengths=2, num_mols=32)
         system = Lattice(
