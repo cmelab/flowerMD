@@ -12,7 +12,6 @@ class TestTensileSimulation(BaseTest):
             molecules=[pps],
             force_field=[OPLS_AA_PPS()],
             density=1.0,
-            r_cut=2.5,
             x=1.2,
             y=1.2,
             n=4,
