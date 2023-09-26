@@ -10,13 +10,14 @@ class TestTensileSimulation(BaseTest):
         pps = PPS(lengths=6, num_mols=32)
         system = Lattice(
             molecules=[pps],
-            force_field=[OPLS_AA_PPS()],
             density=1.0,
             x=1.2,
             y=1.2,
             n=4,
         )
-        system.apply_forcefield(r_cut=2.5, auto_scale=True)
+        system.apply_forcefield(
+            r_cut=2.5, force_field=[OPLS_AA_PPS()], auto_scale=True
+        )
 
         tensile_sim = Tensile(
             initial_state=system.hoomd_snapshot,
