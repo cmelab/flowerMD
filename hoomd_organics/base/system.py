@@ -48,9 +48,6 @@ class System(ABC):
         target_box attribute. Can be useful when initializing
         systems at low density and running a shrink simulation
         to achieve a target density.
-    force_field : hoomd_organics.ForceField or a list of ForceField objects,
-                default=None
-        The force field to be applied to the system for parameterization.
     base_units : dict, default {}
         Dictionary of base units to use for scaling.
         Dictionary keys are "length", "mass", and "energy". Values should be an
@@ -75,13 +72,9 @@ class System(ABC):
         self,
         molecules,
         density: float,
-        force_field=None,
         base_units=dict(),
     ):
         self._molecules = check_return_iterable(molecules)
-        self._force_field = None
-        if force_field:
-            self._force_field = check_return_iterable(force_field)
         self.density = density
         self.all_molecules = []
         self.gmso_system = None
@@ -128,26 +121,6 @@ class System(ABC):
                         )
                 self.n_mol_types += 1
 
-        # Collecting all force-fields only if xml force-field is provided
-        if self._force_field:
-            for i in range(self.n_mol_types):
-                if not self._gmso_forcefields_dict.get(str(i)):
-                    if i < len(self._force_field):
-                        # if there is a ff for each molecule type
-                        ff_index = i
-                    else:
-                        # if there is only one ff for all molecule types
-                        ff_index = 0
-                    if hasattr(self._force_field[ff_index], "gmso_ff"):
-                        self._gmso_forcefields_dict[str(i)] = self._force_field[
-                            ff_index
-                        ].gmso_ff
-                    else:
-                        raise ForceFieldError(
-                            msg=f"GMSO Force field in "
-                            f"{self._force_field[ff_index]} is not "
-                            f"provided."
-                        )
         # Create mBuild system
         self.system = self._build_system()
         # Create GMSO topology
@@ -463,6 +436,7 @@ class System(ABC):
     def apply_forcefield(
         self,
         r_cut,
+        force_field=None,
         auto_scale=False,
         scale_charges=False,
         remove_charges=False,
@@ -477,7 +451,11 @@ class System(ABC):
         ----------
         r_cut : float
             The cutoff radius for the Lennard-Jones interactions.
-
+        force_field : hoomd_organics.ForceField or a list of ForceField objects,
+                default=None
+            The force field to be applied to the system for parameterization.
+            If a list of force fields is provided, the length of the list must
+            be equal to the number of molecule types in the system.
         auto_scale : bool, default=False
             Set to true to use reduced simulation units.
             distance, mass, and energy are scaled by the largest value
@@ -502,6 +480,29 @@ class System(ABC):
             Neighborlist buffer for simulation cell.
 
         """
+        self._force_field = None
+        if force_field:
+            self._force_field = check_return_iterable(force_field)
+        # Collecting all force-fields only if xml force-field is provided
+        if self._force_field:
+            for i in range(self.n_mol_types):
+                if not self._gmso_forcefields_dict.get(str(i)):
+                    if i < len(self._force_field):
+                        # if there is a ff for each molecule type
+                        ff_index = i
+                    else:
+                        # if there is only one ff for all molecule types
+                        ff_index = 0
+                    if hasattr(self._force_field[ff_index], "gmso_ff"):
+                        self._gmso_forcefields_dict[str(i)] = self._force_field[
+                            ff_index
+                        ].gmso_ff
+                    else:
+                        raise ForceFieldError(
+                            msg=f"GMSO Force field in "
+                            f"{self._force_field[ff_index]} is not "
+                            f"provided."
+                        )
         self.auto_scale = auto_scale
         if not self._force_field:
             # TODO: Better erorr message
