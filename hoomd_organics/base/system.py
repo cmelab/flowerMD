@@ -433,6 +433,12 @@ class System(ABC):
         self._snap_refs = self._reference_values.copy()
         return snap
 
+    def _validate_forcefield(self, input_forcefield):
+        self._force_field = None
+        if input_forcefield:
+            self._force_field = check_return_iterable(input_forcefield)
+        # check if forcefield is xml based. return error if not
+
     def apply_forcefield(
         self,
         r_cut,
@@ -480,10 +486,13 @@ class System(ABC):
             Neighborlist buffer for simulation cell.
 
         """
-        self._force_field = None
-        if force_field:
-            self._force_field = check_return_iterable(force_field)
-        # Collecting all force-fields only if xml force-field is provided
+        # make sure forcefield is xml based
+        self._validate_forcefield(force_field)
+
+        # check if molecules already had ff in them. If yes, use that  or
+        # return error (can't have two ff per molecule)
+
+        # Collecting all force-fields into a dict
         if self._force_field:
             for i in range(self.n_mol_types):
                 if not self._gmso_forcefields_dict.get(str(i)):
@@ -659,7 +668,6 @@ class Pack(System):
         self,
         molecules,
         density: float,
-        force_field=None,
         base_units=dict(),
         packing_expand_factor=5,
         edge=0.2,
@@ -669,7 +677,6 @@ class Pack(System):
         super(Pack, self).__init__(
             molecules=molecules,
             density=density,
-            force_field=force_field,
             base_units=base_units,
         )
 
@@ -711,7 +718,6 @@ class Lattice(System):
         y: float,
         n: int,
         basis_vector=[0.5, 0.5, 0],
-        force_field=None,
         base_units=dict(),
     ):
         self.x = x
@@ -721,7 +727,6 @@ class Lattice(System):
         super(Lattice, self).__init__(
             molecules=molecules,
             density=density,
-            force_field=force_field,
             base_units=base_units,
         )
 
