@@ -37,8 +37,8 @@ class TestSystem(BaseTest):
         assert len(system.all_molecules) == len(benzene_mol.molecules) + len(
             ethane_mol.molecules
         )
-        assert system.all_molecules[0].name == "0"
-        assert system.all_molecules[-1].name == "1"
+        assert system.gmso_system.sites[0].group == "0"
+        assert system.gmso_system.sites[-1].group == "1"
         assert system.gmso_system.is_typed()
         assert len(system.hoomd_forcefield) > 0
         assert system.n_particles == system.hoomd_snapshot.particles.N
@@ -64,8 +64,8 @@ class TestSystem(BaseTest):
         assert len(system.all_molecules) == len(
             dimethylether_mol.molecules
         ) + len(pps_mol.molecules)
-        assert system.all_molecules[0].name == "0"
-        assert system.all_molecules[-1].name == "1"
+        assert system.gmso_system.sites[0].group == "0"
+        assert system.gmso_system.sites[-1].group == "1"
         assert system.gmso_system.is_typed()
         assert len(system.hoomd_forcefield) > 0
         for hoomd_force in system.hoomd_forcefield:
@@ -129,6 +129,8 @@ class TestSystem(BaseTest):
             auto_scale=True,
         )
         for site in system.gmso_system.sites:
+            # this does not work as the name of all sites are changed to reflect
+            # the molecule type id
             if site.name == "H":
                 site.element = gmso.core.element.Element(
                     symbol="C",
