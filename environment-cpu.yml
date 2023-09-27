@@ -4,18 +4,18 @@ channels:
 dependencies:
   - boltons
   - foyer
-  - freud
   - fresnel
+  - freud
   - gsd<3.0
   - hoomd=3.11=*cpu*
   - mbuild
   - numpy
   - openbabel
   - pip
-  - python-symengine
   - py3Dmol
   - pytest
   - pytest-cov
+  - python-symengine
   - unyt
   - symengine
   - sympy

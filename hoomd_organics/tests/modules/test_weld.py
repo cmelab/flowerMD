@@ -29,7 +29,7 @@ class TestWelding(BaseTest):
             gsd_file="restart.gsd", interface_axis=(1, 0, 0), gap=0.1
         )
         interface_snap = interface.hoomd_snapshot
-        with gsd.hoomd.open("restart.gsd", "r") as traj:
+        with gsd.hoomd.open("restart.gsd", "rb") as traj:
             slab_snap = traj[0]
 
         assert interface_snap.particles.N == slab_snap.particles.N * 2

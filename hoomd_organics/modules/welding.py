@@ -1,29 +1,11 @@
-"""Module for simulating interfaces and welding."""
 import gsd.hoomd
 import hoomd
 import numpy as np
 
 from hoomd_organics.base.simulation import Simulation
-from hoomd_organics.utils import HOOMDThermostats
 
 
 class Interface:
-    """For creating an interface between two slabs.
-
-    Parameters
-    ----------
-    gsd_file : str
-        Path to gsd file of the slab.
-    interface_axis : tuple
-        Axis along which the interface is to be created.
-        The slab file is duplicated and translated along this axis.
-    gap : float, required
-        Distance (in simulation units) between the two slabs at the interface.
-    wall_sigma : float
-        Sigma parameter used for the wall potential when creating the slabs.
-
-    """
-
     def __init__(self, gsd_file, interface_axis, gap, wall_sigma=1.0):
         self.gsd_file = gsd_file
         self.interface_axis = interface_axis
@@ -32,13 +14,12 @@ class Interface:
         self.hoomd_snapshot = self._build()
 
     def _build(self):
-        """Duplicates the slab and builds the interface."""
         gsd_file = gsd.hoomd.open(self.gsd_file)
         snap = gsd_file[-1]
         gsd_file.close()
         axis_index = np.where(self.interface_axis != 0)[0]
 
-        interface = gsd.hoomd.Frame()
+        interface = gsd.hoomd.Snapshot()
         interface.particles.N = snap.particles.N * 2
         interface.bonds.N = snap.bonds.N * 2
         interface.bonds.M = snap.bonds.M
@@ -134,24 +115,6 @@ class Interface:
 
 
 class SlabSimulation(Simulation):
-    """Simulation which creates a slab for interface systems.
-
-    Parameters
-    ----------
-    interface_axis : tuple, default=(1, 0, 0)
-        Axis along which the interface is to be created.
-        The box edges along this axis will have a flat surface
-    wall_sigma : float, default 1.0
-        Sigma parameter for the wall potential.
-    wall_epsilon : float, default 1.0
-        Epsilon parameter for the wall potential.
-    wall_r_cut : float, default 2.5
-        Cutoff radius for the wall potential.
-    wall_r_extrap : float, default 0
-        Extrapolation distance for the wall potential.
-
-    """
-
     def __init__(
         self,
         initial_state,
@@ -162,29 +125,21 @@ class SlabSimulation(Simulation):
         wall_r_cut=2.5,
         wall_r_extrap=0,
         r_cut=2.5,
-        reference_values=dict(),
-        dt=0.0001,
-        device=hoomd.device.auto_select(),
         seed=42,
         gsd_write_freq=1e4,
         gsd_file_name="trajectory.gsd",
         log_write_freq=1e3,
         log_file_name="log.txt",
-        thermostat=HOOMDThermostats.MTTK,
     ):
         super(SlabSimulation, self).__init__(
             initial_state=initial_state,
             forcefield=forcefield,
             r_cut=r_cut,
-            reference_values=reference_values,
-            dt=dt,
-            device=device,
             seed=seed,
             gsd_write_freq=gsd_write_freq,
             gsd_file_name=gsd_file_name,
             log_write_freq=log_write_freq,
             log_file_name=log_file_name,
-            thermostat=thermostat,
         )
         self.interface_axis = interface_axis
         # self._axis_index = np.where(interface_axis != 0)[0]
@@ -202,8 +157,6 @@ class SlabSimulation(Simulation):
 
 
 class WeldSimulation(Simulation):
-    """For simulating welding of an interface joint."""
-
     def __init__(
         self,
         initial_state,
@@ -214,29 +167,21 @@ class WeldSimulation(Simulation):
         wall_r_cut=2.5,
         wall_r_extrap=0,
         r_cut=2.5,
-        reference_values=dict(),
-        dt=0.0001,
-        device=hoomd.device.auto_select(),
         seed=42,
         gsd_write_freq=1e4,
         gsd_file_name="weld.gsd",
         log_write_freq=1e3,
         log_file_name="sim_data.txt",
-        thermostat=HOOMDThermostats.MTTK,
     ):
         super(WeldSimulation, self).__init__(
             initial_state=initial_state,
             forcefield=forcefield,
             r_cut=r_cut,
-            reference_values=reference_values,
-            dt=dt,
-            device=device,
             seed=seed,
             gsd_write_freq=gsd_write_freq,
             gsd_file_name=gsd_file_name,
             log_write_freq=log_write_freq,
             log_file_name=log_file_name,
-            thermostat=thermostat,
         )
         axis_dict = {"x": (1, 0, 0), "y": (0, 1, 0), "z": (0, 0, 1)}
         self.interface_axis = interface_axis.lower()

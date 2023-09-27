@@ -1,4 +1,3 @@
-"""hoomd_organics package."""
 from .base import (
     CoPolymer,
     Lattice,

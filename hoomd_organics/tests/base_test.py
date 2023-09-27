@@ -217,10 +217,10 @@ class BaseTest:
         system = Pack(
             molecules=[benzene],
             density=0.2,
+            r_cut=2.5,
             force_field=OPLS_AA(),
             auto_scale=True,
         )
-        system.apply_forcefield(r_cut=2.5, auto_scale=True)
         return system
 
     @pytest.fixture()
@@ -230,6 +230,7 @@ class BaseTest:
         system = Pack(
             molecules=[benzene_mols],
             density=0.5,
+            r_cut=2.5,
             auto_scale=False,
         )
         return system
@@ -240,10 +241,11 @@ class BaseTest:
         system = Pack(
             molecules=polyethylene_mol,
             density=0.5,
+            r_cut=2.5,
             force_field=OPLS_AA(),
             auto_scale=True,
+            remove_hydrogens=True,
         )
-        system.apply_forcefield(r_cut=2.5, remove_hydrogens=True)
         return system
 
     @pytest.fixture()

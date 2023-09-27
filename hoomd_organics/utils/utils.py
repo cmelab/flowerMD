@@ -3,10 +3,6 @@ import unyt as u
 
 from hoomd_organics.utils.exceptions import ReferenceUnitError
 
-"""utils.py
-   utility methods for hoomd-organics
-"""
-
 
 def check_return_iterable(obj):
     if isinstance(obj, dict):

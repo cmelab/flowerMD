@@ -1,24 +1,11 @@
-"""Tensile simulation class."""
 import hoomd
 import numpy as np
 
 from hoomd_organics.base.simulation import Simulation
-from hoomd_organics.utils import HOOMDThermostats, PullParticles
+from hoomd_organics.utils.actions import PullParticles
 
 
 class Tensile(Simulation):
-    """Tensile simulation class.
-
-    Parameters
-    ----------
-    tensile_axis : tuple of int, required
-        The axis along which to apply the tensile strain.
-    fix_ratio : float, default=0.20
-        The ratio of the box length to fix particles at each end
-        of the tensile axis.
-
-    """
-
     def __init__(
         self,
         initial_state,
@@ -26,21 +13,19 @@ class Tensile(Simulation):
         tensile_axis,
         fix_ratio=0.20,
         r_cut=2.5,
-        reference_values=dict(),
         dt=0.0001,
         device=hoomd.device.auto_select(),
         seed=42,
+        restart=None,
         gsd_write_freq=1e4,
         gsd_file_name="trajectory.gsd",
         log_write_freq=1e3,
         log_file_name="log.txt",
-        thermostat=HOOMDThermostats.MTTK,
     ):
         super(Tensile, self).__init__(
             initial_state=initial_state,
             forcefield=forcefield,
             r_cut=r_cut,
-            reference_values=reference_values,
             dt=dt,
             device=device,
             seed=seed,
@@ -48,7 +33,6 @@ class Tensile(Simulation):
             gsd_file_name=gsd_file_name,
             log_write_freq=log_write_freq,
             log_file_name=log_file_name,
-            thermostat=thermostat,
         )
         self.tensile_axis = np.asarray(tensile_axis)
         self.fix_ratio = fix_ratio
@@ -73,25 +57,12 @@ class Tensile(Simulation):
 
     @property
     def strain(self):
-        """The current strain of the simulation."""
         delta_L = (
             self.box_lengths_reduced[self._axis_index] - self.initial_length
         )
         return delta_L / self.initial_length
 
-    def run_tensile(self, strain, n_steps, period):
-        """Run a tensile test simulation.
-
-        Parameters
-        ----------
-        strain : float, required
-            The strain to apply to the simulation.
-        n_steps : int, required
-            The number of steps to run the simulation for.
-        period : int, required
-            The period of the strain application.
-
-        """
+    def run_tensile(self, strain, kT, n_steps, period):
         current_length = self.box_lengths_reduced[self._axis_index]
         final_length = current_length * (1 + strain)
         final_box = np.copy(self.box_lengths_reduced)
@@ -120,7 +91,7 @@ class Tensile(Simulation):
         self.operations.updaters.append(box_resizer)
         self.operations.updaters.append(particle_updater)
         self.set_integrator_method(
-            integrator_method=hoomd.md.methods.ConstantVolume,
+            integrator_method=hoomd.md.methods.NVE,
             method_kwargs={"filter": self.integrate_group},
         )
         self.run(n_steps + 1)
