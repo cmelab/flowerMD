@@ -91,10 +91,14 @@ class System(ABC):
 
         # Collecting all molecules
         self.n_mol_types = 0
+        self.mol_type_idx = []
         for mol_item in self._molecules:
             if isinstance(mol_item, Molecule):
-                if self._force_field:
-                    mol_item._assign_mol_name(str(self.n_mol_types))
+                # extend mol_type_idx by number of particles in mol_item with
+                # a list with n_mol-types as values
+                self.mol_type_idx.extend(
+                    [self.n_mol_types] * len(mol_item.n_particles)
+                )
                 self.all_molecules.extend(mol_item.molecules)
                 # if ff is provided in Molecule class
                 if mol_item.force_field:
@@ -434,10 +438,17 @@ class System(ABC):
         return snap
 
     def _validate_forcefield(self, input_forcefield):
-        self._force_field = None
         if input_forcefield:
-            self._force_field = check_return_iterable(input_forcefield)
+            return check_return_iterable(input_forcefield)
+        return None
         # check if forcefield is xml based. return error if not
+
+    def _assign_particle_idx(self):
+        system_particles = list(self.system.particles())
+        # assign particle idx to each particles based on self._mol_type_idx in
+        # batches of similar idx
+        for i, mol_idx in enumerate(self._mol_type_idx):
+            system_particles[i].name = mol_idx
 
     def apply_forcefield(
         self,
@@ -487,37 +498,44 @@ class System(ABC):
 
         """
         # make sure forcefield is xml based
-        self._validate_forcefield(force_field)
+        _force_field = self._validate_forcefield(force_field)
 
         # check if molecules already had ff in them. If yes, use that  or
         # return error (can't have two ff per molecule)
 
         # Collecting all force-fields into a dict
-        if self._force_field:
+        if _force_field:
             for i in range(self.n_mol_types):
                 if not self._gmso_forcefields_dict.get(str(i)):
-                    if i < len(self._force_field):
+                    if i < len(_force_field):
                         # if there is a ff for each molecule type
                         ff_index = i
                     else:
                         # if there is only one ff for all molecule types
                         ff_index = 0
-                    if hasattr(self._force_field[ff_index], "gmso_ff"):
-                        self._gmso_forcefields_dict[str(i)] = self._force_field[
+                    if hasattr(_force_field[ff_index], "gmso_ff"):
+                        self._gmso_forcefields_dict[str(i)] = _force_field[
                             ff_index
                         ].gmso_ff
                     else:
                         raise ForceFieldError(
                             msg=f"GMSO Force field in "
-                            f"{self._force_field[ff_index]} is not "
+                            f"{_force_field[ff_index]} is not "
                             f"provided."
                         )
         self.auto_scale = auto_scale
-        if not self._force_field:
+        if not _force_field:
             # TODO: Better erorr message
             raise ValueError(
                 "This method can only be used when the System is "
                 "initialized with an XML type forcefield."
+            )
+        if self._gmso_forcefields_dict:
+            # assign names to all the particles of system based on mol_type to
+            # match the keys in self._gmso_forcefields_dict and  recreate the
+            # gmso system object
+            self.gmso_system = self._convert_to_gmso(
+                self._assign_particle_idx()
             )
         self.gmso_system = apply(
             self.gmso_system,
