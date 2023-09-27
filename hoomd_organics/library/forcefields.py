@@ -4,6 +4,7 @@ import itertools
 import forcefield_utilities as ffutils
 import foyer
 import hoomd
+import numpy as np
 
 from hoomd_organics.assets import FF_DIR
 
@@ -211,6 +212,76 @@ class TableForceField:
         self.exclusions = exclusions
         self.bond_width, self.angle_width, self.dih_width = self._check_widths()
         self.hoomd_forcefield = self._create_forcefield()
+
+    @classmethod
+    def from_files(
+        cls, pairs, bonds, angles, dihedrals, exclusions=["bond", "1-3"]
+    ):
+        """Create forcefield from text files containing tabulated forces."""
+        # Read pair files
+        pair_dict = dict()
+        r_min = set()
+        r_max = set()
+        for pair_type in pairs:
+            table = np.loadtxt(pairs[pair_type])
+            r = table[:, 0]
+            r_min.add(r[0])
+            r_max.add(r[-1])
+            pair_dict[pair_type] = dict()
+            pair_dict[pair_type]["U"] = table[:, 1]
+            pair_dict[pair_type]["F"] = table[:, 2]
+        if len(r_min) != len(r_max) != 1:
+            raise ValueError("All pair files must have the same r-range values")
+        # Read bond files
+        bond_dict = dict()
+        for bond_type in bonds:
+            table = np.loadtxt(bonds[bond_type])
+            r = table[:, 0]
+            r_min = r[0]
+            r_max = r[-1]
+            bond_dict[bond_type] = dict()
+            bond_dict[bond_type]["r_min"] = r_min
+            bond_dict[bond_type]["r_max"] = r_max
+            bond_dict[bond_type]["U"] = table[:, 1]
+            bond_dict[bond_type]["F"] = table[:, 2]
+        # Read angle files
+        angle_dict = dict()
+        for angle_type in angles:
+            table = np.loadtxt(angles[angle_type])
+            thetas = table[:, 0]
+            if thetas[0] != 0 or not np.allclose(thetas[-1], np.pi, atol=1e-5):
+                raise ValueError(
+                    "Angle values must be evenly spaced and "
+                    "range from 0 to Pi."
+                )
+            angle_dict[angle_type] = dict()
+            angle_dict[angle_type]["U"] = table[:, 1]
+            angle_dict[angle_type]["F"] = table[:, 2]
+        # Read dihedral files
+        dih_dict = dict()
+        for dih_type in dihedrals:
+            table = np.loadtxt(dihedrals[dih_type])
+            thetas = table[:, 0]
+            if thetas[0] != 0 or not np.allclose(
+                thetas[-1], 2 * np.pi, atol=1e-5
+            ):
+                raise ValueError(
+                    "Dihedral angle values must be evenly spaced and "
+                    "range from 0 to 2*Pi."
+                )
+            dih_dict[dih_type] = dict()
+            dih_dict[dih_type]["U"] = table[:, 1]
+            dih_dict[dih_type]["F"] = table[:, 2]
+
+        return cls(
+            pairs=pair_dict,
+            bonds=bond_dict,
+            angles=angle_dict,
+            dihedrals=dih_dict,
+            r_min=r_min,
+            r_max=r_max,
+            exclusions=exclusions,
+        )
 
     def _create_forcefield(self):
         # Create pair forces

@@ -7,6 +7,7 @@ from .forcefields import (
     OPLS_AA_PPS,
     BeadSpring,
     FF_from_file,
+    TableForcefield,
 )
 from .polymers import (
     PEEK,
