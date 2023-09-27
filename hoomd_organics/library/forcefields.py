@@ -202,6 +202,7 @@ class TableForcefield:
         r_min=None,
         r_cut=None,
         exclusions=["bond", "1-3"],
+        nlist_buffer=0.40,
     ):
         self.pairs = pairs
         self.bonds = bonds
@@ -210,6 +211,7 @@ class TableForcefield:
         self.r_min = r_min
         self.r_cut = r_cut
         self.exclusions = exclusions
+        self.nlist_buffer = nlist_buffer
         self.bond_width, self.angle_width, self.dih_width = self._check_widths()
         self.hoomd_forcefield = self._create_forcefield()
 
@@ -221,6 +223,7 @@ class TableForcefield:
         angles=None,
         dihedrals=None,
         exclusions=["bond", "1-3"],
+        nlist_buffer=0.40,
     ):
         """Create forcefield from text files containing tabulated forces."""
         # Read pair files
@@ -300,7 +303,9 @@ class TableForcefield:
         forces = []
         # Create pair forces
         if self.pairs:
-            nlist = hoomd.md.nlist.Cell(buffer=0.40, exclusions=self.exclusions)
+            nlist = hoomd.md.nlist.Cell(
+                buffer=self.nlist_buffer, exclusions=self.exclusions
+            )
             pair_table = hoomd.md.pair.Table(
                 nlist=nlist, default_r_cut=self.r_cut
             )
@@ -332,7 +337,7 @@ class TableForcefield:
         if self.angles:
             angle_table = hoomd.md.angle.Table(width=self.angle_width)
             for angle_type in self.angles:
-                angle_table.params[tuple(angle_type)] = dict(
+                angle_table.params[angle_type] = dict(
                     U=self.angles[angle_type]["U"],
                     tau=self.angles[angle_type]["F"],
                 )
@@ -342,7 +347,7 @@ class TableForcefield:
         if self.dihedrals:
             dih_table = hoomd.md.dihedral.Table(width=self.dih_width)
             for dih_type in self.dihedrals:
-                dih_table.params[tuple(dih_type)] = dict(
+                dih_table.params[dih_type] = dict(
                     U=self.dihedrals[dih_type]["U"],
                     tau=self.dihedrals[dih_type]["F"],
                 )
@@ -361,7 +366,7 @@ class TableForcefield:
                 if new_width != bond_width:
                     raise ValueError(
                         "All bond types must have the same "
-                        "number of points for table energy and force."
+                        "number of points for table energies and forces."
                     )
 
         angle_width = None
@@ -373,7 +378,7 @@ class TableForcefield:
                 if new_width != angle_width:
                     raise ValueError(
                         "All angle types must have the same "
-                        "number of points for table energy and force."
+                        "number of points for table energies and forces."
                     )
 
         dih_width = None
@@ -385,6 +390,6 @@ class TableForcefield:
                 if new_width != dih_width:
                     raise ValueError(
                         "All dihedral types must have the same "
-                        "number of points for table energy and force."
+                        "number of points for table energies and forces."
                     )
         return bond_width, angle_width, dih_width
