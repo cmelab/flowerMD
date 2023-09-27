@@ -444,13 +444,23 @@ class System(ABC):
         # check if forcefield is xml based. return error if not
 
     def _assign_particle_idx(self):
-        system_particles = list(self.system.particles())
-        # assign particle idx to each particles based on self._mol_type_idx in
-        # batches of similar idx
-        for i, mol_idx in enumerate(self._mol_type_idx):
-            system_particles[i].name = str(mol_idx)
-            if system_particles[i].parent:
-                system_particles[i].parent.name = str(mol_idx)
+        # system_particles = list(self.system.particles())
+        # # assign particle idx to each particles based on self._mol_type_idx in
+        # # batches of similar idx
+        #
+        # #TODO: This is a hacky way to assign particle idx. Need to find a
+        # # better way to assign names to
+        # for i, mol_idx in enumerate(self._mol_type_idx):
+        #     system_particles[i].name = str(mol_idx)
+        #     if system_particles[i].parent:
+        #         system_particles[i].parent.name = str(mol_idx)
+        #     if system_particles[i].root:
+        #         system_particles[i].root.name = str(mol_idx)
+        #         if system_particles[i].root.children:
+        #             for child in system_particles[i].root.children:
+        #                 child.name = str(mol_idx)
+        for i, site in enumerate(self.gmso_system.sites):
+            site.group = str(self._mol_type_idx[i])
 
     def apply_forcefield(
         self,
@@ -537,10 +547,11 @@ class System(ABC):
             # match the keys in self._gmso_forcefields_dict and  recreate the
             # gmso system object
             self._assign_particle_idx()
-            self.gmso_system = self._convert_to_gmso()
+            # self.gmso_system = self._convert_to_gmso()
         self.gmso_system = apply(
             self.gmso_system,
             self._gmso_forcefields_dict,
+            match_ff_by="group",
             identify_connections=True,
             speedup_by_moltag=True,
             speedup_by_molgraph=False,
