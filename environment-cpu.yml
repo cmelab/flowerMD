@@ -4,22 +4,21 @@ channels:
 dependencies:
   - boltons
   - foyer
-  - gsd<3.0
-  #- hoomd=3.11=*cpu*
   - freud
-  - hoomd=4.1=*cpu*
+  - fresnel
+  - gsd<3.0
+  - hoomd=3.11=*cpu*
   - mbuild
   - numpy
   - openbabel
   - pip
+  - python-symengine
   - py3Dmol
   - pytest
   - pytest-cov
   - unyt
   - symengine
-  - python-symengine
   - sympy
-  - fresnel
   - pip:
       - git+https://github.com/mosdef-hub/gmso.git@main
       - git+https://github.com/cmelab/cmeutils.git@master
