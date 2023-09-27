@@ -187,3 +187,107 @@ class BeadSpring:
                 periodic_dihedral.params[dih_type] = self.dihedrals[dih_type]
             forces.append(periodic_dihedral)
         return forces
+
+
+class TableForceField:
+    """Load table potential forcefields."""
+
+    def __init__(
+        self,
+        pairs,
+        bonds,
+        angles,
+        dihedrals,
+        r_min,
+        r_cut,
+        exclusions=["bond", "1-3"],
+    ):
+        self.pairs = pairs
+        self.bonds = bonds
+        self.angles = angles
+        self.dihedrals = dihedrals
+        self.r_min = r_min
+        self.r_cut = r_cut
+        self.exclusions = exclusions
+        self.bond_width, self.angle_width, self.dih_width = self._check_widths()
+        self.hoomd_forcefield = self._create_forcefield()
+
+    def _create_forcefield(self):
+        # Create pair forces
+        nlist = hoomd.md.nlist.Cell(buffer=0.40, exclusions=self.exclusions)
+        pair_table = hoomd.md.pair.Table(nlist=nlist, default_r_cut=self.r_cut)
+        for pair_type in self.pairs:
+            U = self.pairs[pair_type]["U"]
+            F = self.pairs[pair_type]["F"]
+            if len(U) != len(F):
+                raise ValueError(
+                    "The energy and force arrays are not the same size"
+                )
+            pair_table.params[tuple(pair_type)] = dict(
+                r_min=self.r_min, U=U, F=F
+            )
+
+        # Create bond forces
+        bond_table = hoomd.md.bond.Table(width=self.bond_width)
+        for bond_type in self.bonds:
+            bond_table.params[tuple(bond_type)] = dict(
+                r_min=self.bonds[bond_type]["r_min"],
+                r_max=self.bonds[bond_type]["r_max"],
+                U=self.bonds[bond_type]["U"],
+                F=self.bonds[bond_type]["F"],
+            )
+
+        # Create angle forces
+        angle_table = hoomd.md.angle.Table(width=self.angle_width)
+        for angle_type in self.angles:
+            angle_table.params[tuple(angle_type)] = dict(
+                U=self.angles[angle_type]["U"], tau=self.angles[angle_type]["F"]
+            )
+
+        # Create dihedral forces
+        dih_table = hoomd.md.dihedral.Table(width=self.dih_width)
+        for dih_type in self.dihedrals:
+            dih_table.params[tuple(dih_type)] = dict(
+                U=self.dihedrals[dih_type]["U"],
+                tau=self.dihedrals[dih_type]["F"],
+            )
+        return [pair_table, bond_table, angle_table, dih_table]
+
+    def _check_widths(self):
+        """Check number of points for bonds, pairs and angles."""
+        bond_width = None
+        for bond_type in self.bonds:
+            new_width = len(self.bonds[bond_type]["U"])
+            if bond_width is None:
+                bond_width = new_width
+            else:
+                if new_width != bond_width:
+                    raise ValueError(
+                        "All bond types must have the same "
+                        "number of points for table energy and force."
+                    )
+
+        angle_width = None
+        for angle_type in self.angles:
+            new_width = len(self.angles[angle_type]["U"])
+            if angle_width is None:
+                angle_width = new_width
+            else:
+                if new_width != angle_width:
+                    raise ValueError(
+                        "All angle types must have the same "
+                        "number of points for table energy and force."
+                    )
+
+        dih_width = None
+        for dih_type in self.dihedrals:
+            new_width = len(self.dihedrals[dih_type]["U"])
+            if dih_width is None:
+                dih_width = new_width
+            else:
+                if new_width != dih_width:
+                    raise ValueError(
+                        "All dihedral types must have the same "
+                        "number of points for table energy and force."
+                    )
+        return bond_width, angle_width, dih_width
