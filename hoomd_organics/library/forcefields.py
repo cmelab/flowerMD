@@ -283,7 +283,7 @@ class TableForcefield:
                 ):
                     raise ValueError(
                         "Dihedral angle values must be evenly spaced and "
-                        "range from 0 to 2*Pi."
+                        "range from -Pi to Pi."
                     )
                 dih_dict[dih_type] = dict()
                 dih_dict[dih_type]["U"] = table[:, 1]
@@ -320,7 +320,6 @@ class TableForcefield:
                     r_min=self.r_min, U=U, F=F
                 )
             forces.append(pair_table)
-
         # Create bond forces
         if self.bonds:
             bond_table = hoomd.md.bond.Table(width=self.bond_width)
@@ -332,7 +331,6 @@ class TableForcefield:
                     F=self.bonds[bond_type]["F"],
                 )
             forces.append(bond_table)
-
         # Create angle forces
         if self.angles:
             angle_table = hoomd.md.angle.Table(width=self.angle_width)
@@ -342,7 +340,6 @@ class TableForcefield:
                     tau=self.angles[angle_type]["F"],
                 )
             forces.append(angle_table)
-
         # Create dihedral forces
         if self.dihedrals:
             dih_table = hoomd.md.dihedral.Table(width=self.dih_width)
@@ -352,7 +349,6 @@ class TableForcefield:
                     tau=self.dihedrals[dih_type]["F"],
                 )
             forces.append(dih_table)
-
         return forces
 
     def _check_widths(self):
