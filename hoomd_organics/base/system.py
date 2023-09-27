@@ -91,13 +91,13 @@ class System(ABC):
 
         # Collecting all molecules
         self.n_mol_types = 0
-        self.mol_type_idx = []
+        self._mol_type_idx = []
         for mol_item in self._molecules:
             if isinstance(mol_item, Molecule):
                 # extend mol_type_idx by number of particles in mol_item with
                 # a list with n_mol-types as values
-                self.mol_type_idx.extend(
-                    [self.n_mol_types] * len(mol_item.n_particles)
+                self._mol_type_idx.extend(
+                    [self.n_mol_types] * mol_item.n_particles
                 )
                 self.all_molecules.extend(mol_item.molecules)
                 # if ff is provided in Molecule class
@@ -448,7 +448,9 @@ class System(ABC):
         # assign particle idx to each particles based on self._mol_type_idx in
         # batches of similar idx
         for i, mol_idx in enumerate(self._mol_type_idx):
-            system_particles[i].name = mol_idx
+            system_particles[i].name = str(mol_idx)
+            if system_particles[i].parent:
+                system_particles[i].parent.name = str(mol_idx)
 
     def apply_forcefield(
         self,
@@ -534,9 +536,8 @@ class System(ABC):
             # assign names to all the particles of system based on mol_type to
             # match the keys in self._gmso_forcefields_dict and  recreate the
             # gmso system object
-            self.gmso_system = self._convert_to_gmso(
-                self._assign_particle_idx()
-            )
+            self._assign_particle_idx()
+            self.gmso_system = self._convert_to_gmso()
         self.gmso_system = apply(
             self.gmso_system,
             self._gmso_forcefields_dict,
