@@ -190,17 +190,17 @@ class BeadSpring:
         return forces
 
 
-class TableForceField:
+class TableForcefield:
     """Load table potential forcefields."""
 
     def __init__(
         self,
-        pairs,
-        bonds,
-        angles,
-        dihedrals,
-        r_min,
-        r_cut,
+        pairs=None,
+        bonds=None,
+        angles=None,
+        dihedrals=None,
+        r_min=None,
+        r_cut=None,
         exclusions=["bond", "1-3"],
     ):
         self.pairs = pairs
@@ -215,114 +215,140 @@ class TableForceField:
 
     @classmethod
     def from_files(
-        cls, pairs, bonds, angles, dihedrals, exclusions=["bond", "1-3"]
+        cls,
+        pairs=None,
+        bonds=None,
+        angles=None,
+        dihedrals=None,
+        exclusions=["bond", "1-3"],
     ):
         """Create forcefield from text files containing tabulated forces."""
         # Read pair files
         pair_dict = dict()
         r_min = set()
         r_max = set()
-        for pair_type in pairs:
-            table = np.loadtxt(pairs[pair_type])
-            r = table[:, 0]
-            r_min.add(r[0])
-            r_max.add(r[-1])
-            pair_dict[pair_type] = dict()
-            pair_dict[pair_type]["U"] = table[:, 1]
-            pair_dict[pair_type]["F"] = table[:, 2]
-        if len(r_min) != len(r_max) != 1:
-            raise ValueError("All pair files must have the same r-range values")
+        if pairs:
+            for pair_type in pairs:
+                table = np.loadtxt(pairs[pair_type])
+                r = table[:, 0]
+                r_min.add(r[0])
+                r_max.add(r[-1])
+                pair_dict[pair_type] = dict()
+                pair_dict[pair_type]["U"] = table[:, 1]
+                pair_dict[pair_type]["F"] = table[:, 2]
+            if len(r_min) != len(r_max) != 1:
+                raise ValueError(
+                    "All pair files must have the same r-range values"
+                )
         # Read bond files
         bond_dict = dict()
-        for bond_type in bonds:
-            table = np.loadtxt(bonds[bond_type])
-            r = table[:, 0]
-            r_min = r[0]
-            r_max = r[-1]
-            bond_dict[bond_type] = dict()
-            bond_dict[bond_type]["r_min"] = r_min
-            bond_dict[bond_type]["r_max"] = r_max
-            bond_dict[bond_type]["U"] = table[:, 1]
-            bond_dict[bond_type]["F"] = table[:, 2]
+        if bonds:
+            for bond_type in bonds:
+                table = np.loadtxt(bonds[bond_type])
+                r = table[:, 0]
+                r_min = r[0]
+                r_max = r[-1]
+                bond_dict[bond_type] = dict()
+                bond_dict[bond_type]["r_min"] = r_min
+                bond_dict[bond_type]["r_max"] = r_max
+                bond_dict[bond_type]["U"] = table[:, 1]
+                bond_dict[bond_type]["F"] = table[:, 2]
         # Read angle files
         angle_dict = dict()
-        for angle_type in angles:
-            table = np.loadtxt(angles[angle_type])
-            thetas = table[:, 0]
-            if thetas[0] != 0 or not np.allclose(thetas[-1], np.pi, atol=1e-5):
-                raise ValueError(
-                    "Angle values must be evenly spaced and "
-                    "range from 0 to Pi."
-                )
-            angle_dict[angle_type] = dict()
-            angle_dict[angle_type]["U"] = table[:, 1]
-            angle_dict[angle_type]["F"] = table[:, 2]
+        if angles:
+            for angle_type in angles:
+                table = np.loadtxt(angles[angle_type])
+                thetas = table[:, 0]
+                if thetas[0] != 0 or not np.allclose(
+                    thetas[-1], np.pi, atol=1e-5
+                ):
+                    raise ValueError(
+                        "Angle values must be evenly spaced and "
+                        "range from 0 to Pi."
+                    )
+                angle_dict[angle_type] = dict()
+                angle_dict[angle_type]["U"] = table[:, 1]
+                angle_dict[angle_type]["F"] = table[:, 2]
         # Read dihedral files
         dih_dict = dict()
-        for dih_type in dihedrals:
-            table = np.loadtxt(dihedrals[dih_type])
-            thetas = table[:, 0]
-            if thetas[0] != 0 or not np.allclose(
-                thetas[-1], 2 * np.pi, atol=1e-5
-            ):
-                raise ValueError(
-                    "Dihedral angle values must be evenly spaced and "
-                    "range from 0 to 2*Pi."
-                )
-            dih_dict[dih_type] = dict()
-            dih_dict[dih_type]["U"] = table[:, 1]
-            dih_dict[dih_type]["F"] = table[:, 2]
+        if dihedrals:
+            for dih_type in dihedrals:
+                table = np.loadtxt(dihedrals[dih_type])
+                thetas = table[:, 0]
+                if thetas[0] != 0 or not np.allclose(
+                    thetas[-1], 2 * np.pi, atol=1e-5
+                ):
+                    raise ValueError(
+                        "Dihedral angle values must be evenly spaced and "
+                        "range from 0 to 2*Pi."
+                    )
+                dih_dict[dih_type] = dict()
+                dih_dict[dih_type]["U"] = table[:, 1]
+                dih_dict[dih_type]["F"] = table[:, 2]
 
         return cls(
             pairs=pair_dict,
             bonds=bond_dict,
             angles=angle_dict,
             dihedrals=dih_dict,
-            r_min=r_min,
-            r_max=r_max,
+            r_min=list(r_min)[0],
+            r_cut=list(r_max)[0],
             exclusions=exclusions,
         )
 
     def _create_forcefield(self):
+        forces = []
         # Create pair forces
-        nlist = hoomd.md.nlist.Cell(buffer=0.40, exclusions=self.exclusions)
-        pair_table = hoomd.md.pair.Table(nlist=nlist, default_r_cut=self.r_cut)
-        for pair_type in self.pairs:
-            U = self.pairs[pair_type]["U"]
-            F = self.pairs[pair_type]["F"]
-            if len(U) != len(F):
-                raise ValueError(
-                    "The energy and force arrays are not the same size"
-                )
-            pair_table.params[tuple(pair_type)] = dict(
-                r_min=self.r_min, U=U, F=F
+        if self.pairs:
+            nlist = hoomd.md.nlist.Cell(buffer=0.40, exclusions=self.exclusions)
+            pair_table = hoomd.md.pair.Table(
+                nlist=nlist, default_r_cut=self.r_cut
             )
+            for pair_type in self.pairs:
+                U = self.pairs[pair_type]["U"]
+                F = self.pairs[pair_type]["F"]
+                if len(U) != len(F):
+                    raise ValueError(
+                        "The energy and force arrays are not the same size."
+                    )
+                pair_table.params[tuple(pair_type)] = dict(
+                    r_min=self.r_min, U=U, F=F
+                )
+            forces.append(pair_table)
 
         # Create bond forces
-        bond_table = hoomd.md.bond.Table(width=self.bond_width)
-        for bond_type in self.bonds:
-            bond_table.params[tuple(bond_type)] = dict(
-                r_min=self.bonds[bond_type]["r_min"],
-                r_max=self.bonds[bond_type]["r_max"],
-                U=self.bonds[bond_type]["U"],
-                F=self.bonds[bond_type]["F"],
-            )
+        if self.bonds:
+            bond_table = hoomd.md.bond.Table(width=self.bond_width)
+            for bond_type in self.bonds:
+                bond_table.params[tuple(bond_type)] = dict(
+                    r_min=self.bonds[bond_type]["r_min"],
+                    r_max=self.bonds[bond_type]["r_max"],
+                    U=self.bonds[bond_type]["U"],
+                    F=self.bonds[bond_type]["F"],
+                )
+            forces.append(bond_table)
 
         # Create angle forces
-        angle_table = hoomd.md.angle.Table(width=self.angle_width)
-        for angle_type in self.angles:
-            angle_table.params[tuple(angle_type)] = dict(
-                U=self.angles[angle_type]["U"], tau=self.angles[angle_type]["F"]
-            )
+        if self.angles:
+            angle_table = hoomd.md.angle.Table(width=self.angle_width)
+            for angle_type in self.angles:
+                angle_table.params[tuple(angle_type)] = dict(
+                    U=self.angles[angle_type]["U"],
+                    tau=self.angles[angle_type]["F"],
+                )
+            forces.append(angle_table)
 
         # Create dihedral forces
-        dih_table = hoomd.md.dihedral.Table(width=self.dih_width)
-        for dih_type in self.dihedrals:
-            dih_table.params[tuple(dih_type)] = dict(
-                U=self.dihedrals[dih_type]["U"],
-                tau=self.dihedrals[dih_type]["F"],
-            )
-        return [pair_table, bond_table, angle_table, dih_table]
+        if self.dihedrals:
+            dih_table = hoomd.md.dihedral.Table(width=self.dih_width)
+            for dih_type in self.dihedrals:
+                dih_table.params[tuple(dih_type)] = dict(
+                    U=self.dihedrals[dih_type]["U"],
+                    tau=self.dihedrals[dih_type]["F"],
+                )
+            forces.append(dih_table)
+
+        return forces
 
     def _check_widths(self):
         """Check number of points for bonds, pairs and angles."""
