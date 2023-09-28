@@ -111,8 +111,10 @@ class BaseTest:
 
     @pytest.fixture()
     def benzene_molecule(self, benzene_smiles):
-        def _benzene_molecule(n_mols):
-            benzene = Molecule(num_mols=n_mols, smiles=benzene_smiles)
+        def _benzene_molecule(n_mols, force_field=None):
+            benzene = Molecule(
+                num_mols=n_mols, smiles=benzene_smiles, force_field=force_field
+            )
             return benzene
 
         return _benzene_molecule

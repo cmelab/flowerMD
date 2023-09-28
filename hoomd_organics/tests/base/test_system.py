@@ -703,6 +703,52 @@ class TestSystem(BaseTest):
                 r_cut=2.5, force_field=None, auto_scale=False
             )
 
+    def test_apply_forcefield_no_forcefield_w_mol_ff(self, benzene_molecule):
+        benzene_mol = benzene_molecule(n_mols=3, force_field=OPLS_AA())
+        system = Pack(
+            molecules=[benzene_mol],
+            density=1.0,
+        )
+        system.apply_forcefield(r_cut=2.5, auto_scale=True)
+        assert system.gmso_system.is_typed()
+        assert len(system.hoomd_forcefield) > 0
+        assert system.hoomd_snapshot.particles.N == benzene_mol.n_particles
+
+    def test_apply_forcefield_w_mol_ff(self, benzene_molecule):
+        benzene_mol = benzene_molecule(n_mols=3, force_field=OPLS_AA())
+        system = Pack(
+            molecules=[benzene_mol],
+            density=1.0,
+        )
+        with pytest.raises(ForceFieldError):
+            system.apply_forcefield(
+                r_cut=2.5, force_field=OPLS_AA(), auto_scale=True
+            )
+
+    def test_validate_forcefield_invalid_ff_type(self, benzene_molecule):
+        benzene_mol = benzene_molecule(n_mols=1)
+        system = Pack(
+            molecules=[benzene_mol],
+            density=1.0,
+        )
+        with pytest.raises(ForceFieldError):
+            system.apply_forcefield(
+                r_cut=2.5, force_field="invalid_ff.xml", auto_scale=True
+            )
+
+    def test_validate_forcefield_mult_ff_invalid_type(
+        self, dimethylether_molecule, pps_molecule
+    ):
+        dimethylether_mol = dimethylether_molecule(n_mols=3)
+        pps_mol = pps_molecule(n_mols=2)
+        system = Pack(molecules=[dimethylether_mol, pps_mol], density=0.8)
+        with pytest.raises(ForceFieldError):
+            system.apply_forcefield(
+                r_cut=2.5,
+                force_field=["invalid_ff", OPLS_AA_PPS()],
+                auto_scale=True,
+            )
+
     def test_forcefield_kwargs_attr(self, polyethylene):
         polyethylene = polyethylene(lengths=5, num_mols=1)
         system = Pack(
