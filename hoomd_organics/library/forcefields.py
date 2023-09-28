@@ -10,7 +10,7 @@ from hoomd_organics.assets import FF_DIR
 
 
 class GAFF(foyer.Forcefield):
-    """GAFF forcefield class."""
+    """General Amber Forcefield (GAFF) class."""
 
     def __init__(self, forcefield_files=f"{FF_DIR}/gaff.xml"):
         super(GAFF, self).__init__(forcefield_files=forcefield_files)
@@ -32,7 +32,7 @@ class OPLS_AA(foyer.Forcefield):
 
 
 class OPLS_AA_PPS(foyer.Forcefield):
-    """OPLS All Atom for PPS molecule forcefield class."""
+    """OPLS All Atom for the PPS molecule forcefield class."""
 
     def __init__(self, forcefield_files=f"{FF_DIR}/pps_opls.xml"):
         super(OPLS_AA_PPS, self).__init__(forcefield_files=forcefield_files)
@@ -42,8 +42,8 @@ class OPLS_AA_PPS(foyer.Forcefield):
             "One missing parameter was added manually: "
             "<Angle class1=CA class2=S class3=CA angle=1.805 k=627.6/> "
             "The equilibrium angle was determined from "
-            "experimental PPS papers. The spring constant taken "
-            "from the equivalent angle in GAFF."
+            "experimental PPS papers. "
+            "The spring constant taken from the equivalent angle in GAFF."
         )
         self.gmso_ff = ffutils.FoyerFFs().load(forcefield_files).to_gmso_ff()
 
@@ -210,7 +210,6 @@ class TableForcefield:
     It may be most convenient to store tabulated data in files,
     in that case use the `from_files` method.
 
-
     Parameters
     ----------
     pairs: dict, optional, default None
@@ -251,15 +250,9 @@ class TableForcefield:
         dihedrals=None,
         exclusions=["bond", "1-3"],
         nlist_buffer=0.40,
+        **kwargs,
     ):
-        """Create table forefield using a `type: file_path` mapping.
-
-        Notes
-        -----
-        The parameters must use a `{"type": "file_path"}` mapping.
-        Following HOOMD conventions, pair types must be given as a tuple
-        of `("type1", "type2")` while bonds, angles and dihedrals
-        are givne as strings of `"type1-type2-type3"`
+        """Create a table forefield from files.
 
         Parameters
         ----------
@@ -271,6 +264,16 @@ class TableForcefield:
             Dictionary with keys of angle type and keys of file path
         dihedrals: dict, optional, default None
             Dictionary with keys of dihedral type and keys of file path
+        ``**kwargs`` : keyword arguments
+            Key word arguments passed to `numpy.genfromtxt` or `numpy.load`
+
+        Notes
+        -----
+        The parameters must use a `{"type": "file_path"}` mapping.
+
+        Following HOOMD conventions, pair types must be given as a `tuple`
+        of particles types while bonds, angles and dihedrals
+        are given as a `str` of particle types separated by dashes.
 
         Example
         -------
@@ -278,21 +281,29 @@ class TableForcefield:
 
             table_forcefield = TableForcefield.from_files(
                 pairs = {
-                    ("A", "A"): "A_pairs.txt
-                    ("B", "B"): "B_pairs.txt
-                    ("A", "B"): "AB_pairs.txt
+                    ("A", "A"): "A_pairs.txt"
+                    ("B", "B"): "B_pairs.txt"
+                    ("A", "B"): "AB_pairs.txt"
                 },
                 bonds = {"A-A": "A_bonds.txt", "B-B": "B_bonds.txt"},
                 angles = {"A-A-A": "A_angles.txt", "B-B-B": "B_angles.txt"},
             )
+
+        Warning
+        -------
+        It is assumed that the structure of the files are:
+            * Column 1: Independent variable (e.g. distance, length, angle)
+            * Column 2: Energy
+            * Column 3: Force
+
         """
 
-        def _load_file(file):
+        def _load_file(file, kwargs):
             """Call the correct numpy method."""
             if file.split(".")[-1] in ["txt", "csv"]:
-                return np.loadtxt(file)
+                return np.loadtxt(file, **kwargs)
             elif file.split(".")[-1] == "npy":
-                return np.load(file)
+                return np.load(file, **kwargs)
 
         # Read pair files
         pair_dict = dict()
@@ -300,7 +311,7 @@ class TableForcefield:
         pair_r_max = set()
         if pairs:
             for pair_type in pairs:
-                table = _load_file(pairs[pair_type])
+                table = _load_file(pairs[pair_type], **kwargs)
                 r = table[:, 0]
                 pair_r_min.add(r[0])
                 pair_r_max.add(r[-1])
@@ -315,7 +326,7 @@ class TableForcefield:
         bond_dict = dict()
         if bonds:
             for bond_type in bonds:
-                table = _load_file(bonds[bond_type])
+                table = _load_file(bonds[bond_type], **kwargs)
                 r = table[:, 0]
                 r_min = r[0]
                 r_max = r[-1]
@@ -328,7 +339,7 @@ class TableForcefield:
         angle_dict = dict()
         if angles:
             for angle_type in angles:
-                table = _load_file(angles[angle_type])
+                table = _load_file(angles[angle_type], **kwargs)
                 thetas = table[:, 0]
                 if thetas[0] != 0 or not np.allclose(
                     thetas[-1], np.pi, atol=1e-5
@@ -344,7 +355,7 @@ class TableForcefield:
         dih_dict = dict()
         if dihedrals:
             for dih_type in dihedrals:
-                table = _load_file(dihedrals[dih_type])
+                table = _load_file(dihedrals[dih_type], **kwargs)
                 thetas = table[:, 0]
                 if not np.allclose(
                     thetas[0], -np.pi, atol=1e-5
