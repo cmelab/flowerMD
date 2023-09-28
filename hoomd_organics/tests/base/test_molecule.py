@@ -125,6 +125,14 @@ class TestMolecule(BaseTest):
                 compound=typed_molecule.gmso_molecule,
             )
 
+    def test_validate_force_field_invalid_ff_type(self, benzene_mb):
+        with pytest.raises(exceptions.ForceFieldError):
+            Molecule(
+                num_mols=2,
+                force_field="invalid_ff.xml",
+                compound=benzene_mb,
+            )
+
     def test_coarse_grain_with_single_beads(self, benzene_smiles):
         molecule = Molecule(num_mols=2, smiles=benzene_smiles)
         molecule.coarse_grain(beads={"A": benzene_smiles})
