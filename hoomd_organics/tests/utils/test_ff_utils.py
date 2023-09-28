@@ -28,6 +28,10 @@ class TestFFUtils(BaseTest):
         with pytest.raises(ValueError):
             find_xml_ff("oplsaa.txt")
 
+    def test_find_xml_invalid_file(self, benzene_mol2):
+        with pytest.raises(ValueError):
+            find_xml_ff(benzene_mol2)
+
     def test_find_xml_not_supported_name(self):
         with pytest.raises(ValueError):
             find_xml_ff("oplsaa2")
