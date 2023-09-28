@@ -20,6 +20,15 @@ class BaseXMLForcefield(foyer.Forcefield):
         self.gmso_ff = ffutils.FoyerFFs().load(forcefield_files).to_gmso_ff()
 
 
+class BaseHOOMDForcefield:
+    """Base HOOMD forcefield class."""
+
+    def __init__(self, hoomd_forces=None):
+        super(BaseHOOMDForcefield, self).__init__()
+        self.hoomd_forces = hoomd_forces
+        self.ff_type = FF_Types.HOOMD
+
+
 class GAFF(BaseXMLForcefield):
     """GAFF forcefield class."""
 
@@ -90,7 +99,7 @@ class FF_from_file(BaseXMLForcefield):
         self.description = "Forcefield loaded from an XML file. "
 
 
-class BeadSpring:
+class BeadSpring(BaseHOOMDForcefield):
     """Bead-spring forcefield class.
 
     Given a dictionary of bead types, this class creates a list
@@ -155,8 +164,7 @@ class BeadSpring:
         self.dihedrals = dihedrals
         self.r_cut = r_cut
         self.exclusions = exclusions
-        self.hoomd_forcefield = self._create_forcefield()
-        self.ff_type = FF_Types.HOOMD
+        self.hoomd_forces = self._create_forcefield()
 
     def _create_forcefield(self):
         """Create the hoomd force objects."""
