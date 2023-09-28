@@ -465,19 +465,20 @@ class System(ABC):
                 "once."
             )
 
-        if input_forcefield and not isinstance(
-            input_forcefield, (BaseHOOMDForcefield, BaseXMLForcefield)
-        ):
-            raise ForceFieldError(
-                "Forcefield must be an instance of either "
-                " `BaseHOOMDForcefield` or "
-                "`BaseXMLForcefield`. \n"
-                "Please check "
-                "`hoomd_organics.library.forcefields` for "
-                "examples of supported forcefields."
-            )
         if input_forcefield:
             _force_field = check_return_iterable(input_forcefield)
+            if not all(
+                isinstance(ff, (BaseHOOMDForcefield, BaseXMLForcefield))
+                for ff in _force_field
+            ):
+                raise ForceFieldError(
+                    "Forcefield must be an instance of either "
+                    " `BaseHOOMDForcefield` or "
+                    "`BaseXMLForcefield`. \n"
+                    "Please check "
+                    "`hoomd_organics.library.forcefields` for "
+                    "examples of supported forcefields."
+                )
             # Collecting all force-fields into a dict with mol_type index as key
             for i in range(self.n_mol_types):
                 if not self._gmso_forcefields_dict.get(str(i)):
