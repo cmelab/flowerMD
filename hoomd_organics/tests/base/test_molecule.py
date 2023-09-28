@@ -3,7 +3,7 @@ import pytest
 from hoomd_organics import CoPolymer, Molecule, Polymer
 from hoomd_organics.library import OPLS_AA, BeadSpring, FF_from_file
 from hoomd_organics.tests import BaseTest
-from hoomd_organics.utils import FF_Types, exceptions
+from hoomd_organics.utils import exceptions
 
 
 class TestMolecule(BaseTest):
@@ -44,7 +44,6 @@ class TestMolecule(BaseTest):
         molecule = Molecule(
             num_mols=2, force_field=OPLS_AA(), compound=benzene_mb
         )
-        assert molecule.force_field.ff_type == FF_Types.XML
         assert molecule.gmso_molecule.is_typed()
         assert set(molecule.topology_information["particle_types"]) == {
             "opls_145",
@@ -58,7 +57,6 @@ class TestMolecule(BaseTest):
             force_field=FF_from_file(benzene_xml),
             compound=benzene_mb,
         )
-        assert molecule.force_field.ff_type == FF_Types.XML
         assert molecule.gmso_molecule.is_typed()
         assert set(molecule.topology_information["particle_types"]) == {
             "opls_145",

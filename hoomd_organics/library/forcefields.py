@@ -1,12 +1,10 @@
 """All pre-defined forcefield classes for use in hoomd_organics."""
 import itertools
 
-import forcefield_utilities as ffutils
 import hoomd
 
 from hoomd_organics.assets import FF_DIR
 from hoomd_organics.base import BaseHOOMDForcefield, BaseXMLForcefield
-from hoomd_organics.utils import FF_Types
 
 
 class GAFF(BaseXMLForcefield):
@@ -67,8 +65,6 @@ class OPLS_AA_DIMETHYLETHER(BaseXMLForcefield):
             "Based on hoomd_organics.forcefields.OPLS_AA. "
             "Trimmed down to include only dimethyl ether parameters."
         )
-        self.ff_type = FF_Types.XML
-        self.gmso_ff = ffutils.FoyerFFs().load(forcefield_files).to_gmso_ff()
 
 
 class FF_from_file(BaseXMLForcefield):

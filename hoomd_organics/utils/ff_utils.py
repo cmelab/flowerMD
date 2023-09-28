@@ -6,7 +6,6 @@ from gmso.parameterization import apply
 
 from hoomd_organics.assets import FF_DIR
 
-from .base_types import FF_Types
 from .exceptions import (
     MissingAnglePotentialError,
     MissingBondPotentialError,
@@ -33,7 +32,6 @@ def find_xml_ff(ff_source):
         if not ff_source.endswith(".xml"):
             raise ValueError("ForceField file type must be XML.")
         ff_xml_path = ff_source
-        ff_type = FF_Types.XML
     elif not xml_directory.get(ff_source.split(".xml")[0]):
         raise ValueError(
             "{} forcefield is not supported. Supported XML forcefields "
@@ -42,12 +40,11 @@ def find_xml_ff(ff_source):
     else:
         ff_key = ff_source.split(".xml")[0]
         ff_xml_path = xml_directory.get(ff_key)
-        ff_type = FF_Types.XML
-    return ff_xml_path, ff_type
+    return ff_xml_path
 
 
 def xml_to_gmso_ff(ff_xml):
-    ff_xml_path, ff_type = find_xml_ff(ff_xml)
+    ff_xml_path = find_xml_ff(ff_xml)
     gmso_ff = ffutils.FoyerFFs().load(ff_xml_path).to_gmso_ff()
     return gmso_ff
 

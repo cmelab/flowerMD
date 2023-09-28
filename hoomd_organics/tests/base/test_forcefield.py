@@ -2,14 +2,12 @@ import pytest
 
 from hoomd_organics.base import BaseHOOMDForcefield, BaseXMLForcefield
 from hoomd_organics.tests import BaseTest
-from hoomd_organics.utils import FF_Types
 
 
 class TestBaseForcefield(BaseTest):
     def test_base_xml_forcefield(self, benzene_xml):
         base_xml_ff = BaseXMLForcefield(forcefield_files=benzene_xml)
         assert base_xml_ff.gmso_ff is not None
-        assert base_xml_ff.ff_type == FF_Types.XML
 
     def test_base_xml_forcefield_no_files(self):
         with pytest.raises(TypeError):
@@ -18,7 +16,6 @@ class TestBaseForcefield(BaseTest):
     def test_base_xml_forcefield_name(self):
         base_xml_ff = BaseXMLForcefield(name="oplsaa")
         assert base_xml_ff.gmso_ff is not None
-        assert base_xml_ff.ff_type == FF_Types.XML
 
     def test_base_xml_forcefield_invalid_name(self):
         with pytest.raises(Exception):
@@ -36,7 +33,6 @@ class TestBaseForcefield(BaseTest):
 
         test_hoomd_ff = TestHOOMDFF()
         assert test_hoomd_ff.hoomd_forces == []
-        assert test_hoomd_ff.ff_type == FF_Types.HOOMD
 
     def test_base_hoomd_forcefield_no_forces(self):
         class TestHOOMDFF(BaseHOOMDForcefield):
