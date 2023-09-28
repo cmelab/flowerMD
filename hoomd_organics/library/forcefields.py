@@ -191,7 +191,40 @@ class BeadSpring:
 
 
 class TableForcefield:
-    """Load table potential forcefields."""
+    """Create a set of hoomd table potentials.
+
+    This class provides an interface for creating hoomd table
+    potentials either from arrays of energy and forces, or
+    from files storing the tabulated energy and forces.
+
+    In HOOMD-Blue, table potentials are available for:
+
+        * Pairs: `hoomd.md.pair.Table`
+        * Bonds: `hoomd.md.bond.Table`
+        * Angles: `hoomd.md.angle.Table`
+        * Dihedrals: `hoomd.md.dihedral.Table`
+
+    Notes
+    -----
+    HOOMD table potentials are initialized using arrays of energy and forces.
+    It may be most convenient to store tabulated data in files,
+    in that case use the `from_files` method.
+
+
+    Parameters
+    ----------
+    pairs: dict, optional, default None
+    bonds: dict, optional, default None
+    angles: dict, optional, default None
+    dihedrals: dict, optional, default None
+
+    Methods
+    -------
+    from_files: Create table potentials from a given `type: file_path` mapping.
+        Use this method when the tabulated data
+        is stored in text or binary numpy arrays
+
+    """
 
     def __init__(
         self,
@@ -225,15 +258,45 @@ class TableForcefield:
         exclusions=["bond", "1-3"],
         nlist_buffer=0.40,
     ):
-        """Create table forefield from a set of files."""
+        """Create table forefield using a `type: file_path` mapping.
+
+        Parameters
+        ----------
+        pairs: dict, optional, default None
+        bonds: dict, optional, default None
+        angles: dict, optional, default None
+        dihedrals: dict, optional, default None
+
+        Notes
+        -----
+        The parameters must use a `{"type": "file_path"}` mapping.
+        Following HOOMD conventions, pair types must be given as a tuple
+        of `("type1", "type2")` while bonds, angles and dihedrals
+        are givne as strings of `"type1-type2-type3"`
+
+        Example
+        -------
+        ```
+        table_forcefield = TableForcefield.from_files(
+            pairs = {
+                ("A", "A"): "A_pairs.txt
+                ("B", "B"): "B_pairs.txt
+                ("A", "B"): "AB_pairs.txt
+            },
+            bonds = {"A-A": "A_bonds.txt", "B-B": "B_bonds.txt"},
+            angles = {"A-A-A": "A_angles.txt", "B-B-B": "B_angles.txt"},
+        )
+        ```
+
+        """
 
         def _load_file(file):
+            """Call the correct numpy method."""
             if file.split(".")[-1] in ["txt", "csv"]:
                 return np.loadtxt(file)
             elif file.split(".")[-1] == "npy":
                 return np.load(file)
 
-        """Create forcefield from text files containing tabulated forces."""
         # Read pair files
         pair_dict = dict()
         pair_r_min = set()
