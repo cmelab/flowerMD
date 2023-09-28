@@ -102,7 +102,7 @@ class System(ABC):
                     [self.n_mol_types] * mol_item.n_particles
                 )
                 self.all_molecules.extend(mol_item.molecules)
-                # if ff is provided in Molecule class
+                # if ff is provided in the Molecule class use that as the ff
                 if mol_item.force_field:
                     if isinstance(mol_item.force_field, BaseHOOMDForcefield):
                         self._hoomd_forcefield.extend(
@@ -447,10 +447,49 @@ class System(ABC):
         return snap
 
     def _validate_forcefield(self, input_forcefield):
+        if input_forcefield is None and not self._gmso_forcefields_dict:
+            raise ForceFieldError(
+                "Forcefield is not provided. Valid forcefield "
+                "must be provided either during Molecule "
+                "initialization or when calling the "
+                "`apply_forcefield` method of the System "
+                "class."
+            )
+
+        if input_forcefield and self._gmso_forcefields_dict:
+            raise ForceFieldError(
+                "Forcefield is provided both during Molecule "
+                "initialization and when calling the "
+                "`apply_forcefield` method of the System "
+                "class. Please provide the forcefield only "
+                "once."
+            )
+
+        if input_forcefield and not isinstance(
+            input_forcefield, (BaseHOOMDForcefield, BaseXMLForcefield)
+        ):
+            raise ForceFieldError(
+                "Forcefield must be an instance of either "
+                " `BaseHOOMDForcefield` or "
+                "`BaseXMLForcefield`. \n"
+                "Please check "
+                "`hoomd_organics.library.forcefields` for "
+                "examples of supported forcefields."
+            )
         if input_forcefield:
-            return check_return_iterable(input_forcefield)
-        return None
-        # check if forcefield is xml based. return error if not
+            _force_field = check_return_iterable(input_forcefield)
+            # Collecting all force-fields into a dict with mol_type index as key
+            for i in range(self.n_mol_types):
+                if not self._gmso_forcefields_dict.get(str(i)):
+                    if i < len(_force_field):
+                        # if there is a ff for each molecule type
+                        ff_index = i
+                    else:
+                        # if there is only one ff for all molecule types
+                        ff_index = 0
+                    self._gmso_forcefields_dict[str(i)] = _force_field[
+                        ff_index
+                    ].gmso_ff
 
     def _assign_site_mol_type_idx(self):
         """Assign molecule type index to the gmso sites."""
@@ -505,38 +544,8 @@ class System(ABC):
 
         """
         self.auto_scale = auto_scale
-        # make sure forcefield is xml based
-        _force_field = self._validate_forcefield(force_field)
+        self._validate_forcefield(force_field)
 
-        # check if molecules already had ff in them. If yes, use that  or
-        # return error (can't have two ff per molecule)
-
-        # Collecting all force-fields into a dict with mol_type index as key
-        if _force_field:
-            for i in range(self.n_mol_types):
-                if not self._gmso_forcefields_dict.get(str(i)):
-                    if i < len(_force_field):
-                        # if there is a ff for each molecule type
-                        ff_index = i
-                    else:
-                        # if there is only one ff for all molecule types
-                        ff_index = 0
-                    if hasattr(_force_field[ff_index], "gmso_ff"):
-                        self._gmso_forcefields_dict[str(i)] = _force_field[
-                            ff_index
-                        ].gmso_ff
-                    else:
-                        raise ForceFieldError(
-                            msg=f"GMSO Force field in "
-                            f"{_force_field[ff_index]} is not "
-                            f"provided."
-                        )
-        if not _force_field:
-            # TODO: Better erorr message
-            raise ValueError(
-                "This method can only be used when the System is "
-                "initialized with an XML type forcefield."
-            )
         if self._gmso_forcefields_dict:
             # assign names to all the gmso sites based on mol_type to
             # match the keys in self._gmso_forcefields_dict before applying ff
