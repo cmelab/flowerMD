@@ -264,4 +264,4 @@ class BaseTest:
                 "A": dict(epsilon=1.0, sigma=1.0),
             },
         )
-        return ff.hoomd_forcefield
+        return ff.hoomd_forces

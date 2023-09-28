@@ -698,7 +698,7 @@ class TestSystem(BaseTest):
             molecules=[polyethylene],
             density=1.0,
         )
-        with pytest.raises(ValueError):
+        with pytest.raises(ForceFieldError):
             system.apply_forcefield(
                 r_cut=2.5, force_field=None, auto_scale=False
             )
