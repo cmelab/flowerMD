@@ -9,7 +9,18 @@ from hoomd_organics.assets import FF_DIR
 from hoomd_organics.utils import FF_Types
 
 
-class GAFF(foyer.Forcefield):
+class BaseXMLForcefield(foyer.Forcefield):
+    """Base XML forcefield class."""
+
+    def __init__(self, forcefield_files=None, name=None):
+        super(BaseXMLForcefield, self).__init__(
+            forcefield_files=forcefield_files, name=name
+        )
+        self.ff_type = FF_Types.XML
+        self.gmso_ff = ffutils.FoyerFFs().load(forcefield_files).to_gmso_ff()
+
+
+class GAFF(BaseXMLForcefield):
     """GAFF forcefield class."""
 
     def __init__(self, forcefield_files=f"{FF_DIR}/gaff.xml"):
@@ -19,21 +30,17 @@ class GAFF(foyer.Forcefield):
             "The XML file was obtained from the antefoyer package: "
             "https://github.com/rsdefever/antefoyer/tree/master/antefoyer"
         )
-        self.ff_type = FF_Types.XML
-        self.gmso_ff = ffutils.FoyerFFs().load(forcefield_files).to_gmso_ff()
 
 
-class OPLS_AA(foyer.Forcefield):
+class OPLS_AA(BaseXMLForcefield):
     """OPLS All Atom forcefield class."""
 
     def __init__(self, name="oplsaa"):
         super(OPLS_AA, self).__init__(name=name)
         self.description = "opls-aa forcefield found in the Foyer package."
-        self.ff_type = FF_Types.XML
-        self.gmso_ff = ffutils.FoyerFFs().load(name).to_gmso_ff()
 
 
-class OPLS_AA_PPS(foyer.Forcefield):
+class OPLS_AA_PPS(BaseXMLForcefield):
     """OPLS All Atom for PPS molecule forcefield class."""
 
     def __init__(self, forcefield_files=f"{FF_DIR}/pps_opls.xml"):
@@ -47,11 +54,9 @@ class OPLS_AA_PPS(foyer.Forcefield):
             "experimental PPS papers. The spring constant taken "
             "from the equivalent angle in GAFF."
         )
-        self.ff_type = FF_Types.XML
-        self.gmso_ff = ffutils.FoyerFFs().load(forcefield_files).to_gmso_ff()
 
 
-class OPLS_AA_BENZENE(foyer.Forcefield):
+class OPLS_AA_BENZENE(BaseXMLForcefield):
     """OPLS All Atom for benzene molecule forcefield class."""
 
     def __init__(self, forcefield_files=f"{FF_DIR}/benzene_opls.xml"):
@@ -60,11 +65,9 @@ class OPLS_AA_BENZENE(foyer.Forcefield):
             "Based on hoomd_organics.forcefields.OPLS_AA. "
             "Trimmed down to include only benzene parameters."
         )
-        self.ff_type = FF_Types.XML
-        self.gmso_ff = ffutils.FoyerFFs().load(forcefield_files).to_gmso_ff()
 
 
-class OPLS_AA_DIMETHYLETHER(foyer.Forcefield):
+class OPLS_AA_DIMETHYLETHER(BaseXMLForcefield):
     """OPLS All Atom for dimethyl ether molecule forcefield class."""
 
     def __init__(self, forcefield_files=f"{FF_DIR}/dimethylether_opls.xml"):
@@ -79,13 +82,12 @@ class OPLS_AA_DIMETHYLETHER(foyer.Forcefield):
         self.gmso_ff = ffutils.FoyerFFs().load(forcefield_files).to_gmso_ff()
 
 
-class FF_from_file(foyer.Forcefield):
+class FF_from_file(BaseXMLForcefield):
     """Forcefield class for loading a forcefield from an XML file."""
 
-    def __init__(self, xml_file):
-        super(FF_from_file, self).__init__(forcefield_files=xml_file)
-        self.ff_type = FF_Types.XML
-        self.gmso_ff = ffutils.FoyerFFs().load(xml_file).to_gmso_ff()
+    def __init__(self, forcefield_files):
+        super(FF_from_file, self).__init__(forcefield_files=forcefield_files)
+        self.description = "Forcefield loaded from an XML file. "
 
 
 class BeadSpring:
