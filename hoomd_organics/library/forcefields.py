@@ -225,21 +225,29 @@ class TableForcefield:
         exclusions=["bond", "1-3"],
         nlist_buffer=0.40,
     ):
+        """Create table forefield from a set of files."""
+
+        def _load_file(file):
+            if file.split(".")[-1] in ["txt", "csv"]:
+                return np.loadtxt(file)
+            elif file.split(".")[-1] == "npy":
+                return np.load(file)
+
         """Create forcefield from text files containing tabulated forces."""
         # Read pair files
         pair_dict = dict()
-        r_min = set()
-        r_max = set()
+        pair_r_min = set()
+        pair_r_max = set()
         if pairs:
             for pair_type in pairs:
-                table = np.loadtxt(pairs[pair_type])
+                table = _load_file(pairs[pair_type])
                 r = table[:, 0]
-                r_min.add(r[0])
-                r_max.add(r[-1])
+                pair_r_min.add(r[0])
+                pair_r_max.add(r[-1])
                 pair_dict[pair_type] = dict()
                 pair_dict[pair_type]["U"] = table[:, 1]
                 pair_dict[pair_type]["F"] = table[:, 2]
-            if len(r_min) != len(r_max) != 1:
+            if len(pair_r_min) != len(pair_r_max) != 1:
                 raise ValueError(
                     "All pair files must have the same r-range values"
                 )
@@ -247,7 +255,7 @@ class TableForcefield:
         bond_dict = dict()
         if bonds:
             for bond_type in bonds:
-                table = np.loadtxt(bonds[bond_type])
+                table = _load_file(bonds[bond_type])
                 r = table[:, 0]
                 r_min = r[0]
                 r_max = r[-1]
@@ -260,7 +268,7 @@ class TableForcefield:
         angle_dict = dict()
         if angles:
             for angle_type in angles:
-                table = np.loadtxt(angles[angle_type])
+                table = _load_file(angles[angle_type])
                 thetas = table[:, 0]
                 if thetas[0] != 0 or not np.allclose(
                     thetas[-1], np.pi, atol=1e-5
@@ -276,11 +284,11 @@ class TableForcefield:
         dih_dict = dict()
         if dihedrals:
             for dih_type in dihedrals:
-                table = np.loadtxt(dihedrals[dih_type])
+                table = _load_file(dihedrals[dih_type])
                 thetas = table[:, 0]
-                if thetas[0] != 0 or not np.allclose(
-                    thetas[-1], 2 * np.pi, atol=1e-5
-                ):
+                if not np.allclose(
+                    thetas[0], -np.pi, atol=1e-5
+                ) or not np.allclose(thetas[-1], np.pi, atol=1e-5):
                     raise ValueError(
                         "Dihedral angle values must be evenly spaced and "
                         "range from -Pi to Pi."
@@ -294,8 +302,8 @@ class TableForcefield:
             bonds=bond_dict,
             angles=angle_dict,
             dihedrals=dih_dict,
-            r_min=list(r_min)[0],
-            r_cut=list(r_max)[0],
+            r_min=list(pair_r_min)[0],
+            r_cut=list(pair_r_max)[0],
             exclusions=exclusions,
         )
 

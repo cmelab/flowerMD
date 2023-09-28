@@ -1,6 +1,7 @@
 import os
 
 import hoomd
+import numpy as np
 
 from hoomd_organics.library import (
     GAFF,
@@ -10,6 +11,7 @@ from hoomd_organics.library import (
     OPLS_AA_PPS,
     BeadSpring,
     FF_from_file,
+    TableForcefield,
 )
 from hoomd_organics.tests.base_test import ASSETS_DIR
 
@@ -89,3 +91,26 @@ class TestForceFields:
             assert ff.hoomd_forcefield[3].params[param]["k"] == 100
             assert ff.hoomd_forcefield[3].params[param]["d"] == -1
             assert ff.hoomd_forcefield[3].params[param]["n"] == 1
+
+
+class TestTableForcefield:
+    def test_from_txt_file(self):
+        pair_file = os.path.join(ASSETS_DIR, "lj_pair_table.txt")
+        bond_file = os.path.join(ASSETS_DIR, "bond_table.txt")
+        angle_file = os.path.join(ASSETS_DIR, "angle_table.txt")
+        dihedral_file = os.path.join(ASSETS_DIR, "dihedral_table.txt")
+        ff = TableForcefield.from_files(
+            pairs={("A", "A"): pair_file},
+            bonds={"A-A": bond_file},
+            angles={"A-A-A": angle_file},
+            dihedrals={"A-A-A-A": dihedral_file},
+        )
+        pair_data = np.loadtxt(pair_file)
+        bond_data = np.loadtxt(bond_file)
+        angle_data = np.loadtxt(angle_file)
+        dihedral_data = np.loadtxt(dihedral_file)
+        assert ff.r_min == pair_data[:, 0][0]
+        assert ff.r_cut == pair_data[:, 0][-1]
+        assert ff.bond_width == len(bond_data[:, 0])
+        assert ff.angle_width == len(angle_data[:, 0])
+        assert ff.dih_width == len(dihedral_data[:, 0])
