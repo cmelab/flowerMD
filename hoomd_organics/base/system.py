@@ -94,8 +94,8 @@ class System(ABC):
         self._mol_type_idx = []
         for mol_item in self._molecules:
             if isinstance(mol_item, Molecule):
-                # extend mol_type_idx by number of particles in mol_item with
-                # a list with n_mol-types as values
+                # keep track of molecule types indices to assign to sites
+                # before applying forcefield
                 self._mol_type_idx.extend(
                     [self.n_mol_types] * mol_item.n_particles
                 )
@@ -498,13 +498,14 @@ class System(ABC):
             Neighborlist buffer for simulation cell.
 
         """
+        self.auto_scale = auto_scale
         # make sure forcefield is xml based
         _force_field = self._validate_forcefield(force_field)
 
         # check if molecules already had ff in them. If yes, use that  or
         # return error (can't have two ff per molecule)
 
-        # Collecting all force-fields into a dict
+        # Collecting all force-fields into a dict with mol_type index as key
         if _force_field:
             for i in range(self.n_mol_types):
                 if not self._gmso_forcefields_dict.get(str(i)):
@@ -524,7 +525,6 @@ class System(ABC):
                             f"{_force_field[ff_index]} is not "
                             f"provided."
                         )
-        self.auto_scale = auto_scale
         if not _force_field:
             # TODO: Better erorr message
             raise ValueError(
@@ -532,11 +532,9 @@ class System(ABC):
                 "initialized with an XML type forcefield."
             )
         if self._gmso_forcefields_dict:
-            # assign names to all the particles of system based on mol_type to
-            # match the keys in self._gmso_forcefields_dict and  recreate the
-            # gmso system object
+            # assign names to all the gmso sites based on mol_type to
+            # match the keys in self._gmso_forcefields_dict before applying ff
             self._assign_site_mol_type_idx()
-            # self.gmso_system = self._convert_to_gmso()
         self.gmso_system = apply(
             self.gmso_system,
             self._gmso_forcefields_dict,
