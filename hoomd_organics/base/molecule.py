@@ -400,7 +400,9 @@ class Molecule:
             # Update topology information from typed gmso after applying ff.
             self._identify_topology_information(self.gmso_molecule)
         elif isinstance(self.force_field, BaseHOOMDForcefield):
-            _validate_hoomd_ff(self.force_field, self.topology_information)
+            _validate_hoomd_ff(
+                self.force_field.hoomd_forces, self.topology_information
+            )
         elif isinstance(self.force_field, List):
             _validate_hoomd_ff(self.force_field, self.topology_information)
         else:

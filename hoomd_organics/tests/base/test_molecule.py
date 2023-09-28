@@ -1,7 +1,7 @@
 import pytest
 
 from hoomd_organics import CoPolymer, Molecule, Polymer
-from hoomd_organics.library import OPLS_AA, FF_from_file
+from hoomd_organics.library import OPLS_AA, BeadSpring, FF_from_file
 from hoomd_organics.tests import BaseTest
 from hoomd_organics.utils import FF_Types, exceptions
 
@@ -132,6 +132,23 @@ class TestMolecule(BaseTest):
                 force_field="invalid_ff.xml",
                 compound=benzene_mb,
             )
+
+    def test_validate_forcefield_hoomd_ff(self, benzene_smiles):
+        molecule = Molecule(num_mols=1, smiles=benzene_smiles)
+        molecule.coarse_grain(beads={"A": benzene_smiles})
+        beadspring_ff = BeadSpring(
+            r_cut=2.5,
+            beads={
+                "A": dict(epsilon=1.0, sigma=1.0),
+            },
+        )
+        cg_molecule = Molecule(
+            num_mols=1,
+            force_field=beadspring_ff,
+            compound=molecule.gmso_molecule,
+        )
+        assert cg_molecule.force_field == beadspring_ff
+        assert not molecule.gmso_molecule.is_typed()
 
     def test_coarse_grain_with_single_beads(self, benzene_smiles):
         molecule = Molecule(num_mols=2, smiles=benzene_smiles)
