@@ -401,17 +401,6 @@ class Molecule:
         elif isinstance(self.force_field, List):
             _validate_hoomd_ff(self.force_field, self.topology_information)
 
-    def _assign_mol_name(self, name):
-        """Assign a name to the molecule."""
-        for mol in self.molecules:
-            mol.name = name
-            # TODO: This is a hack to make sure that the name of the children is
-            # also updated, so that when converting to gmso, all the sites have
-            # the correct name. This needs additional investigation into gmso's
-            # convert mbuilder to gmso functionality.
-            for child in mol.children:
-                child.name = name
-
 
 class Polymer(Molecule):
     """Builds a polymer from a monomer.
