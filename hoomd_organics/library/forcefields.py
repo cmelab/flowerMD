@@ -6,6 +6,7 @@ import foyer
 import hoomd
 
 from hoomd_organics.assets import FF_DIR
+from hoomd_organics.utils import FF_Types
 
 
 class GAFF(foyer.Forcefield):
@@ -18,6 +19,7 @@ class GAFF(foyer.Forcefield):
             "The XML file was obtained from the antefoyer package: "
             "https://github.com/rsdefever/antefoyer/tree/master/antefoyer"
         )
+        self.ff_type = FF_Types.XML
         self.gmso_ff = ffutils.FoyerFFs().load(forcefield_files).to_gmso_ff()
 
 
@@ -27,6 +29,7 @@ class OPLS_AA(foyer.Forcefield):
     def __init__(self, name="oplsaa"):
         super(OPLS_AA, self).__init__(name=name)
         self.description = "opls-aa forcefield found in the Foyer package."
+        self.ff_type = FF_Types.XML
         self.gmso_ff = ffutils.FoyerFFs().load(name).to_gmso_ff()
 
 
@@ -44,6 +47,7 @@ class OPLS_AA_PPS(foyer.Forcefield):
             "experimental PPS papers. The spring constant taken "
             "from the equivalent angle in GAFF."
         )
+        self.ff_type = FF_Types.XML
         self.gmso_ff = ffutils.FoyerFFs().load(forcefield_files).to_gmso_ff()
 
 
@@ -56,6 +60,7 @@ class OPLS_AA_BENZENE(foyer.Forcefield):
             "Based on hoomd_organics.forcefields.OPLS_AA. "
             "Trimmed down to include only benzene parameters."
         )
+        self.ff_type = FF_Types.XML
         self.gmso_ff = ffutils.FoyerFFs().load(forcefield_files).to_gmso_ff()
 
 
@@ -70,6 +75,7 @@ class OPLS_AA_DIMETHYLETHER(foyer.Forcefield):
             "Based on hoomd_organics.forcefields.OPLS_AA. "
             "Trimmed down to include only dimethyl ether parameters."
         )
+        self.ff_type = FF_Types.XML
         self.gmso_ff = ffutils.FoyerFFs().load(forcefield_files).to_gmso_ff()
 
 
@@ -78,6 +84,7 @@ class FF_from_file(foyer.Forcefield):
 
     def __init__(self, xml_file):
         super(FF_from_file, self).__init__(forcefield_files=xml_file)
+        self.ff_type = FF_Types.XML
         self.gmso_ff = ffutils.FoyerFFs().load(xml_file).to_gmso_ff()
 
 
@@ -147,6 +154,7 @@ class BeadSpring:
         self.r_cut = r_cut
         self.exclusions = exclusions
         self.hoomd_forcefield = self._create_forcefield()
+        self.ff_type = FF_Types.HOOMD
 
     def _create_forcefield(self):
         """Create the hoomd force objects."""
