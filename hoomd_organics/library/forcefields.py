@@ -301,7 +301,7 @@ class TableForcefield:
         def _load_file(file, **kwargs):
             """Call the correct numpy method."""
             if file.split(".")[-1] in ["txt", "csv"]:
-                return np.loadtxt(file, **kwargs)
+                return np.genfromtxt(file, **kwargs)
             elif file.split(".")[-1] == "npy":
                 return np.load(file, **kwargs)
 
