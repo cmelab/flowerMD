@@ -2,31 +2,11 @@
 import itertools
 
 import forcefield_utilities as ffutils
-import foyer
 import hoomd
 
 from hoomd_organics.assets import FF_DIR
+from hoomd_organics.base import BaseHOOMDForcefield, BaseXMLForcefield
 from hoomd_organics.utils import FF_Types
-
-
-class BaseXMLForcefield(foyer.Forcefield):
-    """Base XML forcefield class."""
-
-    def __init__(self, forcefield_files=None, name=None):
-        super(BaseXMLForcefield, self).__init__(
-            forcefield_files=forcefield_files, name=name
-        )
-        self.ff_type = FF_Types.XML
-        self.gmso_ff = ffutils.FoyerFFs().load(forcefield_files).to_gmso_ff()
-
-
-class BaseHOOMDForcefield:
-    """Base HOOMD forcefield class."""
-
-    def __init__(self, hoomd_forces=None):
-        super(BaseHOOMDForcefield, self).__init__()
-        self.hoomd_forces = hoomd_forces
-        self.ff_type = FF_Types.HOOMD
 
 
 class GAFF(BaseXMLForcefield):
@@ -164,7 +144,8 @@ class BeadSpring(BaseHOOMDForcefield):
         self.dihedrals = dihedrals
         self.r_cut = r_cut
         self.exclusions = exclusions
-        self.hoomd_forces = self._create_forcefield()
+        hoomd_forces = self._create_forcefield()
+        super(BeadSpring, self).__init__(hoomd_forces)
 
     def _create_forcefield(self):
         """Create the hoomd force objects."""

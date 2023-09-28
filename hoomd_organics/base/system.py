@@ -10,13 +10,15 @@ import unyt as u
 from gmso.external import from_mbuild, to_gsd_snapshot, to_hoomd_forcefield
 from gmso.parameterization import apply
 
+from hoomd_organics.base.forcefield import (
+    BaseHOOMDForcefield,
+    BaseXMLForcefield,
+)
 from hoomd_organics.base.molecule import Molecule
 from hoomd_organics.utils import (
-    FF_Types,
     calculate_box_length,
     check_return_iterable,
     validate_ref_value,
-    xml_to_gmso_ff,
 )
 from hoomd_organics.utils.exceptions import ForceFieldError, MoleculeLoadError
 
@@ -102,12 +104,16 @@ class System(ABC):
                 self.all_molecules.extend(mol_item.molecules)
                 # if ff is provided in Molecule class
                 if mol_item.force_field:
-                    if mol_item.ff_type == FF_Types.Hoomd:
-                        self._hoomd_forcefield.extend(mol_item.force_field)
-                    else:
+                    if isinstance(mol_item.force_field, BaseHOOMDForcefield):
+                        self._hoomd_forcefield.extend(
+                            mol_item.force_field.hoomd_forces
+                        )
+                    elif isinstance(mol_item.force_field, BaseXMLForcefield):
                         self._gmso_forcefields_dict[
                             str(self.n_mol_types)
-                        ] = xml_to_gmso_ff(mol_item.force_field)
+                        ] = mol_item.force_field.gmso_ff
+                    elif isinstance(mol_item.force_field, list):
+                        self._hoomd_forcefield.extend(mol_item.force_field)
                 self.n_mol_types += 1
             elif isinstance(mol_item, mb.Compound):
                 mol_item.name = str(self.n_mol_types)
