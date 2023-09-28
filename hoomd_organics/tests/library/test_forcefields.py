@@ -114,3 +114,24 @@ class TestTableForcefield:
         assert ff.bond_width == len(bond_data[:, 0])
         assert ff.angle_width == len(angle_data[:, 0])
         assert ff.dih_width == len(dihedral_data[:, 0])
+
+    def test_from_npy_file(self):
+        pair_file = os.path.join(ASSETS_DIR, "lj_pair_table.npy")
+        bond_file = os.path.join(ASSETS_DIR, "bond_table.npy")
+        angle_file = os.path.join(ASSETS_DIR, "angle_table.npy")
+        dihedral_file = os.path.join(ASSETS_DIR, "dihedral_table.npy")
+        ff = TableForcefield.from_files(
+            pairs={("A", "A"): pair_file},
+            bonds={"A-A": bond_file},
+            angles={"A-A-A": angle_file},
+            dihedrals={"A-A-A-A": dihedral_file},
+        )
+        pair_data = np.load(pair_file)
+        bond_data = np.load(bond_file)
+        angle_data = np.load(angle_file)
+        dihedral_data = np.load(dihedral_file)
+        assert ff.r_min == pair_data[:, 0][0]
+        assert ff.r_cut == pair_data[:, 0][-1]
+        assert ff.bond_width == len(bond_data[:, 0])
+        assert ff.angle_width == len(angle_data[:, 0])
+        assert ff.dih_width == len(dihedral_data[:, 0])
