@@ -33,7 +33,7 @@ def find_xml_ff(ff_source):
         if not ff_source.endswith(".xml"):
             raise ValueError("ForceField file type must be XML.")
         ff_xml_path = ff_source
-        ff_type = FF_Types.custom
+        ff_type = FF_Types.XML
     elif not xml_directory.get(ff_source.split(".xml")[0]):
         raise ValueError(
             "{} forcefield is not supported. Supported XML forcefields "
@@ -42,7 +42,7 @@ def find_xml_ff(ff_source):
     else:
         ff_key = ff_source.split(".xml")[0]
         ff_xml_path = xml_directory.get(ff_key)
-        ff_type = getattr(FF_Types, ff_key)
+        ff_type = FF_Types.XML
     return ff_xml_path, ff_type
 
 
