@@ -218,12 +218,6 @@ class TableForcefield:
     angles: dict, optional, default None
     dihedrals: dict, optional, default None
 
-    Methods
-    -------
-    from_files: Create table potentials from a given `type: file_path` mapping.
-        Use this method when the tabulated data
-        is stored in text or binary numpy arrays
-
     """
 
     def __init__(
@@ -260,13 +254,6 @@ class TableForcefield:
     ):
         """Create table forefield using a `type: file_path` mapping.
 
-        Parameters
-        ----------
-        pairs: dict, optional, default None
-        bonds: dict, optional, default None
-        angles: dict, optional, default None
-        dihedrals: dict, optional, default None
-
         Notes
         -----
         The parameters must use a `{"type": "file_path"}` mapping.
@@ -274,20 +261,30 @@ class TableForcefield:
         of `("type1", "type2")` while bonds, angles and dihedrals
         are givne as strings of `"type1-type2-type3"`
 
+        Parameters
+        ----------
+        pairs: dict, optional, default None
+            Dictionary of pair type values with file path keys
+        bonds: dict, optional, default None
+            Dictionary with keys of bond type and keys of file path
+        angles: dict, optional, default None
+            Dictionary with keys of angle type and keys of file path
+        dihedrals: dict, optional, default None
+            Dictionary with keys of dihedral type and keys of file path
+
         Example
         -------
-        ```
-        table_forcefield = TableForcefield.from_files(
-            pairs = {
-                ("A", "A"): "A_pairs.txt
-                ("B", "B"): "B_pairs.txt
-                ("A", "B"): "AB_pairs.txt
-            },
-            bonds = {"A-A": "A_bonds.txt", "B-B": "B_bonds.txt"},
-            angles = {"A-A-A": "A_angles.txt", "B-B-B": "B_angles.txt"},
-        )
-        ```
+        .. code-block:: python
 
+            table_forcefield = TableForcefield.from_files(
+                pairs = {
+                    ("A", "A"): "A_pairs.txt
+                    ("B", "B"): "B_pairs.txt
+                    ("A", "B"): "AB_pairs.txt
+                },
+                bonds = {"A-A": "A_bonds.txt", "B-B": "B_bonds.txt"},
+                angles = {"A-A-A": "A_angles.txt", "B-B-B": "B_angles.txt"},
+            )
         """
 
         def _load_file(file):
