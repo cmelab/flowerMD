@@ -257,7 +257,7 @@ class TableForcefield:
         Parameters
         ----------
         pairs: dict, optional, default None
-            Dictionary of pair type values with file path keys
+            Dictionary with keys of pair type and keys of file path
         bonds: dict, optional, default None
             Dictionary with keys of bond type and keys of file path
         angles: dict, optional, default None
@@ -298,7 +298,7 @@ class TableForcefield:
 
         """
 
-        def _load_file(file, kwargs):
+        def _load_file(file, **kwargs):
             """Call the correct numpy method."""
             if file.split(".")[-1] in ["txt", "csv"]:
                 return np.loadtxt(file, **kwargs)
