@@ -13,7 +13,9 @@ class BaseXMLForcefield(foyer.Forcefield):
             forcefield_files=forcefield_files, name=name
         )
         self.ff_type = FF_Types.XML
-        self.gmso_ff = ffutils.FoyerFFs().load(forcefield_files).to_gmso_ff()
+        self.gmso_ff = (
+            ffutils.FoyerFFs().load(forcefield_files or name).to_gmso_ff()
+        )
 
 
 class BaseHOOMDForcefield:
