@@ -11,7 +11,8 @@ from gmso.parameterization import apply
 from grits import CG_Compound
 from mbuild.lib.recipes import Polymer as mbPolymer
 
-from hoomd_organics.utils import FF_Types, check_return_iterable
+from hoomd_organics.base import BaseHOOMDForcefield, BaseXMLForcefield
+from hoomd_organics.utils import check_return_iterable
 from hoomd_organics.utils.exceptions import ForceFieldError, MoleculeLoadError
 from hoomd_organics.utils.ff_utils import _validate_hoomd_ff
 
@@ -388,40 +389,29 @@ class Molecule:
 
     def _validate_force_field(self):
         """Validate the force field for the molecule."""
-        if hasattr(self.force_field, "ff_type"):
-            if self.force_field.ff_type == FF_Types.XML and hasattr(
-                self.force_field, "gmso_ff"
-            ):
-                self.gmso_molecule = apply(
-                    self.gmso_molecule,
-                    self.force_field.gmso_ff,
-                    identify_connections=True,
-                    speedup_by_moltag=True,
-                    speedup_by_molgraph=False,
-                )
-                # Update topology information from typed gmso after applying ff.
-                self._identify_topology_information(self.gmso_molecule)
-            elif self.force_field.ff_type == FF_Types.HOOMD and hasattr(
-                self.force_field, "hoomd_forcefield"
-            ):
-                _validate_hoomd_ff(
-                    self.force_field.hoomd_forcefield, self.topology_information
-                )
-            else:
-                raise ForceFieldError(
-                    "Unsupported forcefield type. Please "
-                    "check forcefield classes from "
-                    "`hoomd_orgnaics.library.forcefields` "
-                    "for supported forcefields."
-                )
+        if isinstance(self.force_field, BaseXMLForcefield):
+            self.gmso_molecule = apply(
+                self.gmso_molecule,
+                self.force_field.gmso_ff,
+                identify_connections=True,
+                speedup_by_moltag=True,
+                speedup_by_molgraph=False,
+            )
+            # Update topology information from typed gmso after applying ff.
+            self._identify_topology_information(self.gmso_molecule)
+        elif isinstance(self.force_field, BaseHOOMDForcefield):
+            _validate_hoomd_ff(self.force_field, self.topology_information)
         elif isinstance(self.force_field, List):
             _validate_hoomd_ff(self.force_field, self.topology_information)
         else:
             raise ForceFieldError(
                 "Unsupported forcefield type. Forcefields "
-                "should be of type "
-                "`hoomd_organics.ForceField` or a list of"
-                " `hoomd.md.force.Force` objects."
+                "should be a subclass of "
+                "`hoomd_organics.base.forcefield.BaseXMLForcefield` or "
+                "`hoomd_organics.base.forcefield.BaseHOOMDForcefield` or a "
+                "list of `hoomd.md.force.Force` objects. \n"
+                "Please check `hoomd_organics.library.forcefields` for "
+                "examples of supported forcefields."
             )
 
 
