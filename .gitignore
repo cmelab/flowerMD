@@ -135,3 +135,7 @@ dmypy.json
 
 # IDE files
 .idea/
+
+# emacs backup saves
+*.~
+*.#

@@ -8,18 +8,15 @@ from unyt import Unit
 from hoomd_organics import Lattice, Pack
 from hoomd_organics.library import OPLS_AA, OPLS_AA_DIMETHYLETHER, OPLS_AA_PPS
 from hoomd_organics.tests import BaseTest
-from hoomd_organics.utils.exceptions import ReferenceUnitError
+from hoomd_organics.utils.exceptions import ForceFieldError, ReferenceUnitError
 
 
 class TestSystem(BaseTest):
     def test_single_mol_type(self, benzene_molecule):
         benzene_mols = benzene_molecule(n_mols=3)
-        system = Pack(
-            molecules=[benzene_mols],
-            density=0.8,
-            r_cut=2.5,
-            force_field=OPLS_AA(),
-            auto_scale=True,
+        system = Pack(molecules=[benzene_mols], density=0.8)
+        system.apply_forcefield(
+            r_cut=2.5, force_field=OPLS_AA(), auto_scale=True
         )
         assert system.n_mol_types == 1
         assert len(system.all_molecules) == len(benzene_mols.molecules)
@@ -32,19 +29,16 @@ class TestSystem(BaseTest):
     def test_multiple_mol_types(self, benzene_molecule, ethane_molecule):
         benzene_mol = benzene_molecule(n_mols=3)
         ethane_mol = ethane_molecule(n_mols=2)
-        system = Pack(
-            molecules=[benzene_mol, ethane_mol],
-            density=0.8,
-            r_cut=2.5,
-            force_field=OPLS_AA(),
-            auto_scale=True,
+        system = Pack(molecules=[benzene_mol, ethane_mol], density=0.8)
+        system.apply_forcefield(
+            r_cut=2.5, force_field=OPLS_AA(), auto_scale=True
         )
         assert system.n_mol_types == 2
         assert len(system.all_molecules) == len(benzene_mol.molecules) + len(
             ethane_mol.molecules
         )
-        assert system.all_molecules[0].name == "0"
-        assert system.all_molecules[-1].name == "1"
+        assert system.gmso_system.sites[0].group == "0"
+        assert system.gmso_system.sites[-1].group == "1"
         assert system.gmso_system.is_typed()
         assert len(system.hoomd_forcefield) > 0
         assert system.n_particles == system.hoomd_snapshot.particles.N
@@ -60,9 +54,8 @@ class TestSystem(BaseTest):
     ):
         dimethylether_mol = dimethylether_molecule(n_mols=3)
         pps_mol = pps_molecule(n_mols=2)
-        system = Pack(
-            molecules=[dimethylether_mol, pps_mol],
-            density=0.8,
+        system = Pack(molecules=[dimethylether_mol, pps_mol], density=0.8)
+        system.apply_forcefield(
             r_cut=2.5,
             force_field=[OPLS_AA_DIMETHYLETHER(), OPLS_AA_PPS()],
             auto_scale=True,
@@ -71,8 +64,8 @@ class TestSystem(BaseTest):
         assert len(system.all_molecules) == len(
             dimethylether_mol.molecules
         ) + len(pps_mol.molecules)
-        assert system.all_molecules[0].name == "0"
-        assert system.all_molecules[-1].name == "1"
+        assert system.gmso_system.sites[0].group == "0"
+        assert system.gmso_system.sites[-1].group == "1"
         assert system.gmso_system.is_typed()
         assert len(system.hoomd_forcefield) > 0
         for hoomd_force in system.hoomd_forcefield:
@@ -92,12 +85,9 @@ class TestSystem(BaseTest):
 
     def test_system_from_mol2_mol_parameterization(self, benzene_molecule_mol2):
         benzene_mol = benzene_molecule_mol2(n_mols=3)
-        system = Pack(
-            molecules=[benzene_mol],
-            density=0.8,
-            r_cut=2.5,
-            force_field=OPLS_AA(),
-            auto_scale=True,
+        system = Pack(molecules=[benzene_mol], density=0.8)
+        system.apply_forcefield(
+            r_cut=2.5, force_field=OPLS_AA(), auto_scale=True
         )
         assert system.gmso_system.is_typed()
         assert len(system.hoomd_forcefield) > 0
@@ -105,13 +95,12 @@ class TestSystem(BaseTest):
 
     def test_remove_hydrogen(self, benzene_molecule):
         benzene_mol = benzene_molecule(n_mols=3)
-        system = Pack(
-            molecules=[benzene_mol],
-            density=0.8,
+        system = Pack(molecules=[benzene_mol], density=0.8)
+        system.apply_forcefield(
             r_cut=2.5,
             force_field=OPLS_AA(),
-            auto_scale=True,
             remove_hydrogens=True,
+            auto_scale=True,
         )
         assert not any(
             [s.element.atomic_number == 1 for s in system.gmso_system.sites]
@@ -132,12 +121,16 @@ class TestSystem(BaseTest):
         system = Pack(
             molecules=[benzene_mol],
             density=0.8,
+        )
+        system.apply_forcefield(
             r_cut=2.5,
             force_field=OPLS_AA(),
-            auto_scale=True,
             remove_hydrogens=False,
+            auto_scale=True,
         )
         for site in system.gmso_system.sites:
+            # this does not work as the name of all sites are changed to reflect
+            # the molecule type id
             if site.name == "H":
                 site.element = gmso.core.element.Element(
                     symbol="C",
@@ -146,7 +139,7 @@ class TestSystem(BaseTest):
                     mass=1.008 * Unit("amu"),
                 )
 
-        system._remove_hydrogens()
+        system.remove_hydrogens()
         assert system.gmso_system.n_sites == 6
 
     def test_remove_hydrogen_no_hydrogen(self, benzene_molecule):
@@ -154,10 +147,12 @@ class TestSystem(BaseTest):
         system = Pack(
             molecules=[benzene_mol],
             density=0.8,
+        )
+        system.apply_forcefield(
             r_cut=2.5,
             force_field=OPLS_AA(),
-            auto_scale=True,
             remove_hydrogens=False,
+            auto_scale=True,
         )
         hydrogens = [
             site
@@ -168,18 +163,20 @@ class TestSystem(BaseTest):
             system.gmso_system.remove_site(h_site)
 
         with pytest.warns():
-            system._remove_hydrogens()
+            system.remove_hydrogens()
 
     def test_add_mass_charges(self, benzene_molecule):
         benzene_mols = benzene_molecule(n_mols=1)
         system = Pack(
             molecules=[benzene_mols],
             density=0.8,
+        )
+        system.apply_forcefield(
             r_cut=2.5,
             force_field=OPLS_AA(),
-            auto_scale=False,
             remove_hydrogens=True,
             scale_charges=False,
+            auto_scale=False,
         )
         for site in system.gmso_system.sites:
             assert site.mass.value == (12.011 + 1.008)
@@ -196,16 +193,14 @@ class TestSystem(BaseTest):
         low_density_system = Pack(
             molecules=[benzene_mol],
             density=0.1,
-            r_cut=2.5,
-            force_field=OPLS_AA(),
-            auto_scale=True,
         )
-        high_density_system = Pack(
-            molecules=[benzene_mol],
-            density=0.9,
-            r_cut=2.5,
-            force_field=OPLS_AA(),
-            auto_scale=True,
+        low_density_system.apply_forcefield(
+            r_cut=2.5, force_field=OPLS_AA(), auto_scale=True
+        )
+
+        high_density_system = Pack(molecules=[benzene_mol], density=0.9)
+        high_density_system.apply_forcefield(
+            r_cut=2.5, force_field=OPLS_AA(), auto_scale=True
         )
         assert all(
             low_density_system.target_box > high_density_system.target_box
@@ -213,7 +208,7 @@ class TestSystem(BaseTest):
 
     def test_mass(self, pps_molecule):
         pps_mol = pps_molecule(n_mols=20)
-        system = Pack(molecules=[pps_mol], density=1.0, r_cut=2.5)
+        system = Pack(molecules=[pps_mol], density=1.0)
         assert np.allclose(
             system.mass, ((12.011 * 6) + (1.008 * 6) + 32.06) * 20, atol=1e-4
         )
@@ -222,10 +217,10 @@ class TestSystem(BaseTest):
         polyethylene = polyethylene(lengths=5, num_mols=5)
         system = Pack(
             molecules=[polyethylene],
-            force_field=[OPLS_AA()],
             density=1.0,
-            r_cut=2.5,
-            auto_scale=True,
+        )
+        system.apply_forcefield(
+            r_cut=2.5, force_field=[OPLS_AA()], auto_scale=True
         )
 
         assert np.allclose(
@@ -241,10 +236,10 @@ class TestSystem(BaseTest):
         polyethylene = polyethylene(lengths=5, num_mols=5)
         system = Pack(
             molecules=[polyethylene],
-            force_field=[OPLS_AA()],
             density=1.0,
-            r_cut=2.5,
-            auto_scale=True,
+        )
+        system.apply_forcefield(
+            r_cut=2.5, force_field=[OPLS_AA()], auto_scale=True
         )
         total_red_mass = sum(system.hoomd_snapshot.particles.mass)
         assert np.allclose(
@@ -257,10 +252,10 @@ class TestSystem(BaseTest):
         polyethylene = polyethylene(lengths=5, num_mols=5)
         system = Pack(
             molecules=[polyethylene],
-            force_field=[OPLS_AA()],
             density=1.0,
-            r_cut=2.5,
-            auto_scale=True,
+        )
+        system.apply_forcefield(
+            r_cut=2.5, force_field=[OPLS_AA()], auto_scale=True
         )
         assert np.allclose(
             system.reference_energy.to("kcal/mol").value, 0.066, atol=1e-3
@@ -270,10 +265,10 @@ class TestSystem(BaseTest):
         polyethylene = polyethylene(lengths=5, num_mols=1)
         system = Pack(
             molecules=[polyethylene],
-            force_field=[OPLS_AA()],
             density=1.0,
-            r_cut=2.5,
-            auto_scale=False,
+        )
+        system.apply_forcefield(
+            r_cut=2.5, force_field=[OPLS_AA()], auto_scale=False
         )
         assert system._snap_refs == system.reference_values
         assert system._ff_refs == system.reference_values
@@ -292,10 +287,10 @@ class TestSystem(BaseTest):
         polyethylene = polyethylene(lengths=5, num_mols=1)
         system = Pack(
             molecules=[polyethylene],
-            force_field=[OPLS_AA()],
             density=1.0,
-            r_cut=2.5,
-            auto_scale=False,
+        )
+        system.apply_forcefield(
+            r_cut=2.5, force_field=[OPLS_AA()], auto_scale=False
         )
         system.reference_length = 1 * u.angstrom
         system.reference_energy = 1 * u.kcal / u.mol
@@ -312,12 +307,9 @@ class TestSystem(BaseTest):
 
     def test_set_ref_values(self, polyethylene):
         polyethylene = polyethylene(lengths=5, num_mols=1)
-        system = Pack(
-            molecules=[polyethylene],
-            force_field=[OPLS_AA()],
-            density=1.0,
-            r_cut=2.5,
-            auto_scale=False,
+        system = Pack(molecules=[polyethylene], density=1.0)
+        system.apply_forcefield(
+            r_cut=2.5, force_field=[OPLS_AA()], auto_scale=False
         )
         ref_value_dict = {
             "length": 1 * u.angstrom,
@@ -333,10 +325,10 @@ class TestSystem(BaseTest):
         polyethylene = polyethylene(lengths=5, num_mols=1)
         system = Pack(
             molecules=[polyethylene],
-            force_field=[OPLS_AA()],
             density=1.0,
-            r_cut=2.5,
-            auto_scale=False,
+        )
+        system.apply_forcefield(
+            r_cut=2.5, force_field=[OPLS_AA()], auto_scale=False
         )
         ref_value_dict = {
             "length": "1 angstrom",
@@ -352,10 +344,10 @@ class TestSystem(BaseTest):
         polyethylene = polyethylene(lengths=5, num_mols=1)
         system = Pack(
             molecules=[polyethylene],
-            force_field=[OPLS_AA()],
             density=1.0,
-            r_cut=2.5,
-            auto_scale=False,
+        )
+        system.apply_forcefield(
+            r_cut=2.5, force_field=[OPLS_AA()], auto_scale=False
         )
         ref_value_dict = {
             "length": 1 * u.angstrom,
@@ -368,10 +360,10 @@ class TestSystem(BaseTest):
         polyethylene = polyethylene(lengths=5, num_mols=5)
         system = Pack(
             molecules=[polyethylene],
-            force_field=[OPLS_AA()],
             density=1.0,
-            r_cut=2.5,
-            auto_scale=False,
+        )
+        system.apply_forcefield(
+            r_cut=2.5, force_field=[OPLS_AA()], auto_scale=False
         )
         ref_value_dict = {
             "length": 1 * u.angstrom,
@@ -381,14 +373,31 @@ class TestSystem(BaseTest):
         with pytest.raises(ReferenceUnitError):
             system.reference_values = ref_value_dict
 
+    def test_set_ref_values_auto_scale_true(self, polyethylene):
+        polyethylene = polyethylene(lengths=5, num_mols=5)
+        system = Pack(
+            molecules=[polyethylene],
+            density=1.0,
+        )
+        system.apply_forcefield(
+            r_cut=2.5, force_field=[OPLS_AA()], auto_scale=True
+        )
+        ref_value_dict = {
+            "length": 1 * u.angstrom,
+            "energy": 3.0 * u.kcal / u.mol,
+            "mass": 1.25 * u.Unit("amu"),
+        }
+        with pytest.warns():
+            system.reference_values = ref_value_dict
+
     def test_set_ref_length(self, polyethylene):
         polyethylene = polyethylene(lengths=5, num_mols=1)
         system = Pack(
             molecules=[polyethylene],
-            force_field=[OPLS_AA()],
             density=1.0,
-            r_cut=2.5,
-            auto_scale=False,
+        )
+        system.apply_forcefield(
+            r_cut=2.5, force_field=[OPLS_AA()], auto_scale=False
         )
         system.reference_length = 1 * u.angstrom
         assert system.reference_length == 1 * u.angstrom
@@ -397,10 +406,10 @@ class TestSystem(BaseTest):
         polyethylene = polyethylene(lengths=5, num_mols=5)
         system = Pack(
             molecules=[polyethylene],
-            force_field=[OPLS_AA()],
             density=1.0,
-            r_cut=2.5,
-            auto_scale=False,
+        )
+        system.apply_forcefield(
+            r_cut=2.5, force_field=[OPLS_AA()], auto_scale=False
         )
         with pytest.raises(ReferenceUnitError):
             system.reference_length = 1.0
@@ -409,10 +418,10 @@ class TestSystem(BaseTest):
         polyethylene = polyethylene(lengths=5, num_mols=1)
         system = Pack(
             molecules=[polyethylene],
-            force_field=[OPLS_AA()],
             density=1.0,
-            r_cut=2.5,
-            auto_scale=False,
+        )
+        system.apply_forcefield(
+            r_cut=2.5, force_field=[OPLS_AA()], auto_scale=False
         )
         system.reference_length = "1 angstrom"
         assert system.reference_length == 1 * u.angstrom
@@ -421,10 +430,10 @@ class TestSystem(BaseTest):
         polyethylene = polyethylene(lengths=5, num_mols=1)
         system = Pack(
             molecules=[polyethylene],
-            force_field=[OPLS_AA()],
             density=1.0,
-            r_cut=2.5,
-            auto_scale=False,
+        )
+        system.apply_forcefield(
+            r_cut=2.5, force_field=[OPLS_AA()], auto_scale=False
         )
         with pytest.raises(ReferenceUnitError):
             system.reference_length = "1.0"
@@ -433,10 +442,10 @@ class TestSystem(BaseTest):
         polyethylene = polyethylene(lengths=5, num_mols=1)
         system = Pack(
             molecules=[polyethylene],
-            force_field=[OPLS_AA()],
             density=1.0,
-            r_cut=2.5,
-            auto_scale=False,
+        )
+        system.apply_forcefield(
+            r_cut=2.5, force_field=[OPLS_AA()], auto_scale=False
         )
         with pytest.raises(ReferenceUnitError):
             system.reference_length = "1.0 invalid_unit"
@@ -445,10 +454,10 @@ class TestSystem(BaseTest):
         polyethylene = polyethylene(lengths=5, num_mols=1)
         system = Pack(
             molecules=[polyethylene],
-            force_field=[OPLS_AA()],
             density=1.0,
-            r_cut=2.5,
-            auto_scale=False,
+        )
+        system.apply_forcefield(
+            r_cut=2.5, force_field=[OPLS_AA()], auto_scale=False
         )
         with pytest.raises(ReferenceUnitError):
             system.reference_length = 1.0 * u.g
@@ -457,22 +466,34 @@ class TestSystem(BaseTest):
         polyethylene = polyethylene(lengths=5, num_mols=1)
         system = Pack(
             molecules=[polyethylene],
-            force_field=[OPLS_AA()],
             density=1.0,
-            r_cut=2.5,
-            auto_scale=False,
+        )
+        system.apply_forcefield(
+            r_cut=2.5, force_field=[OPLS_AA()], auto_scale=False
         )
         with pytest.raises(ReferenceUnitError):
             system.reference_length = "1.0 g"
+
+    def test_ref_length_auto_scale_true(self, polyethylene):
+        polyethylene = polyethylene(lengths=5, num_mols=1)
+        system = Pack(
+            molecules=[polyethylene],
+            density=1.0,
+        )
+        system.apply_forcefield(
+            r_cut=2.5, force_field=[OPLS_AA()], auto_scale=True
+        )
+        system.reference_length = 1 * u.angstrom
+        assert system.reference_length == 1 * u.angstrom
 
     def test_set_ref_energy(self, polyethylene):
         polyethylene = polyethylene(lengths=5, num_mols=1)
         system = Pack(
             molecules=[polyethylene],
-            force_field=[OPLS_AA()],
             density=1.0,
-            r_cut=2.5,
-            auto_scale=False,
+        )
+        system.apply_forcefield(
+            r_cut=2.5, force_field=[OPLS_AA()], auto_scale=False
         )
         system.reference_energy = 1 * u.kcal / u.mol
         assert system.reference_energy == 1 * u.kcal / u.mol
@@ -481,10 +502,10 @@ class TestSystem(BaseTest):
         polyethylene = polyethylene(lengths=5, num_mols=1)
         system = Pack(
             molecules=[polyethylene],
-            force_field=[OPLS_AA()],
             density=1.0,
-            r_cut=2.5,
-            auto_scale=False,
+        )
+        system.apply_forcefield(
+            r_cut=2.5, force_field=[OPLS_AA()], auto_scale=False
         )
         with pytest.raises(ReferenceUnitError):
             system.reference_energy = 1.0
@@ -493,10 +514,10 @@ class TestSystem(BaseTest):
         polyethylene = polyethylene(lengths=5, num_mols=1)
         system = Pack(
             molecules=[polyethylene],
-            force_field=[OPLS_AA()],
             density=1.0,
-            r_cut=2.5,
-            auto_scale=False,
+        )
+        system.apply_forcefield(
+            r_cut=2.5, force_field=[OPLS_AA()], auto_scale=False
         )
         system.reference_energy = "1 kJ"
         assert system.reference_energy == 1 * u.kJ
@@ -505,10 +526,10 @@ class TestSystem(BaseTest):
         polyethylene = polyethylene(lengths=5, num_mols=1)
         system = Pack(
             molecules=[polyethylene],
-            force_field=[OPLS_AA()],
             density=1.0,
-            r_cut=2.5,
-            auto_scale=False,
+        )
+        system.apply_forcefield(
+            r_cut=2.5, force_field=[OPLS_AA()], auto_scale=False
         )
         system.reference_energy = "1 kcal/mol"
         assert system.reference_energy == 1 * u.kcal / u.mol
@@ -517,10 +538,10 @@ class TestSystem(BaseTest):
         polyethylene = polyethylene(lengths=5, num_mols=1)
         system = Pack(
             molecules=[polyethylene],
-            force_field=[OPLS_AA()],
             density=1.0,
-            r_cut=2.5,
-            auto_scale=False,
+        )
+        system.apply_forcefield(
+            r_cut=2.5, force_field=[OPLS_AA()], auto_scale=False
         )
         with pytest.raises(ReferenceUnitError):
             system.reference_energy = "1.0"
@@ -529,10 +550,10 @@ class TestSystem(BaseTest):
         polyethylene = polyethylene(lengths=5, num_mols=1)
         system = Pack(
             molecules=[polyethylene],
-            force_field=[OPLS_AA()],
             density=1.0,
-            r_cut=2.5,
-            auto_scale=False,
+        )
+        system.apply_forcefield(
+            r_cut=2.5, force_field=[OPLS_AA()], auto_scale=False
         )
         with pytest.raises(ReferenceUnitError):
             system.reference_energy = "1.0 invalid_unit"
@@ -541,10 +562,10 @@ class TestSystem(BaseTest):
         polyethylene = polyethylene(lengths=5, num_mols=1)
         system = Pack(
             molecules=[polyethylene],
-            force_field=[OPLS_AA()],
             density=1.0,
-            r_cut=2.5,
-            auto_scale=False,
+        )
+        system.apply_forcefield(
+            r_cut=2.5, force_field=[OPLS_AA()], auto_scale=False
         )
         with pytest.raises(ReferenceUnitError):
             system.reference_energy = 1.0 * u.g
@@ -553,22 +574,34 @@ class TestSystem(BaseTest):
         polyethylene = polyethylene(lengths=5, num_mols=1)
         system = Pack(
             molecules=[polyethylene],
-            force_field=[OPLS_AA()],
             density=1.0,
-            r_cut=2.5,
-            auto_scale=False,
+        )
+        system.apply_forcefield(
+            r_cut=2.5, force_field=[OPLS_AA()], auto_scale=False
         )
         with pytest.raises(ReferenceUnitError):
             system.reference_energy = "1.0 m"
+
+    def test_set_ref_energy_auto_scale_true(self, polyethylene):
+        polyethylene = polyethylene(lengths=5, num_mols=1)
+        system = Pack(
+            molecules=[polyethylene],
+            density=1.0,
+        )
+        system.apply_forcefield(
+            r_cut=2.5, force_field=[OPLS_AA()], auto_scale=True
+        )
+        system.reference_energy = 1 * u.kcal / u.mol
+        assert system.reference_energy == 1 * u.kcal / u.mol
 
     def test_set_ref_mass(self, polyethylene):
         polyethylene = polyethylene(lengths=5, num_mols=1)
         system = Pack(
             molecules=[polyethylene],
-            force_field=[OPLS_AA()],
             density=1.0,
-            r_cut=2.5,
-            auto_scale=False,
+        )
+        system.apply_forcefield(
+            r_cut=2.5, force_field=[OPLS_AA()], auto_scale=False
         )
 
         system.reference_mass = 1.0 * u.amu
@@ -578,10 +611,10 @@ class TestSystem(BaseTest):
         polyethylene = polyethylene(lengths=5, num_mols=1)
         system = Pack(
             molecules=[polyethylene],
-            force_field=[OPLS_AA()],
             density=1.0,
-            r_cut=2.5,
-            auto_scale=False,
+        )
+        system.apply_forcefield(
+            r_cut=2.5, force_field=[OPLS_AA()], auto_scale=False
         )
         with pytest.raises(ReferenceUnitError):
             system.reference_mass = 1.0
@@ -590,10 +623,10 @@ class TestSystem(BaseTest):
         polyethylene = polyethylene(lengths=5, num_mols=1)
         system = Pack(
             molecules=[polyethylene],
-            force_field=[OPLS_AA()],
             density=1.0,
-            r_cut=2.5,
-            auto_scale=False,
+        )
+        system.apply_forcefield(
+            r_cut=2.5, force_field=[OPLS_AA()], auto_scale=False
         )
         system.reference_mass = "1 g"
         assert system.reference_mass == 1.0 * u.g
@@ -602,10 +635,10 @@ class TestSystem(BaseTest):
         polyethylene = polyethylene(lengths=5, num_mols=1)
         system = Pack(
             molecules=[polyethylene],
-            force_field=[OPLS_AA()],
             density=1.0,
-            r_cut=2.5,
-            auto_scale=False,
+        )
+        system.apply_forcefield(
+            r_cut=2.5, force_field=[OPLS_AA()], auto_scale=False
         )
         with pytest.raises(ReferenceUnitError):
             system.reference_mass = "1.0"
@@ -614,10 +647,10 @@ class TestSystem(BaseTest):
         polyethylene = polyethylene(lengths=5, num_mols=1)
         system = Pack(
             molecules=[polyethylene],
-            force_field=[OPLS_AA()],
             density=1.0,
-            r_cut=2.5,
-            auto_scale=False,
+        )
+        system.apply_forcefield(
+            r_cut=2.5, force_field=[OPLS_AA()], auto_scale=False
         )
         with pytest.raises(ReferenceUnitError):
             system.reference_mass = "1.0 invalid_unit"
@@ -626,10 +659,10 @@ class TestSystem(BaseTest):
         polyethylene = polyethylene(lengths=5, num_mols=1)
         system = Pack(
             molecules=[polyethylene],
-            force_field=[OPLS_AA()],
             density=1.0,
-            r_cut=2.5,
-            auto_scale=False,
+        )
+        system.apply_forcefield(
+            r_cut=2.5, force_field=[OPLS_AA()], auto_scale=False
         )
         with pytest.raises(ReferenceUnitError):
             system.reference_energy = 1.0 * u.m
@@ -638,25 +671,133 @@ class TestSystem(BaseTest):
         polyethylene = polyethylene(lengths=5, num_mols=1)
         system = Pack(
             molecules=[polyethylene],
-            force_field=[OPLS_AA()],
             density=1.0,
-            r_cut=2.5,
-            auto_scale=False,
+        )
+        system.apply_forcefield(
+            r_cut=2.5, force_field=[OPLS_AA()], auto_scale=False
         )
         with pytest.raises(ReferenceUnitError):
             system.reference_mass = "1.0 m"
+
+    def test_set_ref_mass_auto_scale_true(self, polyethylene):
+        polyethylene = polyethylene(lengths=5, num_mols=1)
+        system = Pack(
+            molecules=[polyethylene],
+            density=1.0,
+        )
+        system.apply_forcefield(
+            r_cut=2.5, force_field=[OPLS_AA()], auto_scale=True
+        )
+
+        system.reference_mass = 1.0 * u.amu
+        assert system.reference_mass == 1.0 * u.amu
+
+    def test_apply_forcefield_no_forcefield(self, polyethylene):
+        polyethylene = polyethylene(lengths=5, num_mols=1)
+        system = Pack(
+            molecules=[polyethylene],
+            density=1.0,
+        )
+        with pytest.raises(ForceFieldError):
+            system.apply_forcefield(
+                r_cut=2.5, force_field=None, auto_scale=False
+            )
+
+    def test_apply_forcefield_no_forcefield_w_mol_ff(self, benzene_molecule):
+        benzene_mol = benzene_molecule(n_mols=3, force_field=OPLS_AA())
+        system = Pack(
+            molecules=[benzene_mol],
+            density=1.0,
+        )
+        system.apply_forcefield(r_cut=2.5, auto_scale=True)
+        assert system.gmso_system.is_typed()
+        assert len(system.hoomd_forcefield) > 0
+        assert system.hoomd_snapshot.particles.N == benzene_mol.n_particles
+
+    def test_apply_forcefield_w_mol_ff(self, benzene_molecule):
+        benzene_mol = benzene_molecule(n_mols=3, force_field=OPLS_AA())
+        system = Pack(
+            molecules=[benzene_mol],
+            density=1.0,
+        )
+        with pytest.raises(ForceFieldError):
+            system.apply_forcefield(
+                r_cut=2.5, force_field=OPLS_AA(), auto_scale=True
+            )
+
+    def test_validate_forcefield_invalid_ff_type(self, benzene_molecule):
+        benzene_mol = benzene_molecule(n_mols=1)
+        system = Pack(
+            molecules=[benzene_mol],
+            density=1.0,
+        )
+        with pytest.raises(ForceFieldError):
+            system.apply_forcefield(
+                r_cut=2.5, force_field="invalid_ff.xml", auto_scale=True
+            )
+
+    def test_validate_forcefield_mult_ff_invalid_type(
+        self, dimethylether_molecule, pps_molecule
+    ):
+        dimethylether_mol = dimethylether_molecule(n_mols=3)
+        pps_mol = pps_molecule(n_mols=2)
+        system = Pack(molecules=[dimethylether_mol, pps_mol], density=0.8)
+        with pytest.raises(ForceFieldError):
+            system.apply_forcefield(
+                r_cut=2.5,
+                force_field=["invalid_ff", OPLS_AA_PPS()],
+                auto_scale=True,
+            )
+
+    def test_forcefield_kwargs_attr(self, polyethylene):
+        polyethylene = polyethylene(lengths=5, num_mols=1)
+        system = Pack(
+            molecules=[polyethylene],
+            density=1.0,
+        )
+        system.apply_forcefield(
+            r_cut=2.5,
+            force_field=[OPLS_AA()],
+            auto_scale=False,
+            nlist_buffer=0.5,
+            pppm_resolution=(4, 4, 4),
+            pppm_order=3,
+        )
+        assert system._ff_kwargs["r_cut"] == 2.5
+        assert system._ff_kwargs["nlist_buffer"] == 0.5
+        assert system._ff_kwargs["pppm_kwargs"]["resolution"] == (4, 4, 4)
+        assert system._ff_kwargs["pppm_kwargs"]["order"] == 3
+
+    def test_forcefield_list_hoomd_ff(self, polyethylene):
+        polyethylene = polyethylene(lengths=5, num_mols=1)
+        system = Pack(
+            molecules=[polyethylene],
+            density=1.0,
+        )
+        system.apply_forcefield(
+            r_cut=2.5, force_field=[OPLS_AA()], auto_scale=True
+        )
+
+        hoomd_ff = system.hoomd_forcefield
+
+        with pytest.raises(ForceFieldError):
+            system = Pack(
+                molecules=[polyethylene],
+                density=1.0,
+            )
+            system.apply_forcefield(r_cut=2.5, force_field=hoomd_ff)
 
     def test_lattice_polymer(self, polyethylene):
         polyethylene = polyethylene(lengths=2, num_mols=32)
         system = Lattice(
             molecules=[polyethylene],
-            force_field=[OPLS_AA()],
             density=1.0,
-            r_cut=2.5,
             x=1,
             y=1,
             n=4,
-            auto_scale=True,
+        )
+        system.apply_forcefield(
+            r_cut=2.5, force_field=[OPLS_AA()], auto_scale=True
         )
 
         assert system.n_mol_types == 1
@@ -670,13 +811,13 @@ class TestSystem(BaseTest):
         benzene_mol = benzene_molecule(n_mols=32)
         system = Lattice(
             molecules=[benzene_mol],
-            force_field=OPLS_AA(),
             density=1.0,
-            r_cut=2.5,
             x=1,
             y=1,
             n=4,
-            auto_scale=True,
+        )
+        system.apply_forcefield(
+            r_cut=2.5, force_field=OPLS_AA(), auto_scale=True
         )
         assert system.n_mol_types == 1
         assert len(system.all_molecules) == len(benzene_mol.molecules)
@@ -689,19 +830,23 @@ class TestSystem(BaseTest):
         no_scale = Pack(
             molecules=pps_mol,
             density=0.5,
-            r_cut=2.4,
+        )
+        no_scale.apply_forcefield(
+            r_cut=2.5,
             force_field=OPLS_AA_PPS(),
-            auto_scale=True,
             scale_charges=False,
+            auto_scale=True,
         )
 
         with_scale = Pack(
             molecules=pps_mol,
             density=0.5,
-            r_cut=2.4,
+        )
+        with_scale.apply_forcefield(
+            r_cut=2.5,
             force_field=OPLS_AA_PPS(),
-            auto_scale=True,
             scale_charges=True,
+            auto_scale=True,
         )
         assert abs(no_scale.net_charge.value) > abs(with_scale.net_charge.value)
         assert np.allclose(0, with_scale.net_charge.value, atol=1e-30)
