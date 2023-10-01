@@ -1,8 +1,9 @@
 import pytest
 
 from hoomd_organics import CoPolymer, Molecule, Polymer
+from hoomd_organics.library import OPLS_AA, BeadSpring, FF_from_file
 from hoomd_organics.tests import BaseTest
-from hoomd_organics.utils import FF_Types, exceptions
+from hoomd_organics.utils import exceptions
 
 
 class TestMolecule(BaseTest):
@@ -41,20 +42,9 @@ class TestMolecule(BaseTest):
 
     def test_validate_force_field_oplsaa(self, benzene_mb):
         molecule = Molecule(
-            num_mols=2, force_field="oplsaa", compound=benzene_mb
+            num_mols=2, force_field=OPLS_AA(), compound=benzene_mb
         )
-        assert molecule.ff_type == FF_Types.oplsaa
-        assert set(molecule.topology_information["particle_types"]) == {
-            "opls_145",
-            "opls_146",
-        }
-        assert any(molecule.topology_information["particle_charge"])
-
-    def test_validate_force_field_xml_file(self, benzene_mb):
-        molecule = Molecule(
-            num_mols=2, force_field="oplsaa.xml", compound=benzene_mb
-        )
-        assert molecule.ff_type == FF_Types.oplsaa
+        assert molecule.gmso_molecule.is_typed()
         assert set(molecule.topology_information["particle_types"]) == {
             "opls_145",
             "opls_146",
@@ -63,26 +53,16 @@ class TestMolecule(BaseTest):
 
     def test_validate_force_field_xml_file_path(self, benzene_mb, benzene_xml):
         molecule = Molecule(
-            num_mols=2, force_field=benzene_xml, compound=benzene_mb
+            num_mols=2,
+            force_field=FF_from_file(benzene_xml),
+            compound=benzene_mb,
         )
-        assert molecule.ff_type == FF_Types.custom
+        assert molecule.gmso_molecule.is_typed()
         assert set(molecule.topology_information["particle_types"]) == {
             "opls_145",
             "opls_146",
         }
         assert any(molecule.topology_information["particle_charge"])
-
-    def test_validate_force_field_not_xml_file(self, benzene_mb):
-        with pytest.raises(ValueError):
-            Molecule(num_mols=2, force_field="oplsaa.txt", compound=benzene_mb)
-
-    def test_validate_force_field_not_supported(self, benzene_mb):
-        with pytest.raises(ValueError):
-            Molecule(num_mols=2, force_field="oplsaa2", compound=benzene_mb)
-
-    def test_validate_force_field_invalid_xml_file(self, benzene_mb):
-        with pytest.raises(ValueError):
-            Molecule(num_mols=2, force_field="oplsaa2.xml", compound=benzene_mb)
 
     def test_validate_force_field_hoomd_ff_aa(
         self, benzene_mb, benzene_hoomd_ff
@@ -91,7 +71,8 @@ class TestMolecule(BaseTest):
         molecule = Molecule(
             num_mols=2, force_field=hoomd_ff, compound=benzene_mb
         )
-        assert molecule.ff_type == FF_Types.Hoomd
+        assert molecule.force_field == hoomd_ff
+        assert not molecule.gmso_molecule.is_typed()
 
     def test_validate_fore_field_hoomd_ff_ua(
         self, benzene_mb, benzene_hoomd_ff
@@ -100,7 +81,8 @@ class TestMolecule(BaseTest):
         molecule = Molecule(
             num_mols=2, force_field=hoomd_ff, compound=benzene_mb
         )
-        assert molecule.ff_type == FF_Types.Hoomd
+        assert molecule.force_field == hoomd_ff
+        assert not molecule.gmso_molecule.is_typed()
 
     def test_validate_force_field_hoomd_ff_missing_pair(
         self, benzene_mb, benzene_hoomd_ff
@@ -130,7 +112,9 @@ class TestMolecule(BaseTest):
     ):
         hoomd_ff = benzene_hoomd_ff(include_hydrogen=True)
         typed_molecule = Molecule(
-            num_mols=2, force_field=benzene_xml, compound=benzene_mb
+            num_mols=2,
+            force_field=FF_from_file(benzene_xml),
+            compound=benzene_mb,
         )
         with pytest.raises(exceptions.MissingCoulombPotentialError):
             Molecule(
@@ -138,6 +122,31 @@ class TestMolecule(BaseTest):
                 force_field=hoomd_ff,
                 compound=typed_molecule.gmso_molecule,
             )
+
+    def test_validate_force_field_invalid_ff_type(self, benzene_mb):
+        with pytest.raises(exceptions.ForceFieldError):
+            Molecule(
+                num_mols=2,
+                force_field="invalid_ff.xml",
+                compound=benzene_mb,
+            )
+
+    def test_validate_forcefield_hoomd_ff(self, benzene_smiles):
+        molecule = Molecule(num_mols=1, smiles=benzene_smiles)
+        molecule.coarse_grain(beads={"A": benzene_smiles})
+        beadspring_ff = BeadSpring(
+            r_cut=2.5,
+            beads={
+                "A": dict(epsilon=1.0, sigma=1.0),
+            },
+        )
+        cg_molecule = Molecule(
+            num_mols=1,
+            force_field=beadspring_ff,
+            compound=molecule.gmso_molecule,
+        )
+        assert cg_molecule.force_field == beadspring_ff
+        assert not molecule.gmso_molecule.is_typed()
 
     def test_coarse_grain_with_single_beads(self, benzene_smiles):
         molecule = Molecule(num_mols=2, smiles=benzene_smiles)

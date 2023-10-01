@@ -37,7 +37,7 @@ Please checkout the [tutorials](tutorials) for a detailed description of
 how to use HOOMD-Organics and what functionalities it provides.
 
 ## Documentation
-Documentation is available at [(path to readthedocs)]()
+Documentation is available at [https://hoomd-organics.readthedocs.io](https://hoomd-organics.readthedocs.io)
 
 [//]: # (#### Using the built in molecules, systems and forcefields:)
 

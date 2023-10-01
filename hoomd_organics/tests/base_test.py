@@ -111,8 +111,10 @@ class BaseTest:
 
     @pytest.fixture()
     def benzene_molecule(self, benzene_smiles):
-        def _benzene_molecule(n_mols):
-            benzene = Molecule(num_mols=n_mols, smiles=benzene_smiles)
+        def _benzene_molecule(n_mols, force_field=None):
+            benzene = Molecule(
+                num_mols=n_mols, smiles=benzene_smiles, force_field=force_field
+            )
             return benzene
 
         return _benzene_molecule
@@ -217,10 +219,10 @@ class BaseTest:
         system = Pack(
             molecules=[benzene],
             density=0.2,
-            force_field=OPLS_AA(),
-            auto_scale=True,
         )
-        system.apply_forcefield(r_cut=2.5, auto_scale=True)
+        system.apply_forcefield(
+            r_cut=2.5, force_field=OPLS_AA(), auto_scale=True
+        )
         return system
 
     @pytest.fixture()
@@ -230,7 +232,6 @@ class BaseTest:
         system = Pack(
             molecules=[benzene_mols],
             density=0.5,
-            auto_scale=False,
         )
         return system
 
@@ -240,10 +241,13 @@ class BaseTest:
         system = Pack(
             molecules=polyethylene_mol,
             density=0.5,
+        )
+        system.apply_forcefield(
+            r_cut=2.5,
+            remove_hydrogens=True,
             force_field=OPLS_AA(),
             auto_scale=True,
         )
-        system.apply_forcefield(r_cut=2.5, remove_hydrogens=True)
         return system
 
     @pytest.fixture()
@@ -262,4 +266,4 @@ class BaseTest:
                 "A": dict(epsilon=1.0, sigma=1.0),
             },
         )
-        return ff.hoomd_forcefield
+        return ff.hoomd_forces

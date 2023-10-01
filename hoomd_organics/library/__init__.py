@@ -5,6 +5,8 @@ from .forcefields import (
     OPLS_AA_BENZENE,
     OPLS_AA_DIMETHYLETHER,
     OPLS_AA_PPS,
+    BaseHOOMDForcefield,
+    BaseXMLForcefield,
     BeadSpring,
     FF_from_file,
     TableForcefield,

@@ -1,16 +1,15 @@
 """All pre-defined forcefield classes for use in hoomd_organics."""
 import itertools
 
-import forcefield_utilities as ffutils
-import foyer
 import hoomd
 import numpy as np
 
 from hoomd_organics.assets import FF_DIR
+from hoomd_organics.base import BaseHOOMDForcefield, BaseXMLForcefield
 
 
-class GAFF(foyer.Forcefield):
-    """General Amber Forcefield (GAFF) class."""
+class GAFF(BaseXMLForcefield):
+    """General Amber forcefield class."""
 
     def __init__(self, forcefield_files=f"{FF_DIR}/gaff.xml"):
         super(GAFF, self).__init__(forcefield_files=forcefield_files)
@@ -19,20 +18,18 @@ class GAFF(foyer.Forcefield):
             "The XML file was obtained from the antefoyer package: "
             "https://github.com/rsdefever/antefoyer/tree/master/antefoyer"
         )
-        self.gmso_ff = ffutils.FoyerFFs().load(forcefield_files).to_gmso_ff()
 
 
-class OPLS_AA(foyer.Forcefield):
+class OPLS_AA(BaseXMLForcefield):
     """OPLS All Atom forcefield class."""
 
     def __init__(self, name="oplsaa"):
         super(OPLS_AA, self).__init__(name=name)
         self.description = "opls-aa forcefield found in the Foyer package."
-        self.gmso_ff = ffutils.FoyerFFs().load(name).to_gmso_ff()
 
 
-class OPLS_AA_PPS(foyer.Forcefield):
-    """OPLS All Atom for the PPS molecule forcefield class."""
+class OPLS_AA_PPS(BaseXMLForcefield):
+    """OPLS All Atom for PPS molecule forcefield class."""
 
     def __init__(self, forcefield_files=f"{FF_DIR}/pps_opls.xml"):
         super(OPLS_AA_PPS, self).__init__(forcefield_files=forcefield_files)
@@ -45,10 +42,9 @@ class OPLS_AA_PPS(foyer.Forcefield):
             "experimental PPS papers. "
             "The spring constant taken from the equivalent angle in GAFF."
         )
-        self.gmso_ff = ffutils.FoyerFFs().load(forcefield_files).to_gmso_ff()
 
 
-class OPLS_AA_BENZENE(foyer.Forcefield):
+class OPLS_AA_BENZENE(BaseXMLForcefield):
     """OPLS All Atom for benzene molecule forcefield class."""
 
     def __init__(self, forcefield_files=f"{FF_DIR}/benzene_opls.xml"):
@@ -57,10 +53,9 @@ class OPLS_AA_BENZENE(foyer.Forcefield):
             "Based on hoomd_organics.forcefields.OPLS_AA. "
             "Trimmed down to include only benzene parameters."
         )
-        self.gmso_ff = ffutils.FoyerFFs().load(forcefield_files).to_gmso_ff()
 
 
-class OPLS_AA_DIMETHYLETHER(foyer.Forcefield):
+class OPLS_AA_DIMETHYLETHER(BaseXMLForcefield):
     """OPLS All Atom for dimethyl ether molecule forcefield class."""
 
     def __init__(self, forcefield_files=f"{FF_DIR}/dimethylether_opls.xml"):
@@ -71,18 +66,17 @@ class OPLS_AA_DIMETHYLETHER(foyer.Forcefield):
             "Based on hoomd_organics.forcefields.OPLS_AA. "
             "Trimmed down to include only dimethyl ether parameters."
         )
-        self.gmso_ff = ffutils.FoyerFFs().load(forcefield_files).to_gmso_ff()
 
 
-class FF_from_file(foyer.Forcefield):
+class FF_from_file(BaseXMLForcefield):
     """Forcefield class for loading a forcefield from an XML file."""
 
-    def __init__(self, xml_file):
-        super(FF_from_file, self).__init__(forcefield_files=xml_file)
-        self.gmso_ff = ffutils.FoyerFFs().load(xml_file).to_gmso_ff()
+    def __init__(self, forcefield_files):
+        super(FF_from_file, self).__init__(forcefield_files=forcefield_files)
+        self.description = "Forcefield loaded from an XML file. "
 
 
-class BeadSpring:
+class BeadSpring(BaseHOOMDForcefield):
     """Bead-spring forcefield class.
 
     Given a dictionary of bead types, this class creates a list
@@ -147,7 +141,8 @@ class BeadSpring:
         self.dihedrals = dihedrals
         self.r_cut = r_cut
         self.exclusions = exclusions
-        self.hoomd_forcefield = self._create_forcefield()
+        hoomd_forces = self._create_forcefield()
+        super(BeadSpring, self).__init__(hoomd_forces)
 
     def _create_forcefield(self):
         """Create the hoomd force objects."""
@@ -190,7 +185,7 @@ class BeadSpring:
         return forces
 
 
-class TableForcefield:
+class TableForcefield(BaseHOOMDForcefield):
     """Create a set of hoomd table potentials.
 
     This class provides an interface for creating hoomd table
@@ -239,7 +234,8 @@ class TableForcefield:
         self.exclusions = exclusions
         self.nlist_buffer = nlist_buffer
         self.bond_width, self.angle_width, self.dih_width = self._check_widths()
-        self.hoomd_forcefield = self._create_forcefield()
+        hoomd_forces = self._create_forcefield()
+        super(TableForcefield, self).__init__(hoomd_forces)
 
     @classmethod
     def from_files(
