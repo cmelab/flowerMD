@@ -212,6 +212,14 @@ class TableForcefield(BaseHOOMDForcefield):
     bonds: dict, optional, default None
     angles: dict, optional, default None
     dihedrals: dict, optional, default None
+    r_min: float, optional, default None
+        Sets the r_min value for hoomd.md.pair.Table parameters.
+    r_max : float, optional, default None
+        Sets the r cutoff value for hoomd.md.pair.Table parameters.
+    exclusions : list of str, optional, default ["bond", "1-3"]
+        Sets exclusions for hoomd.md.pair.Table neighbor list.
+
+        See documentation for `hoomd.md.nlist <https://hoomd-blue.readthedocs.io/en/v4.2.0/module-md-nlist.html>`_ # noqa: E501
 
     """
 
