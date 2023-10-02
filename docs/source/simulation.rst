@@ -1,9 +1,10 @@
-simulation
+Simulation
 -----------------
 
-.. py:currentmodule:hoomd_organics
+.. py:currentmodule:hoomd_organics.base.simulation
 
 .. rubric:: Details
 
-.. automodule:: hoomd_organics.base.system
+.. automodule:: hoomd_organics.base.simulation
     :members:
+    :no-index:

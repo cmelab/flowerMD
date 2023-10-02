@@ -9,6 +9,7 @@ __pycache__/
 # Tutorial/test files
 *.gsd
 *.txt
+*.pickle
 
 # Distribution / packaging
 .Python

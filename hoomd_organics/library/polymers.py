@@ -1,3 +1,4 @@
+"""Polymer and CoPolymer example classes."""
 import os
 
 import mbuild as mb
@@ -8,12 +9,15 @@ from hoomd_organics.assets import MON_DIR
 
 
 class PolyEthylene(Polymer):
-    """Creates a Poly(ethylene) chain.
+    """Create a Poly(ethylene) chain.
 
     Parameters
     ----------
-    length : int; required
-        The number of monomer repeat units in the chain
+    lengths : int, required
+        The number of monomer repeat units in the chain.
+    num_mols : int, required
+        The number of chains to create.
+
     """
 
     def __init__(self, lengths, num_mols, **kwargs):
@@ -33,12 +37,15 @@ class PolyEthylene(Polymer):
 
 
 class PPS(Polymer):
-    """Creates a Poly(phenylene-sulfide) (PPS) chain.
+    """Create a Poly(phenylene-sulfide) (PPS) chain.
 
     Parameters
     ----------
-    length : int; required
-        The number of monomer repeat units in the chain
+    lengths : int, required
+        The number of monomer repeat units in the chain.
+    num_mols : int, required
+        The number of chains to create.
+
     """
 
     def __init__(self, lengths, num_mols, **kwargs):
@@ -68,14 +75,44 @@ class PPS(Polymer):
 
 
 class PEEK(Polymer):
+    """Create a Poly(ether-ether-ketone) (PEEK) chain.
+
+    Parameters
+    ----------
+    lengths : int, required
+        The number of monomer repeat units in the chain.
+    num_mols : int, required
+        The number of chains to create.
+
+    """
+
     def __init__(self, lengths, num_mols, **kwargs):
         super(PEEK, self).__init__(
             lengths=lengths,
             num_mols=num_mols,
+            **kwargs,
         )
 
 
 class PEKK(CoPolymer):
+    """Create a Poly(ether-ketone-ketone) (PEKK) chain.
+
+    The CoPolymer class is used to create a polymer chain with two different
+    monomer types, represented by the para and meta isomeric forms of PEKK.
+
+    Parameters
+    ----------
+    lengths : int, required
+        The number of monomer repeat units in the chain.
+    num_mols : int, required
+        The number of chains to create.
+    random_sequence : bool, default False
+        Creates a random 'A' 'B' sequence as a function of the AB_ratio.
+    TI_ratio : float, required
+        The ratio of meta to para isomers in the chain.
+
+    """
+
     def __init__(
         self,
         lengths,
@@ -85,7 +122,6 @@ class PEKK(CoPolymer):
         random_sequence=False,
         TI_ratio=0.50,
         seed=24,
-        **kwargs,
     ):
         super(PEKK, self).__init__(
             monomer_A=PEKK_meta,
@@ -97,19 +133,22 @@ class PEKK(CoPolymer):
             random_sequence=random_sequence,
             AB_ratio=TI_ratio,
             seed=seed,
-            **kwargs,
         )
 
 
 class PEKK_para(Polymer):
-    """Creates a Poly(ether-ketone-ketone) (PEKK) chain.
+    """Create a Poly(ether-ketone-ketone) (PEKK) chain.
+
     The bonding positions of consecutive ketone groups
     takes place on the para site of the phenyl ring.
 
     Parameters
     ----------
-    length : int; required
-        The number of monomer repeat units in the chain
+    lengths : int, required
+        The number of monomer repeat units in the chain.
+    num_mols : int, required
+        The number of chains to create.
+
     """
 
     def __init__(self, lengths, num_mols):
@@ -130,14 +169,18 @@ class PEKK_para(Polymer):
 
 
 class PEKK_meta(Polymer):
-    """Creates a Poly(ether-ketone-ketone) (PEKK) chain.
+    """Create a Poly(ether-ketone-ketone) (PEKK) chain.
+
     The bonding positions of consecutive ketone groups
     takes place on the meta site of the phenyl ring.
 
     Parameters
     ----------
-    length : int; required
-        The number of monomer repeat units in the chain
+    lengths : int, required
+        The number of monomer repeat units in the chain.
+    num_mols : int, required
+        The number of chains to create.
+
     """
 
     def __init__(self, lengths, num_mols):
@@ -158,18 +201,19 @@ class PEKK_meta(Polymer):
 
 
 class LJChain(Polymer):
-    """Creates a coarse-grained bead-spring polymer chain.
+    """Create a coarse-grained bead-spring polymer chain.
 
     Parameters
     ----------
-    length : int; required
+    lengths : int, required
         The number of times to repeat bead_sequence in a single chain.
-    bead_sequence : list; optional; default ["A"]
+    bead_sequence : list; default ["A"]
         The sequence of bead types in the chain.
     bond_length : dict; optional; default {"A-A": 1.0}
-        The bond length between connected beads (units: nm)
-    bead_mass : dict; optional; default {"A": 1.0}
-        The mass of the bead types
+        The bond length between connected beads (units: nm).
+    bead_mass : dict; default {"A": 1.0}
+        The mass of the bead types.
+
     """
 
     def __init__(
