@@ -2,6 +2,7 @@ import os
 
 import hoomd
 import numpy as np
+import pytest
 
 from hoomd_organics.library import (
     GAFF,
@@ -115,6 +116,15 @@ class TestTableForcefield:
         assert ff.angle_width == len(angle_data[:, 0])
         assert ff.dih_width == len(dihedral_data[:, 0])
 
+    def test_from_csv_file(self):
+        pair_file = os.path.join(ASSETS_DIR, "lj_pair_table.csv")
+        ff = TableForcefield.from_files(
+            pairs={("A", "A"): pair_file}, delimiter=","
+        )
+        pair_data = np.genfromtxt(pair_file, delimiter=",")
+        assert ff.r_min == pair_data[:, 0][0]
+        assert ff.r_cut == pair_data[:, 0][-1]
+
     def test_from_npy_file(self):
         pair_file = os.path.join(ASSETS_DIR, "lj_pair_table.npy")
         bond_file = os.path.join(ASSETS_DIR, "bond_table.npy")
@@ -135,3 +145,11 @@ class TestTableForcefield:
         assert ff.bond_width == len(bond_data[:, 0])
         assert ff.angle_width == len(angle_data[:, 0])
         assert ff.dih_width == len(dihedral_data[:, 0])
+
+    def test_no_file(self):
+        with pytest.raises(ValueError):
+            TableForcefield.from_files(pairs={("A", "A"): "aa-pair.npy"})
+
+    def test_bad_file_type(self):
+        with pytest.raises(ValueError):
+            TableForcefield.from_files(bonds={"A-A": "bond_table.bad"})

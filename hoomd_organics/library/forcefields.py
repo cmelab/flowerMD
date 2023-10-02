@@ -1,5 +1,6 @@
 """All pre-defined forcefield classes for use in hoomd_organics."""
 import itertools
+import os
 
 import hoomd
 import numpy as np
@@ -296,10 +297,18 @@ class TableForcefield(BaseHOOMDForcefield):
 
         def _load_file(file, **kwargs):
             """Call the correct numpy method."""
+            if not os.path.exists(file):
+                raise ValueError(f"Unable to load file {file}")
             if file.split(".")[-1] in ["txt", "csv"]:
                 return np.genfromtxt(file, **kwargs)
-            elif file.split(".")[-1] == "npy":
+            elif file.split(".")[-1] in ["npy", "npz"]:
                 return np.load(file, **kwargs)
+            else:
+                raise ValueError(
+                    "Creating table forcefields from files only supports "
+                    "using numpy.genfromtxt() with .txt, and .csv files, "
+                    "or using numpy.load() with .npy or npz files."
+                )
 
         # Read pair files
         pair_dict = dict()
