@@ -21,3 +21,4 @@ from .polymers import (
     PolyEthylene,
 )
 from .simulations.tensile import Tensile
+from .surfaces import Graphene
