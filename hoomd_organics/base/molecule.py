@@ -7,17 +7,14 @@ from typing import List
 import mbuild as mb
 from gmso.core.topology import Topology
 from gmso.external.convert_mbuild import from_mbuild, to_mbuild
+from gmso.parameterization import apply
 from grits import CG_Compound
 from mbuild.lib.recipes import Polymer as mbPolymer
 
+from hoomd_organics.base import BaseHOOMDForcefield, BaseXMLForcefield
 from hoomd_organics.utils import check_return_iterable
-from hoomd_organics.utils.base_types import FF_Types
-from hoomd_organics.utils.exceptions import MoleculeLoadError
-from hoomd_organics.utils.ff_utils import (
-    _validate_hoomd_ff,
-    apply_xml_ff,
-    find_xml_ff,
-)
+from hoomd_organics.utils.exceptions import ForceFieldError, MoleculeLoadError
+from hoomd_organics.utils.ff_utils import _validate_hoomd_ff
 
 
 class Molecule:
@@ -32,11 +29,12 @@ class Molecule:
     ----------
     num_mols : int, required
         Number of molecules to generate.
-    force_field : str, default None
-        The force field to apply to the molecule.
-        Note that setting force_field will not apply the forcefield to the
-        molecule. The forcefield in this step is just used for validation
-        purposes.
+    force_field : hoomd_organics.ForceField or a list of
+        `hoomd.md.force.Force` objects, default=None
+        The force field to be applied to the molecule for parameterization.
+        Note that setting `force_field` does not actually apply the
+        forcefield to the molecule. The forcefield in this step is mainly
+        used for validation purposes.
     smiles : str, default None
         The smiles string of the molecule to generate.
     file : str, default None
@@ -391,27 +389,32 @@ class Molecule:
 
     def _validate_force_field(self):
         """Validate the force field for the molecule."""
-        self.ff_type = None
-        if isinstance(self.force_field, str):
-            ff_xml_path, ff_type = find_xml_ff(self.force_field)
-            self.ff_type = ff_type
-            self.gmso_molecule = apply_xml_ff(ff_xml_path, self.gmso_molecule)
+        if isinstance(self.force_field, BaseXMLForcefield):
+            self.gmso_molecule = apply(
+                self.gmso_molecule,
+                self.force_field.gmso_ff,
+                identify_connections=True,
+                speedup_by_moltag=True,
+                speedup_by_molgraph=False,
+            )
             # Update topology information from typed gmso after applying ff.
             self._identify_topology_information(self.gmso_molecule)
+        elif isinstance(self.force_field, BaseHOOMDForcefield):
+            _validate_hoomd_ff(
+                self.force_field.hoomd_forces, self.topology_information
+            )
         elif isinstance(self.force_field, List):
             _validate_hoomd_ff(self.force_field, self.topology_information)
-            self.ff_type = FF_Types.Hoomd
-
-    def _assign_mol_name(self, name):
-        """Assign a name to the molecule."""
-        for mol in self.molecules:
-            mol.name = name
-            # TODO: This is a hack to make sure that the name of the children is
-            # also updated, so that when converting to gmso, all the sites have
-            # the correct name. This needs additional investigation into gmso's
-            # convert mbuilder to gmso functionality.
-            for child in mol.children:
-                child.name = name
+        else:
+            raise ForceFieldError(
+                "Unsupported forcefield type. Forcefields "
+                "should be a subclass of "
+                "`hoomd_organics.base.forcefield.BaseXMLForcefield` or "
+                "`hoomd_organics.base.forcefield.BaseHOOMDForcefield` or a "
+                "list of `hoomd.md.force.Force` objects. \n"
+                "Please check `hoomd_organics.library.forcefields` for "
+                "examples of supported forcefields."
+            )
 
 
 class Polymer(Molecule):

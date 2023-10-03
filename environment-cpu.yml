@@ -20,6 +20,7 @@ dependencies:
   - symengine
   - python-symengine
   - sympy
+  - fresnel
   - pip:
       - git+https://github.com/mosdef-hub/gmso.git@main
       - git+https://github.com/cmelab/cmeutils.git@master
