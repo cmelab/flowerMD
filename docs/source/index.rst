@@ -31,7 +31,6 @@ Resources
    base
    modules
    library
-   tutorials
 
 
 
