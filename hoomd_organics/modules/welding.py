@@ -229,8 +229,6 @@ class WeldSimulation(Simulation):
             reference_values=reference_values,
             dt=dt,
             r_cut=r_cut,
-            reference_values=reference_values,
-            dt=dt,
             device=device,
             seed=seed,
             gsd_write_freq=gsd_write_freq,
