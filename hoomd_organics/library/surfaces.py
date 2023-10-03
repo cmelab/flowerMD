@@ -17,7 +17,7 @@ class Graphene(Compound):
         Number of times to repeat the complete layer in the normal direction
     periodicity : tuple of bools, length=3, optional, default=(True, True, False) # noqa: E501
         Whether the Compound is periodic in the x, y, and z directions.
-        If None is provided, the periodicity is set to (False, False, False)
+        If None is provided, the periodicity is set to `(False, False, False)`
         which is non-periodic in all directions.
 
     Notes
