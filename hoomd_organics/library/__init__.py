@@ -1,9 +1,12 @@
+"""Library of predefined molecules, recipes and forcefields."""
 from .forcefields import (
     GAFF,
     OPLS_AA,
     OPLS_AA_BENZENE,
     OPLS_AA_DIMETHYLETHER,
     OPLS_AA_PPS,
+    BaseHOOMDForcefield,
+    BaseXMLForcefield,
     BeadSpring,
     FF_from_file,
 )
@@ -17,3 +20,4 @@ from .polymers import (
     PolyEthylene,
 )
 from .simulations.tensile import Tensile
+from .surfaces import Graphene
