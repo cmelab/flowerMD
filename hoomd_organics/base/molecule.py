@@ -29,12 +29,12 @@ class Molecule:
     ----------
     num_mols : int, required
         Number of molecules to generate.
-        force_field : hoomd_organics.ForceField or a list of
-                    `hoomd.md.force.Force` objects, default=None
-            The force field to be applied to the molecule for parameterization.
-            Note that setting `force_field` does not actually apply the
-            forcefield to the molecule. The forcefield in this step is mainly
-            used for validation purposes.
+    force_field : hoomd_organics.ForceField or a list of
+        `hoomd.md.force.Force` objects, default=None
+        The force field to be applied to the molecule for parameterization.
+        Note that setting `force_field` does not actually apply the
+        forcefield to the molecule. The forcefield in this step is mainly
+        used for validation purposes.
     smiles : str, default None
         The smiles string of the molecule to generate.
     file : str, default None
