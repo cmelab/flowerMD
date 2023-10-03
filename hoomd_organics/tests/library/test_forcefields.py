@@ -1,6 +1,8 @@
 import os
 
 import hoomd
+import numpy as np
+import pytest
 
 from hoomd_organics.library import (
     GAFF,
@@ -10,6 +12,7 @@ from hoomd_organics.library import (
     OPLS_AA_PPS,
     BeadSpring,
     FF_from_file,
+    TableForcefield,
 )
 from hoomd_organics.tests.base_test import ASSETS_DIR
 
@@ -89,3 +92,64 @@ class TestForceFields:
             assert ff.hoomd_forces[3].params[param]["k"] == 100
             assert ff.hoomd_forces[3].params[param]["d"] == -1
             assert ff.hoomd_forces[3].params[param]["n"] == 1
+
+
+class TestTableForcefield:
+    def test_from_txt_file(self):
+        pair_file = os.path.join(ASSETS_DIR, "lj_pair_table.txt")
+        bond_file = os.path.join(ASSETS_DIR, "bond_table.txt")
+        angle_file = os.path.join(ASSETS_DIR, "angle_table.txt")
+        dihedral_file = os.path.join(ASSETS_DIR, "dihedral_table.txt")
+        ff = TableForcefield.from_files(
+            pairs={("A", "A"): pair_file},
+            bonds={"A-A": bond_file},
+            angles={"A-A-A": angle_file},
+            dihedrals={"A-A-A-A": dihedral_file},
+        )
+        pair_data = np.loadtxt(pair_file)
+        bond_data = np.loadtxt(bond_file)
+        angle_data = np.loadtxt(angle_file)
+        dihedral_data = np.loadtxt(dihedral_file)
+        assert ff.r_min == pair_data[:, 0][0]
+        assert ff.r_cut == pair_data[:, 0][-1]
+        assert ff.bond_width == len(bond_data[:, 0])
+        assert ff.angle_width == len(angle_data[:, 0])
+        assert ff.dih_width == len(dihedral_data[:, 0])
+
+    def test_from_csv_file(self):
+        pair_file = os.path.join(ASSETS_DIR, "lj_pair_table.csv")
+        ff = TableForcefield.from_files(
+            pairs={("A", "A"): pair_file}, delimiter=","
+        )
+        pair_data = np.genfromtxt(pair_file, delimiter=",")
+        assert ff.r_min == pair_data[:, 0][0]
+        assert ff.r_cut == pair_data[:, 0][-1]
+
+    def test_from_npy_file(self):
+        pair_file = os.path.join(ASSETS_DIR, "lj_pair_table.npy")
+        bond_file = os.path.join(ASSETS_DIR, "bond_table.npy")
+        angle_file = os.path.join(ASSETS_DIR, "angle_table.npy")
+        dihedral_file = os.path.join(ASSETS_DIR, "dihedral_table.npy")
+        ff = TableForcefield.from_files(
+            pairs={("A", "A"): pair_file},
+            bonds={"A-A": bond_file},
+            angles={"A-A-A": angle_file},
+            dihedrals={"A-A-A-A": dihedral_file},
+        )
+        pair_data = np.load(pair_file)
+        bond_data = np.load(bond_file)
+        angle_data = np.load(angle_file)
+        dihedral_data = np.load(dihedral_file)
+        assert ff.r_min == pair_data[:, 0][0]
+        assert ff.r_cut == pair_data[:, 0][-1]
+        assert ff.bond_width == len(bond_data[:, 0])
+        assert ff.angle_width == len(angle_data[:, 0])
+        assert ff.dih_width == len(dihedral_data[:, 0])
+
+    def test_no_file(self):
+        with pytest.raises(ValueError):
+            TableForcefield.from_files(pairs={("A", "A"): "aa-pair.npy"})
+
+    def test_bad_file_type(self):
+        with pytest.raises(ValueError):
+            TableForcefield.from_files(bonds={"A-A": "bond_table.bad"})
