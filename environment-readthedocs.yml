@@ -1,4 +1,4 @@
-name: hoomd-organics-readthedocs
+name: jankflow-readthedocs
 channels:
   - conda-forge
 dependencies:
