@@ -10,10 +10,7 @@ import unyt as u
 from gmso.external import from_mbuild, to_gsd_snapshot, to_hoomd_forcefield
 from gmso.parameterization import apply
 
-from jankflow.base.forcefield import (
-    BaseHOOMDForcefield,
-    BaseXMLForcefield,
-)
+from jankflow.base.forcefield import BaseHOOMDForcefield, BaseXMLForcefield
 from jankflow.base.molecule import Molecule
 from jankflow.utils import (
     calculate_box_length,

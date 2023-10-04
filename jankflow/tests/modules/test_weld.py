@@ -5,11 +5,7 @@ import hoomd
 
 from jankflow import Simulation
 from jankflow.modules.utils import add_void_particles
-from jankflow.modules.welding import (
-    Interface,
-    SlabSimulation,
-    WeldSimulation,
-)
+from jankflow.modules.welding import Interface, SlabSimulation, WeldSimulation
 from jankflow.tests.base_test import BaseTest
 
 

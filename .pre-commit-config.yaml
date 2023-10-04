@@ -16,7 +16,7 @@ repos:
       - id: check-yaml
       - id: end-of-file-fixer
       - id: trailing-whitespace
-        exclude: 'hoomd_organics/tests/assets/.* | hoomd_organics/assets/.*'
+        exclude: 'jankflow/tests/assets/.* | jankflow/assets/.*'
   - repo: https://github.com/psf/black
     rev: 23.9.1
     hooks:
@@ -43,5 +43,5 @@ repos:
     rev: '6.3.0'
     hooks:
       - id: pydocstyle
-        exclude: ^(hoomd_organics/tests/|hoomd_organics/utils/|setup.py|hoomd_organics/__version__.py|docs/)
+        exclude: ^(jankflow/tests/|jankflow/utils/|setup.py|jankflow/__version__.py|docs/)
         args: [ --convention=numpy ]
