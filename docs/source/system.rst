@@ -1,11 +1,11 @@
 System
 --------------
 
-.. py:currentmodule:hoomd_organics.base.system
+.. py:currentmodule:jankflow.base.system
 
 .. rubric:: Details
 
-.. automodule:: hoomd_organics.base.system
+.. automodule:: jankflow.base.system
     :no-members:
 
     .. autoclass:: System()

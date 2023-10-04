@@ -3,11 +3,11 @@ Modules
 
 .. rubric:: Overview
 
-.. py:currentmodule:: hoomd_organics.modules
+.. py:currentmodule:: jankflow.modules
 
 .. rubric:: Details
 
-.. automodule:: hoomd_organics.modules
+.. automodule:: jankflow.modules
 
 .. rubric:: Modules
 

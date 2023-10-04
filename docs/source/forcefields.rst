@@ -1,9 +1,9 @@
 forcefields
 -----------
 
-.. py:currentmodule:hoomd_organics.library
+.. py:currentmodule:jankflow.library
 
 .. rubric:: Details
 
-.. automodule:: hoomd_organics.library.forcefields
+.. automodule:: jankflow.library.forcefields
     :members:

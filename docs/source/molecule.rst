@@ -1,10 +1,10 @@
 Molecule
 -----------
 
-.. py:currentmodule:hoomd_organics.base.molecule
+.. py:currentmodule:jankflow.base.molecule
 
 .. rubric:: Details
-.. automodule:: hoomd_organics.base.molecule
+.. automodule:: jankflow.base.molecule
     :no-members:
     :show-inheritance:
 

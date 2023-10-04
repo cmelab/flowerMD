@@ -1,10 +1,10 @@
 Simulation
 -----------------
 
-.. py:currentmodule:hoomd_organics.base.simulation
+.. py:currentmodule:jankflow.base.simulation
 
 .. rubric:: Details
 
-.. automodule:: hoomd_organics.base.simulation
+.. automodule:: jankflow.base.simulation
     :members:
     :no-index:
