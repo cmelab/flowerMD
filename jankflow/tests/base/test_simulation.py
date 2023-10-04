@@ -311,8 +311,8 @@ class TestSimulate(BaseTest):
         sim.run_NVT(n_steps=5, kT=1.0, tau_kt=0.001)
         sim.operations.writers[-2].flush()
         expected_gsd_quantities = [
-            "hoomd_organics/base/simulation/Simulation/timestep",
-            "hoomd_organics/base/simulation/Simulation/tps",
+            "jankflow/base/simulation/Simulation/timestep",
+            "jankflow/base/simulation/Simulation/tps",
             "md/compute/ThermodynamicQuantities/kinetic_temperature",
             "md/compute/ThermodynamicQuantities/potential_energy",
             "md/compute/ThermodynamicQuantities/kinetic_energy",
@@ -335,8 +335,8 @@ class TestSimulate(BaseTest):
 
         assert sorted(expected_gsd_quantities) == sorted(log_keys)
         expected_table_quantities = [
-            "hoomd_organicsbasesimulationSimulationtimestep",
-            "hoomd_organicsbasesimulationSimulationtps",
+            "jankflowbasesimulationSimulationtimestep",
+            "jankflowbasesimulationSimulationtps",
             "mdcomputeThermodynamicQuantitieskinetic_temperature",
             "mdcomputeThermodynamicQuantitiespotential_energy",
             "mdcomputeThermodynamicQuantitieskinetic_energy",
