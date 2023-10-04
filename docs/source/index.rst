@@ -1,5 +1,5 @@
-Welcome to JankFlow's documentation!
-==========================================
+JankFlow: Flexible Library of Organic Workflows
+===============================================
 
 
 JankFlow is a modular “wrapper” package for molecular dynamics (MD)
