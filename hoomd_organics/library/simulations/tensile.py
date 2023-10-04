@@ -79,7 +79,7 @@ class Tensile(Simulation):
         )
         return delta_L / self.initial_length
 
-    def run_tensile(self, strain, n_steps, period):
+    def run_tensile(self, strain, n_steps, kT, tau_kt, period):
         """Run a tensile test simulation.
 
         Parameters
@@ -88,6 +88,8 @@ class Tensile(Simulation):
             The strain to apply to the simulation.
         n_steps : int, required
             The number of steps to run the simulation for.
+        tau_kt : float, required
+            Thermostat coupling period (in simulation time units).
         period : int, required
             The period of the strain application.
 
@@ -119,8 +121,4 @@ class Tensile(Simulation):
         )
         self.operations.updaters.append(box_resizer)
         self.operations.updaters.append(particle_updater)
-        self.set_integrator_method(
-            integrator_method=hoomd.md.methods.ConstantVolume,
-            method_kwargs={"filter": self.integrate_group},
-        )
-        self.run(n_steps + 1)
+        self.run_NVT(n_steps=n_steps + 1, kT=kT, tau_kt=tau_kt)
