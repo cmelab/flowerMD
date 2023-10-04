@@ -1,4 +1,4 @@
-"""hoomd_organics package."""
+"""JankFlow package."""
 from .base import (
     CoPolymer,
     Lattice,
