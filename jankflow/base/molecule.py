@@ -1,4 +1,4 @@
-"""Base class for all hoomd-organics molecules, Polymers, and CoPolymers."""
+"""Base class for all JankFlow molecules, Polymers, and CoPolymers."""
 import itertools
 import os.path
 import random
@@ -18,7 +18,7 @@ from jankflow.utils.ff_utils import _validate_hoomd_ff
 
 
 class Molecule:
-    """Base class for all `hoomd-organics` molecules.
+    """Base class for all JankFlow molecules.
 
     The Molecule class generates molecules from the provided input and can be
     used to initialize a molecular structure. This class also provides
@@ -29,7 +29,7 @@ class Molecule:
     ----------
     num_mols : int, required
         Number of molecules to generate.
-    force_field : hoomd_organics.ForceField or a list of
+    force_field : jankflow.ForceField or a list of
         `hoomd.md.force.Force` objects, default=None
         The force field to be applied to the molecule for parameterization.
         Note that setting `force_field` does not actually apply the
@@ -409,10 +409,10 @@ class Molecule:
             raise ForceFieldError(
                 "Unsupported forcefield type. Forcefields "
                 "should be a subclass of "
-                "`hoomd_organics.base.forcefield.BaseXMLForcefield` or "
-                "`hoomd_organics.base.forcefield.BaseHOOMDForcefield` or a "
+                "`jankflow.base.forcefield.BaseXMLForcefield` or "
+                "`jankflow.base.forcefield.BaseHOOMDForcefield` or a "
                 "list of `hoomd.md.force.Force` objects. \n"
-                "Please check `hoomd_organics.library.forcefields` for "
+                "Please check `jankflow.library.forcefields` for "
                 "examples of supported forcefields."
             )
 
@@ -496,9 +496,9 @@ class CoPolymer(Molecule):
 
     Parameters
     ----------
-    monomer_A : hoomd_organics.molecules.Polymer, required
+    monomer_A : jankflow.molecules.Polymer, required
         Class of the A-type monomer
-    monomer_B : hoomd_organics.molecules.Polymer, required
+    monomer_B : jankflow.molecules.Polymer, required
         Class of the B-type monomer
     length : int, required
         The total number of monomers in the molecule
