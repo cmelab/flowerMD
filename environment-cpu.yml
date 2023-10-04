@@ -1,4 +1,4 @@
-name: hoomd-organics
+name: jankflow
 channels:
   - conda-forge
 dependencies:

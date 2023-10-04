@@ -3,11 +3,11 @@ Library
 
 .. rubric:: Overview
 
-.. py:currentmodule:: hoomd_organics.library
+.. py:currentmodule:: jankflow.library
 
 .. rubric:: Details
 
-.. automodule:: hoomd_organics.library
+.. automodule:: jankflow.library
 
 .. rubric:: Library
 

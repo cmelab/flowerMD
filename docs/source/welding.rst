@@ -1,11 +1,11 @@
 Welding
 -------
 
-.. py:currentmodule:hoomd_organics.modules
+.. py:currentmodule:jankflow.modules
 
 .. rubric:: Details
 
-.. automodule:: hoomd_organics.modules.welding
+.. automodule:: jankflow.modules.welding
     :no-members:
 
     .. autoclass:: Interface()

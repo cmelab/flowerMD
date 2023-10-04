@@ -9,7 +9,7 @@
 import os
 import sys
 
-project = "hoomd-organics"
+project = "JankFlow"
 copyright = (
     "2023, Chris Jones, Marjan Albooyeh, Rainier Barrett, Eric Jankowski"
 )

@@ -1,10 +1,10 @@
 Polymers
 -----------
 
-.. py:currentmodule:hoomd_organics.library
+.. py:currentmodule:jankflow.library
 
 .. rubric:: Details
 
-.. automodule:: hoomd_organics.library.polymers
+.. automodule:: jankflow.library.polymers
     :members:
     :show-inheritance:

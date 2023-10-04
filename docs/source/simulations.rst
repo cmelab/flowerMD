@@ -1,10 +1,10 @@
 Simulations
 -----------
 
-.. py:currentmodule:hoomd_organics.library.simulations
+.. py:currentmodule:jankflow.library.simulations
 
 .. rubric:: Details
 
-.. automodule:: hoomd_organics.library.simulations.tensile
+.. automodule:: jankflow.library.simulations.tensile
     :members:
     :show-inheritance:
