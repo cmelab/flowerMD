@@ -5,7 +5,11 @@ import hoomd
 
 from hoomd_organics import Simulation
 from hoomd_organics.modules.utils import add_void_particles
-from hoomd_organics.modules.welding import Interface, SlabSimulation
+from hoomd_organics.modules.welding import (
+    Interface,
+    SlabSimulation,
+    WeldSimulation,
+)
 from hoomd_organics.tests.base_test import BaseTest
 
 
@@ -92,7 +96,7 @@ class TestWelding(BaseTest):
         interface = Interface(
             gsd_file="restart.gsd", interface_axis="x", gap=0.1
         )
-        sim = SlabSimulation(
+        sim = WeldSimulation(
             initial_state=interface.hoomd_snapshot,
             forcefield=polyethylene_system.hoomd_forcefield,
         )
