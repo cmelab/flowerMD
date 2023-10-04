@@ -1,2 +1,2 @@
-"""Hoomd-Organics modules."""
+"""JankFlow modules."""
 from .welding import Interface, SlabSimulation, WeldSimulation

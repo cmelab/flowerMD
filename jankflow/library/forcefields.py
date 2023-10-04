@@ -1,4 +1,4 @@
-"""All pre-defined forcefield classes for use in hoomd_organics."""
+"""All pre-defined forcefield classes for use in jankflow."""
 import itertools
 import os
 
@@ -35,7 +35,7 @@ class OPLS_AA_PPS(BaseXMLForcefield):
     def __init__(self, forcefield_files=f"{FF_DIR}/pps_opls.xml"):
         super(OPLS_AA_PPS, self).__init__(forcefield_files=forcefield_files)
         self.description = (
-            "Based on hoomd_organics.forcefields.OPLS_AA. "
+            "Based on jankflow.forcefields.OPLS_AA. "
             "Trimmed down to include only PPS parameters. "
             "One missing parameter was added manually: "
             "<Angle class1=CA class2=S class3=CA angle=1.805 k=627.6/> "
@@ -51,7 +51,7 @@ class OPLS_AA_BENZENE(BaseXMLForcefield):
     def __init__(self, forcefield_files=f"{FF_DIR}/benzene_opls.xml"):
         super(OPLS_AA_BENZENE, self).__init__(forcefield_files=forcefield_files)
         self.description = (
-            "Based on hoomd_organics.forcefields.OPLS_AA. "
+            "Based on jankflow.forcefields.OPLS_AA. "
             "Trimmed down to include only benzene parameters."
         )
 
@@ -64,7 +64,7 @@ class OPLS_AA_DIMETHYLETHER(BaseXMLForcefield):
             forcefield_files=forcefield_files
         )
         self.description = (
-            "Based on hoomd_organics.forcefields.OPLS_AA. "
+            "Based on jankflow.forcefields.OPLS_AA. "
             "Trimmed down to include only dimethyl ether parameters."
         )
 
