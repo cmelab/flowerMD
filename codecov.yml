@@ -7,8 +7,8 @@ comment:
     branches:               # branch names that can post comment
         - "main"
 ignore:
-    - "hoomd_organics/tests"
-    - "hoomd_organics/assets"
-    - "hoomd_organics/__version__.py"
+    - "jankflow/tests"
+    - "jankflow/assets"
+    - "jankflow/__version__.py"
     - "tutorials"
     - "setup.py"

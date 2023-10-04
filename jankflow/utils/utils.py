@@ -4,7 +4,7 @@ import unyt as u
 from jankflow.utils.exceptions import ReferenceUnitError
 
 """utils.py
-   utility methods for hoomd-organics
+   utility methods for JankFlow
 """
 
 
