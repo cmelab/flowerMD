@@ -33,11 +33,11 @@ python -m pip install .
 ```
 
 ## Basic Usage
-Please checkout the [tutorials](tutorials) for a detailed description of
+Please check out the [tutorials](tutorials) for a detailed description of
 how to use JankFlow and what functionalities it provides.
 
 ## Documentation
-Documentation is available at [https://hoomd-organics.readthedocs.io](https://hoomd-organics.readthedocs.io)
+Documentation is available at [https://jankflow.readthedocs.io](https://jankflow.readthedocs.io)
 
 [//]: # (#### Using the built in molecules, systems and forcefields:)
 
