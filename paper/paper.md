@@ -70,13 +70,13 @@ the simulation protocols followed. As a result, this wrapper is likely unusable
 for the next project where one of the aforementioned choices changes, and the
 process of designing a workflow must begin again from scratch.
 
-Software packages such as Radonpy exist that provide an automated workflow for 
-building molecules and bulk structures to calculating physical properties of polymers. 
+Software packages such as Radonpy exist that provide an automated workflow for
+building molecules and bulk structures to calculating physical properties of polymers.
 This doesn't work when modeling complex experimental processes that go beyond measuring
 material properties such as fusion weding of polymer interface, surface wetting, [?, ?, ?]
 
 Jankflow is a python package that consolidates and automates
-end-to-end workflows for modeling such processes with a focus on organic molecules. 
+end-to-end workflows for modeling such processes with a focus on organic molecules.
 
 
 It is extensible; a workflow from beginning to
