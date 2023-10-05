@@ -126,8 +126,9 @@ workflow modules.
 
 # Building Blocks
 JankFlow simplifies the execution of molecular dynamics simulations by
-integrating the capabilities of molecular builder packages like GMSO{@gmso} and MBuild{@snurr_hierarchical_2016}
-with the HOOMD{@anderson_hoomd-blue_2019} simulation engine, offering a comprehensive end-to-end simulation recipe development tool.
+integrating the capabilities of molecular builder packages like GMSO [@gms] and 
+MBuild [@mbuild_2016]
+with the HOOMD [@hoomd_2019] simulation engine, offering a comprehensive end-to-end simulation recipe development tool.
 This is accomplished through three building block classes:
 
 • Molecule utilizes the mBuild and GMSO packages to initialize chemical
