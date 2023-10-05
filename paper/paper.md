@@ -1,7 +1,7 @@
 ---
 title: 'JankFlow: A Flexible Python Library for Organic Workflows'
 tags:
-  - Python
+  - molecular simulation
   - materials science
   - molecular dynamics
   - polymers
@@ -31,7 +31,7 @@ bibliography: paper.bib
 
 ---
 # Summary
-JankFlow is a package for reproducibly performing complex HOOMD-Blue simulation workflows. It enables the programmatic specification of tasks including
+`JankFlow` is a package for reproducibly performing complex HOOMD-Blue simulation workflows. It enables the programmatic specification of tasks including
 definition of molecular structures, forcefield definition and application, chaining
 together simulation stages (e.g., shrinking, equilibration, simulating a sequence
 of ensembles, tensile testing), and trajectory analysis through an extensible set
@@ -107,7 +107,7 @@ allowing workflows to evolve into highly specific applications further down the
 pipeline, without concerns about design choices limiting or interfering with other
 use cases. Moreover, the continuous maintenance, updates, and addition of features to this foundational base permeate throughout the library of workflows.
 If executed thoughtfully and accurately, this enables the creation of a library
-of versatile, open-source, and version-controlled workflows. JankFlow is an
+of versatile, open-source, and version-controlled workflows. `JankFlow` is an
 attempt at making this tool by creating a TRUE base and beginning a library of
 workflow modules.
 
@@ -125,7 +125,7 @@ workflow modules.
 
 
 # Building Blocks
-JankFlow simplifies the execution of molecular dynamics simulations by
+`JankFlow` simplifies the execution of molecular dynamics simulations by
 integrating the capabilities of molecular builder packages like GMSO [@gms] and 
 MBuild [@mbuild_2016]
 with the HOOMD [@hoomd_2019] simulation engine, offering a comprehensive end-to-end simulation recipe development tool.
@@ -147,7 +147,7 @@ needs. It also facilitates the process of quickly resuming a simulation.
 
 
 # Recipes
-The JankFlow package, with its flexible and extendable design, allows users
+The `JankFlow` package, with its flexible and extendable design, allows users
 to utilize its core classes as building blocks, enabling the formulation of
 customized recipes for various molecular simulation processes in accordance with
 their specific research needs. To illustrate this process, we offer the two
@@ -158,11 +158,11 @@ more recipes in the future.
 2)Tensile recipe with example code
 
 # Availability
-JankFlow is freely available under the GNU General Public License (version 3)
+`JankFlow` is freely available under the GNU General Public License (version 3)
 on [github](https://github.com/cmelab/JankFlow). For installation instructions,
 and Python API documentation
 please visit the [documentation](https://jankflow.readthedocs.io/en/latest/).
-For examples of how to use JankFlow,
+For examples of how to use `JankFlow`,
 please visit the [tutorials](https://github.com/cmelab/JankFlow/tree/main/tutorials)
 # Acknowledgements
 We acknowledge contributions from [ULI Advisory board, NASA, etc]
