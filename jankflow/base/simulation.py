@@ -697,6 +697,7 @@ class Simulation(hoomd.simulation.Simulation):
         self.operations.updaters.append(std_out_logger_printer)
         self.run(steps=n_steps + 1, write_at_start=write_at_start)
         self.operations.updaters.remove(std_out_logger_printer)
+        self.operations.updaters.remove(box_resizer)
 
     def run_langevin(
         self,
