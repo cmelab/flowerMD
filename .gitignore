@@ -6,6 +6,11 @@ __pycache__/
 # C extensions
 *.so
 
+# Tutorial/test files
+*.gsd
+*.txt
+*.pickle
+
 # Distribution / packaging
 .Python
 build/
@@ -127,3 +132,10 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# IDE files
+.idea/
+
+# emacs backup saves
+*.~
+*.#

@@ -1,19 +1,27 @@
-name: hoomd-polymers 
+name: jankflow
 channels:
   - conda-forge
 dependencies:
+  - boltons
   - foyer
-  - freud
-  - gsd
-  - hoomd>3.0=*gpu*
+  - fresnel
+  - freud>=2.13.1
+  - gsd>=3.0
+  - hoomd=4.1=*gpu*
   - mbuild
   - numpy
+  - openbabel
   - pip
+  - py3Dmol
   - pytest
   - pytest-cov
   - python=3.9
-  - signac=1.7.0
-  - signac-flow=0.18.1
   - unyt
+  - symengine
+  - python-symengine
+  - sympy
+  - fresnel
   - pip:
+      - git+https://github.com/mosdef-hub/gmso.git@main
       - git+https://github.com/cmelab/cmeutils.git@master
+      - git+https://github.com/cmelab/grits.git@main
