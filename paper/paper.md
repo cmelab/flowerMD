@@ -1,5 +1,5 @@
 ---
-title: 'Polybinder: A Python package for streamlined polymer molecular dynamics'
+title: 'JankFlow: A Flexible Python Library for Organic Workflows'
 tags:
   - Python
   - materials science
@@ -11,9 +11,13 @@ authors:
     orcid: 0000-0002-6196-5274
     equal-contrib: true
     affiliation: 1
+  - name: Marjan Albooyeh
+    orcid: 0009-0001-9565-3076
+    equal-contrib: true
+    affiliation: 1
   - name: Rainier Barrett
     orcid: 0000-0002-5728-9074
-    equal-contrib: true
+    corresponding: true
     affiliation: 1
   - name: Eric Jankowski
     orcid: 0000-0002-3267-1410
@@ -26,81 +30,133 @@ date: 01 January 2001
 bibliography: paper.bib
 
 ---
+# Summary
+JankFlow is a package for reproducibly performing complex HOOMD-Blue simulation workflows. It enables the programmatic specification of tasks including
+definition of molecular structures, forcefield definition and application, chaining
+together simulation stages (e.g., shrinking, equilibration, simulating a sequence
+of ensembles, tensile testing), and trajectory analysis through an extensible set
+of python classes. Common tasks and forcefields for organic macrmolecular and
+polymer simulations are included, as are tutorials demonstrating customization
+and extensibility.
 
 # Statement of need
 
-One of the steeper learning curves on the road to using molecular dynamics (MD) simulations
-of polymer systems is
-the initialization of particle positions, topology, and force field parameters.
-Especially for researchers new to the computational community, generating particle
-positions and initializing their velocities alone can be a daunting task, let alone
-specifying bond topology. The concept of a force field file and how it interacts with
-different MD engines is also non-trivial to understand.
-Further, besides the difficulty in starting simulations, another part of the cognitive
-load involved in learning to perform informative MD investigations is that it can be
-difficult to keep track of many simulations, especially when scanning over a wide
-range of thermodynamic state points, system chemistries, etc.
-These wide scans can quickly create an unmanageable amount of data to analyze,
-or even store, requiring further learning of data management skills on top of an already
-cumbersome training process.
-Moreover, even with a high-throughput workflow and good grasp of theory, it can still
-prove difficult to produce TRUE (standing for "Transparent, Reproducible, Usable, and
-Extensible") MD simulations with reliable, accurate results. `@JankowskiTRUE2020`
+High-level programmatic specification of molecular simulation workflows are
+needed for two reasons: First: They provide the information necessary for a
+simulation study to be repeated, and Second: They facilitate accessible peda-
+gogy of molecular simulation by minimizing the cognitive load needed to get
+started[?].
 
-In particular, when we want to probe complex variable spaces,
-such as process control variables in a composite material manufacture process,
-we need to run several large-volume, high-density, long-time simulations,
-many of which may not reveal relevant information for process control.
-This search process is further delayed due to the increasing CPU time required to
-simulate such large systems. A common solution for this problem of scale in MD
-is coarse grain (CG) modeling, where atomistic accuracy is traded for speed.
-This likewise comes with some subtle barriers between concept and practice.
-For instance, to produce a CG model of a given polymer that is transferable across
-state points, many simulations at various state points must be run and managed,
-increasing the desirability of a reliable and easy way to keep track of these,
-particularly for the multi-state iterative Boltzmann inversion (MSIBI)`@MooreMSIBI2014`
-method of parameterization. All these aspects complicate and prolong the algready time-
-and labor-intensive process of training new computational researchers
-to perform sufficiently many simulations to meaningfully investigate polymer systems.
+Most molecular simulations are performed using a combination of tools:
+Text editors (to copy and edit plain text files that specify molecular 
+configurations, forcefield files, simulation engine input files and/or simulation scripts),
+command-line interfaces for submitting simulations to a local processor or HPC
+cluster qeueing system, and numerical analysis and visualization software to 
+inspect simulation data. When simulations are set up manually and iteratively,
+it is difficult to maintain data provenance, that is, a record of what files and
+choices determine the outputs of a simulation.
 
-These factors indicate a need for a streamlined tool for creating (optionally CG)
-MD polymer systems, launching one or many simulations across state points and/or
-system type, and managing and analyzing the results. Ideally such a tool should be
-approachable for novice programmers, to maximize time spent investigating research
-questions and minimize the learning curve for new researchers, while preserving
-the accuracy and rigor of the resultant research.
+Even for simulations of “relatively simple” single-component systems at a
+single thermodynamic state point, it is challenging for users to manage records
+of which exact forcefield was applied, whether any forcefield parameters were
+modified, whether a sequence of short simulations was needed to create the
+initial conditions, which microstates were included in analysis, and whether
+human intervention occurred at any step to inform the next. Furthermore, for
+a researcher new to molecular simulations, the details of generating an initial
+condition for a thermodynamic simulation are simultaneously: (a) not germane
+to understanding the concept of a simulation overall, (b) crucial to get right so
+the researcher can get started, and (c) likely specifyable using community best
+practices for configuration initialization.
 
-# Summary
+Recent advances in well-documented open-source tools [?, ?, ?, ?] have made
+the programmatic specification of molecular simulation components easier than
+ever. Individually, each of these tools lower the cognitive load of one aspect of
+an overall workflow tailored to answer a specific research question. However,
+the challenge of stitching the pieces together to create a complete workflow still
+contains several barriers.
 
-Polybinder, the suite of tools introduced here, was built to enable materials scientists
-to use molecular simulation to quickly and reproducibly simulate
-large, coarse- or fine-grained polymer systems to investigate and predict trends in
-their properties, all with a much lower barrier to entry than starting from scratch. Because it is designed
-with modularity in mind, it will also ease adoption by other research groups,
-and quicken the investigation process of new materials systems.
+The computational researcher who follows best practices for accurate, 
+accessible and reproducible results may create a programmatic layer over these
+individual software packages (i.e. wrapper) that serves to consolidate and 
+automate a complete workflow. However, these efforts often use a bespoke approach
+where the entire workflow design is tailored towards the specific question or
+project. Design choices might include the materials studied, the model used
+(e.g. atomistic or coarse-grained), the source of the forcefield in the model, and
+the simulation protocols followed. As a result, this wrapper is likely unusable
+for the next project where one of the aforementioned choices changes, and the
+process of designing a workflow must begin again from scratch.
 
-Polybinder is a Python package that uses the [foyer](https://github.com/mosdef-hub/foyer/),
-[mbuild](https://github.com/mosdef-hub/mbuild/), and [signac](https://github.com/mosdef-hub/signac) packages from
-the [MoSDeF suite of tools](https://github.com/mosdef-hub/) to quickly, easily, and reproducibly initialize and run polymer
-simulations in the [HOOMD-blue](https://github.com/glotzerlab/hoomd-blue) engine.
-Polybinder was made with the TRUE principles in mind `@JankowskiTRUE2020`, with the goal of allowing ease
-of use and adoption, and reducing the learning curve for starting simulations.
-This package allows for a variety of simulation types of interest,
-such as bulk thermoplastic melts, annealing, welding interface interpenetration, and tensile testing of
-the resultant welded systems.
-Presently polybinder has methods for three common thermoplastic polymer chemistries:
-polyether ether ketone (PEEK), polyether ketone ketone (PEKK),
-and polyphenylene sulfide (PPS). However, polybinder is designed such that any
-monomer units can be implemented and added to the internal library of available
-structures via mbuild.
+Regardless of the goal at hand, designing any MD workflow typically involves
+the same preliminary steps:
+1. Creating molecules.
+2. Building up larger, complex compounds from smaller molecules (e.g. poly-
+mers, surfaces)
+3. Designate the initial structure and topology of a system of compounds.
+4. Choose and correctly apply a forcefield to the system.
+5. Pass off the initial topology and forcefield information to a simulation
+engine
+
+Therefore, the goal of a package that aims to consolidate and automate 
+complete workflows should have a TRUE foundational base from which workflows
+can inherit, making it significantly easier to construct new workflows without
+starting from scratch. It should be extensible; a workflow from beginning to
+end should not depend on the chemistry chosen, whether or not the model is
+atomistic or coarse-grained, or if interaction parameters come from established
+forcefields or from a machine learned model. This tool should be modular,
+allowing workflows to evolve into highly specific applications further down the
+pipeline, without concerns about design choices limiting or interfering with other
+use cases. Moreover, the continuous maintenance, updates, and addition of features to this foundational base permeate throughout the library of workflows.
+If executed thoughtfully and accurately, this enables the creation of a library
+of versatile, open-source, and version-controlled workflows. JankFlow is an 
+attempt at making this tool by creating a TRUE base and beginning a library of
+workflow modules.
+
+[//]: # (1-2 sentnces about the popular simulation engines &#40;gromacs, lammps, hoomd,)
+
+[//]: # (openmm&#41;. Gromacs and lammps have lots of cool features, but don’t have rich)
+
+[//]: # (APIs, and involve text based input files which make it hard to be TRUE. Hoomd)
+
+[//]: # (and openmm have robust APIs, but don’t have the same level of featureizaiton)
+
+[//]: # (as lammps and gromacs. This package aims to add a layer of featureizaiton on)
+
+[//]: # (top of hoomd.)
 
 
-# Accessing the Software
+# Building Blocks
+JankFlow simplifies the execution of molecular dynamics simulations by 
+integrating the capabilities of molecular builder packages like GMSO[?] and MBuild[2]
+with the HOOMD[1] simulation engine, offering a comprehensive end-to-end simulation recipe development tool.
+This is accomplished through three building block classes:
 
-Polybinder is freely available under the GNU General Public License (version 3) on [github](https://github.com/cmelab/polybinder).
+• Molecule utilizes the mBuild and GMSO packages to initialize chemical
+structures from a variety of input formats. This class provides methods
+for building polymers and copolymer structures and supports straightforward 
+coarse-graining process.
+
+• System class serves as an intermediary between molecular initialization
+and simulation setup. This class is responsible for arrangement of a mixture 
+of molecules in a box and facilitates the configuration of particle
+interactions.
+
+• Simulation class employs the HOOMD-blue [1] simulation object, offering
+additional strategies and simulation processes tailored to specific research
+needs. It also facilitates the process of quickly resuming a simulation.
+
+
+# Recipes
+The JankFlow package, with its flexible and extendable design, allows users
+to utilize its core classes as building blocks, enabling the formulation of 
+customized recipes for various molecular simulation processes in accordance with
+their specific research needs. To illustrate this process, we offer the two 
+following examples of such recipes in this package, with the expectation of introducing
+more recipes in the future.
+
+1)Welding recipe with example code
+2)Tensile recipe with example code
 
 # Acknowledgements
-
 We acknowledge contributions from [ULI Advisory board, NASA, etc]
 
 # References
