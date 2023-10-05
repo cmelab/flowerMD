@@ -156,6 +156,13 @@ more recipes in the future.
 1)Welding recipe with example code
 2)Tensile recipe with example code
 
+# Availability
+JankFlow is freely available under the GNU General Public License (version 3) 
+on [github](https://github.com/cmelab/JankFlow). For installation instructions,
+and Python API documentation 
+please visit the [documentation](https://jankflow.readthedocs.io/en/latest/).
+For examples of how to use JankFlow,
+please visit the [tutorials](https://github.com/cmelab/JankFlow/tree/main/tutorials)
 # Acknowledgements
 We acknowledge contributions from [ULI Advisory board, NASA, etc]
 
