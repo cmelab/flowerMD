@@ -107,11 +107,11 @@ for building polymers and copolymer structures and supports straightforward
 coarse-graining process.
 
 • System class serves as an intermediary between molecular initialization
-and simulation setup. This class builds the initial configuration and 
+and simulation setup. This class builds the initial configuration and
 generates the focefield that defines particle interactions.
 
 • Simulation class adds a layer on top of the HOOMD-blue simulation object, which
-adds additional methods and features that simplifies the process of starting and 
+adds additional methods and features that simplifies the process of starting and
 resuming a HOOMD-blue simulation.
 
 # Library and Recipes
