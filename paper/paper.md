@@ -28,7 +28,6 @@ affiliations:
    index: 1
 date: 01 January 2001
 bibliography: paper.bib
-
 ---
 # Summary
 `JankFlow` is a package for reproducibly performing complex HOOMD-blue [@hoomd_2019]
@@ -80,7 +79,7 @@ However, these tools may not be suitable for modeling complex experimental
 processes that extend beyond measuring material properties, such as
 simulating fusion welding of polymer interfaces [@?] and surface wetting [@].
 
-Jankflow is a python package that consolidates and automates
+`JankFlow` is a python package that consolidates and automates
 end-to-end workflows for modeling such processes with a focus on organic molecules.
 Following the principals of Transparent, Reproducible, Usable by others, and Extensible (TRUE) [@TRUE_2020]
 software design, the modular design of `JankFlow` facilitates building and
