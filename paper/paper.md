@@ -65,7 +65,7 @@ workflow still contains several barriers.
 The computational researcher who follows best practices for accurate,
 accessible and reproducible results may create a programmatic layer over these
 individual software packages (i.e. wrapper) that serves to consolidate and
-automate a complete workflow [?, ?, ?]. However, these efforts often use a bespoke approach
+automate a complete workflow. However, these efforts often use a bespoke approach
 where the entire workflow design is tailored towards the specific question or
 project. Design choices might include the materials studied, the model used
 (e.g. atomistic or coarse-grained), the source of the forcefield in the model, and
@@ -77,7 +77,9 @@ Software packages such as Radonpy [@radonpy_2022] exist that provide an automate
 building molecules and bulk structures to calculating physical properties of polymers.
 However, these tools may not be suitable for modeling complex experimental
 processes that extend beyond measuring material properties, such as
-simulating fusion welding of polymer interfaces [@?] and surface wetting [@].
+simulating fusion welding of polymer interfaces
+[@aggarwal_molecular_2020, @bukowski_load-bearing_2021] and surface wetting
+[@fan_wetting_1995, bamane_wetting_2021].
 
 `JankFlow` is a python package that consolidates and automates
 end-to-end workflows for modeling such processes with a focus on organic molecules.
@@ -92,7 +94,7 @@ foundations for constructing segregated workflow recipes designed for specific a
 The recipes are agnostic to choices such as chemistry, model resolution
 (atomistic or coarse grained) or forcefields. This is accomplished by utilizing three base classes:
 
-• Molecule utilizes the mBuild and GMSO packages to initialize chemical
+• Molecule utilizes the mBuild [@mbuild_2016] and GMSO [@gmso] packages to initialize chemical
 structures from a variety of input formats. This class provides methods
 for building polymers and copolymer structures and supports straightforward
 coarse-graining process.
