@@ -81,7 +81,7 @@ Following the principals of Transparent, Reproducible, Usable by others, and Ext
 software design, the modular design of `JankFlow` facilitates  building and
 running workflows for specific materials science research applications, 
 while reducing the cognitive load and programming demands on the user's part.
-
+###############
 
 It is extensible; a workflow from beginning to
 end should not depend on the chemistry chosen, whether or not the model is
@@ -95,32 +95,11 @@ of versatile, open-source, and version-controlled workflows. `JankFlow` is an
 attempt at making this tool by creating a TRUE base and beginning a library of
 workflow modules.
 
-[//]: # (1-2 sentnces about the popular simulation engines &#40;gromacs, lammps, hoomd,)
-
-[//]: # (openmm&#41;. Gromacs and lammps have lots of cool features, but don’t have rich)
-
-[//]: # (APIs, and involve text based input files which make it hard to be TRUE. Hoomd)
-
-[//]: # (and openmm have robust APIs, but don’t have the same level of featureizaiton)
-
-[//]: # (as lammps and gromacs. This package aims to add a layer of featureizaiton on)
-
-[//]: # (top of hoomd.)
-
 
 # Building Blocks
 `JankFlow` encompasses flexible base classes (building blocks) that lays the
-foundations for constructing workflow recipies. Because of this modular design the recipies are agnostic to choices such as chemistry, model resolution
-(atomistic or coarse grained) or forcefields.
-
-For example, the welding workflow (recipie) could be utilized for an atomistic
-polyethylene model or coarse grained bead spring model.
-
-
-`JankFlow` simplifies the execution of molecular dynamics simulations by
-integrating the capabilities of molecular builder packages like GMSO [@gms] and
-MBuild [@mbuild_2016] with the HOOMD [@hoomd_2019] simulation engine, offering a comprehensive end-to-end simulation recipe development tool.
-This is accomplished through three building block classes:
+foundations for constructing segregated workflow recipies. Because of this modular design the recipies are agnostic to choices such as chemistry, model resolution
+(atomistic or coarse grained) or forcefields. This is accomplished by utilizing three base classes:
 
 • Molecule utilizes the mBuild and GMSO packages to initialize chemical
 structures from a variety of input formats. This class provides methods
@@ -128,25 +107,19 @@ for building polymers and copolymer structures and supports straightforward
 coarse-graining process.
 
 • System class serves as an intermediary between molecular initialization
-and simulation setup. This class is responsible for arrangement of a mixture
-of molecules in a box and facilitates the configuration of particle
-interactions.
+and simulation setup. This class builds the initial configuration and 
+generates the focefield that defines particle interactions.
 
-• Simulation class employs the HOOMD-blue simulation object, offering
-additional strategies and simulation processes tailored to specific research
-needs. It also facilitates the process of quickly resuming a simulation.
+• Simulation class adds a layer on top of the HOOMD-blue simulation object, which
+adds additional methods and features that simplifies the process of starting and 
+resuming a HOOMD-blue simulation.
 
+# Library and Recipes
+.....
+`JankFlow` offers the following two ready-to-go recipes to illustrate how the design creates potential for expanding the library of workflows.
 
-# Recipes
-The `JankFlow` package, with its flexible and extendable design, allows users
-to utilize its core classes as building blocks, enabling the formulation of
-customized recipes for various molecular simulation processes in accordance with
-their specific research needs. To illustrate this process, we offer the two
-following examples of such recipes in this package, with the expectation of introducing
-more recipes in the future.
-
-1)Welding recipe with example code
-2)Tensile recipe with example code
+• Welding: What does this recipe do. Simulation to create slabs, building up an interface from slabs, simulation to preform welding.
+• Tensile Testing
 
 # Availability
 `JankFlow` is freely available under the GNU General Public License (version 3)
