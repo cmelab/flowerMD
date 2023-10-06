@@ -77,9 +77,9 @@ material properties such as fusion weding of polymer interface, surface wetting,
 
 Jankflow is a python package that consolidates and automates
 end-to-end workflows for modeling such processes with a focus on organic molecules.
-Following the principals of Transparent, Reproducible, Usable by others, and Extensible (TRUE) [?] 
+Following the principals of Transparent, Reproducible, Usable by others, and Extensible (TRUE) [?]
 software design, the modular design of `JankFlow` facilitates  building and
-running workflows for specific materials science research applications, 
+running workflows for specific materials science research applications,
 while reducing the cognitive load and programming demands on the user's part.
 ###############
 
