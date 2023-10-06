@@ -17,7 +17,7 @@ authors:
     affiliation: 1
   - name: Rainier Barrett
     orcid: 0000-0002-5728-9074
-    corresponding: true
+    equal-contrib: false
     affiliation: 1
   - name: Eric Jankowski
     orcid: 0000-0002-3267-1410
@@ -31,13 +31,15 @@ bibliography: paper.bib
 
 ---
 # Summary
-`JankFlow` is a package for reproducibly performing complex HOOMD-Blue simulation workflows. It enables the programmatic specification of tasks including
-definition of molecular structures, forcefield definition and application, chaining
+`JankFlow` is a package for reproducibly performing complex HOOMD-Blue simulation workflows.
+It enables the programmatic specification of tasks including
+definition of molecular structures, forcefield definition and application and chaining
 together simulation stages (e.g., shrinking, equilibration, simulating a sequence
-of ensembles, tensile testing), and trajectory analysis through an extensible set
-of python classes. Common tasks and forcefields for organic macrmolecular and
-polymer simulations are included, as are tutorials demonstrating customization
-and extensibility.
+of ensembles, tensile testing) through an extensible set
+of Python classes. The modular design supports a library of complex workflows
+for organic macrmolecular and polymer simulations. 
+Tutorials are provided to demonstrate package features and flexibility. 
+
 
 # Statement of need
 
@@ -78,27 +80,14 @@ material properties such as fusion weding of polymer interface, surface wetting,
 Jankflow is a python package that consolidates and automates
 end-to-end workflows for modeling such processes with a focus on organic molecules.
 Following the principals of Transparent, Reproducible, Usable by others, and Extensible (TRUE) [?]
-software design, the modular design of `JankFlow` facilitates  building and
+software design, the modular design of `JankFlow` facilitates building and
 running workflows for specific materials science research applications,
 while reducing the cognitive load and programming demands on the user's part.
-###############
-
-It is extensible; a workflow from beginning to
-end should not depend on the chemistry chosen, whether or not the model is
-atomistic or coarse-grained, or if interaction parameters come from established
-forcefields or from a machine learned model. This tool should be modular,
-allowing workflows to evolve into highly specific applications further down the
-pipeline, without concerns about design choices limiting or interfering with other
-use cases. Moreover, the continuous maintenance, updates, and addition of features to this foundational base permeate throughout the library of workflows.
-If executed thoughtfully and accurately, this enables the creation of a library
-of versatile, open-source, and version-controlled workflows. `JankFlow` is an
-attempt at making this tool by creating a TRUE base and beginning a library of
-workflow modules.
-
 
 # Building Blocks
-`JankFlow` encompasses flexible base classes (building blocks) that lays the
-foundations for constructing segregated workflow recipies. Because of this modular design the recipies are agnostic to choices such as chemistry, model resolution
+`JankFlow` is extensible; flexible and modular base classes in form of building blocks lay the
+foundations for constructing segregated workflow recipes designed for specific applications. 
+The recipes are agnostic to choices such as chemistry, model resolution
 (atomistic or coarse grained) or forcefields. This is accomplished by utilizing three base classes:
 
 • Molecule utilizes the mBuild and GMSO packages to initialize chemical
@@ -114,11 +103,15 @@ generates the focefield that defines particle interactions.
 adds additional methods and features that simplifies the process of starting and
 resuming a HOOMD-blue simulation.
 
-# Library and Recipes
-.....
-`JankFlow` offers the following two ready-to-go recipes to illustrate how the design creates potential for expanding the library of workflows.
+Additionally, `JankFlow` offers a library pre-defined subclasses of the above base classes
+including common polymers, forcefields and bulk system initialization algorithms. 
 
-• Welding: What does this recipe do. Simulation to create slabs, building up an interface from slabs, simulation to preform welding.
+# Recipes
+`JankFlow` offers the following two ready-to-go recipes to illustrate how the design creates 
+potential for expanding the library of open-source and version-controlled workflows.
+
+• Welding: What does this recipe do. Simulation to create slabs, building up an 
+interface from slabs, simulation to preform welding.
 • Tensile Testing
 
 # Availability
