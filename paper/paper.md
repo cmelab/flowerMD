@@ -31,14 +31,14 @@ bibliography: paper.bib
 
 ---
 # Summary
-`JankFlow` is a package for reproducibly performing complex HOOMD-Blue simulation workflows.
-It enables the programmatic specification of tasks including
+`JankFlow` is a package for reproducibly performing complex HOOMD-blue [@hoomd_2019]
+simulation workflows. It enables the programmatic specification of tasks including
 definition of molecular structures, forcefield definition and application and chaining
 together simulation stages (e.g., shrinking, equilibration, simulating a sequence
-of ensembles, tensile testing) through an extensible set
-of Python classes. The modular design supports a library of complex workflows
-for organic macrmolecular and polymer simulations.
-Tutorials are provided to demonstrate package features and flexibility.
+of ensembles, tensile testing) through an extensible set of Python classes.
+The modular design supports a library of complex workflows for organic
+macrmolecular and polymer simulations. Tutorials are provided to demonstrate
+package features and flexibility.
 
 
 # Statement of need
@@ -54,7 +54,9 @@ of computational tools needed to actually perform experiments simultaneously:
 
 This is a well recognized problem, and recent advances in well-documented
 open-source tools have made the programmatic specification of
-molecular simulation components easier than ever [? ? ? ?].
+molecular simulation components easier than ever
+[@hoomd_2019, @lammps_2022, @gromacs_2015, @mbuild_2016, @gmso,
+@Santana-Bonilla_2023, @polyply_2022, @biosimspace_2019].
 Individually, each of these tools lower the cognitive load of one aspect of an
 overall workflow such as representing molecules, building initial structures,
 parameterizing and applying a forcefield, to running simulations.
@@ -72,14 +74,15 @@ the simulation protocols followed. As a result, this wrapper is likely unusable
 for the next project where one of the aforementioned choices changes, and the
 process of designing a workflow must begin again from scratch.
 
-Software packages such as Radonpy exist that provide an automated workflow for
+Software packages such as Radonpy [@radonpy_2022] exist that provide an automated workflow for
 building molecules and bulk structures to calculating physical properties of polymers.
-This doesn't work when modeling complex experimental processes that go beyond measuring
-material properties such as fusion weding of polymer interface, surface wetting, [?, ?, ?]
+However, these tools may not be suitable for modeling complex experimental
+processes that extend beyond measuring material properties, such as
+simulating fusion welding of polymer interfaces [@?] and surface wetting [@].
 
 Jankflow is a python package that consolidates and automates
 end-to-end workflows for modeling such processes with a focus on organic molecules.
-Following the principals of Transparent, Reproducible, Usable by others, and Extensible (TRUE) [?]
+Following the principals of Transparent, Reproducible, Usable by others, and Extensible (TRUE) [@TRUE_2020]
 software design, the modular design of `JankFlow` facilitates building and
 running workflows for specific materials science research applications,
 while reducing the cognitive load and programming demands on the user's part.
@@ -133,7 +136,7 @@ sim.run_update_volume(final_density=1.2, n_steps=5e4, kT=5.0,
                       period=100, tau_kt=0.001)
 # run NVT ensemble
 sim.run_NVT(kT=5.0, n_steps=4e4, tau_kt=0.001)
-
+sim.operations.writers[0].flush()
 # create an interface from the slab
 interface = Interface(gsd_file="slab.gsd", interface_axis=(1, 0, 0), gap=0.05)
 # run the welding simulation
