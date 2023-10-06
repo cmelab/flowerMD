@@ -127,16 +127,15 @@ system.apply_forcefield(r_cut=2.5, force_field=OPLS_AA(), auto_scale=True,
 hoomd_forces = system.hoomd_forcefield
 # run a slab simulation
 sim = SlabSimulation.from_system(system=system, interface_axis=(1, 0, 0),
-                                 gsd_file_name="slab_x_interface.gsd")
+                                 gsd_file_name="slab.gsd")
 # shrink the box to reach the desired density
-sim.run_update_volume(final_density=1.2, n_steps=5e4, kT=5.0, period=100,
-                      tau_kt=0.001)
+sim.run_update_volume(final_density=1.2, n_steps=5e4, kT=5.0,
+                      period=100, tau_kt=0.001)
 # run NVT ensemble
 sim.run_NVT(kT=5.0, n_steps=4e4, tau_kt=0.001)
 
 # create an interface from the slab
-interface = Interface(gsd_file="slab_x_interface.gsd", interface_axis=(1, 0, 0),
-                      gap=0.05)
+interface = Interface(gsd_file="slab.gsd", interface_axis=(1, 0, 0), gap=0.05)
 # run the welding simulation
 weld_sim = WeldSimulation(initial_state=interface.hoomd_snapshot,
                           forcefield=hoomd_forces, interface_axis=(1, 0, 0),
