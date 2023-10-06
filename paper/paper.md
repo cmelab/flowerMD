@@ -37,8 +37,8 @@ definition of molecular structures, forcefield definition and application and ch
 together simulation stages (e.g., shrinking, equilibration, simulating a sequence
 of ensembles, tensile testing) through an extensible set
 of Python classes. The modular design supports a library of complex workflows
-for organic macrmolecular and polymer simulations. 
-Tutorials are provided to demonstrate package features and flexibility. 
+for organic macrmolecular and polymer simulations.
+Tutorials are provided to demonstrate package features and flexibility.
 
 
 # Statement of need
@@ -86,7 +86,7 @@ while reducing the cognitive load and programming demands on the user's part.
 
 # Building Blocks
 `JankFlow` is extensible; flexible and modular base classes in form of building blocks lay the
-foundations for constructing segregated workflow recipes designed for specific applications. 
+foundations for constructing segregated workflow recipes designed for specific applications.
 The recipes are agnostic to choices such as chemistry, model resolution
 (atomistic or coarse grained) or forcefields. This is accomplished by utilizing three base classes:
 
@@ -104,13 +104,13 @@ adds additional methods and features that simplifies the process of starting and
 resuming a HOOMD-blue simulation.
 
 Additionally, `JankFlow` offers a library pre-defined subclasses of the above base classes
-including common polymers, forcefields and bulk system initialization algorithms. 
+including common polymers, forcefields and bulk system initialization algorithms.
 
 # Recipes
-`JankFlow` offers the following two ready-to-go recipes to illustrate how the design creates 
+`JankFlow` offers the following two ready-to-go recipes to illustrate how the design creates
 potential for expanding the library of open-source and version-controlled workflows.
 
-• Welding: What does this recipe do. Simulation to create slabs, building up an 
+• Welding: What does this recipe do. Simulation to create slabs, building up an
 interface from slabs, simulation to preform welding.
 • Tensile Testing
 
