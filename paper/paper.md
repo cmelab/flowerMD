@@ -43,42 +43,26 @@ and extensibility.
 
 High-level programmatic specification of molecular simulation workflows are
 needed for two reasons: First: They provide the information necessary for a
-simulation study to be repeated, and Second: They facilitate accessible peda-
-gogy of molecular simulation by minimizing the cognitive load needed to get
-started[?].
+simulation study to be reproducible, and Second: They minimize the cognitive
+load of getting started with running experiments [?].
+For a researcher new to molecular simulations, building the necessary set
+of computational tools needed to actually perform experiments simultaneously:
+(a) requires skills and knowledge different from those needed to do research,
+(b) involves repeating work that others have already done.
 
-Most molecular simulations are performed using a combination of tools:
-Text editors (to copy and edit plain text files that specify molecular
-configurations, forcefield files, simulation engine input files and/or simulation scripts),
-command-line interfaces for submitting simulations to a local processor or HPC
-cluster qeueing system, and numerical analysis and visualization software to
-inspect simulation data. When simulations are set up manually and iteratively,
-it is difficult to maintain data provenance, that is, a record of what files and
-choices determine the outputs of a simulation.
-
-Even for simulations of “relatively simple” single-component systems at a
-single thermodynamic state point, it is challenging for users to manage records
-of which exact forcefield was applied, whether any forcefield parameters were
-modified, whether a sequence of short simulations was needed to create the
-initial conditions, which microstates were included in analysis, and whether
-human intervention occurred at any step to inform the next. Furthermore, for
-a researcher new to molecular simulations, the details of generating an initial
-condition for a thermodynamic simulation are simultaneously: (a) not germane
-to understanding the concept of a simulation overall, (b) crucial to get right so
-the researcher can get started, and (c) likely specifyable using community best
-practices for configuration initialization.
-
-Recent advances in well-documented open-source tools [?, ?, ?, ?] have made
-the programmatic specification of molecular simulation components easier than
-ever. Individually, each of these tools lower the cognitive load of one aspect of
-an overall workflow tailored to answer a specific research question. However,
-the challenge of stitching the pieces together to create a complete workflow still
-contains several barriers.
+This is a well recognized problem, and recent advances in well-documented
+open-source tools have made the programmatic specification of
+molecular simulation components easier than ever [? ? ? ?].
+Individually, each of these tools lower the cognitive load of one aspect of an
+overall workflow such as representing molecules, building initial structures,
+paramaterizing and applying a forcefield, to running simulations.
+However, the challenge of stitching the pieces together to create a complete
+workflow still contains several barriers.
 
 The computational researcher who follows best practices for accurate,
 accessible and reproducible results may create a programmatic layer over these
 individual software packages (i.e. wrapper) that serves to consolidate and
-automate a complete workflow. However, these efforts often use a bespoke approach
+automate a complete workflow [?, ?, ?]. However, these efforts often use a bespoke approach
 where the entire workflow design is tailored towards the specific question or
 project. Design choices might include the materials studied, the model used
 (e.g. atomistic or coarse-grained), the source of the forcefield in the model, and
@@ -86,20 +70,20 @@ the simulation protocols followed. As a result, this wrapper is likely unusable
 for the next project where one of the aforementioned choices changes, and the
 process of designing a workflow must begin again from scratch.
 
-Regardless of the goal at hand, designing any MD workflow typically involves
-the same preliminary steps:
-1. Creating molecules.
-2. Building up larger, complex compounds from smaller molecules (e.g. poly-
-mers, surfaces)
-3. Designate the initial structure and topology of a system of compounds.
-4. Choose and correctly apply a forcefield to the system.
-5. Pass off the initial topology and forcefield information to a simulation
-engine
+Software packages such as Radonpy exist that provide an automated workflow for
+building molecules and bulk structures to calculating physical properties of polymers.
+This doesn't work when modeling complex experimental processes that go beyond measuring
+material properties such as fusion weding of polymer interface, surface wetting, [?, ?, ?]
 
-Therefore, the goal of a package that aims to consolidate and automate
-complete workflows should have a TRUE foundational base from which workflows
-can inherit, making it significantly easier to construct new workflows without
-starting from scratch. It should be extensible; a workflow from beginning to
+Jankflow is a python package that consolidates and automates
+end-to-end workflows for modeling such processes with a focus on organic molecules.
+Following the principals of Transparent, Reproducible, Usable by others, and Extensible (TRUE) [?] 
+software design, the modular design of `JankFlow` facilitates  building and
+running workflows for specific materials science research applications, 
+while reducing the cognitive load and programming demands on the user's part.
+
+
+It is extensible; a workflow from beginning to
 end should not depend on the chemistry chosen, whether or not the model is
 atomistic or coarse-grained, or if interaction parameters come from established
 forcefields or from a machine learned model. This tool should be modular,
@@ -125,10 +109,17 @@ workflow modules.
 
 
 # Building Blocks
+`JankFlow` encompasses flexible base classes (building blocks) that lays the
+foundations for constructing workflow recipies. Because of this modular design the recipies are agnostic to choices such as chemistry, model resolution
+(atomistic or coarse grained) or forcefields.
+
+For example, the welding workflow (recipie) could be utilized for an atomistic
+polyethylene model or coarse grained bead spring model.
+
+
 `JankFlow` simplifies the execution of molecular dynamics simulations by
-integrating the capabilities of molecular builder packages like GMSO [@gms] and 
-MBuild [@mbuild_2016]
-with the HOOMD [@hoomd_2019] simulation engine, offering a comprehensive end-to-end simulation recipe development tool.
+integrating the capabilities of molecular builder packages like GMSO [@gms] and
+MBuild [@mbuild_2016] with the HOOMD [@hoomd_2019] simulation engine, offering a comprehensive end-to-end simulation recipe development tool.
 This is accomplished through three building block classes:
 
 • Molecule utilizes the mBuild and GMSO packages to initialize chemical
