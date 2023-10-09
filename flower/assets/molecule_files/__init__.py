@@ -1,4 +1,4 @@
-"""Molecule files for JankFlow."""
+"""Molecule files for flower."""
 import os
 
 MON_DIR = os.path.abspath(os.path.dirname(__file__))
