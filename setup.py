@@ -14,7 +14,7 @@ from shutil import rmtree
 from setuptools import Command, find_packages, setup
 
 # Package meta-data.
-NAME = "jankflow"
+NAME = "flower"
 DESCRIPTION = (
     "Package making it easier to build and simulate polymers in Hoomd-Blue"
 )

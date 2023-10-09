@@ -1,5 +1,5 @@
-[![pytest](https://github.com/cmelab/JankFlow/actions/workflows/pytest.yml/badge.svg)](https://github.com/cmelab/JankFlow/actions/workflows/pytest.yml)
-[![codecov](https://codecov.io/gh/cmelab/JankFlow/branch/main/graph/badge.svg?token=86LY9WHSH6)](https://codecov.io/gh/cmelab/JankFlow)
+[![pytest](https://github.com/cmelab/flower/actions/workflows/pytest.yml/badge.svg)](https://github.com/cmelab/flower/actions/workflows/pytest.yml)
+[![codecov](https://codecov.io/gh/cmelab/flower/branch/main/graph/badge.svg?token=86LY9WHSH6)](https://codecov.io/gh/cmelab/flower)
 ## flower: Flexible Library of Organic Workflows and Extensible Recipes
 flower is a modular “wrapper” package for molecular dynamics (MD)
 simulation pipeline development, designed to enable fast, reproducible,
