@@ -1,4 +1,4 @@
-name: jankflow-readthedocs
+name: flower-readthedocs
 channels:
   - conda-forge
 dependencies:
