@@ -1,6 +1,8 @@
 on:
   push:
     branches: [joss]
+  pull_request:
+    branches: [ joss ]
 
 jobs:
   paper:
