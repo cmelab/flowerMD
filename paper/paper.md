@@ -34,7 +34,7 @@ bibliography: paper.bib
 simulation workflows. It enables the programmatic specification of tasks including
 definition of molecular structures, forcefield definition and application and chaining
 together simulation stages (e.g., shrinking, equilibration, simulating a sequence
-of ensembles, tensile testing) through an extensible set of Python classes.
+of ensembles, tensile testing, etc.) through an extensible set of Python classes.
 The modular design supports a library of complex workflows for organic
 macrmolecular and polymer simulations. Tutorials are provided to demonstrate
 package features and flexibility.
@@ -94,16 +94,16 @@ foundations for constructing segregated workflow recipes designed for specific a
 The recipes are agnostic to choices such as chemistry, model resolution
 (atomistic or coarse grained) or forcefields. This is accomplished by utilizing three base classes:
 
-• Molecule utilizes the mBuild [@mbuild_2016] and GMSO [@gmso] packages to initialize chemical
+• `Molecule` class utilizes the mBuild [@mbuild_2016] and GMSO [@gmso] packages to initialize chemical
 structures from a variety of input formats. This class provides methods
 for building polymers and copolymer structures and supports straightforward
 coarse-graining process.
 
-• System class serves as an intermediary between molecular initialization
+• `System` class serves as an intermediary between molecular initialization
 and simulation setup. This class builds the initial configuration and
 generates the focefield that defines particle interactions.
 
-• Simulation class adds a layer on top of the HOOMD-blue simulation object, which
+• `Simulation` class adds a layer on top of the HOOMD-blue simulation object, which
 adds additional methods and features that simplifies the process of starting and
 resuming a HOOMD-blue simulation.
 
