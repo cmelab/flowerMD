@@ -37,7 +37,7 @@ Please check out the [tutorials](tutorials) for a detailed description of
 how to use flower and what functionalities it provides.
 
 ## Documentation
-Documentation is available at [https://flower.readthedocs.io](https://flower.readthedocs.io)
+Documentation is available at [https://flowermd.readthedocs.io](https://flowermd.readthedocs.io)
 
 [//]: # (#### Using the built in molecules, systems and forcefields:)
 
