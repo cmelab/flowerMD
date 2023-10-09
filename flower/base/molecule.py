@@ -1,4 +1,4 @@
-"""Base class for all JankFlow molecules, Polymers, and CoPolymers."""
+"""Base class for all flower molecules, Polymers, and CoPolymers."""
 import itertools
 import os.path
 import random
@@ -18,7 +18,7 @@ from flower.utils.ff_utils import _validate_hoomd_ff
 
 
 class Molecule:
-    """Base class for all JankFlow molecules.
+    """Base class for all flower molecules.
 
     The Molecule class generates molecules from the provided input and can be
     used to initialize a molecular structure. This class also provides
@@ -29,7 +29,7 @@ class Molecule:
     ----------
     num_mols : int, required
         Number of molecules to generate.
-    force_field : jankflow.ForceField or a list of
+    force_field : flower.ForceField or a list of
         `hoomd.md.force.Force` objects, default=None
         The force field to be applied to the molecule for parameterization.
         Note that setting `force_field` does not actually apply the
@@ -409,10 +409,10 @@ class Molecule:
             raise ForceFieldError(
                 "Unsupported forcefield type. Forcefields "
                 "should be a subclass of "
-                "`jankflow.base.forcefield.BaseXMLForcefield` or "
-                "`jankflow.base.forcefield.BaseHOOMDForcefield` or a "
+                "`flower.base.forcefield.BaseXMLForcefield` or "
+                "`flower.base.forcefield.BaseHOOMDForcefield` or a "
                 "list of `hoomd.md.force.Force` objects. \n"
-                "Please check `jankflow.library.forcefields` for "
+                "Please check `flower.library.forcefields` for "
                 "examples of supported forcefields."
             )
 
@@ -496,9 +496,9 @@ class CoPolymer(Molecule):
 
     Parameters
     ----------
-    monomer_A : jankflow.molecules.Polymer, required
+    monomer_A : flower.molecules.Polymer, required
         Class of the A-type monomer
-    monomer_B : jankflow.molecules.Polymer, required
+    monomer_B : flower.molecules.Polymer, required
         Class of the B-type monomer
     length : int, required
         The total number of monomers in the molecule

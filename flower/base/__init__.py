@@ -1,4 +1,4 @@
-"""Base classes for JankFlow."""
+"""Base classes for flower."""
 from .forcefield import BaseHOOMDForcefield, BaseXMLForcefield
 from .molecule import CoPolymer, Molecule, Polymer
 from .simulation import Simulation

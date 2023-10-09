@@ -40,7 +40,7 @@ class System(ABC):
 
     Parameters
     ----------
-    molecules : jankflow.Molecule or a list of Molecule objects, required
+    molecules : flower.Molecule or a list of Molecule objects, required
         The molecules to be placed in the system.
     density : float, required
         The desired density of the system (g/cm^3). Used to set the
@@ -56,12 +56,12 @@ class System(ABC):
     --------
     The ``force_field`` parameter in ``System`` class must be initialized
     from the pre-defined force field classes in
-    ``jankflow.library.forcefields`` module that are based on xml-based
+    ``flower.library.forcefields`` module that are based on xml-based
     force fields.
 
     Forcefields defined as a list of `Hoomd.md.force.Force
     <https://hoomd-blue.readthedocs.io/en/stable/module-md-force.html>`_ objects
-    must be directly passed to the ``jankflow.Simulation`` class.
+    must be directly passed to the ``flower.Simulation`` class.
     Please refer to the ``Simulation`` class documentation for more details.
 
 
@@ -333,7 +333,7 @@ class System(ABC):
         Notes
         -----
         The `target_box` property can be passed to
-        `jankflow.base.Simulation.run_update_volume` method to reach the
+        `flower.base.Simulation.run_update_volume` method to reach the
         target density.
 
         """
@@ -473,7 +473,7 @@ class System(ABC):
                     " `BaseHOOMDForcefield` or "
                     "`BaseXMLForcefield`. \n"
                     "Please check "
-                    "`jankflow.library.forcefields` for "
+                    "`flower.library.forcefields` for "
                     "examples of supported forcefields."
                 )
             # Collecting all force-fields into a dict with mol_type index as key
@@ -512,7 +512,7 @@ class System(ABC):
         ----------
         r_cut : float
             The cutoff radius for the Lennard-Jones interactions.
-        force_field : jankflow.ForceField or a list of ForceField objects,
+        force_field : flower.ForceField or a list of ForceField objects,
                 default=None
             The force field to be applied to the system for parameterization.
             If a list of force fields is provided, the length of the list must
