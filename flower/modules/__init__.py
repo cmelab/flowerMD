@@ -1,2 +1,2 @@
-"""JankFlow modules."""
+"""flower modules."""
 from .welding import Interface, SlabSimulation, WeldSimulation
