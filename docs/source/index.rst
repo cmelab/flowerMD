@@ -2,11 +2,11 @@ flower: Flexible Library of Organic Workflows and Extensible Recipes
 ===============================================
 
 
-`flower` is a modular “wrapper” package for molecular dynamics (MD)
+flower is a modular “wrapper” package for molecular dynamics (MD)
 simulation pipeline development, designed to enable fast, reproducible, end-to-
 end simulation workflows with minimal user effort. An object-oriented design
-makes `flower` extensible and highly flexible. This is bolstered by a
-library-based approach to system initialization, making `flower` agnostic
+makes flower extensible and highly flexible. This is bolstered by a
+library-based approach to system initialization, making flower agnostic
 to system identity, forcefield, and thermodynamic ensemble, and allowing
 for growth on an as-needed basis.
 
