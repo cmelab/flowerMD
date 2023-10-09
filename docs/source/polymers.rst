@@ -1,10 +1,10 @@
 Polymers
 -----------
 
-.. py:currentmodule:jankflow.library
+.. py:currentmodule:flower.library
 
 .. rubric:: Details
 
-.. automodule:: jankflow.library.polymers
+.. automodule:: flower.library.polymers
     :members:
     :show-inheritance:

@@ -3,11 +3,11 @@ Base
 
 .. rubric:: Overview
 
-.. py:currentmodule:: jankflow.base
+.. py:currentmodule:: flower.base
 
 .. rubric:: Details
 
-.. automodule:: jankflow.base
+.. automodule:: flower.base
 
 .. rubric:: Modules
 

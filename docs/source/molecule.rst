@@ -1,10 +1,10 @@
 Molecule
 -----------
 
-.. py:currentmodule:jankflow.base.molecule
+.. py:currentmodule:flower.base.molecule
 
 .. rubric:: Details
-.. automodule:: jankflow.base.molecule
+.. automodule:: flower.base.molecule
     :no-members:
     :show-inheritance:
 

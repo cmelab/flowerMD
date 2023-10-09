@@ -1,11 +1,11 @@
 Welding
 -------
 
-.. py:currentmodule:jankflow.modules
+.. py:currentmodule:flower.modules
 
 .. rubric:: Details
 
-.. automodule:: jankflow.modules.welding
+.. automodule:: flower.modules.welding
     :no-members:
 
     .. autoclass:: Interface()

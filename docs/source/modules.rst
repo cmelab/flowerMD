@@ -3,11 +3,11 @@ Modules
 
 .. rubric:: Overview
 
-.. py:currentmodule:: jankflow.modules
+.. py:currentmodule:: flower.modules
 
 .. rubric:: Details
 
-.. automodule:: jankflow.modules
+.. automodule:: flower.modules
 
 .. rubric:: Modules
 
