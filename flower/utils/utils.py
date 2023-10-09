@@ -4,7 +4,7 @@ import unyt as u
 from flower.utils.exceptions import ReferenceUnitError
 
 """utils.py
-   utility methods for JankFlow
+   utility methods for flower.
 """
 
 
