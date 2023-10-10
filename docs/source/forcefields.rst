@@ -1,9 +1,9 @@
 forcefields
 -----------
 
-.. py:currentmodule:flower.library
+.. py:currentmodule:flowermd.library
 
 .. rubric:: Details
 
-.. automodule:: flower.library.forcefields
+.. automodule:: flowermd.library.forcefields
     :members:

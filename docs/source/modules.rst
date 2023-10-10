@@ -3,11 +3,11 @@ Modules
 
 .. rubric:: Overview
 
-.. py:currentmodule:: flower.modules
+.. py:currentmodule:: flowermd.modules
 
 .. rubric:: Details
 
-.. automodule:: flower.modules
+.. automodule:: flowermd.modules
 
 .. rubric:: Modules
 

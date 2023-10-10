@@ -1,10 +1,10 @@
 Molecule
 -----------
 
-.. py:currentmodule:flower.base.molecule
+.. py:currentmodule:flowermd.base.molecule
 
 .. rubric:: Details
-.. automodule:: flower.base.molecule
+.. automodule:: flowermd.base.molecule
     :no-members:
     :show-inheritance:
 

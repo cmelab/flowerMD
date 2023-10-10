@@ -1,10 +1,10 @@
 Simulations
 -----------
 
-.. py:currentmodule:flower.library.simulations
+.. py:currentmodule:flowermd.library.simulations
 
 .. rubric:: Details
 
-.. automodule:: flower.library.simulations.tensile
+.. automodule:: flowermd.library.simulations.tensile
     :members:
     :show-inheritance:

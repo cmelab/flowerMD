@@ -1,10 +1,10 @@
 Polymers
 -----------
 
-.. py:currentmodule:flower.library
+.. py:currentmodule:flowermd.library
 
 .. rubric:: Details
 
-.. automodule:: flower.library.polymers
+.. automodule:: flowermd.library.polymers
     :members:
     :show-inheritance:

@@ -1,11 +1,11 @@
 Welding
 -------
 
-.. py:currentmodule:flower.modules
+.. py:currentmodule:flowermd.modules
 
 .. rubric:: Details
 
-.. automodule:: flower.modules.welding
+.. automodule:: flowermd.modules.welding
     :no-members:
 
     .. autoclass:: Interface()

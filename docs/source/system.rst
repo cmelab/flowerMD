@@ -1,11 +1,11 @@
 System
 --------------
 
-.. py:currentmodule:flower.base.system
+.. py:currentmodule:flowermd.base.system
 
 .. rubric:: Details
 
-.. automodule:: flower.base.system
+.. automodule:: flowermd.base.system
     :no-members:
 
     .. autoclass:: System()

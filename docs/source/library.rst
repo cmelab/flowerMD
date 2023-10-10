@@ -3,11 +3,11 @@ Library
 
 .. rubric:: Overview
 
-.. py:currentmodule:: flower.library
+.. py:currentmodule:: flowermd.library
 
 .. rubric:: Details
 
-.. automodule:: flower.library
+.. automodule:: flowermd.library
 
 .. rubric:: Library
 

@@ -1,10 +1,10 @@
 Simulation
 -----------------
 
-.. py:currentmodule:flower.base.simulation
+.. py:currentmodule:flowermd.base.simulation
 
 .. rubric:: Details
 
-.. automodule:: flower.base.simulation
+.. automodule:: flowermd.base.simulation
     :members:
     :no-index:
