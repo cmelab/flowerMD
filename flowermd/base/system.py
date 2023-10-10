@@ -769,7 +769,9 @@ class Lattice(System):
                 try:
                     comp1 = self.all_molecules[next_idx]
                     comp2 = self.all_molecules[next_idx + 1]
-                    comp2.translate(self.basis_vector)
+                    comp2.translate(
+                            self.basis_vector * np.array([self.x, self.y, 0])
+                    )
                     # TODO: what if comp1 and comp2 have different names?
                     unit_cell = mb.Compound(
                         subcompounds=[comp1, comp2], name=comp1.name
