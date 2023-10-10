@@ -311,8 +311,8 @@ class TestSimulate(BaseTest):
         sim.run_NVT(n_steps=5, kT=1.0, tau_kt=0.001)
         sim.operations.writers[-2].flush()
         expected_gsd_quantities = [
-            "flower/base/simulation/Simulation/timestep",
-            "flower/base/simulation/Simulation/tps",
+            "flowermd/base/simulation/Simulation/timestep",
+            "flowermd/base/simulation/Simulation/tps",
             "md/compute/ThermodynamicQuantities/kinetic_temperature",
             "md/compute/ThermodynamicQuantities/potential_energy",
             "md/compute/ThermodynamicQuantities/kinetic_energy",
@@ -335,8 +335,8 @@ class TestSimulate(BaseTest):
 
         assert sorted(expected_gsd_quantities) == sorted(log_keys)
         expected_table_quantities = [
-            "flowerbasesimulationSimulationtimestep",
-            "flowerbasesimulationSimulationtps",
+            "flowermdbasesimulationSimulationtimestep",
+            "flowermdbasesimulationSimulationtps",
             "mdcomputeThermodynamicQuantitieskinetic_temperature",
             "mdcomputeThermodynamicQuantitiespotential_energy",
             "mdcomputeThermodynamicQuantitieskinetic_energy",

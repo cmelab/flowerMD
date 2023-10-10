@@ -4,7 +4,7 @@ import unyt as u
 from flowermd.utils.exceptions import ReferenceUnitError
 
 """utils.py
-   utility methods for flower.
+   utility methods for flowerMD.
 """
 
 

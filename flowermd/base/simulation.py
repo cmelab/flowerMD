@@ -1,4 +1,4 @@
-"""Base simulation class for flower."""
+"""Base simulation class for flowerMD."""
 import inspect
 import pickle
 import warnings
@@ -50,7 +50,7 @@ class Simulation(hoomd.simulation.Simulation):
         Period to write simulation data to the log file.
     log_file_name : str, default "sim_data.txt"
         The file name to use for the .txt log file
-    thermostat : flower.utils.HOOMDThermostats, default
+    thermostat : flowermd.utils.HOOMDThermostats, default
         HOOMDThermostats.MTTK
         The thermostat to use for the simulation.
 
@@ -103,12 +103,12 @@ class Simulation(hoomd.simulation.Simulation):
 
     @classmethod
     def from_system(cls, system, **kwargs):
-        """Initialize a simulation from a `flower.base.System` object.
+        """Initialize a simulation from a `flowermd.base.System` object.
 
         Parameters
         ----------
-        system : flower.base.System, required
-            A `flower.base.System` object.
+        system : flowermd.base.System, required
+            A `flowermd.base.System` object.
 
         """
         if system.hoomd_forcefield:
@@ -400,11 +400,11 @@ class Simulation(hoomd.simulation.Simulation):
         """Set the thermostat used for the simulation.
 
         The thermostat must be a selected from
-        `flower.utils.HOOMDThermostats`.
+        `flowermd.utils.HOOMDThermostats`.
 
         Parameters
         ----------
-        thermostat : flower.utils.HOOMDThermostats, required
+        thermostat : flowermd.utils.HOOMDThermostats, required
             The type of thermostat to use.
         """
         if not issubclass(
@@ -976,8 +976,8 @@ class Simulation(hoomd.simulation.Simulation):
 
         ::
 
-            from flower import Pack, Simulation
-            from flower.library import PPS, OPLS_AA_PPS, Tensile
+            from flowermd.base import Pack, Simulation
+            from flowermd.library import PPS, OPLS_AA_PPS, Tensile
             import pickle
 
             pps_mols = PPS(num_mols=10, lengths=5)
@@ -1019,8 +1019,8 @@ class Simulation(hoomd.simulation.Simulation):
 
         ::
 
-            from flower import Pack, Simulation
-            from flower.library import PPS, OPLS_AA_PPS, Tensile
+            from flowermd.base import Pack, Simulation
+            from flowermd.library import PPS, OPLS_AA_PPS, Tensile
             import pickle
 
             pps_mols = PPS(num_mols=10, lengths=5)
