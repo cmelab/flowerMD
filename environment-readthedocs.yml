@@ -1,4 +1,4 @@
-name: flower-readthedocs
+name: flowermd-readthedocs
 channels:
   - conda-forge
 dependencies:
