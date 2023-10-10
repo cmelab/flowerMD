@@ -1,8 +1,17 @@
 on:
   push:
-    branches: [joss]
+    # Action will run when any changes to these paths are pushed or pr'ed to master
+    branches: [ main ]
+    paths:
+      - flowermd/**
+      - .github/workflows/draft-pdf.yml
   pull_request:
-    branches: [ joss ]
+    branches: [ main ]
+    paths:
+      - flowermd/**
+      - .github/workflows/draft-pdf.yml
+  # Allows workflow to be manually triggered
+  workflow_dispatch:
 
 jobs:
   paper:
