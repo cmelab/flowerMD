@@ -1,5 +1,5 @@
 ---
-title: 'JankFlow: A Flexible Python Library for Organic Workflows'
+title: 'FlowerMD: Flexible Library of Organic Workflows and Extensible Recipes for Molecular Dynamics'
 tags:
   - molecular simulation
   - materials science
@@ -30,7 +30,7 @@ date: 01 January 2001
 bibliography: paper.bib
 ---
 # Summary
-`JankFlow` is a package for reproducibly performing complex HOOMD-blue [@hoomd_2019]
+`flowerMD` is a package for reproducibly performing complex HOOMD-blue [@hoomd_2019]
 simulation workflows. It enables the programmatic specification of tasks including
 definition of molecular structures, forcefield definition and application and chaining
 together simulation stages (e.g., shrinking, equilibration, simulating a sequence
@@ -81,15 +81,15 @@ simulating fusion welding of polymer interfaces
 [@aggarwal_molecular_2020, @bukowski_load-bearing_2021] and surface wetting
 [@fan_wetting_1995, bamane_wetting_2021].
 
-`JankFlow` is a python package that consolidates and automates
+`flowerMD` is a python package that consolidates and automates
 end-to-end workflows for modeling such processes with a focus on organic molecules.
 Following the principals of Transparent, Reproducible, Usable by others, and Extensible (TRUE) [@TRUE_2020]
-software design, the modular design of `JankFlow` facilitates building and
+software design, the modular design of `flowerMD` facilitates building and
 running workflows for specific materials science research applications,
 while reducing the cognitive load and programming demands on the user's part.
 
 # Building Blocks
-`JankFlow` is extensible; flexible and modular base classes in form of building blocks lay the
+`flowerMD` is extensible; flexible and modular base classes in form of building blocks lay the
 foundations for constructing segregated workflow recipes designed for specific applications.
 The recipes are agnostic to choices such as chemistry, model resolution
 (atomistic or coarse grained) or forcefields. This is accomplished by utilizing three base classes:
@@ -107,20 +107,20 @@ generates the focefield that defines particle interactions.
 adds additional methods and features that simplifies the process of starting and
 resuming a HOOMD-blue simulation.
 
-Additionally, `JankFlow` offers a library pre-defined subclasses of the above base classes
+Additionally, `flowerMD` offers a library pre-defined subclasses of the above base classes
 including common polymers, forcefields and bulk system initialization algorithms.
 
 # Recipes
-`JankFlow` offers the following two ready-to-go recipes to illustrate how the design creates
+`flowerMD` offers the following two ready-to-go recipes to illustrate how the design creates
 potential for expanding the library of open-source and version-controlled workflows.
 
 • Welding: What does this recipe do. Simulation to create slabs, building up an
 interface from slabs, simulation to preform welding.
 • Tensile Testing
 ```python
-from jankflow.library import PolyEthylene, OPLS_AA, Tensile
-from jankflow.base import Pack
-from jankflow.modules.welding import SlabSimulation, Interface, WeldSimulation
+from flowermd.library import PolyEthylene, OPLS_AA, Tensile
+from flowermd.base import Pack
+from flowermd.modules.welding import SlabSimulation, Interface, WeldSimulation
 
 # initialize a polymer system using poly(ethylene) and OPLS-AA forcefield
 molecule = PolyEthylene(num_mols=30, lengths=12)
@@ -159,12 +159,12 @@ tensile_sim.run_tensile(n_steps=1e5, strain=0.70, period=500, kT=2.0, tau_kt=0.0
 ```
 
 # Availability
-`JankFlow` is freely available under the GNU General Public License (version 3)
-on [github](https://github.com/cmelab/JankFlow). For installation instructions,
+`flowerMD` is freely available under the GNU General Public License (version 3)
+on [github](https://github.com/cmelab/flowerMD). For installation instructions,
 and Python API documentation
-please visit the [documentation](https://jankflow.readthedocs.io/en/latest/).
-For examples of how to use `JankFlow`,
-please visit the [tutorials](https://github.com/cmelab/JankFlow/tree/main/tutorials)
+please visit the [documentation](https://flowermd.readthedocs.io/en/latest/).
+For examples of how to use `flowerMD`,
+please visit the [tutorials](https://github.com/cmelab/flowerMD/tree/main/tutorials)
 # Acknowledgements
 We acknowledge contributions from [ULI Advisory board, NASA, etc]
 
