@@ -14,11 +14,11 @@ from shutil import rmtree
 from setuptools import Command, find_packages, setup
 
 # Package meta-data.
-NAME = "jankflow"
+NAME = "flowermd"
 DESCRIPTION = (
     "Package making it easier to build and simulate polymers in Hoomd-Blue"
 )
-URL = "https://github.com/cmelab/JankFlow"
+URL = "https://github.com/cmelab/flowerMD"
 EMAIL = "chrisjones4@u.boisestate.edu"
 AUTHOR = "CME Lab"
 REQUIRES_PYTHON = ">=3.9.0"
@@ -102,7 +102,7 @@ setup(
     #     'console_scripts': ['mycli=mymodule:cli'],
     # },
     package_data={
-        "jankflow": [
+        "flowermd": [
             "modules/*",
             "sim/*",
             "library/*",

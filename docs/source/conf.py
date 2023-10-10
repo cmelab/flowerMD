@@ -9,7 +9,7 @@
 import os
 import sys
 
-project = "JankFlow"
+project = "flowerMD"
 copyright = (
     "2023, Chris Jones, Marjan Albooyeh, Rainier Barrett, Eric Jankowski"
 )

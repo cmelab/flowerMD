@@ -1,11 +1,11 @@
 System
 --------------
 
-.. py:currentmodule:jankflow.base.system
+.. py:currentmodule:flowermd.base.system
 
 .. rubric:: Details
 
-.. automodule:: jankflow.base.system
+.. automodule:: flowermd.base.system
     :no-members:
 
     .. autoclass:: System()

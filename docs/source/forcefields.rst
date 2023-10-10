@@ -1,9 +1,9 @@
 forcefields
 -----------
 
-.. py:currentmodule:jankflow.library
+.. py:currentmodule:flowermd.library
 
 .. rubric:: Details
 
-.. automodule:: jankflow.library.forcefields
+.. automodule:: flowermd.library.forcefields
     :members:

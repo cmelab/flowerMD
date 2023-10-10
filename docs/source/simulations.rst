@@ -1,10 +1,10 @@
 Simulations
 -----------
 
-.. py:currentmodule:jankflow.library.simulations
+.. py:currentmodule:flowermd.library.simulations
 
 .. rubric:: Details
 
-.. automodule:: jankflow.library.simulations.tensile
+.. automodule:: flowermd.library.simulations.tensile
     :members:
     :show-inheritance:
