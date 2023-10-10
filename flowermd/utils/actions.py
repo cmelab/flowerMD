@@ -13,7 +13,7 @@ class StdOutLogger(hoomd.custom.Action):
             tps = np.round(self.sim.tps, 2)
             current_step = self.sim.timestep - self.starting_step
             eta = np.round((self.n_steps - current_step) / (60 * tps), 1)
-            if eta <= 60.:
+            if eta <= 60.0:
                 print(
                     f"Step {current_step} of {self.n_steps}; TPS: {tps}; ETA: "
                     f"{eta} minutes"
