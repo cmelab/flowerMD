@@ -14,7 +14,7 @@ from shutil import rmtree
 from setuptools import Command, find_packages, setup
 
 # Package meta-data.
-NAME = "flowerMD"
+NAME = "flowermd"
 DESCRIPTION = (
     "Package making it easier to build and simulate polymers in Hoomd-Blue"
 )
