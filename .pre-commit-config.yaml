@@ -29,7 +29,7 @@ repos:
         name: isort (python)
         args:
           [ --profile=black, --line-length=80 ]
-        exclude: 'cmeuitls/tests/assets/.* '
+        exclude: 'flowermd/tests/assets/.* '
 
   - repo: https://github.com/pycqa/flake8
     rev: 6.1.0

@@ -7,11 +7,11 @@ RUN conda activate base
 WORKDIR /opt && chmod u+rwx .
 
 # install in base conda env
-RUN git clone https://github.com/cmelab/flower && \
-    cd flower && \
+RUN git clone https://github.com/cmelab/flowerMD && \
+    cd flowerMD && \
     conda env update -n base -f environment-gpu.yml && \
     conda clean --all --yes -f
 
-WORKDIR flower
+WORKDIR flowerMD
 
 RUN python -m pip install --user -e .
