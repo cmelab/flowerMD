@@ -5,13 +5,13 @@ on:
     # Action will run when any changes to these paths are pushed or pr'ed to master
     branches: [ main ]
     paths:
-      - flowermd/**
+      - flowerMD/**
       - environment-cpu.yml
       - .github/workflows/pytest.yml
   pull_request:
     branches: [ main ]
     paths:
-      - flowermd/**
+      - flowerMD/**
       - environment-cpu.yml
       - .github/workflows/pytest.yml
   # Allows workflow to be manually triggered
