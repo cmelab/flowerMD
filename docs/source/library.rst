@@ -3,11 +3,11 @@ Library
 
 .. rubric:: Overview
 
-.. py:currentmodule:: jankflow.library
+.. py:currentmodule:: flowermd.library
 
 .. rubric:: Details
 
-.. automodule:: jankflow.library
+.. automodule:: flowermd.library
 
 .. rubric:: Library
 

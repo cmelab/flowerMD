@@ -1,10 +1,10 @@
 Simulation
 -----------------
 
-.. py:currentmodule:jankflow.base.simulation
+.. py:currentmodule:flowermd.base.simulation
 
 .. rubric:: Details
 
-.. automodule:: jankflow.base.simulation
+.. automodule:: flowermd.base.simulation
     :members:
     :no-index:

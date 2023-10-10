@@ -1,4 +1,4 @@
-name: jankflow
+name: flowermd
 channels:
   - conda-forge
 dependencies:
