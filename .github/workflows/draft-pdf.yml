@@ -1,12 +1,12 @@
 on:
   push:
     # Action will run when any changes to these paths are pushed or pr'ed to master
-    branches: [ main ]
+    branches: [ joss ]
     paths:
       - flowermd/**
       - .github/workflows/draft-pdf.yml
   pull_request:
-    branches: [ main ]
+    branches: [ joss ]
     paths:
       - flowermd/**
       - .github/workflows/draft-pdf.yml
