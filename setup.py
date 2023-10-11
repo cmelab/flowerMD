@@ -104,10 +104,7 @@ setup(
     package_data={
         "flowermd": [
             "modules/*",
-            "sim/*",
-            "library/*",
-            "library/forcefields/*",
-            "library/monomers/*",
+            "library/**",
             "assets/*",
         ]
     },
