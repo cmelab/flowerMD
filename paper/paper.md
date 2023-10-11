@@ -30,25 +30,25 @@ date: 01 January 2001
 bibliography: paper.bib
 ---
 # Summary
-`flowerMD` is a package for reproducibly performing complex HOOMD-blue [@hoomd_2019]
+`flowerMD` is a package for reproducibly performing multi-stage HOOMD-blue [@hoomd_2019]
 simulation workflows. It enables the programmatic specification of tasks including
 definition of molecular structures, forcefield definition and application and chaining
 together simulation stages (e.g., shrinking, equilibration, simulating a sequence
 of ensembles, tensile testing, etc.) through an extensible set of Python classes.
-The modular design supports a library of complex workflows for organic
+The modular design supports a library of workflows for organic
 macrmolecular and polymer simulations. Tutorials are provided to demonstrate
 package features and flexibility.
 
 
 # Statement of need
 
-High-level programmatic specification of molecular simulation workflows are
-needed for two reasons: First: They provide the information necessary for a
-simulation study to be reproducible, and Second: They minimize the cognitive
-load of getting started with running experiments [?].
+High-level programmatic specifications of molecular simulation workflows are
+needed for two reasons. First, they provide the information necessary for a
+simulation study to be reproducible, and second, they minimize the cognitive
+load of getting started with running simulations.
 For a researcher new to molecular simulations, building the necessary set
 of computational tools needed to actually perform experiments simultaneously:
-(a) requires skills and knowledge different from those needed to do research,
+(a) requires skills and knowledge different from those needed to do research, and
 (b) involves repeating work that others have already done.
 
 This is a well recognized problem, and recent advances in well-documented
@@ -58,15 +58,15 @@ molecular simulation components easier than ever
 @Santana-Bonilla_2023, @polyply_2022, @biosimspace_2019].
 Individually, each of these tools lower the cognitive load of one aspect of an
 overall workflow such as representing molecules, building initial structures,
-parameterizing and applying a forcefield, to running simulations.
-However, the challenge of stitching the pieces together to create a complete
-workflow still contains several barriers.
+parameterizing and applying a forcefield, and running simulations.
+However, stitching these pieces together to create a complete workflow still
+poses challenges.
 
 The computational researcher who follows best practices for accurate,
 accessible and reproducible results may create a programmatic layer over these
 individual software packages (i.e. wrapper) that serves to consolidate and
 automate a complete workflow. However, these efforts often use a bespoke approach
-where the entire workflow design is tailored towards the specific question or
+where the entire workflow design is tailored toward the specific question or
 project. Design choices might include the materials studied, the model used
 (e.g. atomistic or coarse-grained), the source of the forcefield in the model, and
 the simulation protocols followed. As a result, this wrapper is likely unusable
@@ -81,7 +81,7 @@ simulating fusion welding of polymer interfaces
 [@aggarwal_molecular_2020, @bukowski_load-bearing_2021] and surface wetting
 [@fan_wetting_1995, bamane_wetting_2021].
 
-`flowerMD` is a python package that consolidates and automates
+`flowerMD` is a Python package that consolidates and automates
 end-to-end workflows for modeling such processes with a focus on organic molecules.
 Following the principals of Transparent, Reproducible, Usable by others, and Extensible (TRUE) [@TRUE_2020]
 software design, the modular design of `flowerMD` facilitates building and
@@ -89,33 +89,34 @@ running workflows for specific materials science research applications,
 while reducing the cognitive load and programming demands on the user's part.
 
 # Building Blocks
-`flowerMD` is extensible; flexible and modular base classes in form of building blocks lay the
-foundations for constructing segregated workflow recipes designed for specific applications.
-The recipes are agnostic to choices such as chemistry, model resolution
-(atomistic or coarse grained) or forcefields. This is accomplished by utilizing three base classes:
+`flowerMD` is extensible. Modular base classes serve as building blocks that lay the
+foundation for constructing segregated workflow recipes designed for specific applications.
+The resultant recipes are agnostic to choices such as chemistry, model resolution
+(e.g. atomistic vs. coarse grained) and forcefield selection.
+This is accomplished via three base classes:
 
-• `Molecule` class utilizes the mBuild [@mbuild_2016] and GMSO [@gmso] packages to initialize chemical
+• The `Molecule` class utilizes the mBuild [@mbuild_2016] and GMSO [@gmso] packages to initialize chemical
 structures from a variety of input formats. This class provides methods
-for building polymers and copolymer structures and supports straightforward
-coarse-graining process.
+for building polymers and copolymer structures, and supports a straightforward
+coarse-graining process by leveraging SMARTS matching.
 
-• `System` class serves as an intermediary between molecular initialization
+• The `System` class serves as an intermediary between molecular initialization
 and simulation setup. This class builds the initial configuration and
-generates the focefield that defines particle interactions.
+applies a chosen forcefield that defines particle interactions.
 
-• `Simulation` class adds a layer on top of the HOOMD-blue simulation object, which
-adds additional methods and features that simplifies the process of starting and
+• The `Simulation` class adds a layer on top of the HOOMD-blue simulation object, 
+adding additional methods and features to simplify the process of starting and
 resuming a HOOMD-blue simulation.
 
-Additionally, `flowerMD` offers a library pre-defined subclasses of the above base classes
-including common polymers, forcefields and bulk system initialization algorithms.
+Additionally, `flowerMD` offers a library pre-defined subclasses of these base classes
+including common polymers, forcefields, and bulk system initialization algorithms.
 
 # Recipes
 `flowerMD` offers the following two ready-to-go recipes to illustrate how the design creates
 potential for expanding the library of open-source and version-controlled workflows.
 
 • Welding: What does this recipe do. Simulation to create slabs, building up an
-interface from slabs, simulation to preform welding.
+interface from slabs, simulation to perform welding.
 • Tensile Testing
 ```python
 from flowermd.library import PolyEthylene, OPLS_AA, Tensile
@@ -165,6 +166,7 @@ and Python API documentation
 please visit the [documentation](https://flowermd.readthedocs.io/en/latest/).
 For examples of how to use `flowerMD`,
 please visit the [tutorials](https://github.com/cmelab/flowerMD/tree/main/tutorials)
+
 # Acknowledgements
 We acknowledge contributions from [ULI Advisory board, NASA, etc]
 
