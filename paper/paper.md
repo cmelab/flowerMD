@@ -104,7 +104,7 @@ coarse-graining process by leveraging SMARTS matching.
 and simulation setup. This class builds the initial configuration and
 applies a chosen forcefield that defines particle interactions.
 
-• The `Simulation` class adds a layer on top of the HOOMD-blue simulation object, 
+• The `Simulation` class adds a layer on top of the HOOMD-blue simulation object,
 adding additional methods and features to simplify the process of starting and
 resuming a HOOMD-blue simulation.
 
