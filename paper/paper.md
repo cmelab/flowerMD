@@ -54,8 +54,8 @@ of computational tools needed to actually perform experiments simultaneously:
 This is a well recognized problem, and recent advances in well-documented
 open-source tools have made the programmatic specification of
 molecular simulation components easier than ever
-[@hoomd_2019, @lammps_2022, @gromacs_2015, @mbuild_2016, @gmso,
-@Santana-Bonilla_2023, @polyply_2022, @biosimspace_2019].
+[@hoomd_2019; @lammps_2022; @gromacs_2015; @mbuild_2016; @gmso;
+@Santana-Bonilla_2023; @polyply_2022; @biosimspace_2019].
 Individually, each of these tools lower the cognitive load of one aspect of an
 overall workflow such as representing molecules, building initial structures,
 parameterizing and applying a forcefield, and running simulations.
@@ -78,8 +78,8 @@ building molecules and bulk structures to calculating physical properties of pol
 However, these tools may not be suitable for modeling complex experimental
 processes that extend beyond measuring material properties, such as
 simulating fusion welding of polymer interfaces
-[@aggarwal_molecular_2020, @bukowski_load-bearing_2021] and surface wetting
-[@fan_wetting_1995, bamane_wetting_2021].
+[@aggarwal_molecular_2020; @bukowski_load-bearing_2021] and surface wetting
+[@fan_wetting_1995; bamane_wetting_2021].
 
 `flowerMD` is a Python package that consolidates and automates
 end-to-end workflows for modeling such processes with a focus on organic molecules.
