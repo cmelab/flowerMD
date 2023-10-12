@@ -130,6 +130,10 @@ For examples of how to use `flowerMD`,
 please visit the [tutorials](https://github.com/cmelab/flowerMD/tree/main/tutorials)
 
 # Acknowledgements
-We acknowledge contributions from [ULI Advisory board, NASA, etc]
+This research was partially supported by the National Aeronautics and Space
+Administration (NASA) under the University Leadership Initiative program;
+grant number 80NSSC20M0165.
+This material is based upon work supported by the National Science Foundation
+under Grant Numbers: 1653954, 1835593, and 2118217.
 
 # References
