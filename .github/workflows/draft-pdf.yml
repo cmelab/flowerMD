@@ -8,7 +8,7 @@ on:
   pull_request:
     branches: [ joss ]
     paths:
-      - flowermd/**
+      - paper/**
       - .github/workflows/draft-pdf.yml
   # Allows workflow to be manually triggered
   workflow_dispatch:
