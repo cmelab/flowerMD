@@ -79,7 +79,7 @@ However, these tools may not be suitable for modeling complex experimental
 processes that extend beyond measuring material properties, such as
 simulating fusion welding of polymer interfaces
 [@aggarwal_molecular_2020; @bukowski_load-bearing_2021] and surface wetting
-[@fan_wetting_1995; bamane_wetting_2021].
+[@fan_wetting_1995; @bamane_wetting_2021].
 
 `flowerMD` is a Python package that consolidates and automates
 end-to-end workflows for modeling such processes with a focus on organic molecules.
