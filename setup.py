@@ -105,7 +105,7 @@ setup(
         "flowermd": [
             "modules/*",
             "library/**",
-            "assets/*",
+            "assets/**",
         ]
     },
     install_requires=REQUIRED,
