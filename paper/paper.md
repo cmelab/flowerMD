@@ -115,7 +115,7 @@ including common polymers, forcefields, and bulk system initialization algorithm
 `flowerMD` offers the following two ready-to-go recipes to illustrate how the design creates
 potential for expanding the library of open-source and version-controlled workflows. The example
 code included in this repository demonstrates how the modularity of `flowerMD` allows use and re-use of workflows, using
-pre-built "recipe steps" (subclasses) included in the repository: 
+pre-built "recipe steps" (subclasses) included in the repository:
 `flowerMD.modules.welding.SlabSimulation`, `flowerMD.modules.welding.Interface`, `flowerMD.modules.welding.WeldSimulation`,
 and `flowerMD.library.simulations.Tensile`.
 
