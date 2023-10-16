@@ -141,11 +141,11 @@ and submit pull requests to extend `flowerMD`'s utility.
 
 # Availability
 `flowerMD` is freely available under the GNU General Public License (version 3)
-on [github](https://github.com/cmelab/flowerMD). For installation instructions,
+on [GitHub](https://github.com/cmelab/flowerMD). For installation instructions,
 and Python API documentation
 please visit the [documentation](https://flowermd.readthedocs.io/en/latest/).
 For examples of how to use `flowerMD`,
-please visit the [tutorials](https://github.com/cmelab/flowerMD/tree/main/tutorials)
+please visit the [tutorials](https://github.com/cmelab/flowerMD/tree/main/tutorials).
 
 # Acknowledgements
 This research was partially supported by the National Aeronautics and Space
