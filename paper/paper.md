@@ -124,11 +124,15 @@ We can use these four blocks to build the following recipe:
 2. `Interface` joins two resultant slabs at an interface
 3. `WeldSimulation` simulates thermal welding at this interface, and
 4. `Tensile` simulates a tensile test of the resultant weld to create a stress/strain curve.
+   
 Note that each of these steps can be run independently, and each simulation
 type is agnostic to system and force field selection, enabling easy iteration with different
 materials, force fields, etc. without replicating the workflow code itself. One example might be
 that we could instead run `SlabSimulation` on two different bulk polymers, then reuse the rest of
 the recipe unchanged. We could also iterate over new weld temperatures pending results of `Tensile` runs, etc.
+
+This flexibility and ease of iteration is the core design principle of flowerMD, and enables
+both new and experienced researchers to more quickly begin the process of scientific inquiry via molecular dynamics.
 We hope this flexible and modular design will be a boon to many future molecular simulation researchers.
 
 # Availability
