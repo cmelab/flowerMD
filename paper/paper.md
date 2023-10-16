@@ -58,7 +58,7 @@ involves: (a) gaining new software development skills and knowledge, and
 
 Recent advances in open-source tools have made the programmatic specification of
 molecular simulation components easier than ever
-[@hoomd_2019; @lammps_2022; @eastman2017openmm; @Klein2016mBuild; @gmso; @parmed; 
+[@hoomd_2019; @lammps_2022; @eastman2017openmm; @Klein2016mBuild; @gmso; @parmed;
 @Santana-Bonilla_2023; @polyply_2022; @biosimspace_2019; @martin2018pyprism].
 Individually, each of these tools lower the cognitive load of one aspect of an
 overall workflow such as representing molecules, building initial structures,
