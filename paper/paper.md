@@ -153,5 +153,10 @@ Administration (NASA) under the University Leadership Initiative program;
 grant number 80NSSC20M0165.
 This material is based upon work supported by the National Science Foundation
 under Grant Numbers: 1653954, 1835593, and 2118217.
+No sponsor had any involvement in the development of `flowerMD`. 
+
+# Conflict of Interest Statement
+The authors declare the absence of any conflicts of interest: No author has any financial,  
+personal, professional, or other relationship that affect our objectivity toward this work.
 
 # References
