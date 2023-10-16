@@ -49,7 +49,7 @@ load of getting started with running simulations.
 For a researcher new to molecular simulations, building the necessary set
 of computational tools needed to actually perform experiments simultaneously:
 (a) requires skills and knowledge different from those needed to do research, and
-(b) involves repeating work that others have already done.
+(b) often involves repeating work that others have already done.
 
 This is a well recognized problem, and recent advances in well-documented
 open-source tools have made the programmatic specification of
