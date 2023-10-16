@@ -116,24 +116,21 @@ Additionally, `flowerMD` offers a library pre-defined subclasses of these base c
 including common polymers, forcefields, and bulk system initialization algorithms.
 
 # Recipes
-`flowerMD` offers the following two ready-to-go recipes to illustrate how the design creates
-potential for expanding the library of open-source and version-controlled workflows. The example code included in this repository demonstrates how the modularity of `flowerMD`
-allows use and re-use of workflows, using pre-built "recipe steps" (subclasses) included in
-the repository:
-`flowerMD.modules.welding.SlabSimulation`, `flowerMD.modules.welding.Interface`, `flowerMD.modules.welding.WeldSimulation`,
+The modular design of `flowerMD` creates potential for expanding a library of open-source and version-controlled workflows. To illustrate this, `flowerMD` offers the built-in polymer welding recipe using the following subclasses:`flowerMD.modules.welding.SlabSimulation`, `flowerMD.modules.welding.Interface`, `flowerMD.modules.welding.WeldSimulation`,
 and `flowerMD.library.simulations.Tensile`.
 
-We can use these four blocks to build the following recipe:
-1. `SlabSimulation` creates two "slabs" of e.g. polyethylene
-2. `Interface` joins two resultant slabs at an interface
-3. `WeldSimulation` simulates thermal welding at this interface, and
+Combined, these four subclasses create the polymer welding recipe:
+
+1. `SlabSimulation` creates one "slab" with two flat surfaces of e.g. polyethylene.
+2. `Interface` duplicates the resultant slab and creates an "interface" system.
+3. `WeldSimulation` simulates thermal welding at this interface.
 4. `Tensile` simulates a tensile test of the resultant weld to create a stress/strain curve.
 
-Note that each of these steps can be run independently, and each simulation
-type is agnostic to system and force field selection, enabling easy iteration with different
-materials, force fields, etc. without replicating the workflow code itself. One example might be that we could instead run `SlabSimulation` on two different bulk polymers, then reuse the rest of the recipe unchanged. We could also iterate over new weld temperatures pending results of `Tensile` runs, etc.
+Note that each of these steps can be run independently. For example, from the output of a single slab simulation, we could iterate over several weld temperatures where each one is followed by a series of tensile runs with different strain rates. 
+Additionally, each step of the recipe is agnostic to system and forcefield selection, enabling easy iteration with different
+materials, forcefields, etc. without replicating the workflow code itself.
 
-This flexibility and ease of iteration is the core design principle of flowerMD, and enables
+This flexibility and ease of iteration is the core design principle of `flowerMD`, and enables
 both new and experienced researchers to more quickly begin the process of scientific inquiry
 via molecular dynamics simulations.
 We encourage molecular simulation practitioners of all levels of expertise to file issues
