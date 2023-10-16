@@ -44,23 +44,27 @@ package features and flexibility.
 
 High-level programmatic specifications of molecular simulation workflows are
 needed for two reasons. First, they provide the information necessary for a
-simulation study to be reproducible, and second, they minimize the cognitive
-load of getting started with running simulations.
-For a researcher new to molecular simulations, building the necessary set
-of computational tools needed to actually perform experiments simultaneously:
-(a) requires skills and knowledge different from those needed to do research, and
-(b) often involves repeating work that others have already done.
+simulation study to be reproduced, and second, they help lower the cognitive
+load associated with learning and performing simulations in general.
+Reproducible simulations benefit the research community by enabling studies
+to be validated and extended. 
+Lowering the cognitive load of performing molecular simulations helps
+computational researchers of all levels of expertise reason about the logic
+of a simulation study. This is particularly important for researchers new to 
+the discipline becuase developing the tools needed to perform experiments often 
+involves: (a) gaining new software development skills and knowledge, and
+(b) repeating work that others have already performed. 
 
-This is a well recognized problem, and recent advances in well-documented
-open-source tools have made the programmatic specification of
+
+Recent advances in open-source tools have made the programmatic specification of
 molecular simulation components easier than ever
 [@hoomd_2019; @lammps_2022; @gromacs_2015; @mbuild_2016; @gmso;
 @Santana-Bonilla_2023; @polyply_2022; @biosimspace_2019].
 Individually, each of these tools lower the cognitive load of one aspect of an
 overall workflow such as representing molecules, building initial structures,
 parameterizing and applying a forcefield, and running simulations.
-However, stitching these pieces together to create a complete workflow still
-poses challenges.
+However, stitching these pieces together to create a complete workflow presents 
+a need that we address in the present work.
 
 The computational researcher who follows best practices for accurate,
 accessible and reproducible results may create a programmatic layer over these
@@ -73,32 +77,31 @@ the simulation protocols followed. As a result, this wrapper is likely unusable
 for the next project where one of the aforementioned choices changes, and the
 process of designing a workflow must begin again from scratch.
 
-Software packages such as Radonpy [@radonpy_2022] exist that provide an automated workflow for
-building molecules and bulk structures to calculating physical properties of polymers.
-However, these tools may not be suitable for modeling complex experimental
-processes that extend beyond measuring material properties, such as
+Software packages such as Radonpy [@radonpy_2022] exist that provide an automated 
+workflow for building molecules and bulk structures to calculating physical 
+properties of polymers. However, these tools may not be suitable for modeling complex
+experimental processes that extend beyond measuring material properties, such as
 simulating fusion welding of polymer interfaces
 [@aggarwal_molecular_2020; @bukowski_load-bearing_2021] and surface wetting
 [@fan_wetting_1995; @bamane_wetting_2021].
 
 `flowerMD` is a Python package that consolidates and automates
-end-to-end workflows for modeling such processes with a focus on organic molecules.
-Following the principals of Transparent, Reproducible, Usable by others, and Extensible (TRUE) [@TRUE_2020]
-software design, the modular design of `flowerMD` facilitates building and
-running workflows for specific materials science research applications,
-while reducing the cognitive load and programming demands on the user's part.
+end-to-end workflows for modeling such engineering processes with a focus on organic 
+molecules. Following the principals of Transparent, Reproducible, Usable by others, 
+and Extensible (TRUE) [@TRUE_2020] software design, the modular design of `flowerMD` 
+facilitates building and running workflows for specific materials science research 
+applications, while reducing the cognitive load and programming demands on the user's part.
 
 # Building Blocks
 `flowerMD` is extensible. Modular base classes serve as building blocks that lay the
-foundation for constructing segregated workflow recipes designed for specific applications.
+foundation for constructing workflow recipes designed for specific applications.
 The resultant recipes are agnostic to choices such as chemistry, model resolution
 (e.g. atomistic vs. coarse grained) and forcefield selection.
 This is accomplished via three base classes:
 
-• The `Molecule` class utilizes the mBuild [@mbuild_2016] and GMSO [@gmso] packages to initialize chemical
-structures from a variety of input formats. This class provides methods
-for building polymers and copolymer structures, and supports a straightforward
-coarse-graining process by leveraging SMARTS matching.
+• The `Molecule` class utilizes the mBuild [@mbuild_2016] and GMSO [@gmso] packages to initialize chemical structures from a variety of common input formats. This class provides 
+methods for building polymers and copolymer structures, and supports coarse-graining 
+processes by leveraging SMARTS matching.
 
 • The `System` class serves as an intermediary between molecular initialization
 and simulation setup. This class builds the initial configuration and
@@ -113,9 +116,9 @@ including common polymers, forcefields, and bulk system initialization algorithm
 
 # Recipes
 `flowerMD` offers the following two ready-to-go recipes to illustrate how the design creates
-potential for expanding the library of open-source and version-controlled workflows. The example
-code included in this repository demonstrates how the modularity of `flowerMD` allows use and re-use of workflows, using
-pre-built "recipe steps" (subclasses) included in the repository:
+potential for expanding the library of open-source and version-controlled workflows. The example code included in this repository demonstrates how the modularity of `flowerMD` 
+allows use and re-use of workflows, using pre-built "recipe steps" (subclasses) included in 
+the repository:
 `flowerMD.modules.welding.SlabSimulation`, `flowerMD.modules.welding.Interface`, `flowerMD.modules.welding.WeldSimulation`,
 and `flowerMD.library.simulations.Tensile`.
 
@@ -127,13 +130,13 @@ We can use these four blocks to build the following recipe:
 
 Note that each of these steps can be run independently, and each simulation
 type is agnostic to system and force field selection, enabling easy iteration with different
-materials, force fields, etc. without replicating the workflow code itself. One example might be
-that we could instead run `SlabSimulation` on two different bulk polymers, then reuse the rest of
-the recipe unchanged. We could also iterate over new weld temperatures pending results of `Tensile` runs, etc.
+materials, force fields, etc. without replicating the workflow code itself. One example might be that we could instead run `SlabSimulation` on two different bulk polymers, then reuse the rest of the recipe unchanged. We could also iterate over new weld temperatures pending results of `Tensile` runs, etc.
 
 This flexibility and ease of iteration is the core design principle of flowerMD, and enables
-both new and experienced researchers to more quickly begin the process of scientific inquiry via molecular dynamics.
-We hope this flexible and modular design will be a boon to many future molecular simulation researchers.
+both new and experienced researchers to more quickly begin the process of scientific inquiry 
+via molecular dynamics simulations.
+We encourage molecular simulation practitioners of all levels of expertise to file issues 
+and submit pull requests to extend `flowerMD`'s utility.
 
 # Availability
 `flowerMD` is freely available under the GNU General Public License (version 3)
