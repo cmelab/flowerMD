@@ -3,7 +3,7 @@ on:
     # Action will run when any changes to these paths are pushed or pr'ed to master
     branches: [ joss ]
     paths:
-      - flowermd/**
+      - paper/**
       - .github/workflows/draft-pdf.yml
   pull_request:
     branches: [ joss ]
