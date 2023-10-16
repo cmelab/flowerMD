@@ -54,8 +54,8 @@ of computational tools needed to actually perform experiments simultaneously:
 This is a well recognized problem, and recent advances in well-documented
 open-source tools have made the programmatic specification of
 molecular simulation components easier than ever
-[@hoomd_2019; @lammps_2022; @gromacs_2015; @mbuild_2016; @gmso;
-@Santana-Bonilla_2023; @polyply_2022; @biosimspace_2019].
+[@hoomd_2019; @lammps_2022; @eastman2017openmm; @Klein2016mBuild; @gmso; @parmed; 
+@Santana-Bonilla_2023; @polyply_2022; @biosimspace_2019; @martin2018pyprism].
 Individually, each of these tools lower the cognitive load of one aspect of an
 overall workflow such as representing molecules, building initial structures,
 parameterizing and applying a forcefield, and running simulations.
@@ -95,7 +95,7 @@ The resultant recipes are agnostic to choices such as chemistry, model resolutio
 (e.g. atomistic vs. coarse grained) and forcefield selection.
 This is accomplished via three base classes:
 
-• The `Molecule` class utilizes the mBuild [@mbuild_2016] and GMSO [@gmso] packages to initialize chemical
+• The `Molecule` class utilizes the mBuild [@Klein2016mBuild] and GMSO [@gmso] packages to initialize chemical
 structures from a variety of input formats. This class provides methods
 for building polymers and copolymer structures, and supports a straightforward
 coarse-graining process by leveraging SMARTS matching.
