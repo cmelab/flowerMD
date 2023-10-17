@@ -105,7 +105,8 @@ setup(
         "flowermd": [
             "modules/*",
             "library/**",
-            "assets/**",
+            "assets/forcefields/*",
+            "assets/molecule_files/*",
         ]
     },
     install_requires=REQUIRED,
