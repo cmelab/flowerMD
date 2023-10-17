@@ -126,7 +126,7 @@ Applying these routines in sequence defines a polymer welding recipe:
 3. `WeldSimulation` simulates thermal welding at this interface.
 4. `Tensile` simulates a tensile test of the resultant weld to create a stress/strain curve.
 
-In this example, four different kinds of molecular dynamics simulations are combined in sequence to enable the mechanical properties of a welded joint to be computed. By combining independent simulation steps and enabling any of them to be iterated over, a user can build more complex workflows. For example, we could specify a screening study by iterating over several weld temperatures, following each weld simulation with a sequence of tensile simulations to investigate how temperature and strain rate influence the debonding pressure of a polymer weld. 
+In this example, four different kinds of molecular dynamics simulations are combined in sequence to enable the mechanical properties of a welded joint to be computed. By combining independent simulation steps and enabling any of them to be iterated over, a user can build more complex workflows. For example, we could specify a screening study by iterating over several weld temperatures, following each weld simulation with a sequence of tensile simulations to investigate how temperature and strain rate influence the debonding pressure of a polymer weld.
 
 Each of the steps in a recipe takes the molecular system and forcefield as arguments, enabling recipes that iterate over these concepts as well. For example, a user can create a recipe that generates welds of a set of polymer chemistries. Or, a user can create a recipe that measures the agreements in structural predictions for a set of forcefields.
 
