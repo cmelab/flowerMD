@@ -7,12 +7,12 @@ tags:
   - polymers
   - HOOMD-blue
 authors:
-  - name: Chris Jones
-    orcid: 0000-0002-6196-5274
-    equal-contrib: true
-    affiliation: 1
   - name: Marjan Albooyeh
     orcid: 0009-0001-9565-3076
+    equal-contrib: true
+    affiliation: 1
+  - name: Chris Jones
+    orcid: 0000-0002-6196-5274
     equal-contrib: true
     affiliation: 1
   - name: Rainier Barrett
