@@ -39,6 +39,12 @@ how to use flowerMD and what functionalities it provides.
 ## Documentation
 Documentation is available at [https://flowermd.readthedocs.io](https://flowermd.readthedocs.io)
 
+## Contributing
+We welcome all contributions to flowerMD. Please see
+[contributing guidelines](CONTRIBUTING.md) for more information.
+
+
+
 [//]: # (#### Using the built in molecules, systems and forcefields:)
 
 [//]: # (README, documentation and tutorials are a work in progress.)

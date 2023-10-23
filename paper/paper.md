@@ -24,7 +24,7 @@ authors:
     corresponding: true
     affiliation: 1
 affiliations:
- - name: Boise State University, Boise, ID, USA
+ - name: Boise State University, Boise, ID, United States of America
    index: 1
 date: 16 October 2023
 bibliography: paper.bib
