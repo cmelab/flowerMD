@@ -398,9 +398,9 @@ class System(ABC):
         abs_charge = sum(abs(charges))
         if abs_charge != 0:
             for site in self.gmso_system.sites:
-                site.charge -= abs(site.charge if site.charge else 0) * (
-                    net_charge / abs_charge
-                )
+                site.charge -= abs(
+                    site.charge if site.charge else 0 * u.Unit("C")
+                ) * (net_charge / abs_charge)
 
     def to_gsd(self, file_name):
         """Write the system's `hoomd_snapshot` to a GSD file."""
