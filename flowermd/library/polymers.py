@@ -97,8 +97,8 @@ class PEEK(Polymer):
 class PEKK(CoPolymer):
     """Create a Poly(ether-ketone-ketone) (PEKK) chain.
 
-    The CoPolymer class is used to create a polymer chain with two different
-    monomer types, represented by the para and meta isomeric forms of PEKK.
+    Creates a polymer chain with two different monomer types,
+    represented by the para (T) and meta (I) isomeric forms of PEKK.
 
     Parameters
     ----------
@@ -106,8 +106,10 @@ class PEKK(CoPolymer):
         The number of monomer repeat units in the chain.
     num_mols : int, required
         The number of chains to create.
-    random_sequence : bool, default False
-        Creates a random 'A' 'B' sequence as a function of the AB_ratio.
+    sequence : str, default None
+        Manually define the sequence of para (T) and meta (I) monomers.
+        Leave as None if generating random sequences.
+        Example: sequence = "TTITTITTI"
     TI_ratio : float, required
         The ratio of meta to para isomers in the chain.
 
@@ -119,7 +121,6 @@ class PEKK(CoPolymer):
         num_mols,
         force_field=None,
         sequence=None,
-        random_sequence=False,
         TI_ratio=0.50,
         seed=24,
     ):
@@ -130,7 +131,6 @@ class PEKK(CoPolymer):
             num_mols=num_mols,
             force_field=force_field,
             sequence=sequence,
-            random_sequence=random_sequence,
             AB_ratio=TI_ratio,
             seed=seed,
         )

@@ -506,8 +506,6 @@ class CoPolymer(Molecule):
         Manually define the sequence of 'A' and 'B' monomers.
         Leave as None if generating random sequences.
         Example: sequence = "AABAABAAB"
-    random_sequence : bool, default False
-        Creates a random 'A' 'B' sequence as a function of the AB_ratio.
     AB_ratio : float, default 0.50
         The relative weight of A to B monomer types.
         Used when generating random sequences.
@@ -524,7 +522,6 @@ class CoPolymer(Molecule):
         num_mols,
         force_field=None,
         sequence=None,
-        random_sequence=False,
         AB_ratio=0.50,
         seed=24,
     ):
@@ -535,7 +532,10 @@ class CoPolymer(Molecule):
         if len(num_mols) != len(self.lengths):
             raise ValueError("Number of molecules and lengths must be equal.")
         self.sequence = sequence
-        self.random_sequence = random_sequence
+        if not self.sequence:
+            self.random_sequence = True
+        else:
+            self.random_sequence = False
         self.AB_ratio = AB_ratio
         self.seed = seed
         self._A_count = 0
