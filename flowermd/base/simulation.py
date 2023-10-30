@@ -1051,7 +1051,7 @@ class Simulation(hoomd.simulation.Simulation):
     def flush_writers(self):
         """Flush all write buffers to file"""
         for writer in self.operations.writers:
-            if hasattr(writer, 'flush'):
+            if hasattr(writer, "flush"):
                 writer.flush()
 
     def _thermalize_system(self, kT):
