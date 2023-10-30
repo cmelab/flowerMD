@@ -404,7 +404,7 @@ class System(ABC):
 
     def to_gsd(self, file_name):
         """Write the system's `hoomd_snapshot` to a GSD file."""
-        with gsd.hoomd.open(file_name, "wb") as traj:
+        with gsd.hoomd.open(file_name, "w") as traj:
             traj.append(self.hoomd_snapshot)
 
     def _convert_to_gmso(self):

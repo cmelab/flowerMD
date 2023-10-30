@@ -1,3 +1,5 @@
+import os
+
 import gmso
 import hoomd
 import numpy as np
@@ -850,3 +852,16 @@ class TestSystem(BaseTest):
         )
         assert abs(no_scale.net_charge.value) > abs(with_scale.net_charge.value)
         assert np.allclose(0, with_scale.net_charge.value, atol=1e-30)
+
+    def test_to_gsd(self, polyethylene):
+        polyethylene = polyethylene(lengths=5, num_mols=1)
+        system = Pack(
+            molecules=[polyethylene],
+            density=1.0,
+        )
+        system.apply_forcefield(
+            r_cut=2.5, force_field=[OPLS_AA()], auto_scale=False
+        )
+        system.to_gsd("test.gsd")
+        assert os.path.isfile(os.path.join(os.getcwd(), "test.gsd")) 
+        os.remove(os.path.join(os.getcwd(), "test.gsd")) 
