@@ -1,6 +1,7 @@
 """System class for arranging Molecules into a box."""
 import warnings
 from abc import ABC, abstractmethod
+import pickle
 from typing import List
 
 import gsd
@@ -401,6 +402,27 @@ class System(ABC):
                 site.charge -= abs(
                     site.charge if site.charge else 0 * u.Unit("C")
                 ) * (net_charge / abs_charge)
+
+    def pickle_forcefield(self, file_path="forcefield.pickle"):
+        """Pickle the list of HOOMD forces.
+
+        This method useful for saving the forcefield of a simulation to a file
+        and reusing it for restarting a simulation or running a different
+        simulation.
+
+        Parameters
+        ----------
+        file_path : str, default "forcefield.pickle"
+            The path to save the pickle file to.
+
+        """
+        if not self.hoomd_forcefield:
+            raise ValueError(
+                    "A forcefield has not yet been applied. "
+                    "See System.apply_forcefield()"
+            )
+        f = open(file_path, "wb")
+        pickle.dump(self.hoomd_forcefield, f)
 
     def to_gsd(self, file_name):
         """Write the system's `hoomd_snapshot` to a GSD file."""
