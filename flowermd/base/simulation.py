@@ -1049,7 +1049,7 @@ class Simulation(hoomd.simulation.Simulation):
         hoomd.write.GSD.write(self.state, filename=file_path)
 
     def flush_writers(self):
-        """Flush all write buffers to file"""
+        """Flush all write buffers to file."""
         for writer in self.operations.writers:
             if hasattr(writer, 'flush'):
                 writer.flush()
