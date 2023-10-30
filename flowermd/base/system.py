@@ -1,7 +1,7 @@
 """System class for arranging Molecules into a box."""
+import pickle
 import warnings
 from abc import ABC, abstractmethod
-import pickle
 from typing import List
 
 import gsd
@@ -418,8 +418,8 @@ class System(ABC):
         """
         if not self.hoomd_forcefield:
             raise ValueError(
-                    "A forcefield has not yet been applied. "
-                    "See System.apply_forcefield()"
+                "A forcefield has not yet been applied. "
+                "See System.apply_forcefield()"
             )
         f = open(file_path, "wb")
         pickle.dump(self.hoomd_forcefield, f)

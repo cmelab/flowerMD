@@ -863,8 +863,8 @@ class TestSystem(BaseTest):
             r_cut=2.5, force_field=[OPLS_AA()], auto_scale=False
         )
         system.to_gsd("test.gsd")
-        assert os.path.isfile(os.path.join(os.getcwd(), "test.gsd")) 
-        os.remove(os.path.join(os.getcwd(), "test.gsd")) 
+        assert os.path.isfile(os.path.join(os.getcwd(), "test.gsd"))
+        os.remove(os.path.join(os.getcwd(), "test.gsd"))
 
     def test_to_gsd_no_ff(self, polyethylene):
         polyethylene = polyethylene(lengths=5, num_mols=1)
@@ -873,8 +873,8 @@ class TestSystem(BaseTest):
             density=1.0,
         )
         system.to_gsd("test.gsd")
-        assert os.path.isfile(os.path.join(os.getcwd(), "test.gsd")) 
-        os.remove(os.path.join(os.getcwd(), "test.gsd")) 
+        assert os.path.isfile(os.path.join(os.getcwd(), "test.gsd"))
+        os.remove(os.path.join(os.getcwd(), "test.gsd"))
 
     def test_pickle_ff(self, polyethylene):
         polyethylene = polyethylene(lengths=5, num_mols=1)
@@ -886,8 +886,8 @@ class TestSystem(BaseTest):
             r_cut=2.5, force_field=[OPLS_AA()], auto_scale=False
         )
         system.pickle_forcefield("forcefield.pickle")
-        assert os.path.isfile(os.path.join(os.getcwd(), "forcefield.pickle")) 
-        os.remove(os.path.join(os.getcwd(), "forcefield.pickle")) 
+        assert os.path.isfile(os.path.join(os.getcwd(), "forcefield.pickle"))
+        os.remove(os.path.join(os.getcwd(), "forcefield.pickle"))
 
     def test_pickle_ff_not_ff(self, polyethylene):
         polyethylene = polyethylene(lengths=5, num_mols=1)
