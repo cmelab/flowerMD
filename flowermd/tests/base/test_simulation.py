@@ -357,3 +357,11 @@ class TestSimulate(BaseTest):
 
         os.remove("trajectory.gsd")
         os.remove("sim_data.txt")
+
+    def test_flush(self, benzene_system):
+        sim = Simulation.from_system(benzene_system, gsd_write_freq=100)
+        sim.run_NVT(kT=1.0, tau_kt=0.01, n_steps=500, write_at_start=False)
+        sim.flush_writers()
+        with gsd.hoomd.open("trajectory.gsd") as traj:
+            assert len(traj) > 0
+        os.remove("trajectory.gsd")
