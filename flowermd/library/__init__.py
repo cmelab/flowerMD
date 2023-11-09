@@ -16,6 +16,7 @@ from .polymers import (
     PEKK,
     PPS,
     LJChain,
+    EllipsoidChain,
     PEKK_meta,
     PEKK_para,
     PolyEthylene,

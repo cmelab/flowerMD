@@ -3,6 +3,7 @@ import os
 
 import mbuild as mb
 from mbuild.coordinate_transform import z_axis_transform
+from mbuild.lib.recipes import Polymer as mbPolymer
 
 from flowermd import CoPolymer, Polymer
 from flowermd.assets import MON_DIR
@@ -261,3 +262,59 @@ class LJChain(Polymer):
                     chain.add_bond([next_bead, last_bead])
                 last_bead = next_bead
         return chain
+
+
+class EllipsoidChain(Polymer):
+    def __init__(
+            self,
+            lengths,
+            num_mols,
+            bead_length,
+            bead_name,
+            bead_mass,
+            bond_length
+    ):
+        self.bead_name = bead_name
+        self.bead_mass = bead_mass
+        self.bead_bond_length = bond_length
+        self.bead_length = bead_length
+        super(EllipsoidChain, self).__init__(lengths=lengths, num_mols=num_mols)
+
+    def _build(self, length):
+        # Build up ellipsoid bead
+        bead = mb.Compound(name="ellipsoid")
+        head = mb.Compound(
+                pos=(self.bead_length/2, 0, 0),
+                name="A",
+                mass=self.bead_mass/2
+        )
+        tail = mb.Compound(
+                pos=(-self.bead_length/2, 0, 0),
+                name="A",
+                mass=self.bead_mass/2
+        )
+        head_mid = mb.Compound(
+                pos=(self.bead_length/4, 0, 0),
+                name="B",
+                mass=0
+        )
+        tail_mid = mb.Compound(
+                pos=(-self.bead_length/4, 0, 0),
+                name="B",
+                mass=0
+        )
+        bead.add([head, tail, head_mid, tail_mid])
+        # Build the chain
+        chain = mbPolymer()
+        chain.add_monomer(
+                bead,
+                indices=[0, 1],
+                orientation=[[1,0,0], [-1,0,0]],
+                replace=False,
+                separation=self.bead_bond_length
+        )
+        chain.build(n=length, add_hydrogens=False)
+        return chain
+
+
+
