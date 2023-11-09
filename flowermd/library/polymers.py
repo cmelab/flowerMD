@@ -304,7 +304,7 @@ class EllipsoidChain(Polymer):
                 mass=0
         )
         bead.add([head, tail, head_mid, tail_mid])
-        # Build the chain
+
         chain = mbPolymer()
         chain.add_monomer(
                 bead,
@@ -315,6 +315,3 @@ class EllipsoidChain(Polymer):
         )
         chain.build(n=length, add_hydrogens=False)
         return chain
-
-
-
