@@ -30,13 +30,13 @@ date: 16 October 2023
 bibliography: paper.bib
 ---
 # Summary
-`flowerMD` is a package for reproducibly performing multi-stage HOOMD-blue [@hoomd_2019]
+`flowerMD` is a package for reproducibly performing multi-stage HOOMD-blue [@anderson2020hoomd]
 simulation workflows. It enables the programmatic specification of tasks including
 definition of molecular structures, forcefield definition and application and chaining
 together simulation stages (e.g., shrinking, equilibration, simulating a sequence
 of ensembles, tensile testing, etc.) through an extensible set of Python classes.
 The modular design supports a library of workflows for organic
-macrmolecular and polymer simulations. Tutorials are provided to demonstrate
+macromolecular and polymer simulations. Tutorials are provided to demonstrate
 package features and flexibility.
 
 
@@ -51,14 +51,14 @@ to be validated and extended.
 Lowering the cognitive load of performing molecular simulations helps
 computational researchers of all levels of expertise reason about the logic
 of a simulation study. This is particularly important for researchers new to
-the discipline becuase developing the tools needed to perform experiments often
+the discipline because developing the tools needed to perform experiments often
 involves: (a) gaining new software development skills and knowledge, and
 (b) repeating work that others have already performed.
 
 
 Recent advances in open-source tools have made the programmatic specification of
 molecular simulation components easier than ever
-[@hoomd_2019; @lammps_2022; @eastman2017openmm; @Klein2016mBuild; @gmso; @parmed;
+[@anderson2020hoomd; @lammps_2022; @eastman2017openmm; @Klein2016mBuild; @gmso; @parmed;
 @Santana-Bonilla_2023; @polyply_2022; @biosimspace_2019; @martin2018pyprism].
 Individually, each of these tools lower the cognitive load of one aspect of an
 overall workflow such as representing molecules, building initial structures,
