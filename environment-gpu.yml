@@ -15,7 +15,7 @@ dependencies:
   - py3Dmol
   - pytest
   - pytest-cov
-  - python=3.9
+  - python >=3.10
   - fresnel >=0.13.5
-  - cmeutils >=0.0.3
+  - cmeutils >=1.0
   - grits >=0.3.0
