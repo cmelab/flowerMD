@@ -1,12 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
-# Example copied with love from:
-# https://github.com/kennethreitz/setup.py/blob/master/setup.py
-
-# Note: To use the 'upload' functionality of this file, you must:
-#   $ pip install twine
-
 import os
 import sys
 from shutil import rmtree
@@ -16,7 +7,7 @@ from setuptools import Command, find_packages, setup
 # Package meta-data.
 NAME = "flowermd"
 DESCRIPTION = (
-    "Package making it easier to build and simulate polymers in Hoomd-Blue"
+    "Package making it easier to build and simulate polymers in Hoomd-Blue."
 )
 URL = "https://github.com/cmelab/flowerMD"
 EMAIL = "chrisjones4@u.boisestate.edu"
@@ -81,7 +72,6 @@ class UploadCommand(Command):
         sys.exit()
 
 
-# Where the magic happens:
 setup(
     name=NAME,
     version=about["__version__"],
@@ -96,11 +86,6 @@ setup(
             "docs",
         )
     ),
-    # If your package is a single module, use this instead of 'packages':
-    # py_modules=['mypackage'],
-    # entry_points={
-    #     'console_scripts': ['mycli=mymodule:cli'],
-    # },
     package_data={
         "flowermd": [
             "modules/*",
@@ -111,10 +96,8 @@ setup(
     },
     install_requires=REQUIRED,
     include_package_data=True,
-    license="MIT",
+    license="GPLv3",
     classifiers=[
-        # Trove classifiers
-        # Full list: https://pypi.python.org/pypi?%3Aaction=list_classifiers
         "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
