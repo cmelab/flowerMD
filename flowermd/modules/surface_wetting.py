@@ -1,7 +1,6 @@
 """Module for simulating surface wetting."""
 import hoomd
 import unyt as u
-
 from jankflow.base.simulation import Simulation
 from jankflow.utils import HOOMDThermostats
 
@@ -94,7 +93,7 @@ class DropletSimulation(Simulation):
             kT=kT,
             tau_kt=tau_kt,
             final_density=final_density * (u.g / (u.cm**3)),
-            resize_filter=hoomd.filter.Null()
+            resize_filter=hoomd.filter.Null(),
         )
         # Run at low density
         self.run_NVT(n_steps=hold_steps, kT=kT, tau_kt=tau_kt)
