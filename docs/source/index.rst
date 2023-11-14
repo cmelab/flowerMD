@@ -21,7 +21,7 @@ workflows for specific materials science research applications, while reducing t
 cognitive load and programming demands on the user's part. flowerMD addresses a
 longstanding need in moelcular dynamics simulation workflow building: reproducible and
 low-complexity recipes for specifying research workflows, agnostic to specific system
-identity. 
+identity.
 
 In particular, flowerMD bridges the gaps between the steps of specifying molecules,
 parametrizing and applying force fields, and launching simulations into one seamless
