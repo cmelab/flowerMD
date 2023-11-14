@@ -15,7 +15,7 @@ Why flowerMD?
 flowerMD consolidates and automates end-to-end workflows for modeling complex engineering
 processes, with a focus on emulating physical experiments on organic materials.
 Following the principals of Transparent, Reproducible, Usable by others, and Extensible
-(TRUE)[https://doi.org/10.1016/j.commatsci.2019.109129] software design,
+[TRUE](https://doi.org/10.1016/j.commatsci.2019.109129) software design,
 the modular design of flowerMD facilitates building and running
 workflows for specific materials science research applications, while reducing the
 cognitive load and programming demands on the user's part. flowerMD addresses a
