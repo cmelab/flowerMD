@@ -19,9 +19,11 @@ class StdOutLogger(hoomd.custom.Action):
                     f"{eta} minutes"
                 )
             else:
+                eta_hour = eta // 60
+                eta_min = np.round(eta % 60, 0)
                 print(
                     f"Step {current_step} of {self.n_steps}; TPS: {tps}; ETA: "
-                    f"{eta // 60} hours, {eta % 60} minutes"
+                    f"{eta_hour} hours, {eta_min} minutes"
                 )
 
 

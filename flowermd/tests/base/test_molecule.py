@@ -244,6 +244,7 @@ class TestCopolymer(BaseTest):
             sequence="ABA",
         )
         assert copolymer.n_particles == 22
+        assert copolymer.random_sequence is False
         assert ("C", "C", "C", "C") in copolymer.topology_information[
             "dihedral_types"
         ]
@@ -283,7 +284,6 @@ class TestCopolymer(BaseTest):
             monomer_B=polyethylene,
             lengths=[3],
             num_mols=[1],
-            random_sequence=True,
             seed=42,
         )
         # sequence is BAA

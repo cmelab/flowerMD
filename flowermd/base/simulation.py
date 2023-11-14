@@ -46,6 +46,8 @@ class Simulation(hoomd.simulation.Simulation):
         Period to write simulation snapshots to gsd file.
     gsd_file_name : str, default "trajectory.gsd"
         The file name to use for the GSD file
+    gsd_max_buffer_size : int, default 64 * 1024 * 1024
+        Size (in bytes) to buffer in memory before writing GSD to file.
     log_write : int, default 1e3
         Period to write simulation data to the log file.
     log_file_name : str, default "sim_data.txt"
@@ -67,6 +69,7 @@ class Simulation(hoomd.simulation.Simulation):
         seed=42,
         gsd_write_freq=1e4,
         gsd_file_name="trajectory.gsd",
+        gsd_max_buffer_size=64 * 1024 * 1024,
         log_write_freq=1e3,
         log_file_name="sim_data.txt",
         thermostat=HOOMDThermostats.MTTK,
@@ -76,6 +79,7 @@ class Simulation(hoomd.simulation.Simulation):
         self._forcefield = forcefield
         self.r_cut = r_cut
         self.gsd_write_freq = int(gsd_write_freq)
+        self.maximum_write_buffer_size = gsd_max_buffer_size
         self.log_write_freq = int(log_write_freq)
         self._std_out_freq = int(
             (self.gsd_write_freq + self.log_write_freq) / 2
@@ -1044,6 +1048,12 @@ class Simulation(hoomd.simulation.Simulation):
         """
         hoomd.write.GSD.write(self.state, filename=file_path)
 
+    def flush_writers(self):
+        """Flush all write buffers to file."""
+        for writer in self.operations.writers:
+            if hasattr(writer, "flush"):
+                writer.flush()
+
     def _thermalize_system(self, kT):
         """Assign random velocities to all particles.
 
@@ -1124,6 +1134,7 @@ class Simulation(hoomd.simulation.Simulation):
             filter=hoomd.filter.All(),
             logger=gsd_logger,
         )
+        gsd_writer.maximum_write_buffer_size = self.maximum_write_buffer_size
 
         table_file = hoomd.write.Table(
             output=open(self.log_file_name, mode="w", newline="\n"),

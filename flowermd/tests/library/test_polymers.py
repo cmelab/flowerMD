@@ -3,6 +3,7 @@ import pytest
 
 from flowermd.library import (
     PEEK,
+    PEKK,
     PPS,
     LJChain,
     PEKK_meta,
@@ -26,6 +27,11 @@ class TestPolymers:
         chain = PEKK_meta(lengths=5, num_mols=1)
         monomer = mb.load(chain.smiles, smiles=True)
         assert chain.n_particles == (monomer.n_particles * 5) - 8
+
+    def test_pekk(self):
+        chain = PEKK(lengths=5, num_mols=1, TI_ratio=0.50)
+        assert chain.random_sequence is True
+        assert chain.AB_ratio == 0.50
 
     def test_pekk_para(self):
         chain = PEKK_para(lengths=5, num_mols=1)
