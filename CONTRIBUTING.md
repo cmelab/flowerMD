@@ -34,3 +34,8 @@ interested in contributing code, please follow the steps below:
 
 New functionalities should be covered by unit tests. If you are adding a new
 function/feature/class please follow the existing style for docstrings.
+
+## Questions and comments
+
+Please feel free to create an issue if you have any questions or comments about
+flowerMD.
