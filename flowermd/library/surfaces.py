@@ -18,6 +18,11 @@ class Graphene(Molecule):
         Number of times to repeat graphene lattice in the y-direciton.
     n_layers: int, optional, default 1
         Number of times to repeat the complete layer in the normal direction.
+    force_field: force_field : flowermd.ForceField
+        The force field to be applied to the surface for paramaterizaiton.
+        Note that setting `force_field` does not actually apply the forcefield
+        to the molecule. The forcefield in this step is mainly used for
+        validation purposes.
     periodicity : tuple of bools, length=3, optional, default=(True, True, False) # noqa: E501
         Whether the Compound is periodic in the x, y, and z directions.
         If None is provided, the periodicity is set to `(False, False, False)`
