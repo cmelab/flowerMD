@@ -8,9 +8,9 @@ from flowermd.utils import HOOMDThermostats
 
 
 class SurfaceDropletCreator:
-
-    def __init__(self, surface, drop_snapshot, drop_ff, drop_ref_values,
-                 box_height, gap):
+    def __init__(
+        self, surface, drop_snapshot, drop_ff, drop_ref_values, box_height, gap
+    ):
         """Create the snapshot and forces for the surface droplet simulation.
 
         Creates a new snapshot that combines the surface and droplet snapshots
@@ -50,8 +50,10 @@ class SurfaceDropletCreator:
 
         self._drop_r_cut = self._get_drop_r_cut()
         # get surface snapshot and forces
-        self._surface_snapshot, self._surface_ref_values = \
-            self._create_surface_snapshot()
+        (
+            self._surface_snapshot,
+            self._surface_ref_values,
+        ) = self._create_surface_snapshot()
         self._surface_forces = self._create_surface_forces()
         # scale surface ff based on droplet simulation reference values
         self._scaled_surface_forces = self._scale_surface_ff()
@@ -85,7 +87,7 @@ class SurfaceDropletCreator:
             top=self.surface.gmso_molecule,
             r_cut=surface_r_cut,
             auto_scale=False,
-            base_units=self.drop_ref_values
+            base_units=self.drop_ref_values,
         )
         for force in ff:
             force_list.extend(ff[force])
@@ -104,19 +106,19 @@ class DropletSimulation(Simulation):
     """Simulation which creates a droplet."""
 
     def __init__(
-            self,
-            initial_state,
-            forcefield,
-            r_cut=2.5,
-            reference_values=dict(),
-            dt=0.0001,
-            device=hoomd.device.auto_select(),
-            seed=42,
-            gsd_write_freq=1e4,
-            gsd_file_name="trajectory.gsd",
-            log_write_freq=1e3,
-            log_file_name="log.txt",
-            thermostat=HOOMDThermostats.MTTK,
+        self,
+        initial_state,
+        forcefield,
+        r_cut=2.5,
+        reference_values=dict(),
+        dt=0.0001,
+        device=hoomd.device.auto_select(),
+        seed=42,
+        gsd_write_freq=1e4,
+        gsd_file_name="trajectory.gsd",
+        log_write_freq=1e3,
+        log_file_name="log.txt",
+        thermostat=HOOMDThermostats.MTTK,
     ):
         super(DropletSimulation, self).__init__(
             initial_state=initial_state,
@@ -134,17 +136,17 @@ class DropletSimulation(Simulation):
         )
 
     def run_droplet(
-            self,
-            shrink_kT,
-            shrink_steps,
-            shrink_period,
-            expand_kT,
-            expand_steps,
-            expand_period,
-            hold_kT,
-            hold_steps,
-            final_density,
-            tau_kt,
+        self,
+        shrink_kT,
+        shrink_steps,
+        shrink_period,
+        expand_kT,
+        expand_steps,
+        expand_period,
+        hold_kT,
+        hold_steps,
+        final_density,
+        tau_kt,
     ):
         """Run droplet simulation."""
         # Shrink down to high density
@@ -153,7 +155,7 @@ class DropletSimulation(Simulation):
             period=shrink_period,
             kT=shrink_kT,
             tau_kt=tau_kt,
-            final_density=1.4 * (u.g / (u.cm ** 3)),
+            final_density=1.4 * (u.g / (u.cm**3)),
             write_at_start=True,
         )
         # Expand back up to low density
@@ -162,7 +164,7 @@ class DropletSimulation(Simulation):
             period=expand_period,
             kT=expand_kT,
             tau_kt=tau_kt,
-            final_density=final_density * (u.g / (u.cm ** 3)),
+            final_density=final_density * (u.g / (u.cm**3)),
         )
         # Run at low density
         self.run_NVT(n_steps=hold_steps, kT=hold_kT, tau_kt=tau_kt)
@@ -172,19 +174,19 @@ class WettingSimulation(Simulation):
     """For simulating welding of an interface joint."""
 
     def __init__(
-            self,
-            initial_state,
-            forcefield,
-            r_cut=2.5,
-            reference_values=dict(),
-            dt=0.0001,
-            device=hoomd.device.auto_select(),
-            seed=42,
-            gsd_write_freq=1e4,
-            gsd_file_name="weld.gsd",
-            log_write_freq=1e3,
-            log_file_name="sim_data.txt",
-            thermostat=HOOMDThermostats.MTTK,
+        self,
+        initial_state,
+        forcefield,
+        r_cut=2.5,
+        reference_values=dict(),
+        dt=0.0001,
+        device=hoomd.device.auto_select(),
+        seed=42,
+        gsd_write_freq=1e4,
+        gsd_file_name="weld.gsd",
+        log_write_freq=1e3,
+        log_file_name="sim_data.txt",
+        thermostat=HOOMDThermostats.MTTK,
     ):
         super(WettingSimulation, self).__init__(
             initial_state=initial_state,
