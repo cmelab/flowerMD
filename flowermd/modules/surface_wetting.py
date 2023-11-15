@@ -132,7 +132,6 @@ class SurfaceDropletCreator:
 
         # combine dihedral forces
 
-
         return combined_force_list
 
     def _combine_lj(self, drop_lj, surface_lj, combining_rule='geometric'):
@@ -171,7 +170,8 @@ class SurfaceDropletCreator:
                         sigma = 0.5 * (
                                 drop_lj.params[(drop_ptype, drop_ptype)][
                                     'sigma'] +
-                                surface_lj.params[(surface_ptype, surface_ptype)][
+                                surface_lj.params[
+                                    (surface_ptype, surface_ptype)][
                                     'sigma']
                         )
 
@@ -181,8 +181,6 @@ class SurfaceDropletCreator:
                     }
                     lj.r_cut[(drop_ptype, surface_ptype)] = self._drop_r_cut
         return lj
-
-    def
 
 
 class DropletSimulation(Simulation):
