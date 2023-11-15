@@ -10,6 +10,27 @@ library-based approach to system initialization, making flowerMD agnostic
 to system identity, forcefield, and thermodynamic ensemble, and allowing
 for growth on an as-needed basis.
 
+Why flowerMD?
+=============
+flowerMD consolidates and automates end-to-end workflows for modeling complex engineering
+processes, with a focus on emulating physical experiments on organic materials.
+Following the principals of Transparent, Reproducible, Usable by others, and Extensible
+`TRUE <https://doi.org/10.1016/j.commatsci.2019.109129>`_ software design,
+the modular design of flowerMD facilitates building and running
+workflows for specific materials science research applications, while reducing the
+cognitive load and programming demands on the user's part. flowerMD addresses a
+longstanding need in moelcular dynamics simulation workflow building: reproducible and
+low-complexity recipes for specifying research workflows, agnostic to specific system
+identity.
+
+In particular, flowerMD bridges the gaps between the steps of specifying molecules,
+parametrizing and applying force fields, and launching simulations into one seamless
+workflow, while remaining flexible enough to change any individual step without
+necessitating changes elsewhere in the workflow. The recipe-book-style approach of
+flowerMD reduces the amount of work needed to implement otherwise similar simulations
+with different molecular species, different molecular representations (i.e. coarse vs
+fine-grained), different force fields, or different state points.
+
 Quick start
 ===========
 .. toctree::
