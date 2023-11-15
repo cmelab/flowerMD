@@ -9,6 +9,8 @@ from flowermd.utils import HOOMDThermostats
 
 
 class SurfaceDropletCreator:
+    """Create a droplet on a surface."""
+
     def __init__(
         self, surface, drop_snapshot, drop_ff, drop_ref_values, box_height, gap
     ):
@@ -107,11 +109,11 @@ class SurfaceDropletCreator:
                 force_dict["lj"] = force
             elif isinstance(force, hoomd.md.long_range.pppm.Coulomb):
                 force_dict["coulomb"] = force
-            elif isinstance(force, hoomd.md.bond.Bond):
+            elif isinstance(force, hoomd.md.bond.Harmonic):
                 force_dict["bond"] = force
-            elif isinstance(force, hoomd.md.angle.Angle):
+            elif isinstance(force, hoomd.md.angle.Harmonic):
                 force_dict["angle"] = force
-            elif isinstance(force, hoomd.md.dihedral.Dihedral):
+            elif isinstance(force, hoomd.md.dihedral.OPLS):
                 force_dict["dihedral"] = force
         return force_dict
 
@@ -126,20 +128,37 @@ class SurfaceDropletCreator:
 
         # combine LJ forces
         combined_force_list.append(
-            self._combine_lj(drop_forces_dict["lj"], surface_forces_dict["lj"])
+            self._combine_lj_forces(
+                drop_forces_dict["lj"], surface_forces_dict["lj"]
+            )
         )
 
-        # combine Coulomb forces
-
+        # add Coulomb forces from droplet simulation if exists
+        if drop_forces_dict.get("coulomb"):
+            combined_force_list.append(drop_forces_dict["coulomb"])
         # combine bond forces
-
+        combined_force_list.append(
+            self._combine_bond_forces(
+                drop_forces_dict["bond"], surface_forces_dict["bond"]
+            )
+        )
         # combine angle forces
-
+        combined_force_list.append(
+            self._combine_angle_forces(
+                drop_forces_dict["angle"], surface_forces_dict["angle"]
+            )
+        )
         # combine dihedral forces
-
+        combined_force_list.append(
+            self._combine_dihedral_forces(
+                drop_forces_dict["dihedral"], surface_forces_dict["dihedral"]
+            )
+        )
         return combined_force_list
 
-    def _combine_lj(self, drop_lj, surface_lj, combining_rule="geometric"):
+    def _combine_lj_forces(
+        self, drop_lj, surface_lj, combining_rule="geometric"
+    ):
         """Combine the droplet and surface LJ forces."""
         if combining_rule not in ["geometric", "lorentz"]:
             raise ValueError("combining_rule must be 'geometric' or 'lorentz'")
@@ -189,6 +208,33 @@ class SurfaceDropletCreator:
                     }
                     lj.r_cut[(drop_ptype, surface_ptype)] = self._drop_r_cut
         return lj
+
+    def _combine_bond_forces(self, drop_bond, surface_bond):
+        """Combine the droplet and surface bond forces."""
+        bond = drop_bond.copy()
+        # add the surface bond parameters to the droplet bond parameters
+        for k, v in surface_bond.params.items():
+            if k not in bond.params.keys():
+                bond.params[k] = v
+        return bond
+
+    def _combine_angle_forces(self, drop_angle, surface_angle):
+        """Combine the droplet and surface angle forces."""
+        angle = drop_angle.copy()
+        # add the surface angle parameters to the droplet angle parameters
+        for k, v in surface_angle.params.items():
+            if k not in angle.params.keys():
+                angle.params[k] = v
+        return angle
+
+    def _combine_dihedral_forces(self, drop_dihedral, surface_dihedral):
+        """Combine the droplet and surface dihedral forces."""
+        dihedral = drop_dihedral.copy()
+        # add the surface dihedral parameters to the droplet dihedral parameters
+        for k, v in surface_dihedral.params.items():
+            if k not in dihedral.params.keys():
+                dihedral.params[k] = v
+        return dihedral
 
 
 class DropletSimulation(Simulation):
