@@ -48,6 +48,7 @@ class SurfaceDropletCreator:
         self.box_height = box_height
         self.gap = gap
 
+        self._drop_r_cut = self._get_drop_r_cut()
         # get surface snapshot and forces
         self._surface_snapshot, self._surface_ref_values = \
             self._create_surface_snapshot()
@@ -61,12 +62,16 @@ class SurfaceDropletCreator:
         """Duplicates the slab and builds the interface."""
         pass
 
+    def _get_drop_r_cut(self):
+        for force in self.drop_ff:
+            if isinstance(force, hoomd.md.pair.LJ):
+                return force.params[]
     def _create_surface_snapshot(self):
         """Get the surface snapshot."""
         snap, refs = to_gsd_snapshot(
             top=self.surface.gmso_molecule,
-            auto_scale=True,
-            base_units=None,
+            auto_scale=False,
+            base_units=self.drop_ref_values,
         )
         return snap, refs
 
@@ -77,7 +82,7 @@ class SurfaceDropletCreator:
             top=self.surface.gmso_molecule,
             r_cut=surface_r_cut,
             auto_scale=False,
-            base_units=None
+            base_units=self.drop_ref_values
         )
         for force in ff:
             force_list.extend(ff[force])
