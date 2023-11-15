@@ -4,8 +4,8 @@ import gsd.hoomd
 import hoomd
 
 from flowermd import Simulation
-from flowermd.modules.utils import add_void_particles
 from flowermd.modules.welding import Interface, SlabSimulation, WeldSimulation
+from flowermd.modules.welding.utils import add_void_particles
 from flowermd.tests.base_test import BaseTest
 
 
