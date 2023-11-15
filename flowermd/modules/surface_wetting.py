@@ -135,21 +135,23 @@ class DropletSimulation(Simulation):
 
     def run_droplet(
             self,
-            kT,
-            tau_kt,
+            shrink_kT,
             shrink_steps,
-            expand_steps,
-            hold_steps,
             shrink_period,
+            expand_kT,
+            expand_steps,
             expand_period,
+            hold_kT,
+            hold_steps,
             final_density,
+            tau_kt,
     ):
         """Run droplet simulation."""
         # Shrink down to high density
         self.run_update_volume(
             n_steps=shrink_steps,
             period=shrink_period,
-            kT=kT,
+            kT=shrink_kT,
             tau_kt=tau_kt,
             final_density=1.4 * (u.g / (u.cm ** 3)),
             write_at_start=True,
@@ -158,12 +160,12 @@ class DropletSimulation(Simulation):
         self.run_update_volume(
             n_steps=expand_steps,
             period=expand_period,
-            kT=kT,
+            kT=expand_kT,
             tau_kt=tau_kt,
             final_density=final_density * (u.g / (u.cm ** 3)),
         )
         # Run at low density
-        self.run_NVT(n_steps=hold_steps, kT=kT, tau_kt=tau_kt)
+        self.run_NVT(n_steps=hold_steps, kT=hold_kT, tau_kt=tau_kt)
 
 
 class WettingSimulation(Simulation):
