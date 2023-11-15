@@ -63,9 +63,12 @@ class SurfaceDropletCreator:
         pass
 
     def _get_drop_r_cut(self):
+        """Find the r_cut value from the droplet LJ forces."""
         for force in self.drop_ff:
             if isinstance(force, hoomd.md.pair.LJ):
-                return force.params[]
+                lj_r_cut = force.r_cut.values()[0]
+                return lj_r_cut
+
     def _create_surface_snapshot(self):
         """Get the surface snapshot."""
         snap, refs = to_gsd_snapshot(
@@ -158,7 +161,6 @@ class DropletSimulation(Simulation):
             kT=kT,
             tau_kt=tau_kt,
             final_density=final_density * (u.g / (u.cm ** 3)),
-            resize_filter=hoomd.filter.Null(),
         )
         # Run at low density
         self.run_NVT(n_steps=hold_steps, kT=kT, tau_kt=tau_kt)
