@@ -1,5 +1,6 @@
 """Module for simulating surface wetting."""
 import hoomd
+import numpy as np
 import unyt as u
 from gmso.external import to_gsd_snapshot, to_hoomd_forcefield
 
@@ -53,10 +54,13 @@ class SurfaceDropletCreator:
         self._surface_snapshot, self._surface_ref_values = \
             self._create_surface_snapshot()
         self._surface_forces = self._create_surface_forces()
-        # scale surface ff based on droplet simulation reference values
-        self._scaled_surface_forces = self._scale_surface_ff()
-        # scale surface snapshot based on droplet simulation reference values
-        self._scaled_surface_snapshot = self._scale_surface_snapshot()
+
+        # get droplet and surface particle types
+        self._all_particle_types = list(
+            set(self._surface_snapshot.particles.types +
+                self.drop_snapshot.particles.types))
+
+        self._combined_forces = self._combine_forces()
 
     def _build(self):
         """Duplicates the slab and builds the interface."""
@@ -91,13 +95,94 @@ class SurfaceDropletCreator:
             force_list.extend(ff[force])
         return force_list
 
-    def _scale_surface_ff(self):
-        """Scale the surface ff based on the droplet reference values."""
-        pass
+    def _retrieve_forces(self, hoomd_force_list):
+        """Retrieve individual force objects from the hoomd force list."""
+        force_dict = {}
+        for force in hoomd_force_list:
+            if isinstance(force, hoomd.md.pair.LJ):
+                force_dict['lj'] = force
+            elif isinstance(force, hoomd.md.long_range.pppm.Coulomb):
+                force_dict['coulomb'] = force
+            elif isinstance(force, hoomd.md.bond.Bond):
+                force_dict['bond'] = force
+            elif isinstance(force, hoomd.md.angle.Angle):
+                force_dict['angle'] = force
+            elif isinstance(force, hoomd.md.dihedral.Dihedral):
+                force_dict['dihedral'] = force
+        return force_dict
 
-    def _scale_surface_snapshot(self):
-        """Scale the surface snapshot based on the droplet reference values."""
-        pass
+    def _combine_forces(self):
+        """Combine the surface and droplet forces."""
+        combined_force_list = []
+
+        # retrieve individual force objects from the droplet and surface
+        # force lists
+        drop_forces_dict = self._retrieve_forces(self.drop_ff)
+        surface_forces_dict = self._retrieve_forces(self._surface_forces)
+
+        # combine LJ forces
+        combined_force_list.append(
+            self._combine_lj(drop_forces_dict['lj'], surface_forces_dict['lj']))
+
+        # combine Coulomb forces
+
+        # combine bond forces
+
+        # combine angle forces
+
+        # combine dihedral forces
+
+
+        return combined_force_list
+
+    def _combine_lj(self, drop_lj, surface_lj, combining_rule='geometric'):
+        """Combine the droplet and surface LJ forces."""
+        if combining_rule not in ['geometric', 'lorentz']:
+            raise ValueError("combining_rule must be 'geometric' or 'lorentz'")
+
+        lj = drop_lj.copy()
+
+        # add the surface LJ parameters to the droplet LJ parameters
+        for k, v in surface_lj.params.items():
+            if k not in lj.params.keys():
+                lj.params[k] = v
+        for k, v in surface_lj.r_cut.items():
+            if k not in lj.r_cut.keys():
+                lj.r_cut[k] = v
+
+        # find new pairs and add them to the droplet LJ pairs
+        for drop_ptype in self.drop_snapshot.particles.types:
+            for surface_ptype in self._surface_snapshot.particles.types:
+                if (drop_ptype, surface_ptype) not in lj.params.keys() and \
+                        (surface_ptype, drop_ptype) not in lj.params.keys():
+                    epsilon = np.sqrt(
+                        drop_lj.params[(drop_ptype, drop_ptype)]['epsilon'] *
+                        surface_lj.params[(surface_ptype, surface_ptype)][
+                            'epsilon']
+                    )
+                    if combining_rule == 'geometric':
+                        sigma = np.sqrt(
+                            drop_lj.params[(drop_ptype, drop_ptype)]['sigma'] *
+                            surface_lj.params[(surface_ptype, surface_ptype)][
+                                'sigma']
+                        )
+                    else:
+                        # combining_rule == 'lorentz'
+                        sigma = 0.5 * (
+                                drop_lj.params[(drop_ptype, drop_ptype)][
+                                    'sigma'] +
+                                surface_lj.params[(surface_ptype, surface_ptype)][
+                                    'sigma']
+                        )
+
+                    lj.params[(drop_ptype, surface_ptype)] = {
+                        'sigma': sigma,
+                        'epsilon': epsilon
+                    }
+                    lj.r_cut[(drop_ptype, surface_ptype)] = self._drop_r_cut
+        return lj
+
+    def
 
 
 class DropletSimulation(Simulation):
