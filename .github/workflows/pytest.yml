@@ -6,13 +6,13 @@ on:
     branches: [ main ]
     paths:
       - flowermd/**
-      - environment-cpu.yml
+      - environment-dev.yml
       - .github/workflows/pytest.yml
   pull_request:
     branches: [ main ]
     paths:
       - flowermd/**
-      - environment-cpu.yml
+      - environment-dev.yml
       - .github/workflows/pytest.yml
   # Allows workflow to be manually triggered
   workflow_dispatch:
@@ -28,7 +28,7 @@ jobs:
     - name: Build environment
       uses: conda-incubator/setup-miniconda@v2
       with:
-        environment-file: environment-cpu.yml
+        environment-file: environment-dev.yml
         miniforge-variant: Mambaforge
         miniforge-version: 4.9.2-4
         use-mamba: true
