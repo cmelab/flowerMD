@@ -25,7 +25,7 @@ We welcome all code contributions in the form of pull requests. If you are
 interested in contributing code, please follow the steps below:
 - Fork the repository (default branch is `main`)
 - Create a new branch for your feature/bug fix
-- Create the `flowermd` conda environment using the `environment-cpu.yml` or `environment-gpu.yml` file
+- Create the `flowermd` conda environment using the `environment-dev.yml` file
 - Make your changes
 - Install the latest version of pre-commit using `conda install -c conda-forge pre-commit` and run `pre-commit install` in the root directory of the repository
 - Commit your changes and make sure all the pre-commit hooks pass

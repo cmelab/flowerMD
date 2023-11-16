@@ -1,17 +1,18 @@
-name: flowermd
+name: flowermd-dev
 channels:
   - conda-forge
 dependencies:
-  - foyer
+  - foyer >=0.12.0
   - fresnel
   - freud >=2.13.1
   - gmso >=0.11.2
   - gsd >=3.0
-  - hoomd=4.3=*cpu*
+  - hoomd=4.3
   - mbuild >=0.16.4
   - numpy
-  - openbabel
+  - openbabel >=3
   - pip
+  - pre-commit
   - py3Dmol
   - pytest
   - pytest-cov
