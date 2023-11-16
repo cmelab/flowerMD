@@ -1,5 +1,7 @@
 [![pytest](https://github.com/cmelab/flowerMD/actions/workflows/pytest.yml/badge.svg)](https://github.com/cmelab/flowerMD/actions/workflows/pytest.yml)
 [![codecov](https://codecov.io/gh/cmelab/flowerMD/branch/main/graph/badge.svg?token=86LY9WHSH6)](https://codecov.io/gh/cmelab/flowerMD)
+[![Anaconda-Server Badge](https://anaconda.org/conda-forge/flowermd/badges/version.svg)](https://anaconda.org/conda-forge/flowermd)
+[![Anaconda-Server Badge](https://anaconda.org/conda-forge/flowermd/badges/latest_release_date.svg)](https://anaconda.org/conda-forge/flowermd)
 ## flowerMD: Flexible Library of Organic Workflows and Extensible Recipes for Molecular Dynamics
 flowerMD is a modular “wrapper” package for molecular dynamics (MD)
 simulation pipeline development, designed to enable fast, reproducible,
@@ -14,22 +16,43 @@ flowerMD agnostic to system identity, forcefield, and thermodynamic
 ensemble, and allowing for growth on an as-needed basis.
 
 
+Installing flowermd
+===================
 
-## Installation
+Installing `flowermd` from the `conda-forge` channel can be achieved by adding `conda-forge` to your channels with:
 
-### 1. Clone this repository: ###
+```
+conda config --add channels conda-forge
+conda config --set channel_priority strict
+```
+
+Once the `conda-forge` channel has been enabled, `flowermd` can be installed with `conda`:
+
+```
+conda install flowermd
+```
+
+or with `mamba`:
+
+```
+mamba install flowermd
+```
+
+**Installing from source for development:**
+
+Clone this repository:
 
 ```
 git clone git@github.com:cmelab/flowerMD.git
 cd flowerMD
 ```
 
-### 2. Set up and activate environment: ###
-#### a. Using HOOMD-blue from conda:
+Set up and activate environment:
+
 ```
-conda env create -f environment-cpu.yml
+conda env create -f environment-dev.yml
 conda activate flowermd
-python -m pip install .
+python -m pip install -e .
 ```
 
 ## Basic Usage
