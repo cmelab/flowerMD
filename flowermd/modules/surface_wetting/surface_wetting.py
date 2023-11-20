@@ -57,6 +57,11 @@ class SurfaceDropletCreator:
             self.surface_snapshot,
             self.surface_ref_values,
         ) = self._create_surface_snapshot()
+        self._surface_n = self.surface_snapshot.particles.N
+        self._drop_n = self.drop_snapshot.particles.N
+        # save surface snapshot
+        with gsd.hoomd.open("surface.gsd", "w") as f:
+            f.append(self.surface_snapshot)
         self.surface_ff = self._create_surface_forces()
 
         # get forces of the combined system
@@ -80,9 +85,7 @@ class SurfaceDropletCreator:
     def _build_snapshot(self):
         """Build a snapshot by combining the surface and droplet snapshots."""
         wetting_snapshot = gsd.hoomd.Frame()
-        wetting_snapshot.particles.N = (
-            self.surface_snapshot.particles.N + self.drop_snapshot.particles.N
-        )
+        wetting_snapshot.particles.N = self._surface_n + self._drop_n
 
         self.surface_ptypes = self.surface_ptypes = [
             f"_{ptype}" for ptype in self.surface_snapshot.particles.types
@@ -118,9 +121,9 @@ class SurfaceDropletCreator:
         # create the surface wetting box
         wetting_sim_box = self._create_box()
         wetting_snapshot.configuration.box = wetting_sim_box
-        # update positions of the droplet and surface particles
-        wetting_snapshot.particles.position = self._update_positions(
-            wetting_sim_box
+        # put the surface particles in the box and add droplet particles on top
+        wetting_snapshot.particles.position = (
+            self._place_surface_droplet_particles(wetting_sim_box)
         )
 
         wetting_snapshot.bonds.N = (
@@ -139,10 +142,30 @@ class SurfaceDropletCreator:
         )
 
     def _create_box(self):
-        pass
+        """Create the wetting simulation box."""
+        wetting_sim_box = [0, 0, 0, 0, 0, 0]
+        # for x, y use the max of the surface and droplet box dimensions
+        wetting_sim_box[0] = max(
+            self.surface_snapshot.configuration.box[0],
+            self.drop_snapshot.configuration.box[0],
+        )
+        wetting_sim_box[1] = max(
+            self.surface_snapshot.configuration.box[1],
+            self.drop_snapshot.configuration.box[1],
+        )
+        # use box height for z
+        wetting_sim_box[2] = self.box_height
+        return wetting_sim_box
 
-    def _update_positions(self, wetting_sim_box):
-        pass
+    def _place_surface_droplet_particles(self, wetting_sim_box):
+        """Place the surface and droplet particles in the wetting box."""
+        # place surface particles in the box
+        surface_pos = np.copy(self.surface_snapshot.particles.position)
+        # shift drop particles to be centered in the box at (0, 0, 0)
+
+        # shift drop particles z position to be at the top of surface
+
+        return surface_pos
 
     def _create_surface_snapshot(self):
         """Get the surface snapshot."""
