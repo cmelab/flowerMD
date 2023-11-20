@@ -87,7 +87,8 @@ class SurfaceDropletCreator:
         wetting_snapshot = gsd.hoomd.Frame()
         wetting_snapshot.particles.N = self._surface_n + self._drop_n
 
-        self.surface_ptypes = self.surface_ptypes = [
+        # set up snapshot particles
+        self.surface_ptypes = [
             f"_{ptype}" for ptype in self.surface_snapshot.particles.types
         ]
         self.drop_ptypes = self.drop_snapshot.particles.types
@@ -119,12 +120,9 @@ class SurfaceDropletCreator:
         )
 
         # create the surface wetting box
-        wetting_sim_box = self._create_box()
-        wetting_snapshot.configuration.box = wetting_sim_box
+        wetting_snapshot.configuration.box = self._create_box()
         # put the surface particles in the box and add droplet particles on top
-        wetting_snapshot.particles.position = (
-            self._place_surface_droplet_particles(wetting_sim_box)
-        )
+        wetting_snapshot.particles.position = self._adjust_particle_positions()
 
         # set up bonds
         wetting_snapshot.bonds.N = (
@@ -206,6 +204,8 @@ class SurfaceDropletCreator:
             axis=None,
         )
 
+        return wetting_snapshot
+
     def _create_box(self):
         """Create the wetting simulation box."""
         wetting_sim_box = [0, 0, 0, 0, 0, 0]
@@ -222,15 +222,21 @@ class SurfaceDropletCreator:
         wetting_sim_box[2] = self.box_height
         return wetting_sim_box
 
-    def _place_surface_droplet_particles(self, wetting_sim_box):
+    def _adjust_particle_positions(self):
         """Place the surface and droplet particles in the wetting box."""
         # place surface particles in the box
         surface_pos = np.copy(self.surface_snapshot.particles.position)
-        # shift drop particles to be centered in the box at (0, 0, 0)
-
+        # find center of the droplet and shift the droplet particles to origin
+        drop_pos = self.drop_snapshot.particles.position - np.mean(
+            self.drop_snapshot.particles.position, axis=0
+        )
         # shift drop particles z position to be at the top of surface
-
-        return surface_pos
+        z_shift = (
+            np.abs(max(drop_pos[:, 2]) - max(surface_pos[:, 2])) - self.gap
+        )
+        drop_pos[:, 2] -= z_shift
+        wetting_pos = np.concatenate((surface_pos, drop_pos), axis=0)
+        return wetting_pos
 
     def _create_surface_snapshot(self):
         """Get the surface snapshot."""
