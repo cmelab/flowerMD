@@ -92,7 +92,7 @@ def _combine_lj_forces(
             lj.params[k] = v
             lj.r_cut[k] = surface_lj.r_cut[k]
 
-    # add pa
+    # add pair parameters for droplet-surface interactions
     r_cut = list(drop_lj.r_cut.values())[0]
     for drop_ptype in drop_ptypes:
         for surface_ptype in surface_ptypes:
