@@ -208,16 +208,7 @@ class SurfaceDropletCreator:
 
     def _create_box(self):
         """Create the wetting simulation box."""
-        wetting_sim_box = [0, 0, 0, 0, 0, 0]
-        # for x, y use the max of the surface and droplet box dimensions
-        wetting_sim_box[0] = max(
-            self.surface_snapshot.configuration.box[0],
-            self.drop_snapshot.configuration.box[0],
-        )
-        wetting_sim_box[1] = max(
-            self.surface_snapshot.configuration.box[1],
-            self.drop_snapshot.configuration.box[1],
-        )
+        wetting_sim_box = np.copy(self.surface_snapshot.configuration.box)
         # use box height for z
         wetting_sim_box[2] = self.box_height
         return wetting_sim_box
