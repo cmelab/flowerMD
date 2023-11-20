@@ -1,5 +1,7 @@
 """Module for simulating surface wetting."""
+import gsd.hoomd
 import hoomd
+import numpy as np
 import unyt as u
 from gmso.external import to_gsd_snapshot, to_hoomd_forcefield
 from utils import combine_forces
@@ -52,20 +54,94 @@ class SurfaceDropletCreator:
 
         # get surface snapshot and forces
         (
-            self._surface_snapshot,
-            self._surface_ref_values,
+            self.surface_snapshot,
+            self.surface_ref_values,
         ) = self._create_surface_snapshot()
         self.surface_ff = self._create_surface_forces()
 
+        # get forces of the combined system
         self._combined_forces = combine_forces(
             self.drop_ff,
             self.surface_ff,
             self.drop_snapshot.particles.types,
-            self._surface_snapshot.particles.types,
+            self.surface_snapshot.particles.types,
+        )
+        # get snapshot of the combined system
+        if set(self.surface_snapshot.particles.types).intersection(
+            set(self.drop_snapshot.particles.types)
+        ):
+            raise NotImplementedError(
+                "handle cases where there are common "
+                "particle types between the surface and "
+                "droplet."
+            )
+        self._combined_snapshot = self._build_snapshot()
+
+    def _build_snapshot(self):
+        """Build a snapshot by combining the surface and droplet snapshots."""
+        wetting_snapshot = gsd.hoomd.Frame()
+        wetting_snapshot.particles.N = (
+            self.surface_snapshot.particles.N + self.drop_snapshot.particles.N
         )
 
-    def _build(self):
-        """Duplicates the slab and builds the interface."""
+        self.surface_ptypes = self.surface_ptypes = [
+            f"_{ptype}" for ptype in self.surface_snapshot.particles.types
+        ]
+        self.drop_ptypes = self.drop_snapshot.particles.types
+
+        wetting_snapshot.particles.types = (
+            self.surface_ptypes + self.drop_ptypes
+        )
+
+        wetting_snapshot.particles.typeid = np.concatenate(
+            (
+                self.surface_snapshot.particles.typeid,
+                self.drop_snapshot.particles.typeid + len(self.surface_ptypes),
+            ),
+            axis=None,
+        )
+        wetting_snapshot.particles.mass = np.concatenate(
+            (
+                self.surface_snapshot.particles.mass,
+                self.drop_snapshot.particles.mass,
+            ),
+            axis=None,
+        )
+        wetting_snapshot.particles.charge = np.concatenate(
+            (
+                self.surface_snapshot.particles.charge,
+                self.drop_snapshot.particles.charge,
+            ),
+            axis=None,
+        )
+
+        # create the surface wetting box
+        wetting_sim_box = self._create_box()
+        wetting_snapshot.configuration.box = wetting_sim_box
+        # update positions of the droplet and surface particles
+        wetting_snapshot.particles.position = self._update_positions(
+            wetting_sim_box
+        )
+
+        wetting_snapshot.bonds.N = (
+            self.surface_snapshot.bonds.N + self.drop_snapshot.bonds.N
+        )
+
+        wetting_snapshot.angles.N = (
+            self.surface_snapshot.angles.N + self.drop_snapshot.angles.N
+        )
+
+        wetting_snapshot.dihedrals.N = (
+            self.surface_snapshot.dihedrals.N + self.drop_snapshot.dihedrals.N
+        )
+        wetting_snapshot.pairs.N = (
+            self.surface_snapshot.pairs.N + self.drop_snapshot.pairs.N
+        )
+
+    def _create_box(self):
+        pass
+
+    def _update_positions(self, wetting_sim_box):
         pass
 
     def _create_surface_snapshot(self):
