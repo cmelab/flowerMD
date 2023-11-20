@@ -126,19 +126,84 @@ class SurfaceDropletCreator:
             self._place_surface_droplet_particles(wetting_sim_box)
         )
 
+        # set up bonds
         wetting_snapshot.bonds.N = (
             self.surface_snapshot.bonds.N + self.drop_snapshot.bonds.N
         )
+        wetting_snapshot.bonds.types = (
+            self.surface_snapshot.bonds.types + self.drop_snapshot.bonds.types
+        )
+        wetting_snapshot.bonds.typeid = np.concatenate(
+            self.surface_snapshot.bonds.typeid,
+            self.drop_snapshot.bonds.typeid
+            + len(self.surface_snapshot.bonds.types),
+        )
+        wetting_snapshot.bonds.group = np.concatenate(
+            (
+                self.surface_snapshot.bonds.group,
+                self.drop_snapshot.bonds.group + self._surface_n,
+            ),
+            axis=None,
+        )
 
+        # set up angles
         wetting_snapshot.angles.N = (
             self.surface_snapshot.angles.N + self.drop_snapshot.angles.N
         )
+        wetting_snapshot.angles.types = (
+            self.surface_snapshot.angles.types + self.drop_snapshot.angles.types
+        )
+        wetting_snapshot.angles.typeid = np.concatenate(
+            self.surface_snapshot.angles.typeid,
+            self.drop_snapshot.angles.typeid
+            + len(self.surface_snapshot.angles.types),
+        )
+        wetting_snapshot.angles.group = np.concatenate(
+            (
+                self.surface_snapshot.angles.group,
+                self.drop_snapshot.angles.group + self._surface_n,
+            ),
+            axis=None,
+        )
 
+        # set up dihedrals
         wetting_snapshot.dihedrals.N = (
             self.surface_snapshot.dihedrals.N + self.drop_snapshot.dihedrals.N
         )
+        wetting_snapshot.dihedrals.types = (
+            self.surface_snapshot.dihedrals.types
+            + self.drop_snapshot.dihedrals.types
+        )
+        wetting_snapshot.dihedrals.typeid = np.concatenate(
+            self.surface_snapshot.dihedrals.typeid,
+            self.drop_snapshot.dihedrals.typeid
+            + len(self.surface_snapshot.dihedrals.types),
+        )
+        wetting_snapshot.dihedrals.group = np.concatenate(
+            (
+                self.surface_snapshot.dihedrals.group,
+                self.drop_snapshot.dihedrals.group + self._surface_n,
+            ),
+            axis=None,
+        )
+        # set up pairs
         wetting_snapshot.pairs.N = (
             self.surface_snapshot.pairs.N + self.drop_snapshot.pairs.N
+        )
+        wetting_snapshot.pairs.types = (
+            self.surface_snapshot.pairs.types + self.drop_snapshot.pairs.types
+        )
+        wetting_snapshot.pairs.typeid = np.concatenate(
+            self.surface_snapshot.pairs.typeid,
+            self.drop_snapshot.pairs.typeid
+            + len(self.surface_snapshot.pairs.types),
+        )
+        wetting_snapshot.pairs.group = np.concatenate(
+            (
+                self.surface_snapshot.pairs.group,
+                self.drop_snapshot.pairs.group + self._surface_n,
+            ),
+            axis=None,
         )
 
     def _create_box(self):
