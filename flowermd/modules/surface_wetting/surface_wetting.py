@@ -57,15 +57,12 @@ class SurfaceDropletCreator:
         ) = self._create_surface_snapshot()
         self.surface_ff = self._create_surface_forces()
 
-        # get droplet and surface particle types
-        self._all_particle_types = list(
-            set(
-                self._surface_snapshot.particles.types
-                + self.drop_snapshot.particles.types
-            )
+        self._combined_forces = combine_forces(
+            self.drop_ff,
+            self.surface_ff,
+            self.drop_snapshot.particles.types,
+            self._surface_snapshot.particles.types,
         )
-
-        self._combined_forces = combine_forces(self.drop_ff, self.surface_ff)
 
     def _build(self):
         """Duplicates the slab and builds the interface."""
