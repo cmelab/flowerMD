@@ -89,8 +89,10 @@ def _combine_lj_forces(
     # add the surface LJ parameters if they don't already exist
     for k, v in surface_lj.params.items():
         if k not in list(lj.params.keys()):
-            lj.params[k] = v
-            lj.r_cut[k] = surface_lj.r_cut[k]
+            # rename the surface particle name (add '_' to the beginning)
+            surface_pair = (f"_{k[0]}", f"_{k[1]}")
+            lj.params[surface_pair] = v
+            lj.r_cut[surface_pair] = surface_lj.r_cut[k]
 
     # add pair parameters for droplet-surface interactions
     r_cut = list(drop_lj.r_cut.values())[0]

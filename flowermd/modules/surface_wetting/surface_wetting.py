@@ -63,14 +63,6 @@ class SurfaceDropletCreator:
         with gsd.hoomd.open("surface.gsd", "w") as f:
             f.append(self.surface_snapshot)
         self.surface_ff = self._create_surface_forces()
-
-        # get forces of the combined system
-        self._combined_forces = combine_forces(
-            self.drop_ff,
-            self.surface_ff,
-            self.drop_snapshot.particles.types,
-            self.surface_snapshot.particles.types,
-        )
         # get snapshot of the combined system
         if set(self.surface_snapshot.particles.types).intersection(
             set(self.drop_snapshot.particles.types)
@@ -81,6 +73,14 @@ class SurfaceDropletCreator:
                 "droplet."
             )
         self._combined_snapshot = self._build_snapshot()
+
+        # get forces of the combined system
+        self._combined_forces = combine_forces(
+            self.drop_ff,
+            self.surface_ff,
+            self.drop_ptypes,
+            self.surface_ptypes,
+        )
 
     def _build_snapshot(self):
         """Build a snapshot by combining the surface and droplet snapshots."""
@@ -188,8 +188,13 @@ class SurfaceDropletCreator:
         wetting_snapshot.pairs.N = (
             self.surface_snapshot.pairs.N + self.drop_snapshot.pairs.N
         )
+        # rename surface pair types (add '_' to the beginning)
+        surface_pair_types = []
+        for pair in self.surface_snapshot.pairs.types:
+            p1, p2 = pair.split("-")
+            surface_pair_types.append(f"_{p1}-_{p2}")
         wetting_snapshot.pairs.types = (
-            self.surface_snapshot.pairs.types + self.drop_snapshot.pairs.types
+            surface_pair_types + self.drop_snapshot.pairs.types
         )
         wetting_snapshot.pairs.typeid = np.concatenate(
             self.surface_snapshot.pairs.typeid,
