@@ -4,8 +4,8 @@ import hoomd
 import numpy as np
 import unyt as u
 from gmso.external import to_gsd_snapshot, to_hoomd_forcefield
-from utils import combine_forces
 
+from flowermd.modules.surface_wetting.utils import combine_forces
 from flowermd.base import Simulation
 from flowermd.utils import HOOMDThermostats
 
