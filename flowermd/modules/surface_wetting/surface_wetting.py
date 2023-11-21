@@ -74,10 +74,10 @@ class SurfaceDropletCreator:
                 "particle types between the surface and "
                 "droplet."
             )
-        self._combined_snapshot = self._build_snapshot()
+        self._wetting_snapshot = self._build_snapshot()
 
         # get forces of the combined system
-        self._combined_forces = combine_forces(
+        self._wetting_forces = combine_forces(
             self.drop_ff,
             self.surface_ff,
             self.drop_ptypes,
@@ -242,7 +242,7 @@ class SurfaceDropletCreator:
         )
         # shift drop particles z position to be at the top of surface
         z_shift = (
-            np.abs(max(drop_pos[:, 2]) - max(surface_pos[:, 2])) - self.gap
+            np.abs(min(drop_pos[:, 2]) - max(surface_pos[:, 2])) - self.gap
         )
         drop_pos[:, 2] -= z_shift
         wetting_pos = np.concatenate((surface_pos, drop_pos), axis=0)
@@ -269,6 +269,16 @@ class SurfaceDropletCreator:
         for force in ff:
             force_list.extend(ff[force])
         return force_list
+
+    @property
+    def wetting_snapshot(self):
+        """Get the wetting snapshot."""
+        return self._wetting_snapshot
+
+    @property
+    def wetting_forces(self):
+        """Get the wetting forces."""
+        return self._wetting_forces
 
 
 class DropletSimulation(Simulation):
