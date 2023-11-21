@@ -346,17 +346,19 @@ class WettingSimulation(Simulation):
         self,
         initial_state,
         forcefield,
+        fix_surface=True,
         r_cut=2.5,
         reference_values=dict(),
         dt=0.0001,
         device=hoomd.device.auto_select(),
         seed=42,
         gsd_write_freq=1e4,
-        gsd_file_name="weld.gsd",
+        gsd_file_name="wetting.gsd",
         log_write_freq=1e3,
-        log_file_name="sim_data.txt",
+        log_file_name="wetting_log.txt",
         thermostat=HOOMDThermostats.MTTK,
     ):
+        self._fix_surface = fix_surface
         super(WettingSimulation, self).__init__(
             initial_state=initial_state,
             forcefield=forcefield,
@@ -371,3 +373,34 @@ class WettingSimulation(Simulation):
             log_file_name=log_file_name,
             thermostat=thermostat,
         )
+        self.fix_surface = fix_surface
+
+    @property
+    def fix_surface(self):
+        """If `True`, the surface particles are not integrated over."""
+        return self._fix_surface
+
+    @fix_surface.setter
+    def fix_surface(self, value):
+        if not isinstance(value, bool):
+            raise ValueError(
+                "Set to `True` to not integrate over surface particles, "
+                "or set to `False` to integrate over surface particles."
+            )
+        self._fix_surface = value
+        if self.fix_surface:
+            snapshot = self.state.get_snapshot()
+            droplet_types = np.array(
+                [i for i in snapshot if not i.startswith("_")]
+            )
+            droplet_type_idx = np.where(
+                np.array(snapshot.particles.types) == droplet_types
+            )[0]
+            surface_particle_idx = np.where(
+                np.array(snapshot.particles.typeid) == droplet_type_idx
+            )[0]
+            self.integrate_group = hoomd.filter.Tags(
+                surface_particle_idx.astype(np.uint32)
+            )
+        else:
+            self.integrate_group = hoomd.filter.All()
