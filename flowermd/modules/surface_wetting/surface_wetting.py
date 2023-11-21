@@ -61,9 +61,6 @@ class SurfaceDropletCreator:
         ) = self._create_surface_snapshot()
         self._surface_n = self.surface_snapshot.particles.N
         self._drop_n = self.drop_snapshot.particles.N
-        # save surface snapshot
-        with gsd.hoomd.open("surface.gsd", "w") as f:
-            f.append(self.surface_snapshot)
         self.surface_ff = self._create_surface_forces()
         # get snapshot of the combined system
         if set(self.surface_snapshot.particles.types).intersection(
@@ -122,9 +119,12 @@ class SurfaceDropletCreator:
         )
 
         # create the surface wetting box
-        wetting_snapshot.configuration.box = self._create_box()
+        wetting_box = self._create_box()
+        wetting_snapshot.configuration.box = wetting_box
         # put the surface particles in the box and add droplet particles on top
-        wetting_snapshot.particles.position = self._adjust_particle_positions()
+        wetting_snapshot.particles.position = self._adjust_particle_positions(
+            wetting_box
+        )
 
         # set up bonds
         wetting_snapshot.bonds.N = (
@@ -232,10 +232,19 @@ class SurfaceDropletCreator:
         wetting_sim_box[2] = self.box_height
         return wetting_sim_box
 
-    def _adjust_particle_positions(self):
+    def _adjust_particle_positions(self, wetting_box):
         """Place the surface and droplet particles in the wetting box."""
-        # place surface particles in the box
-        surface_pos = np.copy(self.surface_snapshot.particles.position)
+        # shift surface particles to the bottom of the box
+        surface_z_shift = (
+            np.abs(
+                min(self.surface_snapshot.particles.position[:, 2])
+                - (-wetting_box[2] / 2)
+            )
+            - 0.1
+        )
+        surface_pos = self.surface_snapshot.particles.position - np.array(
+            [0, 0, surface_z_shift]
+        )
         # find center of the droplet and shift the droplet particles to origin
         drop_pos = self.drop_snapshot.particles.position - np.mean(
             self.drop_snapshot.particles.position, axis=0
