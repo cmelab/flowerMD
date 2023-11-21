@@ -102,27 +102,22 @@ def _combine_lj_forces(
                 surface_ptype,
                 drop_ptype,
             ) not in list(lj.params.keys()):
-                epsilon = np.sqrt(
-                    drop_lj.params[(drop_ptype, drop_ptype)]["epsilon"]
-                    * surface_lj.params[(surface_ptype, surface_ptype)][
-                        "epsilon"
-                    ]
-                )
+                drop_epsilon = drop_lj.params[(drop_ptype, drop_ptype)][
+                    "epsilon"
+                ]
+                surface_epsilon = surface_lj.params[
+                    (surface_ptype[1:], surface_ptype[1:])
+                ]["epsilon"]
+                drop_sigma = drop_lj.params[(drop_ptype, drop_ptype)]["sigma"]
+                surface_sigma = surface_lj.params[
+                    (surface_ptype[1:], surface_ptype[1:])
+                ]["sigma"]
+                epsilon = np.sqrt(drop_epsilon * surface_epsilon)
+
                 if combining_rule == "geometric":
-                    sigma = np.sqrt(
-                        drop_lj.params[(drop_ptype, drop_ptype)]["sigma"]
-                        * surface_lj.params[(surface_ptype, surface_ptype)][
-                            "sigma"
-                        ]
-                    )
-                else:
-                    # combining_rule == 'lorentz'
-                    sigma = 0.5 * (
-                        drop_lj.params[(drop_ptype, drop_ptype)]["sigma"]
-                        + surface_lj.params[(surface_ptype, surface_ptype)][
-                            "sigma"
-                        ]
-                    )
+                    sigma = np.sqrt(drop_sigma * surface_sigma)
+                else:  # combining_rule is lorent
+                    sigma = 0.5 * (drop_sigma + surface_sigma)
 
                 lj.params[(drop_ptype, surface_ptype)] = {
                     "sigma": sigma,
