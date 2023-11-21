@@ -46,11 +46,13 @@ class SurfaceDropletCreator:
 
         """
         self.surface = surface
+        if isinstance(drop_snapshot, str):
+            drop_snapshot = gsd.hoomd.open(drop_snapshot)[-1]
         self.drop_snapshot = drop_snapshot
         self.drop_ff = drop_ff
         self.drop_ref_values = drop_ref_values
-        self.box_height = box_height
-        self.gap = gap
+        self.box_height = box_height / drop_ref_values["length"]
+        self.gap = gap / drop_ref_values["length"]
 
         # get surface snapshot and forces
         (
@@ -132,9 +134,12 @@ class SurfaceDropletCreator:
             self.surface_snapshot.bonds.types + self.drop_snapshot.bonds.types
         )
         wetting_snapshot.bonds.typeid = np.concatenate(
-            self.surface_snapshot.bonds.typeid,
-            self.drop_snapshot.bonds.typeid
-            + len(self.surface_snapshot.bonds.types),
+            (
+                self.surface_snapshot.bonds.typeid,
+                self.drop_snapshot.bonds.typeid
+                + len(self.surface_snapshot.bonds.types),
+            ),
+            axis=None,
         )
         wetting_snapshot.bonds.group = np.concatenate(
             (
@@ -152,9 +157,12 @@ class SurfaceDropletCreator:
             self.surface_snapshot.angles.types + self.drop_snapshot.angles.types
         )
         wetting_snapshot.angles.typeid = np.concatenate(
-            self.surface_snapshot.angles.typeid,
-            self.drop_snapshot.angles.typeid
-            + len(self.surface_snapshot.angles.types),
+            (
+                self.surface_snapshot.angles.typeid,
+                self.drop_snapshot.angles.typeid
+                + len(self.surface_snapshot.angles.types),
+            ),
+            axis=None,
         )
         wetting_snapshot.angles.group = np.concatenate(
             (
@@ -173,9 +181,12 @@ class SurfaceDropletCreator:
             + self.drop_snapshot.dihedrals.types
         )
         wetting_snapshot.dihedrals.typeid = np.concatenate(
-            self.surface_snapshot.dihedrals.typeid,
-            self.drop_snapshot.dihedrals.typeid
-            + len(self.surface_snapshot.dihedrals.types),
+            (
+                self.surface_snapshot.dihedrals.typeid,
+                self.drop_snapshot.dihedrals.typeid
+                + len(self.surface_snapshot.dihedrals.types),
+            ),
+            axis=None,
         )
         wetting_snapshot.dihedrals.group = np.concatenate(
             (
@@ -197,9 +208,12 @@ class SurfaceDropletCreator:
             surface_pair_types + self.drop_snapshot.pairs.types
         )
         wetting_snapshot.pairs.typeid = np.concatenate(
-            self.surface_snapshot.pairs.typeid,
-            self.drop_snapshot.pairs.typeid
-            + len(self.surface_snapshot.pairs.types),
+            (
+                self.surface_snapshot.pairs.typeid,
+                self.drop_snapshot.pairs.typeid
+                + len(self.surface_snapshot.pairs.types),
+            ),
+            axis=None,
         )
         wetting_snapshot.pairs.group = np.concatenate(
             (
