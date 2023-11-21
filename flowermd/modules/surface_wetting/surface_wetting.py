@@ -3,35 +3,112 @@ import gsd.hoomd
 import hoomd
 import numpy as np
 import unyt as u
-from gmso.external import to_gsd_snapshot, to_hoomd_forcefield
 
 from flowermd.base import Simulation
 from flowermd.modules.surface_wetting.utils import combine_forces
 from flowermd.utils import HOOMDThermostats
 
 
-class SurfaceDropletCreator:
-    """Create a droplet on a surface."""
+class DropletSimulation(Simulation):
+    """Simulation which creates a droplet."""
 
     def __init__(
-        self, surface, drop_snapshot, drop_ff, drop_ref_values, box_height, gap
+        self,
+        initial_state,
+        forcefield,
+        r_cut=2.5,
+        reference_values=dict(),
+        dt=0.0001,
+        device=hoomd.device.auto_select(),
+        seed=42,
+        gsd_write_freq=1e4,
+        gsd_file_name="trajectory.gsd",
+        log_write_freq=1e3,
+        log_file_name="log.txt",
+        thermostat=HOOMDThermostats.MTTK,
+    ):
+        super(DropletSimulation, self).__init__(
+            initial_state=initial_state,
+            forcefield=forcefield,
+            r_cut=r_cut,
+            reference_values=reference_values,
+            dt=dt,
+            device=device,
+            seed=seed,
+            gsd_write_freq=gsd_write_freq,
+            gsd_file_name=gsd_file_name,
+            log_write_freq=log_write_freq,
+            log_file_name=log_file_name,
+            thermostat=thermostat,
+        )
+
+    def run_droplet(
+        self,
+        shrink_kT,
+        shrink_steps,
+        shrink_period,
+        expand_kT,
+        expand_steps,
+        expand_period,
+        hold_kT,
+        hold_steps,
+        final_density,
+        tau_kt,
+    ):
+        """Run droplet simulation."""
+        # Shrink down to high density
+        self.run_update_volume(
+            n_steps=shrink_steps,
+            period=shrink_period,
+            kT=shrink_kT,
+            tau_kt=tau_kt,
+            final_density=1.4 * (u.g / (u.cm**3)),
+            write_at_start=True,
+        )
+        # Expand back up to low density
+        self.run_update_volume(
+            n_steps=expand_steps,
+            period=expand_period,
+            kT=expand_kT,
+            tau_kt=tau_kt,
+            final_density=final_density * (u.g / (u.cm**3)),
+        )
+        # Run at low density
+        self.run_NVT(n_steps=hold_steps, kT=hold_kT, tau_kt=tau_kt)
+
+
+class InterfaceBuilder:
+    """Builds an interface with droplet on top of a surface."""
+
+    def __init__(
+        self,
+        surface_snapshot,
+        surface_ff,
+        drop_snapshot,
+        drop_ff,
+        drop_ref_values,
+        box_height,
+        gap,
     ):
         """Create the snapshot and forces for the surface droplet simulation.
 
         Creates a new snapshot that combines the surface and droplet snapshots
-        by adding the droplet particles on top of the surface particles with
+        by putting the droplet particles on top of the surface particles with
         the correct spacing (i.e. gap) between the two.
         Also combines the hoomd forces from the surface and droplet simulations,
-        and adds the forces for the pair interactions between the droplet and
-        surface particles.
+        and adds the forces for the new pair interactions between the droplet
+        and surface particles.
 
         Droplet reference values are used as the reference to scale the mass,
         energy and length values in the new snapshot.
 
         Parameters
         ----------
-        surface : flowermd.library.surfaces.Graphene, required
-            The surface to place the droplet on.
+        surface_snapshot : hoomd.snapshot.Snapshot or str, required
+            A snapshot of the surface simulation, or a path to a GSD file
+            of the surface simulation.
+        surface_ff : List of hoomd.md.force.Force, required
+            List of HOOMD force objects used in the surface simulation.
         drop_snapshot : hoomd.snapshot.Snapshot or str, required
             A snapshot of the droplet simulation, or a path
             to a GSD file of the droplet simulation.
@@ -45,23 +122,21 @@ class SurfaceDropletCreator:
             The gap between the droplet and the surface.'
 
         """
-        self.surface = surface
         if isinstance(drop_snapshot, str):
             drop_snapshot = gsd.hoomd.open(drop_snapshot)[-1]
+        if isinstance(surface_snapshot, str):
+            surface_snapshot = gsd.hoomd.open(surface_snapshot)[-1]
+        self.surface_ff = surface_ff
+        self.surface_snapshot = surface_snapshot
         self.drop_snapshot = drop_snapshot
         self.drop_ff = drop_ff
         self.drop_ref_values = drop_ref_values
         self.box_height = box_height / drop_ref_values["length"]
         self.gap = gap / drop_ref_values["length"]
 
-        # get surface snapshot and forces
-        (
-            self.surface_snapshot,
-            self.surface_ref_values,
-        ) = self._create_surface_snapshot()
         self._surface_n = self.surface_snapshot.particles.N
         self._drop_n = self.drop_snapshot.particles.N
-        self.surface_ff = self._create_surface_forces()
+
         # get snapshot of the combined system
         if set(self.surface_snapshot.particles.types).intersection(
             set(self.drop_snapshot.particles.types)
@@ -257,28 +332,6 @@ class SurfaceDropletCreator:
         wetting_pos = np.concatenate((surface_pos, drop_pos), axis=0)
         return wetting_pos
 
-    def _create_surface_snapshot(self):
-        """Get the surface snapshot."""
-        snap, refs = to_gsd_snapshot(
-            top=self.surface.gmso_molecule,
-            auto_scale=False,
-            base_units=self.drop_ref_values,
-        )
-        return snap, refs
-
-    def _create_surface_forces(self, surface_r_cut=2.5):
-        """Get the surface forces."""
-        force_list = []
-        ff, refs = to_hoomd_forcefield(
-            top=self.surface.gmso_molecule,
-            r_cut=surface_r_cut,
-            auto_scale=False,
-            base_units=self.drop_ref_values,
-        )
-        for force in ff:
-            force_list.extend(ff[force])
-        return force_list
-
     @property
     def wetting_snapshot(self):
         """Get the wetting snapshot."""
@@ -288,74 +341,6 @@ class SurfaceDropletCreator:
     def wetting_forces(self):
         """Get the wetting forces."""
         return self._wetting_forces
-
-
-class DropletSimulation(Simulation):
-    """Simulation which creates a droplet."""
-
-    def __init__(
-        self,
-        initial_state,
-        forcefield,
-        r_cut=2.5,
-        reference_values=dict(),
-        dt=0.0001,
-        device=hoomd.device.auto_select(),
-        seed=42,
-        gsd_write_freq=1e4,
-        gsd_file_name="trajectory.gsd",
-        log_write_freq=1e3,
-        log_file_name="log.txt",
-        thermostat=HOOMDThermostats.MTTK,
-    ):
-        super(DropletSimulation, self).__init__(
-            initial_state=initial_state,
-            forcefield=forcefield,
-            r_cut=r_cut,
-            reference_values=reference_values,
-            dt=dt,
-            device=device,
-            seed=seed,
-            gsd_write_freq=gsd_write_freq,
-            gsd_file_name=gsd_file_name,
-            log_write_freq=log_write_freq,
-            log_file_name=log_file_name,
-            thermostat=thermostat,
-        )
-
-    def run_droplet(
-        self,
-        shrink_kT,
-        shrink_steps,
-        shrink_period,
-        expand_kT,
-        expand_steps,
-        expand_period,
-        hold_kT,
-        hold_steps,
-        final_density,
-        tau_kt,
-    ):
-        """Run droplet simulation."""
-        # Shrink down to high density
-        self.run_update_volume(
-            n_steps=shrink_steps,
-            period=shrink_period,
-            kT=shrink_kT,
-            tau_kt=tau_kt,
-            final_density=1.4 * (u.g / (u.cm**3)),
-            write_at_start=True,
-        )
-        # Expand back up to low density
-        self.run_update_volume(
-            n_steps=expand_steps,
-            period=expand_period,
-            kT=expand_kT,
-            tau_kt=tau_kt,
-            final_density=final_density * (u.g / (u.cm**3)),
-        )
-        # Run at low density
-        self.run_NVT(n_steps=hold_steps, kT=hold_kT, tau_kt=tau_kt)
 
 
 class WettingSimulation(Simulation):
