@@ -394,17 +394,9 @@ class WettingSimulation(Simulation):
         self._fix_surface = value
         if self.fix_surface:
             snapshot = self.state.get_snapshot()
-            droplet_types = np.array(
-                [i for i in snapshot.particles.types if not i.startswith("_")]
-            )
-            droplet_type_idx = np.searchsorted(
-                snapshot.particles.types, droplet_types
-            )
-            droplet_particle_idx = np.searchsorted(
-                snapshot.particles.typeid, droplet_type_idx
-            )
-            self.integrate_group = hoomd.filter.Tags(
-                droplet_particle_idx.astype(np.uint32)
-            )
+            droplet_types = [
+                i for i in snapshot.particles.types if not i.startswith("_")
+            ]
+            self.integrate_group = hoomd.filter.Type(droplet_types)
         else:
             self.integrate_group = hoomd.filter.All()
