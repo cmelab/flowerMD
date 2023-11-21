@@ -46,10 +46,10 @@ class Graphene(Molecule):
         surface = mb.Compound(periodicity=periodicity)
         spacings = [0.425, 0.246, 0.35]
         points = [
-                [1 / 6, 0, 0],
-                [1 / 2, 0, 0],
-                [0, 1 / 2, 0],
-                [2 / 3, 1 / 2, 0]
+            [1 / 6, 0, 0],
+            [1 / 2, 0, 0],
+            [0, 1 / 2, 0],
+            [2 / 3, 1 / 2, 0],
         ]
         lattice = Lattice(
             lattice_spacing=spacings,
