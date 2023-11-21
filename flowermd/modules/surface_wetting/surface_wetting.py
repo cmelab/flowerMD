@@ -10,8 +10,76 @@ from flowermd.modules.surface_wetting.utils import combine_forces
 from flowermd.utils import HOOMDThermostats
 
 
-class SurfaceDropletCreator:
-    """Create a droplet on a surface."""
+class DropletSimulation(Simulation):
+    """Simulation which creates a droplet."""
+
+    def __init__(
+        self,
+        initial_state,
+        forcefield,
+        r_cut=2.5,
+        reference_values=dict(),
+        dt=0.0001,
+        device=hoomd.device.auto_select(),
+        seed=42,
+        gsd_write_freq=1e4,
+        gsd_file_name="trajectory.gsd",
+        log_write_freq=1e3,
+        log_file_name="log.txt",
+        thermostat=HOOMDThermostats.MTTK,
+    ):
+        super(DropletSimulation, self).__init__(
+            initial_state=initial_state,
+            forcefield=forcefield,
+            r_cut=r_cut,
+            reference_values=reference_values,
+            dt=dt,
+            device=device,
+            seed=seed,
+            gsd_write_freq=gsd_write_freq,
+            gsd_file_name=gsd_file_name,
+            log_write_freq=log_write_freq,
+            log_file_name=log_file_name,
+            thermostat=thermostat,
+        )
+
+    def run_droplet(
+        self,
+        shrink_kT,
+        shrink_steps,
+        shrink_period,
+        expand_kT,
+        expand_steps,
+        expand_period,
+        hold_kT,
+        hold_steps,
+        final_density,
+        tau_kt,
+    ):
+        """Run droplet simulation."""
+        # Shrink down to high density
+        self.run_update_volume(
+            n_steps=shrink_steps,
+            period=shrink_period,
+            kT=shrink_kT,
+            tau_kt=tau_kt,
+            final_density=1.4 * (u.g / (u.cm**3)),
+            write_at_start=True,
+        )
+        # Expand back up to low density
+        self.run_update_volume(
+            n_steps=expand_steps,
+            period=expand_period,
+            kT=expand_kT,
+            tau_kt=tau_kt,
+            final_density=final_density * (u.g / (u.cm**3)),
+        )
+        # Run at low density
+        self.run_NVT(n_steps=hold_steps, kT=hold_kT, tau_kt=tau_kt)
+
+
+class InterfaceBuilder:
+    """Builds an interface with droplet on top of a surface."""
 
     def __init__(
         self, surface, drop_snapshot, drop_ff, drop_ref_values, box_height, gap
@@ -288,74 +356,6 @@ class SurfaceDropletCreator:
     def wetting_forces(self):
         """Get the wetting forces."""
         return self._wetting_forces
-
-
-class DropletSimulation(Simulation):
-    """Simulation which creates a droplet."""
-
-    def __init__(
-        self,
-        initial_state,
-        forcefield,
-        r_cut=2.5,
-        reference_values=dict(),
-        dt=0.0001,
-        device=hoomd.device.auto_select(),
-        seed=42,
-        gsd_write_freq=1e4,
-        gsd_file_name="trajectory.gsd",
-        log_write_freq=1e3,
-        log_file_name="log.txt",
-        thermostat=HOOMDThermostats.MTTK,
-    ):
-        super(DropletSimulation, self).__init__(
-            initial_state=initial_state,
-            forcefield=forcefield,
-            r_cut=r_cut,
-            reference_values=reference_values,
-            dt=dt,
-            device=device,
-            seed=seed,
-            gsd_write_freq=gsd_write_freq,
-            gsd_file_name=gsd_file_name,
-            log_write_freq=log_write_freq,
-            log_file_name=log_file_name,
-            thermostat=thermostat,
-        )
-
-    def run_droplet(
-        self,
-        shrink_kT,
-        shrink_steps,
-        shrink_period,
-        expand_kT,
-        expand_steps,
-        expand_period,
-        hold_kT,
-        hold_steps,
-        final_density,
-        tau_kt,
-    ):
-        """Run droplet simulation."""
-        # Shrink down to high density
-        self.run_update_volume(
-            n_steps=shrink_steps,
-            period=shrink_period,
-            kT=shrink_kT,
-            tau_kt=tau_kt,
-            final_density=1.4 * (u.g / (u.cm**3)),
-            write_at_start=True,
-        )
-        # Expand back up to low density
-        self.run_update_volume(
-            n_steps=expand_steps,
-            period=expand_period,
-            kT=expand_kT,
-            tau_kt=tau_kt,
-            final_density=final_density * (u.g / (u.cm**3)),
-        )
-        # Run at low density
-        self.run_NVT(n_steps=hold_steps, kT=hold_kT, tau_kt=tau_kt)
 
 
 class WettingSimulation(Simulation):
