@@ -1,6 +1,7 @@
 """Recipes to generate surfaces using mBuild."""
 
 import mbuild as mb
+from gmso.external import to_gsd_snapshot, to_hoomd_forcefield
 from mbuild.compound import Compound
 from mbuild.lattice import Lattice
 
@@ -42,6 +43,7 @@ class Graphene(Molecule):
         n_layers,
         force_field=None,
         periodicity=(True, True, False),
+        reference_values=None,
     ):
         surface = mb.Compound(periodicity=periodicity)
         spacings = [0.425, 0.246, 0.35]
@@ -65,3 +67,41 @@ class Graphene(Molecule):
         super(Graphene, self).__init__(
             compound=surface, num_mols=1, force_field=force_field
         )
+        # get surface snapshot and forces
+        self.reference_values = reference_values
+
+        self._surface_snapshot = self._create_surface_snapshot()
+
+        self._surface_ff = self._create_surface_forces()
+
+    @property
+    def surface_snapshot(self):
+        """Get the hoomd snapshot of the surface."""
+        return self._surface_snapshot
+
+    @property
+    def surface_ff(self):
+        """Get the hoomd forcefield of the surface."""
+        return self._surface_ff
+
+    def _create_surface_snapshot(self):
+        """Get the surface snapshot."""
+        snap, _ = to_gsd_snapshot(
+            top=self.gmso_molecule,
+            auto_scale=False,
+            base_units=self.reference_values,
+        )
+        return snap
+
+    def _create_surface_forces(self, r_cut=2.5):
+        """Get the surface hoomd forces."""
+        force_list = []
+        ff, refs = to_hoomd_forcefield(
+            top=self.gmso_molecule,
+            r_cut=r_cut,
+            auto_scale=False,
+            base_units=self.reference_values,
+        )
+        for force in ff:
+            force_list.extend(ff[force])
+        return force_list
