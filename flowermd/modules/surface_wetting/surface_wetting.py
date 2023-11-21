@@ -130,7 +130,7 @@ class InterfaceBuilder:
         self.surface_snapshot = surface_snapshot
         self.drop_snapshot = drop_snapshot
         self.drop_ff = drop_ff
-        self.drop_ref_values = drop_ref_values
+        self.reference_values = drop_ref_values
         self.box_height = box_height / drop_ref_values["length"]
         self.gap = gap / drop_ref_values["length"]
 
