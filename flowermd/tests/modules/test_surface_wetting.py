@@ -71,13 +71,13 @@ class TestSurfaceWetting(BaseTest):
 
         # create wetting simulation
         wetting_sim = WettingSimulation(
-            initial_state=interface.wetting_snapshot,
-            forcefield=interface.wetting_forces,
+            initial_state=interface.hoomd_snapshot,
+            forcefield=interface.hoomd_forces,
             reference_values=interface.reference_values,
         )
         wetting_sim.run_NVT(n_steps=200, kT=1.0, tau_kt=wetting_sim.dt * 100)
         assert (
-            interface.wetting_snapshot.particles.N
+            interface.hoomd_snapshot.particles.N
             == drop_snapshot.particles.N + surface.surface_snapshot.particles.N
         )
         surface_types = [
@@ -85,6 +85,6 @@ class TestSurfaceWetting(BaseTest):
             for ptype in surface.surface_snapshot.particles.types
         ]
         assert (
-            interface.wetting_snapshot.particles.types
+            interface.hoomd_snapshot.particles.types
             == surface_types + drop_snapshot.particles.types
         )

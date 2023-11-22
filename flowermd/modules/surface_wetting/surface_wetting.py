@@ -156,6 +156,16 @@ class InterfaceBuilder:
             self.surface_ptypes,
         )
 
+    @property
+    def hoomd_snapshot(self):
+        """Get the wetting snapshot."""
+        return self._wetting_snapshot
+
+    @property
+    def hoomd_forces(self):
+        """Get the wetting forces."""
+        return self._wetting_forces
+
     def _build_snapshot(self):
         """Build a snapshot by combining the surface and droplet snapshots."""
         wetting_snapshot = gsd.hoomd.Frame()
@@ -331,16 +341,6 @@ class InterfaceBuilder:
         drop_pos[:, 2] -= z_shift
         wetting_pos = np.concatenate((surface_pos, drop_pos), axis=0)
         return wetting_pos
-
-    @property
-    def wetting_snapshot(self):
-        """Get the wetting snapshot."""
-        return self._wetting_snapshot
-
-    @property
-    def wetting_forces(self):
-        """Get the wetting forces."""
-        return self._wetting_forces
 
 
 class WettingSimulation(Simulation):
