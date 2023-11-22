@@ -1,14 +1,13 @@
 """Recipes to generate surfaces using mBuild."""
 
 import mbuild as mb
-from gmso.external import to_gsd_snapshot, to_hoomd_forcefield
 from mbuild.compound import Compound
 from mbuild.lattice import Lattice
 
-from flowermd.base import Molecule
+from flowermd.base import Molecule, System
 
 
-class Graphene(Molecule):
+class Graphene(System):
     """Create a rectangular graphene layer or multiple layers.
 
     Parameters
@@ -24,10 +23,38 @@ class Graphene(Molecule):
         Note that setting `force_field` does not actually apply the forcefield
         to the molecule. The forcefield in this step is mainly used for
         validation purposes.
+    reference_values : dict, required
+        A dictionary of reference values for the surface. The keys of the
+        dictionary are "length", "energy", and "mass". The values of the
+        dictionary are unyt quantities.
+    r_cut : float, required
+        The cutoff radius for the Lennard-Jones interactions.
     periodicity : tuple of bools, length=3, optional, default=(True, True, False) # noqa: E501
         Whether the Compound is periodic in the x, y, and z directions.
         If None is provided, the periodicity is set to `(False, False, False)`
         which is non-periodic in all directions.
+        auto_scale : bool, default=False
+        Set to true to use reduced simulation units.
+        distance, mass, and energy are scaled by the largest value
+        present in the system for each.
+    scale_charges : bool, default False
+        Set to true to scale charges to net zero.
+    remove_charges : bool, default False
+        Set to true to remove charges from the system.
+    remove_hydrogens : bool, default False
+        Set to true to remove hydrogen atoms from the system.
+        The masses and charges of the hydrogens are absorbed into
+        the heavy atoms they were bonded to.
+    pppm_resolution : tuple, default=(8, 8, 8)
+        The resolution used in
+        `hoomd.md.long_range.pppm.make_pppm_coulomb_force` representing
+        number of grid points in the x, y, and z directions.
+    ppmp_order : int, default=4
+        The order used in
+        `hoomd.md.long_range.pppm.make_pppm_coulomb_force` representing
+        number of grid points in each direction to assign charges to.
+    nlist_buffer : float, default=0.4
+        Neighborlist buffer for simulation cell.
 
     Notes
     -----
@@ -41,9 +68,17 @@ class Graphene(Molecule):
         x_repeat,
         y_repeat,
         n_layers,
-        force_field=None,
+        force_field,
+        reference_values,
+        r_cut,
         periodicity=(True, True, False),
-        reference_values=None,
+        auto_scale=False,
+        scale_charges=False,
+        remove_charges=False,
+        remove_hydrogens=False,
+        pppm_resolution=(8, 8, 8),
+        pppm_order=4,
+        nlist_buffer=0.4,
     ):
         surface = mb.Compound(periodicity=periodicity)
         spacings = [0.425, 0.246, 0.35]
@@ -64,44 +99,25 @@ class Graphene(Molecule):
         )
         surface.add(layers)
         surface.freud_generate_bonds("C", "C", dmin=0.14, dmax=0.145)
+        surface_mol = Molecule(num_mols=1, compound=surface)
         super(Graphene, self).__init__(
-            compound=surface, num_mols=1, force_field=force_field
+            molecules=[surface_mol],
+            density=1.0,
+            base_units=reference_values,
         )
-        # get surface snapshot and forces
-        self.reference_values = reference_values
 
-        self._surface_snapshot = self._create_surface_snapshot()
-
-        self._surface_ff = self._create_surface_forces()
-
-    @property
-    def surface_snapshot(self):
-        """Get the hoomd snapshot of the surface."""
-        return self._surface_snapshot
-
-    @property
-    def surface_ff(self):
-        """Get the hoomd forcefield of the surface."""
-        return self._surface_ff
-
-    def _create_surface_snapshot(self):
-        """Get the surface snapshot."""
-        snap, _ = to_gsd_snapshot(
-            top=self.gmso_molecule,
-            auto_scale=False,
-            base_units=self.reference_values,
-        )
-        return snap
-
-    def _create_surface_forces(self, r_cut=2.5):
-        """Get the surface hoomd forces."""
-        force_list = []
-        ff, refs = to_hoomd_forcefield(
-            top=self.gmso_molecule,
+        # apply forcefield to surface
+        self.apply_forcefield(
             r_cut=r_cut,
-            auto_scale=False,
-            base_units=self.reference_values,
+            force_field=force_field,
+            auto_scale=auto_scale,
+            scale_charges=scale_charges,
+            remove_charges=remove_charges,
+            remove_hydrogens=remove_hydrogens,
+            pppm_resolution=pppm_resolution,
+            pppm_order=pppm_order,
+            nlist_buffer=nlist_buffer,
         )
-        for force in ff:
-            force_list.extend(ff[force])
-        return force_list
+
+    def _build_system(self):
+        return self.all_molecules[0]
