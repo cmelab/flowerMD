@@ -68,17 +68,8 @@ class Graphene(System):
         x_repeat,
         y_repeat,
         n_layers,
-        force_field,
-        reference_values,
-        r_cut,
+        base_units=dict(),
         periodicity=(True, True, False),
-        auto_scale=False,
-        scale_charges=False,
-        remove_charges=False,
-        remove_hydrogens=False,
-        pppm_resolution=(8, 8, 8),
-        pppm_order=4,
-        nlist_buffer=0.4,
     ):
         surface = mb.Compound(periodicity=periodicity)
         spacings = [0.425, 0.246, 0.35]
@@ -103,20 +94,7 @@ class Graphene(System):
         super(Graphene, self).__init__(
             molecules=[surface_mol],
             density=1.0,
-            base_units=reference_values,
-        )
-
-        # apply forcefield to surface
-        self.apply_forcefield(
-            r_cut=r_cut,
-            force_field=force_field,
-            auto_scale=auto_scale,
-            scale_charges=scale_charges,
-            remove_charges=remove_charges,
-            remove_hydrogens=remove_hydrogens,
-            pppm_resolution=pppm_resolution,
-            pppm_order=pppm_order,
-            nlist_buffer=nlist_buffer,
+            base_units=base_units,
         )
 
     def _build_system(self):
