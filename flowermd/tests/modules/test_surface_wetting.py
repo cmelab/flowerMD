@@ -1,3 +1,5 @@
+import gsd.hoomd
+
 from flowermd.base import Pack
 from flowermd.library.forcefields import OPLS_AA
 from flowermd.library.surfaces import Graphene
@@ -31,8 +33,8 @@ class TestSurfaceWetting(BaseTest):
             expand_kT=0.5,
             hold_kT=1.0,
             tau_kt=drop_sim.dt * 100,
-            shrink_steps=2e5,
-            expand_steps=2e5,
+            shrink_steps=2e2,
+            expand_steps=2e2,
             hold_steps=1e3,
             shrink_period=10,
             expand_period=10,
@@ -40,8 +42,8 @@ class TestSurfaceWetting(BaseTest):
         )
         # create graphene surface
         surface = Graphene(
-            x_repeat=12,
-            y_repeat=12,
+            x_repeat=2,
+            y_repeat=2,
             n_layers=2,
             force_field=OPLS_AA(),
             reference_values=drop_sim.reference_values,
@@ -53,6 +55,9 @@ class TestSurfaceWetting(BaseTest):
 
         with open("droplet_restart_ff.pkl", "rb") as handle:
             drop_ff = pickle.load(handle)
+        # load drop snapshot
+        with gsd.hoomd.open("droplet_restart.gsd", "r") as traj:
+            drop_snapshot = traj[0]
         # create interface
         interface = InterfaceBuilder(
             surface_snapshot=surface.surface_snapshot,
@@ -73,5 +78,13 @@ class TestSurfaceWetting(BaseTest):
         wetting_sim.run_NVT(n_steps=200, kT=1.0, tau_kt=wetting_sim.dt * 100)
         assert (
             interface.wetting_snapshot.particles.N
-            == drop_mol.n_particles + surface.surface_snapshot.particles.N
+            == drop_snapshot.particles.N + surface.surface_snapshot.particles.N
+        )
+        surface_types = [
+            f"surface_{ptype}"
+            for ptype in surface.surface_snapshot.particles.types
+        ]
+        assert (
+            interface.wetting_snapshot.particles.types
+            == surface_types + drop_snapshot.particles.types
         )
