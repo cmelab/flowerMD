@@ -47,6 +47,7 @@ class DropletSimulation(Simulation):
         shrink_kT,
         shrink_steps,
         shrink_period,
+        shrink_density,
         expand_kT,
         expand_steps,
         expand_period,
@@ -55,14 +56,53 @@ class DropletSimulation(Simulation):
         final_density,
         tau_kt,
     ):
-        """Run droplet simulation."""
+        """Run droplet simulation.
+
+        The steps for creating a droplet are:
+        1. Shrink the box to a high density (i.e. `shrink_density`) at a high
+        temperature (i.e. `shrink_kT`) to get the droplet to form.
+        2. Expand the box back to a low density (i.e. 'final_density') at a low
+        temperature (i.e. `expand_kT`). Keeping the temperature low will keep
+        the droplet from falling apart.
+        3. Run the simulation at the `final_density` and low temperature
+        (i.e. `hold_kT`) to equilibrate the droplet.
+
+
+        Parameters
+        ----------
+        shrink_kT : float or hoomd.variant.Ramp, required
+            The temperature to run the simulation at while shrinking.
+        shrink_steps : int, required
+            The number of steps to run the simulation while shrinking.
+        shrink_period : int, required
+            The number of steps between updates to the box size while shrinking.
+        shrink_density : float, required
+            The high density to shrink the box to.
+            Note: the units of the density are in g/cm^3.
+        expand_kT : float or hoomd.variant.Ramp, required
+            The temperature to run the simulation at while expanding.
+        expand_steps : int, required
+            The number of steps to run the simulation while expanding.
+        expand_period : int, required
+            The number of steps between updates to the box size while expanding.
+        hold_kT : float or hoomd.variant.Ramp, required
+            The temperature to run the simulation at while equilibrating.
+        hold_steps : int, required
+            The number of steps to run the simulation while equilibrating.
+        final_density : float, required
+            The low density to equilibrate the box to.
+            Note: the units of the density are in g/cm^3.
+        tau_kt : float, required
+            The time constant for the thermostat.
+
+        """
         # Shrink down to high density
         self.run_update_volume(
             n_steps=shrink_steps,
             period=shrink_period,
             kT=shrink_kT,
             tau_kt=tau_kt,
-            final_density=1.4 * (u.g / (u.cm**3)),
+            final_density=shrink_density * (u.g / (u.cm**3)),
             write_at_start=True,
         )
         # Expand back up to low density
