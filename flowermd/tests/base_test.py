@@ -275,3 +275,11 @@ class BaseTest:
     @pytest.fixture()
     def graphene_snapshot(self):
         return os.path.join(ASSETS_DIR, "graphene_snapshot.gsd")
+
+    @pytest.fixture()
+    def surface_wetting_init_snapshot(self):
+        return os.path.join(ASSETS_DIR, "surface_wetting_init.gsd")
+
+    @pytest.fixture()
+    def surface_wetting_init_ff(self):
+        return os.path.join(ASSETS_DIR, "surface_wetting_ff.pkl")

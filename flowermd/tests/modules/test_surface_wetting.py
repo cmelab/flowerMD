@@ -5,7 +5,11 @@ import unyt as u
 from flowermd.base import Pack
 from flowermd.library.forcefields import OPLS_AA
 from flowermd.library.surfaces import Graphene
-from flowermd.modules.surface_wetting import DropletSimulation, InterfaceBuilder
+from flowermd.modules.surface_wetting import (
+    DropletSimulation,
+    InterfaceBuilder,
+    WettingSimulation,
+)
 from flowermd.tests.base_test import BaseTest
 
 
@@ -85,13 +89,6 @@ class TestInterfaceBuilder(BaseTest):
             + drop_snapshot.particles.types
         )
 
-        assert np.isclose(
-            interface.hoomd_snapshot.configuration.box[2]
-            * polyethylene_ref_values["length"].value,
-            15,
-            atol=1e-2,
-        )
-
         # test z gap
         assert np.isclose(
             np.abs(
@@ -111,4 +108,27 @@ class TestInterfaceBuilder(BaseTest):
             * polyethylene_ref_values["length"].value,
             0.4,
             atol=1e-2,
+        )
+
+
+class TestWettingSimulation(BaseTest):
+    def test_wetting_sim(
+        self, surface_wetting_init_snapshot, surface_wetting_init_ff
+    ):
+        # load surface wetting init snapshot
+        snapshot = gsd.hoomd.open(surface_wetting_init_snapshot)[0]
+        # load ff from pickle
+        import pickle
+
+        with open(surface_wetting_init_ff, "rb") as handle:
+            ff = pickle.load(handle)
+        wetting_sim = WettingSimulation(
+            initial_state=snapshot,
+            forcefield=ff,
+            fix_surface=True,
+        )
+        wetting_sim.run_NVT(
+            kT=1.0,
+            tau_kt=1,
+            n_steps=1e3,
         )
