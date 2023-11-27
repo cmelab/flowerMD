@@ -159,7 +159,7 @@ class InterfaceBuilder:
         box_height : unyt.unyt_quantity or float, required
             The height of the simulation box.
         gap : unyt.unyt_quantity or float, required
-            The gap between the droplet and the surface.'
+            The gap between the droplet and the surface.
 
         """
         if isinstance(drop_snapshot, str):

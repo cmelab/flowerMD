@@ -5,11 +5,7 @@ import unyt as u
 from flowermd.base import Pack
 from flowermd.library.forcefields import OPLS_AA
 from flowermd.library.surfaces import Graphene
-from flowermd.modules.surface_wetting import (
-    DropletSimulation,
-    InterfaceBuilder,
-    WettingSimulation,
-)
+from flowermd.modules.surface_wetting import DropletSimulation, InterfaceBuilder
 from flowermd.tests.base_test import BaseTest
 
 
@@ -47,44 +43,72 @@ class TestDropletSimulation(BaseTest):
         )
 
 
-class TestSurfaceWetting(BaseTest):
-    def test_surface_wetting(self, polyethylene):
-        pass
-        # load the droplet snapshot
-
+class TestInterfaceBuilder(BaseTest):
+    def test_interface_builder(
+        self, polyethylene_system, polyethylene_droplet, graphene_snapshot
+    ):
+        # load droplet snapshot
+        drop_snapshot = gsd.hoomd.open(polyethylene_droplet)[0]
         # recreate droplet forcefield
+        polyethylene_ff = polyethylene_system.hoomd_forcefield
+        polyethylene_ref_values = polyethylene_system.reference_values
 
-        # load graphene surface
-
-        # recreate graphene forcefield
+        # load surface snapshot
+        surface_snapshot = gsd.hoomd.open(graphene_snapshot)[0]
+        # recreate surface forcefield
+        graphene = Graphene(
+            x_repeat=2,
+            y_repeat=2,
+            n_layers=2,
+            base_units=polyethylene_ref_values,
+        )
+        graphene.apply_forcefield(force_field=OPLS_AA(), r_cut=2.5)
+        graphene_ff = graphene.hoomd_forcefield
 
         # create interface
-        # interface = InterfaceBuilder(
-        #     surface_snapshot=surface.hoomd_snapshot,
-        #     surface_ff=surface.hoomd_forcefield,
-        #     drop_snapshot="droplet_restart.gsd",
-        #     drop_ff=drop_ff,
-        #     drop_ref_values=drop_sim.reference_values,
-        #     box_height=15 * drop_sim.reference_values["length"],
-        #     gap=0.4 * drop_sim.reference_values["length"],
-        # )
-        #
-        # # create wetting simulation
-        # wetting_sim = WettingSimulation(
-        #     initial_state=interface.hoomd_snapshot,
-        #     forcefield=interface.hoomd_forces,
-        #     reference_values=interface.reference_values,
-        # )
-        # wetting_sim.run_NVT(n_steps=200, kT=1.0, tau_kt=wetting_sim.dt * 100)
-        # assert (
-        #         interface.hoomd_snapshot.particles.N
-        #         == drop_snapshot.particles.N + surface.surface_snapshot.particles.N
-        # )
-        # surface_types = [
-        #     f"surface_{ptype}"
-        #     for ptype in surface.surface_snapshot.particles.types
-        # ]
-        # assert (
-        #         interface.hoomd_snapshot.particles.types
-        #         == surface_types + drop_snapshot.particles.types
-        # )
+        interface = InterfaceBuilder(
+            surface_snapshot=surface_snapshot,
+            surface_ff=graphene_ff,
+            drop_snapshot=drop_snapshot,
+            drop_ff=polyethylene_ff,
+            drop_ref_values=polyethylene_ref_values,
+            box_height=15 * u.nm,
+            gap=0.4 * u.nm,
+        )
+        assert (
+            interface.hoomd_snapshot.particles.N
+            == drop_snapshot.particles.N + surface_snapshot.particles.N
+        )
+        assert (
+            interface.hoomd_snapshot.particles.types
+            == [f"_{ptype}" for ptype in surface_snapshot.particles.types]
+            + drop_snapshot.particles.types
+        )
+
+        assert np.isclose(
+            interface.hoomd_snapshot.configuration.box[2]
+            * polyethylene_ref_values["length"].value,
+            15,
+            atol=1e-2,
+        )
+
+        # test z gap
+        assert np.isclose(
+            np.abs(
+                np.max(
+                    interface.hoomd_snapshot.particles.position[
+                        : surface_snapshot.particles.N
+                    ],
+                    axis=0,
+                )[2]
+                - np.min(
+                    interface.hoomd_snapshot.particles.position[
+                        surface_snapshot.particles.N :  # noqa: E203
+                    ],
+                    axis=0,
+                )[2]
+            )
+            * polyethylene_ref_values["length"].value,
+            0.4,
+            atol=1e-2,
+        )
