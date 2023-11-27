@@ -612,7 +612,7 @@ class Simulation(hoomd.simulation.Simulation):
             Number of steps to run during volume update.
         period : int, required
             The number of steps ran between each box update iteration.
-        kT : int or hoomd.variant.Ramp, required
+        kT : float or hoomd.variant.Ramp, required
             The temperature to use during volume update.
         tau_kt : float, required
             Thermostat coupling period (in simulation time units).
