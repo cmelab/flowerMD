@@ -45,8 +45,7 @@ class TestSurfaceWetting(BaseTest):
             x_repeat=2,
             y_repeat=2,
             n_layers=2,
-            force_field=OPLS_AA(),
-            reference_values=drop_sim.reference_values,
+            base_units=drop_sim.reference_values,
         )
         drop_sim.save_restart_gsd("droplet_restart.gsd")
         drop_sim.pickle_forcefield("droplet_restart_ff.pkl")
@@ -60,8 +59,8 @@ class TestSurfaceWetting(BaseTest):
             drop_snapshot = traj[0]
         # create interface
         interface = InterfaceBuilder(
-            surface_snapshot=surface.surface_snapshot,
-            surface_ff=surface.surface_ff,
+            surface_snapshot=surface.hoomd_snapshot,
+            surface_ff=surface.hoomd_forcefield,
             drop_snapshot="droplet_restart.gsd",
             drop_ff=drop_ff,
             drop_ref_values=drop_sim.reference_values,
