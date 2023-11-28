@@ -116,7 +116,7 @@ Additionally, `flowerMD` offers a library pre-defined subclasses of these base c
 including common polymers, forcefields, and bulk system initialization algorithms.
 
 # Recipes
-The modular design of `flowerMD` enables version-controlled workflows to be created and shared. `flowerMD` currently includes two complete workflows: a polymer fusion welding recipe and a surface wetting recipe. 
+The modular design of `flowerMD` enables version-controlled workflows to be created and shared. `flowerMD` currently includes two complete workflows: a polymer fusion welding recipe and a surface wetting recipe.
 As an example, the polymer welding recipe uses the following subclasses:`flowerMD.modules.welding.SlabSimulation`, `flowerMD.modules.welding.Interface`, `flowerMD.modules.welding.WeldSimulation`,
 and `flowerMD.library.simulations.Tensile`.
 
