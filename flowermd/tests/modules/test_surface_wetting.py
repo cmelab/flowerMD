@@ -55,7 +55,11 @@ class TestInterfaceBuilder(BaseTest):
         drop_snapshot = gsd.hoomd.open(polyethylene_droplet)[0]
         # recreate droplet forcefield
         polyethylene_ff = polyethylene_system.hoomd_forcefield
-        polyethylene_ref_values = polyethylene_system.reference_values
+        drop_refs = {
+            "energy": u.unyt_quantity(0.276144, "kJ/mol"),
+            "length": u.unyt_quantity(0.35, "nm"),
+            "mass": u.unyt_quantity(12.011, "amu"),
+        }
 
         # load surface snapshot
         surface_snapshot = gsd.hoomd.open(graphene_snapshot)[0]
@@ -64,7 +68,7 @@ class TestInterfaceBuilder(BaseTest):
             x_repeat=2,
             y_repeat=2,
             n_layers=2,
-            base_units=polyethylene_ref_values,
+            base_units=drop_refs,
         )
         graphene.apply_forcefield(force_field=OPLS_AA(), r_cut=2.5)
         graphene_ff = graphene.hoomd_forcefield
@@ -75,7 +79,7 @@ class TestInterfaceBuilder(BaseTest):
             surface_ff=graphene_ff,
             drop_snapshot=drop_snapshot,
             drop_ff=polyethylene_ff,
-            drop_ref_values=polyethylene_ref_values,
+            drop_ref_values=drop_refs,
             box_height=15 * u.nm,
             gap=0.4 * u.nm,
         )
@@ -87,6 +91,12 @@ class TestInterfaceBuilder(BaseTest):
             interface.hoomd_snapshot.particles.types
             == [f"_{ptype}" for ptype in surface_snapshot.particles.types]
             + drop_snapshot.particles.types
+        )
+        assert np.isclose(
+            interface.hoomd_snapshot.configuration.box[2]
+            * drop_refs["length"].value,
+            15,
+            atol=1e-2,
         )
 
         # test z gap
@@ -105,7 +115,7 @@ class TestInterfaceBuilder(BaseTest):
                     axis=0,
                 )[2]
             )
-            * polyethylene_ref_values["length"].value,
+            * drop_refs["length"].value,
             0.4,
             atol=1e-2,
         )
