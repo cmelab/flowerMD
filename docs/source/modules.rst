@@ -15,3 +15,4 @@ Modules
    :maxdepth: 1
 
    welding
+   surface_wetting

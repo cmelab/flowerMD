@@ -31,7 +31,7 @@ class Molecule:
         Number of molecules to generate.
     force_field : flowermd.ForceField or a list of
         `hoomd.md.force.Force` objects, default=None
-        The force field to be applied to the molecule for parameterization.
+        The forcefield to be applied to the molecule for parameterization.
         Note that setting `force_field` does not actually apply the
         forcefield to the molecule. The forcefield in this step is mainly
         used for validation purposes.
@@ -430,8 +430,12 @@ class Polymer(Molecule):
         The smiles string of the monomer to generate.
     file : str, default None
         The file path to the monomer to generate.
-    force_field : str, default None
-        The force field to apply to the molecule.
+    force_field : flowermd.ForceField or a list of
+        `hoomd.md.force.Force` objects, default=None
+        The forcefield to be applied to the molecule for parameterization.
+        Note that setting `force_field` does not actually apply the
+        forcefield to the molecule. The forcefield in this step is mainly
+        used for validation purposes.
     bond_indices: list, default None
         The indices of the atoms to bond.
     bond_length: float, default None
@@ -502,6 +506,8 @@ class CoPolymer(Molecule):
         Class of the B-type monomer
     length : int, required
         The total number of monomers in the molecule
+    num_mols : int, required
+        Number of chains to generate.
     sequence : str, default None
         Manually define the sequence of 'A' and 'B' monomers.
         Leave as None if generating random sequences.
@@ -509,6 +515,12 @@ class CoPolymer(Molecule):
     AB_ratio : float, default 0.50
         The relative weight of A to B monomer types.
         Used when generating random sequences.
+    force_field : flowermd.ForceField or a list of
+        `hoomd.md.force.Force` objects, default=None
+        The forcefield to be applied to the molecule for parameterization.
+        Note that setting `force_field` does not actually apply the
+        forcefield to the molecule. The forcefield in this step is mainly
+        used for validation purposes.
     seed : int, default 24
         Set the seed used when generating random sequences
 

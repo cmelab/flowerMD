@@ -169,10 +169,7 @@ class TestSystem(BaseTest):
 
     def test_add_mass_charges(self, benzene_molecule):
         benzene_mols = benzene_molecule(n_mols=1)
-        system = Pack(
-            molecules=[benzene_mols],
-            density=0.8,
-        )
+        system = Pack(molecules=[benzene_mols], density=0.8, base_units=dict())
         system.apply_forcefield(
             r_cut=2.5,
             force_field=OPLS_AA(),
@@ -217,10 +214,7 @@ class TestSystem(BaseTest):
 
     def test_ref_length(self, polyethylene):
         polyethylene = polyethylene(lengths=5, num_mols=5)
-        system = Pack(
-            molecules=[polyethylene],
-            density=1.0,
-        )
+        system = Pack(molecules=[polyethylene], density=1.0, base_units=dict())
         system.apply_forcefield(
             r_cut=2.5, force_field=[OPLS_AA()], auto_scale=True
         )
@@ -236,10 +230,7 @@ class TestSystem(BaseTest):
 
     def test_ref_mass(self, polyethylene):
         polyethylene = polyethylene(lengths=5, num_mols=5)
-        system = Pack(
-            molecules=[polyethylene],
-            density=1.0,
-        )
+        system = Pack(molecules=[polyethylene], density=1.0, base_units=dict())
         system.apply_forcefield(
             r_cut=2.5, force_field=[OPLS_AA()], auto_scale=True
         )
@@ -252,10 +243,7 @@ class TestSystem(BaseTest):
 
     def test_ref_energy(self, polyethylene):
         polyethylene = polyethylene(lengths=5, num_mols=5)
-        system = Pack(
-            molecules=[polyethylene],
-            density=1.0,
-        )
+        system = Pack(molecules=[polyethylene], density=1.0, base_units=dict())
         system.apply_forcefield(
             r_cut=2.5, force_field=[OPLS_AA()], auto_scale=True
         )
