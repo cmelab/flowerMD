@@ -118,7 +118,40 @@ class DropletSimulation(Simulation):
 
 
 class InterfaceBuilder:
-    """Builds an interface with droplet on top of a surface."""
+    """Builds an interface with droplet on top of a surface.
+
+    Create the snapshot and forces for the surface droplet simulation.
+
+    This class creates a new snapshot that combines the surface and droplet
+    snapshots by putting the droplet particles on top of the surface particles
+    with the correct spacing (i.e. gap) between the two.
+    Also combines the hoomd forces from the surface and droplet simulations,
+    and adds the forces for the new pair interactions between the droplet
+    and surface particles.
+
+    Droplet reference values are used as the reference to scale the mass,
+    energy and length values in the new snapshot.
+
+    Parameters
+    ----------
+    surface_snapshot : hoomd.snapshot.Snapshot or str, required
+        A snapshot of the surface simulation, or a path to a GSD file
+        of the surface simulation.
+    surface_ff : List of hoomd.md.force.Force, required
+        List of HOOMD force objects used in the surface simulation.
+    drop_snapshot : hoomd.snapshot.Snapshot or str, required
+        A snapshot of the droplet simulation, or a path
+        to a GSD file of the droplet simulation.
+    drop_ff : List of hoomd.md.force.Force, required
+        List of HOOMD force objects used in the droplet simulation.
+    drop_ref_values : dict, required
+        Dictionary of reference values for the droplet simulation.
+    box_height : unyt.unyt_quantity or float, required
+        The height of the simulation box.
+    gap : unyt.unyt_quantity or float, required
+        The gap between the droplet and the surface.
+
+    """
 
     def __init__(
         self,
@@ -130,38 +163,6 @@ class InterfaceBuilder:
         box_height,
         gap,
     ):
-        """Create the snapshot and forces for the surface droplet simulation.
-
-        Creates a new snapshot that combines the surface and droplet snapshots
-        by putting the droplet particles on top of the surface particles with
-        the correct spacing (i.e. gap) between the two.
-        Also combines the hoomd forces from the surface and droplet simulations,
-        and adds the forces for the new pair interactions between the droplet
-        and surface particles.
-
-        Droplet reference values are used as the reference to scale the mass,
-        energy and length values in the new snapshot.
-
-        Parameters
-        ----------
-        surface_snapshot : hoomd.snapshot.Snapshot or str, required
-            A snapshot of the surface simulation, or a path to a GSD file
-            of the surface simulation.
-        surface_ff : List of hoomd.md.force.Force, required
-            List of HOOMD force objects used in the surface simulation.
-        drop_snapshot : hoomd.snapshot.Snapshot or str, required
-            A snapshot of the droplet simulation, or a path
-            to a GSD file of the droplet simulation.
-        drop_ff : List of hoomd.md.force.Force, required
-            List of HOOMD force objects used in the droplet simulation.
-        drop_ref_values : dict, required
-            Dictionary of reference values for the droplet simulation.
-        box_height : unyt.unyt_quantity or float, required
-            The height of the simulation box.
-        gap : unyt.unyt_quantity or float, required
-            The gap between the droplet and the surface.
-
-        """
         if isinstance(drop_snapshot, str):
             drop_snapshot = gsd.hoomd.open(drop_snapshot)[-1]
         if isinstance(surface_snapshot, str):
@@ -198,12 +199,12 @@ class InterfaceBuilder:
 
     @property
     def hoomd_snapshot(self):
-        """Get the wetting snapshot."""
+        """The snapshot containing the surface and droplet particles."""
         return self._wetting_snapshot
 
     @property
     def hoomd_forces(self):
-        """Get the wetting forces."""
+        """The forces for the surface and droplet particles."""
         return self._wetting_forces
 
     def _build_snapshot(self):
@@ -384,7 +385,20 @@ class InterfaceBuilder:
 
 
 class WettingSimulation(Simulation):
-    """For simulating welding of an interface joint."""
+    """Simulation of surface wetting.
+
+    Parameters
+    ----------
+    initial_state : hoomd.snapshot.Snapshot or str, required
+        A snapshot to initialize a simulation from, or a path
+        to a GSD file to initialize a simulation from.
+        This snapshot contains the surface and droplet particles.
+    forcefield : List of hoomd.md.force.Force, required
+        List of HOOMD force objects used in the simulation.
+        This forcefield contains the surface and droplet forces.
+    fix_surface : bool, optional, default=True
+        If `True`, the surface particles are not integrated over.
+    """
 
     def __init__(
         self,
