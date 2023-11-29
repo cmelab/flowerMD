@@ -88,7 +88,7 @@ setup(
     ),
     package_data={
         "flowermd": [
-            "modules/*",
+            "modules/**",
             "library/**",
             "assets/forcefields/*",
             "assets/molecule_files/*",
