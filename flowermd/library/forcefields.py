@@ -481,3 +481,25 @@ class TableForcefield(BaseHOOMDForcefield):
                         "number of points for table energies and forces."
                     )
         return bond_width, angle_width, dih_width
+
+
+class EllipsoidForcefield(BaseHOOMDForcefield):
+    def __init__(self):
+        hoomd_forces = self._create_forcefield() 
+        super(TableForcefield, self).__init__(hoomd_forces)
+
+    def _create_forcefield(self):
+        forces = []
+
+        # Bonds
+
+        # Angles
+
+        # Gay-Berne Pairs
+        nlist = hoomd.md.nlist.Cell(buffer=0.40)
+
+
+
+
+
+        return forces
