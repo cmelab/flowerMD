@@ -116,7 +116,8 @@ Additionally, `flowerMD` offers a library pre-defined subclasses of these base c
 including common polymers, forcefields, and bulk system initialization algorithms.
 
 # Recipes
-The modular design of `flowerMD` enables version-controlled workflows to be created and shared. To illustrate this, we include a polymer welding recipe using the following subclasses:`flowerMD.modules.welding.SlabSimulation`, `flowerMD.modules.welding.Interface`, `flowerMD.modules.welding.WeldSimulation`,
+The modular design of `flowerMD` enables version-controlled workflows to be created and shared. `flowerMD` currently includes two complete workflows: a polymer fusion welding recipe and a surface wetting recipe.
+As an example, the polymer welding recipe uses the following subclasses:`flowerMD.modules.welding.SlabSimulation`, `flowerMD.modules.welding.Interface`, `flowerMD.modules.welding.WeldSimulation`,
 and `flowerMD.library.simulations.Tensile`.
 
 Applying these routines in sequence defines a polymer welding recipe:
@@ -126,7 +127,7 @@ Applying these routines in sequence defines a polymer welding recipe:
 3. `WeldSimulation` simulates thermal welding at this interface.
 4. `Tensile` simulates a tensile test of the resultant weld to create a stress/strain curve.
 
-In this example, four different kinds of molecular dynamics simulations are combined in sequence to enable the mechanical properties of a welded joint to be computed. By combining independent simulation steps and enabling any of them to be iterated over, a user can build more complex workflows. For example, we could specify a screening study by iterating over several weld temperatures, following each weld simulation with a sequence of tensile simulations to investigate how temperature and strain rate influence the debonding pressure of a polymer weld.
+In this example, three different kinds of molecular dynamics simulations are combined in sequence to enable the mechanical properties of a welded joint to be computed. By combining independent simulation steps and enabling any of them to be iterated over, a user can build more complex workflows. For example, we could specify a screening study by iterating over several weld temperatures, following each weld simulation with a sequence of tensile simulations to investigate how temperature and strain rate influence the debonding pressure of a polymer weld. For an in-depth understanding of the surface wetting workflow, interested readers can refer to the `flowerMD` tutorials.
 
 Each of the steps in a recipe takes the molecular system and forcefield as arguments, enabling recipes that iterate over these concepts as well. For example, a user can create a recipe that generates welds of a set of polymer chemistries. Or, a user can create a recipe that measures the agreements in structural predictions for a set of forcefields.
 

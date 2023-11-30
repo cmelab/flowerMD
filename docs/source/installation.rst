@@ -2,6 +2,14 @@
 Installation
 ============
 
+Install from anaconda
+---------------------------------------
+flowerMD is available on `conda-forge <https://anaconda.org/conda-forge/flowermd>`_
+::
+
+    $ conda install -c conda-forge flowermd
+
+
 Install from source
 ---------------------------------------
 
@@ -14,6 +22,6 @@ Install from source
 2. Set up and activate environment:
 ::
 
-    $ conda env create -f environment-cpu.yml
+    $ conda env create -f environment.yml
     $ conda activate flowermd
     $ python -m pip install .

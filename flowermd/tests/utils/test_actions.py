@@ -1,6 +1,7 @@
 import copy
 
 import hoomd
+import numpy as np
 
 from flowermd.tests import BaseTest
 from flowermd.utils import ScaleEpsilon, ScaleSigma
@@ -33,4 +34,8 @@ class TestActions(BaseTest):
         sim.run_NVT(n_steps=10, kT=1.0, tau_kt=1.0)
         new_lj_force = sim._lj_force().params
         for k in old_lj_force.keys():
-            assert new_lj_force[k]["sigma"] == old_lj_force[k]["sigma"] + 0.5
+            assert np.isclose(
+                new_lj_force[k]["sigma"],
+                old_lj_force[k]["sigma"] + 0.5,
+                atol=0.0001,
+            )

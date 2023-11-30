@@ -586,21 +586,27 @@ class System(ABC):
         if scale_charges and not remove_charges:
             self._scale_charges()
 
-        epsilons = [
-            s.atom_type.parameters["epsilon"] for s in self.gmso_system.sites
-        ]
-        sigmas = [
-            s.atom_type.parameters["sigma"] for s in self.gmso_system.sites
-        ]
-        masses = [s.mass for s in self.gmso_system.sites]
+        if not self._reference_values:
+            epsilons = [
+                s.atom_type.parameters["epsilon"]
+                for s in self.gmso_system.sites
+            ]
+            sigmas = [
+                s.atom_type.parameters["sigma"] for s in self.gmso_system.sites
+            ]
+            masses = [s.mass for s in self.gmso_system.sites]
 
-        energy_scale = np.max(epsilons) if self.auto_scale else 1.0
-        length_scale = np.max(sigmas) if self.auto_scale else 1.0
-        mass_scale = np.max(masses) if self.auto_scale else 1.0
+            energy_scale = np.max(epsilons) if self.auto_scale else 1.0
+            length_scale = np.max(sigmas) if self.auto_scale else 1.0
+            mass_scale = np.max(masses) if self.auto_scale else 1.0
 
-        self._reference_values["energy"] = energy_scale * epsilons[0].unit_array
-        self._reference_values["length"] = length_scale * sigmas[0].unit_array
-        self._reference_values["mass"] = mass_scale * masses[0].unit_array
+            self._reference_values["energy"] = (
+                energy_scale * epsilons[0].unit_array
+            )
+            self._reference_values["length"] = (
+                length_scale * sigmas[0].unit_array
+            )
+            self._reference_values["mass"] = mass_scale * masses[0].unit_array
 
         if remove_hydrogens:
             self.remove_hydrogens()
