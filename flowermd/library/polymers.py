@@ -266,13 +266,7 @@ class LJChain(Polymer):
 
 class EllipsoidChain(Polymer):
     def __init__(
-            self,
-            lengths,
-            num_mols,
-            bead_length,
-            bead_name,
-            bead_mass,
-            bond_length
+        self, lengths, num_mols, bead_length, bead_name, bead_mass, bond_length
     ):
         self.bead_name = bead_name
         self.bead_mass = bead_mass
@@ -284,34 +278,26 @@ class EllipsoidChain(Polymer):
         # Build up ellipsoid bead
         bead = mb.Compound(name="ellipsoid")
         head = mb.Compound(
-                pos=(self.bead_length/2, 0, 0),
-                name="A",
-                mass=self.bead_mass/2
+            pos=(self.bead_length / 2, 0, 0), name="A", mass=self.bead_mass / 2
         )
         tail = mb.Compound(
-                pos=(-self.bead_length/2, 0, 0),
-                name="A",
-                mass=self.bead_mass/2
+            pos=(-self.bead_length / 2, 0, 0), name="A", mass=self.bead_mass / 2
         )
         head_mid = mb.Compound(
-                pos=(self.bead_length/4, 0, 0),
-                name="B",
-                mass=0
+            pos=(self.bead_length / 4, 0, 0), name="B", mass=0
         )
         tail_mid = mb.Compound(
-                pos=(-self.bead_length/4, 0, 0),
-                name="B",
-                mass=0
+            pos=(-self.bead_length / 4, 0, 0), name="B", mass=0
         )
         bead.add([head, tail, head_mid, tail_mid])
 
         chain = mbPolymer()
         chain.add_monomer(
-                bead,
-                indices=[0, 1],
-                orientation=[[1,0,0], [-1,0,0]],
-                replace=False,
-                separation=self.bead_bond_length
+            bead,
+            indices=[0, 1],
+            orientation=[[1, 0, 0], [-1, 0, 0]],
+            replace=False,
+            separation=self.bead_bond_length,
         )
         chain.build(n=length, add_hydrogens=False)
         return chain
