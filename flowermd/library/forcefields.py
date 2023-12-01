@@ -484,22 +484,58 @@ class TableForcefield(BaseHOOMDForcefield):
 
 
 class EllipsoidForcefield(BaseHOOMDForcefield):
-    def __init__(self):
-        hoomd_forces = self._create_forcefield() 
+    """A forcefield for modeling anisotropic bead polymers."""
+
+    def __init__(
+        self,
+        epsilon,
+        lper,
+        lpar,
+        bead_length,
+        r_cut,
+        bond_k,
+        bond_r0,
+        angle_k=None,
+        angle_theta0=None,
+    ):
+        self.epsilon = epsilon
+        self.lper = lper
+        self.lpar = lpar
+        self.bead_length = bead_length
+        self.r_cut = r_cut
+        self.bond_k = bond_k
+        self.bond_r0 = bond_r0
+        self.angle_k = angle_k
+        self.angle_theta0 = angle_theta0
+        hoomd_forces = self._create_forcefield()
         super(TableForcefield, self).__init__(hoomd_forces)
 
     def _create_forcefield(self):
         forces = []
-
         # Bonds
-
+        bond = hoomd.md.bond.Harmonic()
+        bond.params["A-A"] = dict(k=self.bond_k, r0=self.bond_r0)
+        bond.params["B-B"] = dict(k=0, r0=self.bead_length / 2)
+        forces.append(bond)
         # Angles
-
+        if all([self.angle_k, self.angle_theta0]):
+            angle = hoomd.md.angle.Harmonic()
+            angle.params["B-B-B"] = dict(k=self.angle_k, t0=self.angle_theta0)
+            forces.append(angle)
         # Gay-Berne Pairs
         nlist = hoomd.md.nlist.Cell(buffer=0.40)
-
-
-
-
-
+        gb = hoomd.md.pair.aniso.GayBerne(nlist=nlist, default_r_cut=self.r_cut)
+        gb.params[("R", "R")] = dict(
+            epsilon=self.epsilon, lperp=self.lperp, lpar=self.lpar
+        )
+        # Add zero pairs
+        for pair in [
+            ("A", "A"),
+            ("B", "B"),
+            ("A", "B"),
+            ("A", "R"),
+            ("B", "R"),
+        ]:
+            gb.params[pair] = dict(epsilon=0.0, lperp=0.0, lpar=0.0)
+        forces.append(gb)
         return forces
