@@ -87,9 +87,10 @@ simulating fusion welding of polymer interfaces
 
 `flowerMD` is a Python package that consolidates and automates
 end-to-end workflows for modeling such engineering processes with a focus on organic
-molecules. Following the principals of Transparent, Reproducible, Usable by others,
-and Extensible (TRUE) [@TRUE_2020] software design, the modular design of `flowerMD`
-facilitates building and running workflows for specific materials science research
+molecules. We expand the capabilities of MoSDeF [@TRUE_2020] and HOOMD-blue 
+[@anderson2020hoomd], following TRUE principles of software design (Transparent, 
+Reproducible, Usable by others, and Extensible [@TRUE_2020]) with modular components that
+facilitate building and running workflows for specific materials science research
 applications, while reducing the cognitive load and programming demands on the user's part.
 
 # Building Blocks
