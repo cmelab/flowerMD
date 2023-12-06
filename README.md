@@ -1,3 +1,4 @@
+[![status](https://joss.theoj.org/papers/75c5135b3e0eb1b561a89783ce949067/status.svg)](https://joss.theoj.org/papers/75c5135b3e0eb1b561a89783ce949067)
 [![pytest](https://github.com/cmelab/flowerMD/actions/workflows/pytest.yml/badge.svg)](https://github.com/cmelab/flowerMD/actions/workflows/pytest.yml)
 [![codecov](https://codecov.io/gh/cmelab/flowerMD/branch/main/graph/badge.svg?token=86LY9WHSH6)](https://codecov.io/gh/cmelab/flowerMD)
 [![Anaconda-Server Badge](https://anaconda.org/conda-forge/flowermd/badges/version.svg)](https://anaconda.org/conda-forge/flowermd)
