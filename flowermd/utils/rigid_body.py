@@ -90,7 +90,7 @@ def create_rigid_body(snapshot, bead_constituents_types):
     )
 
     rigid_constrain = hoomd.md.constrain.Rigid()
-    rigid_constrain.body["rigid"] = {
+    rigid_constrain.body["R"] = {
         "constituent_types": bead_constituents_types,
         "positions": local_coords,
         "orientations": [(1.0, 0.0, 0.0, 0.0)] * len(local_coords),

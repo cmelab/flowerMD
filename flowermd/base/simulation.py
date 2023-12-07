@@ -73,6 +73,7 @@ class Simulation(hoomd.simulation.Simulation):
         log_write_freq=1e3,
         log_file_name="sim_data.txt",
         thermostat=HOOMDThermostats.MTTK,
+        rigid_constraint=None,
     ):
         super(Simulation, self).__init__(device, seed)
         self.initial_state = initial_state
@@ -98,9 +99,22 @@ class Simulation(hoomd.simulation.Simulation):
         self._dt = dt
         self._reference_values = dict()
         self._reference_values = reference_values
-        self._integrate_group = hoomd.filter.All()
+        if rigid_constraint and not isinstance(
+            rigid_constraint, hoomd.md.constrain.Rigid
+        ):
+            raise ValueError(
+                "Invalid rigid constraint. Please provide a "
+                "hoomd.md.constrain.Rigid object."
+            )
+        self._rigid_constraint = rigid_constraint
+        self._integrate_group = self._create_integrate_group(
+            rigid=True if rigid_constraint else False
+        )
         self._wall_forces = dict()
         self._create_state(self.initial_state)
+        if rigid_constraint:
+            # place constituent particles in the simulation state
+            rigid_constraint.create_bodies(self.state)
         # Add a gsd and thermo props logger to sim operations
         self._add_hoomd_writers()
         self._thermostat = thermostat
@@ -524,7 +538,14 @@ class Simulation(hoomd.simulation.Simulation):
 
         """
         if not self.integrator:  # Integrator and method not yet created
-            self.integrator = hoomd.md.Integrator(dt=self.dt)
+            self.integrator = hoomd.md.Integrator(
+                dt=self.dt,
+                integrate_rotational_dof=True
+                if self._rigid_constraint
+                else False,
+            )
+            if self._rigid_constraint:
+                self.integrator.rigid = self._rigid_constraint
             self.integrator.forces = self._forcefield
             self.operations.add(self.integrator)
             new_method = integrator_method(**method_kwargs)
@@ -1087,6 +1108,11 @@ class Simulation(hoomd.simulation.Simulation):
                 if isinstance(f, hoomd.md.pair.pair.LJ)
             ][0]
         return lj_force
+
+    def _create_integrate_group(self, rigid):
+        if rigid:
+            return hoomd.filter.Rigid(("center", "free"))
+        return hoomd.filter.All()
 
     def _create_state(self, initial_state):
         """Create the simulation state.
