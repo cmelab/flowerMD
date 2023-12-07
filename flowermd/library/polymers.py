@@ -265,10 +265,24 @@ class LJChain(Polymer):
 
 
 class EllipsoidChain(Polymer):
-    def __init__(
-        self, lengths, num_mols, bead_length, bead_name, bead_mass, bond_length
-    ):
-        self.bead_name = bead_name
+    """Create an ellipsoid polymer chain.
+
+    Parameters
+    ----------
+    lengths : int, required
+        The number of monomer repeat units in the chain.
+    num_mols : int, required
+        The number of chains to create.
+    bead_length : float, required
+        The length of the ellipsoid bead.
+    bead_mass : float, required
+        The mass of the ellipsoid bead.
+    bond_length : float, required
+        The bond length between connected beads.
+
+    """
+
+    def __init__(self, lengths, num_mols, bead_length, bead_mass, bond_length):
         self.bead_mass = bead_mass
         self.bead_bond_length = bond_length
         self.bead_length = bead_length
