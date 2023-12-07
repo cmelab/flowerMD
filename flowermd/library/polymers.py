@@ -273,21 +273,23 @@ class EllipsoidChain(Polymer):
         self.bead_bond_length = bond_length
         self.bead_length = bead_length
         super(EllipsoidChain, self).__init__(lengths=lengths, num_mols=num_mols)
+        # get the indices of the particles in a rigid body
+        self.bead_constituents_types = ["A", "A", "B", "B"]
 
     def _build(self, length):
         # Build up ellipsoid bead
         bead = mb.Compound(name="ellipsoid")
         head = mb.Compound(
-            pos=(self.bead_length / 2, 0, 0), name="A", mass=self.bead_mass / 2
+            pos=(self.bead_length / 2, 0, 0), name="A", mass=self.bead_mass / 4
         )
         tail = mb.Compound(
-            pos=(-self.bead_length / 2, 0, 0), name="A", mass=self.bead_mass / 2
+            pos=(-self.bead_length / 2, 0, 0), name="A", mass=self.bead_mass / 4
         )
         head_mid = mb.Compound(
-            pos=(self.bead_length / 4, 0, 0), name="B", mass=0
+            pos=(self.bead_length / 4, 0, 0), name="B", mass=self.bead_mass / 4
         )
         tail_mid = mb.Compound(
-            pos=(-self.bead_length / 4, 0, 0), name="B", mass=0
+            pos=(-self.bead_length / 4, 0, 0), name="B", mass=self.bead_mass / 4
         )
         bead.add([head, tail, head_mid, tail_mid])
 
