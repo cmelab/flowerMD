@@ -10,12 +10,13 @@ def _get_com_mass_pos_moi(snapshot, rigid_const_idx):
     com_position = []
     com_moi = []
     for idx in rigid_const_idx:
-        total_mass = np.sum(snapshot.particles.mass[idx])
+        constituents_mass = np.array(snapshot.particles.mass)
+        constituents_pos = np.array(snapshot.particles.position)
+        total_mass = np.sum(constituents_mass[idx])
         com_mass.append(total_mass)
         com = (
             np.sum(
-                snapshot.particles.position[idx]
-                * snapshot.particles.mass[idx, np.newaxis],
+                constituents_pos[idx] * constituents_mass[idx, np.newaxis],
                 axis=0,
             )
             / total_mass
@@ -23,8 +24,8 @@ def _get_com_mass_pos_moi(snapshot, rigid_const_idx):
         com_position.append(com)
         com_moi.append(
             moit(
-                points=snapshot.particles.position[idx],
-                masses=snapshot.particles.mass[idx],
+                points=constituents_pos[idx],
+                masses=constituents_mass[idx],
                 center=com,
             )
         )
@@ -80,6 +81,7 @@ def create_rigid_body(snapshot, bead_constituents_types):
     rigid_frame.particles.position = com_position
     rigid_frame.particles.moment_inertia = com_moi
     rigid_frame.particles.orientation = [(1.0, 0.0, 0.0, 0.0)] * n_rigid
+    rigid_frame.configuration.box = snapshot.configuration.box
 
     # find local coordinates of the particles in the first rigid body
     # only need to find the local coordinates for the first rigid body
