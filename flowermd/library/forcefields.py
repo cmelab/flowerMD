@@ -489,7 +489,7 @@ class EllipsoidForcefield(BaseHOOMDForcefield):
     def __init__(
         self,
         epsilon,
-        lper,
+        lperp,
         lpar,
         bead_length,
         r_cut,
@@ -499,7 +499,7 @@ class EllipsoidForcefield(BaseHOOMDForcefield):
         angle_theta0=None,
     ):
         self.epsilon = epsilon
-        self.lper = lper
+        self.lperp = lperp
         self.lpar = lpar
         self.bead_length = bead_length
         self.r_cut = r_cut
@@ -508,7 +508,7 @@ class EllipsoidForcefield(BaseHOOMDForcefield):
         self.angle_k = angle_k
         self.angle_theta0 = angle_theta0
         hoomd_forces = self._create_forcefield()
-        super(TableForcefield, self).__init__(hoomd_forces)
+        super(EllipsoidForcefield, self).__init__(hoomd_forces)
 
     def _create_forcefield(self):
         forces = []
