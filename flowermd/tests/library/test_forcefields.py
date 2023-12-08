@@ -116,6 +116,9 @@ class TestForceFields:
         assert ("B", "R") in list(
             dict(ellipsoid_ff.hoomd_forces[-1].params).keys()
         )
+        assert ellipsoid_ff.hoomd_forces[-1].params["A", "A"]["epsilon"] == 0.0
+        assert ellipsoid_ff.hoomd_forces[-1].params["A", "A"]["lperp"] == 0.0
+        assert ellipsoid_ff.hoomd_forces[-1].params["A", "A"]["lpar"] == 0.0
 
 
 class TestTableForcefield:
