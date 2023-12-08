@@ -32,7 +32,7 @@ def _get_com_mass_pos_moi(snapshot, rigid_const_idx):
     return com_mass, com_position, com_moi
 
 
-def create_rigid_body(snapshot, bead_constituents_types):
+def create_rigid_body(snapshot, bead_constituents_types, bead_name="R"):
     """Create rigid bodies from a snapshot.
 
     Parameters
@@ -74,14 +74,50 @@ def create_rigid_body(snapshot, bead_constituents_types):
     )
 
     rigid_frame = gsd.hoomd.Frame()
-    rigid_frame.particles.types = ["R"] + snapshot.particles.types
-    rigid_frame.particles.N = n_rigid
-    rigid_frame.particles.typeid = [0] * n_rigid
-    rigid_frame.particles.mass = com_mass
-    rigid_frame.particles.position = com_position
-    rigid_frame.particles.moment_inertia = com_moi
-    rigid_frame.particles.orientation = [(1.0, 0.0, 0.0, 0.0)] * n_rigid
+    rigid_frame.particles.types = [bead_name] + snapshot.particles.types
+    rigid_frame.particles.N = n_rigid + snapshot.particles.N
+    rigid_frame.particles.typeid = np.concatenate(
+        (([0] * n_rigid), snapshot.particles.typeid + 1)
+    )
+    rigid_frame.particles.mass = np.concatenate(
+        (com_mass, snapshot.particles.mass)
+    )
+    rigid_frame.particles.position = np.concatenate(
+        (com_position, snapshot.particles.position)
+    )
+    rigid_frame.particles.moment_inertia = np.concatenate(
+        (com_moi, np.zeros((snapshot.particles.N, 3)))
+    )
+    rigid_frame.particles.orientation = [(1.0, 0.0, 0.0, 0.0)] * (
+        n_rigid + snapshot.particles.N
+    )
     rigid_frame.configuration.box = snapshot.configuration.box
+
+    # set up bonds
+    if snapshot.bonds.N > 0:
+        rigid_frame.bonds.N = snapshot.bonds.N
+        rigid_frame.bonds.types = snapshot.bonds.types
+        rigid_frame.bonds.typeid = snapshot.bonds.typeid
+        rigid_frame.bonds.group = [
+            list(np.add(g, n_rigid)) for g in snapshot.bonds.group
+        ]
+    # set up angles
+    if snapshot.angles.N > 0:
+        rigid_frame.angles.N = not snapshot.angles.N
+        rigid_frame.angles.types = snapshot.angles.types
+        rigid_frame.angles.typeid = snapshot.angles.typeid
+        rigid_frame.angles.group = [
+            list(np.add(g, n_rigid)) for g in snapshot.angles.group
+        ]
+
+    # set up dihedrals
+    if snapshot.dihedrals.N > 0:
+        rigid_frame.dihedrals.N = snapshot.dihedrals.N
+        rigid_frame.dihedrals.types = snapshot.dihedrals.types
+        rigid_frame.dihedrals.typeid = snapshot.dihedrals.typeid
+        rigid_frame.dihedrals.group = [
+            list(np.add(g, n_rigid)) for g in snapshot.dihedrals.group
+        ]
 
     # find local coordinates of the particles in the first rigid body
     # only need to find the local coordinates for the first rigid body
