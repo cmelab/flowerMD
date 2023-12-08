@@ -91,6 +91,12 @@ def create_rigid_body(snapshot, bead_constituents_types, bead_name="R"):
     rigid_frame.particles.orientation = [(1.0, 0.0, 0.0, 0.0)] * (
         n_rigid + snapshot.particles.N
     )
+    rigid_frame.particles.body = np.concatenate(
+        (
+            np.arange(n_rigid),
+            np.arange(n_rigid).repeat(rigid_const_idx.shape[1]),
+        )
+    )
     rigid_frame.configuration.box = snapshot.configuration.box
 
     # set up bonds
@@ -103,7 +109,7 @@ def create_rigid_body(snapshot, bead_constituents_types, bead_name="R"):
         ]
     # set up angles
     if snapshot.angles.N > 0:
-        rigid_frame.angles.N = not snapshot.angles.N
+        rigid_frame.angles.N = snapshot.angles.N
         rigid_frame.angles.types = snapshot.angles.types
         rigid_frame.angles.typeid = snapshot.angles.typeid
         rigid_frame.angles.group = [
