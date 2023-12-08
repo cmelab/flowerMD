@@ -729,9 +729,11 @@ class Pack(System):
         base_units=dict(),
         packing_expand_factor=5,
         edge=0.2,
+        fix_orientation=False,
     ):
         self.packing_expand_factor = packing_expand_factor
         self.edge = edge
+        self.fix_orientation = fix_orientation
         super(Pack, self).__init__(
             molecules=molecules,
             density=density,
@@ -746,6 +748,7 @@ class Pack(System):
             box=list(self._target_box * self.packing_expand_factor),
             overlap=0.2,
             edge=self.edge,
+            fix_orientation=self.fix_orientation,
         )
         return system
 
