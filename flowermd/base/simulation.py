@@ -112,9 +112,6 @@ class Simulation(hoomd.simulation.Simulation):
         )
         self._wall_forces = dict()
         self._create_state(self.initial_state)
-        if rigid_constraint:
-            # place constituent particles in the simulation state
-            rigid_constraint.create_bodies(self.state)
         # Add a gsd and thermo props logger to sim operations
         self._add_hoomd_writers()
         self._thermostat = thermostat
