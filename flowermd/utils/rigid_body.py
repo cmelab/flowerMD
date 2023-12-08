@@ -5,33 +5,6 @@ import numpy as np
 from cmeutils.geometry import moit
 
 
-def _get_com_mass_pos_moi(snapshot, rigid_const_idx):
-    com_mass = []
-    com_position = []
-    com_moi = []
-    for idx in rigid_const_idx:
-        constituents_mass = np.array(snapshot.particles.mass)
-        constituents_pos = np.array(snapshot.particles.position)
-        total_mass = np.sum(constituents_mass[idx])
-        com_mass.append(total_mass)
-        com = (
-            np.sum(
-                constituents_pos[idx] * constituents_mass[idx, np.newaxis],
-                axis=0,
-            )
-            / total_mass
-        )
-        com_position.append(com)
-        com_moi.append(
-            moit(
-                points=constituents_pos[idx],
-                masses=constituents_mass[idx],
-                center=com,
-            )
-        )
-    return com_mass, com_position, com_moi
-
-
 def create_rigid_body(snapshot, bead_constituents_types, bead_name="R"):
     """Create rigid bodies from a snapshot.
 
@@ -138,3 +111,30 @@ def create_rigid_body(snapshot, bead_constituents_types, bead_name="R"):
         "orientations": [(1.0, 0.0, 0.0, 0.0)] * len(local_coords),
     }
     return rigid_frame, rigid_constrain
+
+
+def _get_com_mass_pos_moi(snapshot, rigid_const_idx):
+    com_mass = []
+    com_position = []
+    com_moi = []
+    for idx in rigid_const_idx:
+        constituents_mass = np.array(snapshot.particles.mass)
+        constituents_pos = np.array(snapshot.particles.position)
+        total_mass = np.sum(constituents_mass[idx])
+        com_mass.append(total_mass)
+        com = (
+            np.sum(
+                constituents_pos[idx] * constituents_mass[idx, np.newaxis],
+                axis=0,
+            )
+            / total_mass
+        )
+        com_position.append(com)
+        com_moi.append(
+            moit(
+                points=constituents_pos[idx],
+                masses=constituents_mass[idx],
+                center=com,
+            )
+        )
+    return com_mass, com_position, com_moi
