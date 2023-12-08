@@ -267,6 +267,19 @@ class LJChain(Polymer):
 class EllipsoidChain(Polymer):
     """Create an ellipsoid polymer chain.
 
+    This is a coarse-grained molecule where each monomer is modeled
+    as an anisotropic bead (i.e. ellipsoid).
+
+    Notes
+    -----
+    In order to form chains of connected ellipsoids, "ghost"
+    particles of types "A" and "B" are used.
+
+    This is meant to be used with
+    `flowermd.library.forcefields.EllipsoidForcefield`
+    and requires using `flowermd.utils.rigid_body` to set up
+    the rigid bodies correctly in HOOMD-Blue.
+
     Parameters
     ----------
     lengths : int, required
@@ -274,11 +287,13 @@ class EllipsoidChain(Polymer):
     num_mols : int, required
         The number of chains to create.
     bead_length : float, required
-        The length of the ellipsoid bead.
+        The length of the ellipsoid bead along its major axis.
     bead_mass : float, required
         The mass of the ellipsoid bead.
     bond_length : float, required
         The bond length between connected beads.
+        This is used as the bond length between ellipsoid tips
+        rather than between ellipsoid centers.
 
     """
 

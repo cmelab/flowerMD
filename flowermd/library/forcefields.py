@@ -484,13 +484,46 @@ class TableForcefield(BaseHOOMDForcefield):
 
 
 class EllipsoidForcefield(BaseHOOMDForcefield):
-    """A forcefield for modeling anisotropic bead polymers."""
+    """A forcefield for modeling anisotropic bead polymers.
+
+    Notes
+    -----
+    This is designed to be used with `flowermd.library.polymers.EllipsoidChain`
+    and uses ghost particles of type "A" and "B" for intra-molecular
+    interactions of bonds and two-body angles.
+    Ellipsoid centers (type "R") are used in inter-molecular pair interations.
+
+    The set of interactions are:
+    1. `hoomd.md.bond.Harmonic`: Models ellipsoid bonds as tip-to-tip bonds
+    2. `hoomd.md.angle.Harmonic`: Models angles of two neighboring ellipsoids.
+    3. `hoomd.md.pair.aniso.GayBerne`" Model pair interactions between beads.
+
+    Parameters
+    ----------
+    epsilon : float, required
+        energy
+    lpar: float, required
+        Semi-axis length of the ellipsoid along the major axis.
+    lperp : float, required
+        Semi-axis length of the ellipsoid along the minor axis.
+    r_cut : float, required
+        Cut off radius for pair interactions
+    bond_k : float, required
+        Spring constant in harmonic bond
+    bond_r0: float, required
+        Equilibrium tip-to-tip bond length.
+    angle_k : float, required
+        Spring constant in harmonic angle.
+    angle_theta0: float, required
+        Equilibrium angle between 2 consecutive beads.
+
+    """
 
     def __init__(
         self,
         epsilon,
-        lperp,
         lpar,
+        lperp,
         bead_length,
         r_cut,
         bond_k,
