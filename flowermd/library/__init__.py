@@ -8,6 +8,7 @@ from .forcefields import (
     BaseHOOMDForcefield,
     BaseXMLForcefield,
     BeadSpring,
+    EllipsoidForcefield,
     FF_from_file,
     TableForcefield,
 )
