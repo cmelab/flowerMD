@@ -21,6 +21,47 @@ def create_rigid_body(snapshot, bead_constituents_types, bead_name="R"):
         The snapshot of the rigid bodies.
     rigid_constrain : hoomd.md.constrain.Rigid
         The rigid body constrain object.
+
+    Examples
+        --------
+        This example demonstrates how to create a rigid body snapshot from a
+        snapshot of a system of ellipsoids. The ellipsoids are created using
+        the EllipsoidChain class from the `flowermd.library.polymers`.
+        The `rigid_frame` snapshot contains all rigid body centers and the
+        constituent particles along with information about the positions of
+        center of mass, orientations and moment of inertia. The
+        `rigid_constrain` object is used by hoomd in the simulation class to
+        constrain the rigid bodies.
+
+        ::
+
+            from flowermd.library.polymers import EllipsoidChain
+            from flowermd.library.forcefields import EllipsoidForcefield
+            from flowermd.base import Pack
+            from flowermd.base import Simulation
+
+            ellipsoid_chain = EllipsoidChain(lengths=9, num_mols=20,
+                                            bead_length=1, bead_mass=100,
+                                            bond_length=0.01)
+
+            system = Pack(molecules=ellipsoid_chain, density=0.1,
+                          fix_orientation=True)
+
+            rigid_frame, rigid = create_rigid_body(system.hoomd_snapshot,
+                                    ellipsoid_chain.bead_constituents_types)
+
+
+            ellipsoid_ff = EllipsoidForcefield(epsilon= 1.0, lperp=0.5 ,
+                                                lpar=1.0, bead_length=1,
+                                                r_cut=3, bond_k=500,
+                                                bond_r0=0.1)
+
+            simulation = Simulation(initial_state=rigid_frame,
+                                    forcefield=ellipsoid_ff.hoomd_forces,
+                                     rigid_constraint=rigid)
+
+            simulation.run_NVT(n_steps=10000, kT=3.5, tau_kt=1)
+
     """
     # find typeid sequence of the constituent particles types in a rigid bead
     p_types = np.array(snapshot.particles.types)
