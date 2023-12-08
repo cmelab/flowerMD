@@ -316,4 +316,12 @@ class EllipsoidChain(Polymer):
             separation=self.bead_bond_length,
         )
         chain.build(n=length, add_hydrogens=False)
+        # Generate bonds between the mid-particles.
+        # This is needed to use an angle potential between 2 beads.
+        chain.freud_generate_bonds(
+            name_a="B",
+            name_b="B",
+            dmin=self.bead_length / 2 - 0.1,
+            dmax=self.bead_length / 2 + self.bead_bond_length + 0.1,
+        )
         return chain
