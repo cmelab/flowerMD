@@ -295,7 +295,16 @@ class Simulation(hoomd.simulation.Simulation):
     def mass_reduced(self):
         """The total mass of the system in reduced units."""
         with self.state.cpu_local_snapshot as snap:
-            return sum(snap.particles.mass)
+            if self._rigid_constraint:
+                last_body_tag = 0
+                for body_tag in snap.particles.body:
+                    if body_tag == last_body_tag:
+                        last_body_tag += 1
+                    else:
+                        break
+                return sum(snap.particles.mass[last_body_tag:])
+            else:
+                return sum(snap.particles.mass)
 
     @property
     def mass(self):
