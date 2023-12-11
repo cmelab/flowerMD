@@ -111,7 +111,7 @@ class TestPolymers:
         ellipsoid_chain = EllipsoidChain(
             lengths=4,
             num_mols=2,
-            bead_length=1,
+            lpar=0.5,
             bead_mass=100,
             bond_length=0.01,
         )

@@ -286,8 +286,8 @@ class EllipsoidChain(Polymer):
         The number of monomer repeat units in the chain.
     num_mols : int, required
         The number of chains to create.
-    bead_length : float, required
-        The length of the ellipsoid bead along its major axis.
+    lpar : float, required
+        The semi-axis length of the ellipsoid bead along its major axis.
     bead_mass : float, required
         The mass of the ellipsoid bead.
     bond_length : float, required
@@ -297,31 +297,31 @@ class EllipsoidChain(Polymer):
 
     """
 
-    def __init__(self, lengths, num_mols, bead_length, bead_mass, bond_length):
+    def __init__(self, lengths, num_mols, lpar, bead_mass, bond_length):
         self.bead_mass = bead_mass
         self.bead_bond_length = bond_length
-        self.bead_length = bead_length
-        super(EllipsoidChain, self).__init__(lengths=lengths, num_mols=num_mols)
+        self.lpar = lpar
         # get the indices of the particles in a rigid body
         self.bead_constituents_types = ["A", "A", "B", "B"]
+        super(EllipsoidChain, self).__init__(lengths=lengths, num_mols=num_mols)
 
     def _build(self, length):
         # Build up ellipsoid bead
         bead = mb.Compound(name="ellipsoid")
         head = mb.Compound(
-            pos=(self.bead_length / 2, 0, 0), name="A", mass=self.bead_mass / 4
+            pos=(self.lpar, 0, 0), name="A", mass=self.bead_mass / 4
         )
         tail = mb.Compound(
-            pos=(-self.bead_length / 2, 0, 0), name="A", mass=self.bead_mass / 4
+            pos=(-self.lpar, 0, 0), name="A", mass=self.bead_mass / 4
         )
         head_mid = mb.Compound(
-            pos=(self.bead_length / 4, 0, 0), name="B", mass=self.bead_mass / 4
+            pos=(self.lpar / 2, 0, 0), name="B", mass=self.bead_mass / 4
         )
         tail_mid = mb.Compound(
-            pos=(-self.bead_length / 4, 0, 0), name="B", mass=self.bead_mass / 4
+            pos=(-self.lpar / 2, 0, 0), name="B", mass=self.bead_mass / 4
         )
         bead.add([head, tail, head_mid, tail_mid])
-
+        # Build the bead chain
         chain = mbPolymer()
         chain.add_monomer(
             bead,
@@ -336,7 +336,7 @@ class EllipsoidChain(Polymer):
         chain.freud_generate_bonds(
             name_a="B",
             name_b="B",
-            dmin=self.bead_length / 2 - 0.1,
-            dmax=self.bead_length / 2 + self.bead_bond_length + 0.1,
+            dmin=self.lpar - 0.1,
+            dmax=self.lpar + self.bead_bond_length + 0.1,
         )
         return chain
