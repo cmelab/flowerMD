@@ -524,7 +524,6 @@ class EllipsoidForcefield(BaseHOOMDForcefield):
         epsilon,
         lpar,
         lperp,
-        bead_length,
         r_cut,
         bond_k,
         bond_r0,
@@ -534,7 +533,6 @@ class EllipsoidForcefield(BaseHOOMDForcefield):
         self.epsilon = epsilon
         self.lperp = lperp
         self.lpar = lpar
-        self.bead_length = bead_length
         self.r_cut = r_cut
         self.bond_k = bond_k
         self.bond_r0 = bond_r0
@@ -548,7 +546,7 @@ class EllipsoidForcefield(BaseHOOMDForcefield):
         # Bonds
         bond = hoomd.md.bond.Harmonic()
         bond.params["A-A"] = dict(k=self.bond_k, r0=self.bond_r0)
-        bond.params["B-B"] = dict(k=0, r0=self.bead_length / 2)
+        bond.params["B-B"] = dict(k=0, r0=self.lpar)
         forces.append(bond)
         # Angles
         if all([self.angle_k, self.angle_theta0]):

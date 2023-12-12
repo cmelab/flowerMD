@@ -99,7 +99,6 @@ class TestForceFields:
             epsilon=1.0,
             lperp=0.5,
             lpar=1.0,
-            bead_length=1,
             r_cut=3,
             bond_k=500,
             bond_r0=0.1,
