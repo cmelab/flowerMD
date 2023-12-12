@@ -11,12 +11,15 @@ class TestRigidBody(BaseTest):
         ellipsoid_chain = EllipsoidChain(
             lengths=4,
             num_mols=2,
-            bead_length=1,
+            lpar=0.5,
             bead_mass=100,
             bond_length=0.01,
         )
         system = Pack(
-            molecules=ellipsoid_chain, density=0.1, fix_orientation=True
+            molecules=ellipsoid_chain,
+            density=0.1,
+            base_units=dict(),
+            fix_orientation=True,
         )
 
         rigid_frame, rigid = create_rigid_body(
