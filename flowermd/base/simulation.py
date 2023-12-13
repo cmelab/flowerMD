@@ -296,13 +296,14 @@ class Simulation(hoomd.simulation.Simulation):
         """The total mass of the system in reduced units."""
         with self.state.cpu_local_snapshot as snap:
             if self._rigid_constraint:
-                last_body_tag = 0
+                last_body_tag = -1
                 for body_tag in snap.particles.body:
-                    if body_tag == last_body_tag:
+                    if body_tag > last_body_tag:
                         last_body_tag += 1
                     else:
                         break
-                return sum(snap.particles.mass[last_body_tag:])
+                cut_index = last_body_tag + 1
+                return sum(snap.particles.mass[cut_index:])
             else:
                 return sum(snap.particles.mass)
 

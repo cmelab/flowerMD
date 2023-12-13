@@ -337,6 +337,7 @@ class TestSimulate(BaseTest):
         )
         sim.run_NVT(n_steps=0, kT=1.0, tau_kt=sim.dt * 100)
         assert sim.integrator.integrate_rotational_dof is True
+        assert sim.mass_reduced == 800.0
 
     def test_save_restart_gsd(self, benzene_system):
         sim = Simulation.from_system(benzene_system)
