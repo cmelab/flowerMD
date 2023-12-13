@@ -302,7 +302,6 @@ class Simulation(hoomd.simulation.Simulation):
                         last_body_tag += 1
                     else:
                         break
-                # cut_index = last_body_tag + 1
                 return sum(snap.particles.mass[last_body_tag + 1 :])
             else:
                 return sum(snap.particles.mass)
