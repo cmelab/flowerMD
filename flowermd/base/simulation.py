@@ -298,7 +298,7 @@ class Simulation(hoomd.simulation.Simulation):
             if self._rigid_constraint:
                 last_body_tag = -1
                 for body_tag in snap.particles.body:
-                    if body_tag >= last_body_tag:
+                    if body_tag > last_body_tag:
                         last_body_tag += 1
                     else:
                         break
