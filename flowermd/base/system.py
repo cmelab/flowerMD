@@ -789,6 +789,8 @@ class Lattice(System):
         )
 
     def _build_system(self):
+        for mol in self._molecules:
+            mol._align_backbones_z_axis()
         next_idx = 0
         system = mb.Compound()
         for i in range(self.n):
