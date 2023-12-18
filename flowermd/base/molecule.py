@@ -206,10 +206,20 @@ class Molecule:
                     f"{self.smiles}."
                 )
 
-    def _align_backbones_z_axis(self):
+    def _align_backbones_z_axis(self, heavy_atoms_only=False):
         backbone_direction = np.array([0, 0, 1])
         for mol in self.molecules:
-            backbone = get_backbone_vector(mol.xyz)
+            if heavy_atoms_only:
+                positions = np.array(
+                    [
+                        p.xyz[0]
+                        for p in mol.particles()
+                        if p.element.symbol != "H"
+                    ]
+                )
+            else:
+                positions = mol.xyz
+            backbone = get_backbone_vector(positions)
             rotate_by = angle_between_vectors(
                 backbone, np.array([0, 1, 0]), degrees=False, min_angle=False
             )
