@@ -39,7 +39,6 @@ class TestPolymers:
         monomer = mb.load(chain.smiles, smiles=True)
         assert chain.n_particles == (monomer.n_particles * 5) - 8
 
-    @pytest.mark.skip()
     def test_peek(self):
         chain = PEEK(lengths=5, num_mols=1)
         monomer = mb.load(chain.smiles, smiles=True)

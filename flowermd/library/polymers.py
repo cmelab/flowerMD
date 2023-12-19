@@ -88,9 +88,19 @@ class PEEK(Polymer):
     """
 
     def __init__(self, lengths, num_mols, **kwargs):
+        smiles = "Oc1ccc(Oc2ccc(C(=O)c3ccccc3)cc2)cc1"
+        file = os.path.join(MON_DIR, "peek.mol2")
+        bond_indices = [35, 34]
+        bond_length = 0.1376
+        bond_orientation = [[-1, 0, 0], [1, 0, 0]]
         super(PEEK, self).__init__(
             lengths=lengths,
             num_mols=num_mols,
+            smiles=smiles,
+            file=file,
+            bond_indices=bond_indices,
+            bond_length=bond_length,
+            bond_orientation=bond_orientation,
             **kwargs,
         )
 
