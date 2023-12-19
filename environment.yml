@@ -15,5 +15,5 @@ dependencies:
   - py3Dmol
   - python >=3.10
   - fresnel >=0.13.5
-  - cmeutils >=1.0
+  - cmeutils >=1.1.0
   - grits >=0.3.0
