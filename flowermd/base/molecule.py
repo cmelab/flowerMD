@@ -5,6 +5,8 @@ import random
 from typing import List
 
 import mbuild as mb
+import numpy as np
+from cmeutils.geometry import angle_between_vectors, get_backbone_vector
 from gmso.core.topology import Topology
 from gmso.external.convert_mbuild import from_mbuild, to_mbuild
 from gmso.parameterization import apply
@@ -203,6 +205,30 @@ class Molecule:
                     msg=f"Unable to load the molecule from smiles "
                     f"{self.smiles}."
                 )
+
+    def _align_backbones_z_axis(self, heavy_atoms_only=False):
+        backbone_direction = np.array([0, 0, 1])
+        for mol in self.molecules:
+            if heavy_atoms_only:
+                positions = np.array(
+                    [
+                        p.xyz[0]
+                        for p in mol.particles()
+                        if p.element.symbol != "H"
+                    ]
+                )
+            else:
+                positions = mol.xyz
+            backbone = get_backbone_vector(positions)
+            rotate_by = angle_between_vectors(
+                backbone, np.array([0, 1, 0]), degrees=False, min_angle=False
+            )
+            mol.rotate(theta=rotate_by, around=np.array([0, 0, 1]))
+            backbone = get_backbone_vector(mol.xyz)
+            rotate_by = angle_between_vectors(
+                backbone, backbone_direction, degrees=False, min_angle=False
+            )
+            mol.rotate(theta=rotate_by, around=np.array([1, 0, 0]))
 
     def _generate(self):
         """Generate all the molecules by replicating the loaded molecule."""
