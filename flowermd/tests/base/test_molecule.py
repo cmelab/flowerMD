@@ -1,4 +1,6 @@
+import numpy as np
 import pytest
+from cmeutils.geometry import get_backbone_vector
 
 from flowermd import CoPolymer, Molecule, Polymer
 from flowermd.library import OPLS_AA, BeadSpring, FF_from_file
@@ -291,3 +293,16 @@ class TestCopolymer(BaseTest):
         assert ("O", "C", "C", "O") in copolymer.topology_information[
             "dihedral_types"
         ]
+
+    def test_align_z_axis(self, polyethylene):
+        pe = polyethylene(num_mols=5, lengths=20)
+        pe._align_backbones_z_axis()
+        for mol in pe.molecules:
+            backbone = get_backbone_vector(mol.xyz)
+            assert np.allclose(np.abs(backbone), np.array([0, 0, 1]), atol=1e-1)
+
+        pe = polyethylene(num_mols=5, lengths=20)
+        pe._align_backbones_z_axis(heavy_atoms_only=True)
+        for mol in pe.molecules:
+            backbone = get_backbone_vector(mol.xyz)
+            assert np.allclose(np.abs(backbone), np.array([0, 0, 1]), atol=1e-1)

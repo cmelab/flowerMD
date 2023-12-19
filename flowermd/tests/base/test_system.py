@@ -5,6 +5,7 @@ import hoomd
 import numpy as np
 import pytest
 import unyt as u
+from cmeutils.geometry import get_backbone_vector
 from unyt import Unit
 
 from flowermd import Lattice, Pack
@@ -795,7 +796,12 @@ class TestSystem(BaseTest):
         assert len(system.hoomd_forcefield) > 0
         assert system.n_particles == system.hoomd_snapshot.particles.N
         assert system.reference_values.keys() == {"energy", "length", "mass"}
-        # TODO: specific asserts for lattice system?
+        for mol_class in system._molecules:
+            for mol in mol_class.molecules:
+                backbone = get_backbone_vector(mol.xyz)
+                assert np.allclose(
+                    np.abs(backbone), np.array([0, 0, 1]), atol=1e-1
+                )
 
     def test_lattice_molecule(self, benzene_molecule):
         benzene_mol = benzene_molecule(n_mols=32)
