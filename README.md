@@ -52,7 +52,7 @@ Set up and activate environment:
 
 ```
 conda env create -f environment-dev.yml
-conda activate flowermd
+conda activate flowermd-dev
 python -m pip install -e .
 ```
 
