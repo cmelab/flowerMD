@@ -105,7 +105,7 @@ class KremerGrestBeadSpring(BaseHOOMDForcefield):
         """Create the hoomd force objects."""
         forces = []
         # Create pair force:
-        nlist = hoomd.md.nlist.Cell(buffer=0.40, exclusions=["bonds"])
+        nlist = hoomd.md.nlist.Cell(buffer=0.40, exclusions=["bond"])
         lj = hoomd.md.pair.LJ(nlist=nlist)
         lj.params[self.pair] = dict(epsilon=self.epsilon, sigma=self.sigma)
         lj.r_cut[self.pair] = self.r_cut
