@@ -101,7 +101,7 @@ class KremerGrestBeadSpring(BaseHOOMDForcefield):
         self.bond_type = f"{self.bead_name}-{self.bead_name}"
         self.pair = (self.bead_name, self.bead_name)
         hoomd_forces = self._create_forcefield()
-        super(BeadSpring, self).__init__(hoomd_forces)
+        super(KremerGrestBeadSpring, self).__init__(hoomd_forces)
 
     def _create_forcefield(self):
         """Create the hoomd force objects."""
