@@ -16,7 +16,6 @@ class DropletSimulation(Simulation):
         self,
         initial_state,
         forcefield,
-        r_cut=2.5,
         reference_values=dict(),
         dt=0.0001,
         device=hoomd.device.auto_select(),
@@ -30,7 +29,6 @@ class DropletSimulation(Simulation):
         super(DropletSimulation, self).__init__(
             initial_state=initial_state,
             forcefield=forcefield,
-            r_cut=r_cut,
             reference_values=reference_values,
             dt=dt,
             device=device,
@@ -405,7 +403,6 @@ class WettingSimulation(Simulation):
         initial_state,
         forcefield,
         fix_surface=True,
-        r_cut=2.5,
         reference_values=dict(),
         dt=0.0001,
         device=hoomd.device.auto_select(),
@@ -420,7 +417,6 @@ class WettingSimulation(Simulation):
         super(WettingSimulation, self).__init__(
             initial_state=initial_state,
             forcefield=forcefield,
-            r_cut=r_cut,
             reference_values=reference_values,
             dt=dt,
             device=device,
