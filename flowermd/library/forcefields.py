@@ -97,7 +97,7 @@ class KremerGrestBeadSpring(BaseHOOMDForcefield):
         self.epsilon = epsilon
         self.bead_name = bead_name
         self.exclusions = exclusions
-        self.r_cut = 2 * (self.sigma ** (1 / 6))
+        self.r_cut = 2 ** (1 / 6) * self.sigma
         self.bond_type = f"{self.bead_name}-{self.bead_name}"
         self.pair = (self.bead_name, self.bead_name)
         hoomd_forces = self._create_forcefield()

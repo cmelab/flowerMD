@@ -12,6 +12,7 @@ from flowermd.library import (
     OPLS_AA_PPS,
     BeadSpring,
     FF_from_file,
+    KremerGrestBeadSpring,
     TableForcefield,
 )
 from flowermd.tests.base_test import ASSETS_DIR
@@ -42,6 +43,16 @@ class TestForceFields:
         xml_file = os.path.join(ASSETS_DIR, "test_ff.xml")
         ff = FF_from_file(xml_file)
         assert ff.gmso_ff is not None
+
+    def test_KremerGrestBeadSpring(self):
+        ff = KremerGrestBeadSpring(bond_k=10, bond_max=2.0)
+        assert isinstance(ff.hoomd_forces[0], hoomd.md.pair.LJ)
+        assert isinstance(ff.hoomd_forces[1], hoomd.md.bond.FENEWCA)
+        assert np.round(ff.hoomd_forces[0].r_cut[("A", "A")], 2) == 1.12
+        assert ff.bond_type == "A-A"
+        assert ff.pair == ("A", "A")
+        ff2 = KremerGrestBeadSpring(bond_k=10, bond_max=2.0, sigma=2)
+        assert np.round(ff2.hoomd_forces[0].r_cut[("A", "A")], 2) == 2 * 1.12
 
     def test_BeadSpring(self):
         ff = BeadSpring(
