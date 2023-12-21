@@ -88,7 +88,6 @@ class KremerGrestBeadSpring(BaseHOOMDForcefield):
         sigma=1.0,
         epsilon=1.0,
         bead_name="A",
-        exclusions=["bond"],
     ):
         self.bond_k = bond_k
         self.bond_max = bond_max
@@ -96,7 +95,6 @@ class KremerGrestBeadSpring(BaseHOOMDForcefield):
         self.sigma = sigma
         self.epsilon = epsilon
         self.bead_name = bead_name
-        self.exclusions = exclusions
         self.r_cut = 2 ** (1 / 6) * self.sigma
         self.bond_type = f"{self.bead_name}-{self.bead_name}"
         self.pair = (self.bead_name, self.bead_name)
@@ -107,7 +105,7 @@ class KremerGrestBeadSpring(BaseHOOMDForcefield):
         """Create the hoomd force objects."""
         forces = []
         # Create pair force:
-        nlist = hoomd.md.nlist.Cell(buffer=0.40, exclusions=self.exclusions)
+        nlist = hoomd.md.nlist.Cell(buffer=0.40, exclusions=["bonds"])
         lj = hoomd.md.pair.LJ(nlist=nlist)
         lj.params[self.pair] = dict(epsilon=self.epsilon, sigma=self.sigma)
         lj.r_cut[self.pair] = self.r_cut
