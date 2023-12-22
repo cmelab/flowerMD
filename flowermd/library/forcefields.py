@@ -78,7 +78,7 @@ class FF_from_file(BaseXMLForcefield):
 
 
 class KremerGrestBeadSpring(BaseHOOMDForcefield):
-    """Kremer-Grest Bead-Spring polymer coarse-grain model.
+    r"""Kremer-Grest Bead-Spring polymer coarse-grain model.
 
     Parameters
     ----------
@@ -101,8 +101,8 @@ class KremerGrestBeadSpring(BaseHOOMDForcefield):
 
     This forcefield class returns two types of interactions:
 
-    1. A 12-6 Lennard-Jones pair potential with a cutoff of 2^(1/6) * sigma.
-    2. A bond potential that includes a FENE spring and a WCA repulsive term.
+    1. 12-6 LJ pair potential with a cutoff of :math:`2^{(1/6)}\sigma`.
+    2. Bond potential that includes a FENE spring and a WCA repulsive term.
 
     The `sigma` and `epsilon` parameters are used both for the repulsive LJ
     potential and the WCA part of the bond potential.
