@@ -25,7 +25,6 @@ class Tensile(Simulation):
         forcefield,
         tensile_axis,
         fix_ratio=0.20,
-        r_cut=2.5,
         reference_values=dict(),
         dt=0.0001,
         device=hoomd.device.auto_select(),
@@ -39,7 +38,6 @@ class Tensile(Simulation):
         super(Tensile, self).__init__(
             initial_state=initial_state,
             forcefield=forcefield,
-            r_cut=r_cut,
             reference_values=reference_values,
             dt=dt,
             device=device,
