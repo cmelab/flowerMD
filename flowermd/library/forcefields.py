@@ -78,7 +78,36 @@ class FF_from_file(BaseXMLForcefield):
 
 
 class KremerGrestBeadSpring(BaseHOOMDForcefield):
-    """Creates the well-known Kremer-Grest Bead-Spring coarse-grain model."""
+    """Kremer-Grest Bead-Spring polymer coarse-grain model.
+
+    Parameters
+    ----------
+    bond_k : float, required
+        Spring constant in the FENE-WCA bond potential.
+    bond_max : float, required
+        Maximum bond length in the FENE-WCA bond potential.
+    delta : float, optional, default 0.0
+        The radial shift used in the FENE-WCA bond potential.
+    sigma : float, optional, default 1.0
+        Length scale in the 12-6 Lennard-Jones pair force.
+    epsilon : float, optional, default 1.0
+        Energy scale in the 12-6 Lennard-Jones pair force.
+    bead_name : str, optional, default "A"
+        Particle names in the bead-spring system.
+
+    Notes
+    -----
+    Use this forcefield class with `flowermd.library.polymers.BeadSpring`.
+
+    This forcefield class returns two types of interactions:
+
+    1. A 12-6 Lennard-Jones pair potential with a cutoff of 2^(1/6) * sigma.
+    2. A bond potential that includes a FENE spring and a WCA repulsive term.
+
+    The `sigma` and `epsilon` parameters are used both for the repulsive LJ
+    potential and the WCA part of the bond potential.
+
+    """
 
     def __init__(
         self,
