@@ -117,3 +117,5 @@ class TestWelding(BaseTest):
         for p_type in init_types:
             assert lj.params[(p_type, "VOID")]["sigma"] == 0.4
             assert lj.params[(p_type, "VOID")]["epsilon"] == 1
+        sim = SlabSimulation(initial_state=void_snap, forcefield=ff)
+        sim.run_NVT(n_steps=1, kT=1, tau_kt=sim.dt * 100)
