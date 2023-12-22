@@ -34,8 +34,6 @@ class Simulation(hoomd.simulation.Simulation):
         List of HOOMD force objects to add to the integrator.
     reference_values : dict, default {}
         A dictionary of reference values for mass, length, and energy.
-    r_cut : float, default 2.5
-        Cutoff radius for potentials (in simulation length units).
     dt : float, default 0.0001
         Initial value for dt, the size of simulation timestep.
     device : hoomd.device, default hoomd.device.auto_select()
@@ -63,7 +61,6 @@ class Simulation(hoomd.simulation.Simulation):
         initial_state,
         forcefield,
         reference_values=dict(),
-        r_cut=2.5,
         dt=0.0001,
         device=hoomd.device.auto_select(),
         seed=42,
@@ -77,7 +74,6 @@ class Simulation(hoomd.simulation.Simulation):
         super(Simulation, self).__init__(device, seed)
         self.initial_state = initial_state
         self._forcefield = forcefield
-        self.r_cut = r_cut
         self.gsd_write_freq = int(gsd_write_freq)
         self.maximum_write_buffer_size = gsd_max_buffer_size
         self.log_write_freq = int(log_write_freq)

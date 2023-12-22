@@ -729,9 +729,11 @@ class Pack(System):
         base_units=dict(),
         packing_expand_factor=5,
         edge=0.2,
+        overlap=0.2,
     ):
         self.packing_expand_factor = packing_expand_factor
         self.edge = edge
+        self.overlap = overlap
         super(Pack, self).__init__(
             molecules=molecules,
             density=density,
@@ -744,7 +746,7 @@ class Pack(System):
             compound=self.all_molecules,
             n_compounds=[1 for i in self.all_molecules],
             box=list(self._target_box * self.packing_expand_factor),
-            overlap=0.2,
+            overlap=self.overlap,
             edge=self.edge,
         )
         return system

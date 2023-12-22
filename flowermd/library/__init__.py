@@ -9,6 +9,7 @@ from .forcefields import (
     BaseXMLForcefield,
     BeadSpring,
     FF_from_file,
+    KremerGrestBeadSpring,
     TableForcefield,
 )
 from .polymers import (
