@@ -77,6 +77,81 @@ class FF_from_file(BaseXMLForcefield):
         self.description = "Forcefield loaded from an XML file. "
 
 
+class KremerGrestBeadSpring(BaseHOOMDForcefield):
+    r"""Kremer-Grest Bead-Spring polymer coarse-grain model.
+
+    Parameters
+    ----------
+    bond_k : float, required
+        Spring constant in the FENE-WCA bond potential.
+    bond_max : float, required
+        Maximum bond length in the FENE-WCA bond potential.
+    delta : float, optional, default 0.0
+        The radial shift used in the FENE-WCA bond potential.
+    sigma : float, optional, default 1.0
+        Length scale in the 12-6 Lennard-Jones pair force.
+    epsilon : float, optional, default 1.0
+        Energy scale in the 12-6 Lennard-Jones pair force.
+    bead_name : str, optional, default "A"
+        Particle names in the bead-spring system.
+
+    Notes
+    -----
+    Use this forcefield class with `flowermd.library.polymers.BeadSpring`.
+
+    This forcefield class returns two types of interactions:
+
+    1. 12-6 LJ pair potential with a cutoff of :math:`2^{(1/6)}\sigma`.
+    2. Bond potential that includes a FENE spring and a WCA repulsive term.
+
+    The `sigma` and `epsilon` parameters are used both for the repulsive LJ
+    potential and the WCA part of the bond potential.
+
+    """
+
+    def __init__(
+        self,
+        bond_k,
+        bond_max,
+        radial_shift=0,
+        sigma=1.0,
+        epsilon=1.0,
+        bead_name="A",
+    ):
+        self.bond_k = bond_k
+        self.bond_max = bond_max
+        self.radial_shift = radial_shift
+        self.sigma = sigma
+        self.epsilon = epsilon
+        self.bead_name = bead_name
+        self.r_cut = 2 ** (1 / 6) * self.sigma
+        self.bond_type = f"{self.bead_name}-{self.bead_name}"
+        self.pair = (self.bead_name, self.bead_name)
+        hoomd_forces = self._create_forcefield()
+        super(KremerGrestBeadSpring, self).__init__(hoomd_forces)
+
+    def _create_forcefield(self):
+        """Create the hoomd force objects."""
+        forces = []
+        # Create pair force:
+        nlist = hoomd.md.nlist.Cell(buffer=0.40, exclusions=["bond"])
+        lj = hoomd.md.pair.LJ(nlist=nlist)
+        lj.params[self.pair] = dict(epsilon=self.epsilon, sigma=self.sigma)
+        lj.r_cut[self.pair] = self.r_cut
+        forces.append(lj)
+        # Create FENE bond force:
+        fene_bond = hoomd.md.bond.FENEWCA()
+        fene_bond.params[self.bond_type] = dict(
+            k=self.bond_k,
+            r0=self.bond_max,
+            epsilon=self.epsilon,
+            sigma=self.sigma,
+            delta=self.radial_shift,
+        )
+        forces.append(fene_bond)
+        return forces
+
+
 class BeadSpring(BaseHOOMDForcefield):
     """Bead-spring forcefield class.
 

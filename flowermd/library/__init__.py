@@ -10,6 +10,7 @@ from .forcefields import (
     BeadSpring,
     EllipsoidForcefield,
     FF_from_file,
+    KremerGrestBeadSpring,
     TableForcefield,
 )
 from .polymers import (
