@@ -277,6 +277,13 @@ class Simulation(hoomd.simulation.Simulation):
         return np.prod(self.box_lengths)
 
     @property
+    def N_beads(self):
+        """The total number of simulation elements in the system."""
+        # TODO: What to do for particles not being integrated over?
+        with self.state.cpu_local_snapshot as snap:
+            return snap.particles.N
+
+    @property
     def mass_reduced(self):
         """The total mass of the system in reduced units."""
         with self.state.cpu_local_snapshot as snap:

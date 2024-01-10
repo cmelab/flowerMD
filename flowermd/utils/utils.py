@@ -96,7 +96,7 @@ def validate_ref_value(ref_value, dimension):
         )
 
 
-def calculate_box_length(mass, density, fixed_L=None):
+def calculate_box_length(density, mass=None, n_beads=None, fixed_L=None):
     """Calculates the required box length(s) given the
     mass of a sytem and the target density.
 
@@ -107,10 +107,14 @@ def calculate_box_length(mass, density, fixed_L=None):
 
     Parameters
     ----------
-    mass : unyt.unyt_quantity, required
-        Mass of the system
     density : unyt.unyt_quantity, required
         Target density of the system
+    mass : unyt.unyt_quantity, required
+        Mass of the system.
+        Use when using mass density rather than number density.
+    n_beads : int, optional
+        Number of beads in the system.
+        Use when using number density rather than mass density.
     fixed_L : np.array, optional, defualt=None
         Array of fixed box lengths to be accounted for
         when solving for L
@@ -120,8 +124,29 @@ def calculate_box_length(mass, density, fixed_L=None):
     L : float
         Box edge length
     """
-
-    vol = mass / density  # cm^3
+    # Check units of density
+    mass_density = u.Unit("kg") / u.Unit("m**3")
+    number_density = 1 / u.Unit("m**3")
+    if density.units.dimensions == mass_density.dimensions:
+        if not mass:
+            raise ValueError(
+                f"The given density has units of {mass_density.dimensions}"
+                "but the mass is not given."
+            )
+        vol = mass / density  # cm^3
+    elif density.units.dimensions == number_density.dimensions:
+        if not n_beads:
+            raise ValueError(
+                f"The given density has units of {number_density.dimensions}"
+                "but the mass is not given"
+            )
+    else:
+        raise ValueError(
+            f"Density units of {density.units.dimensions} were given."
+            "Only mass density ({mass_density.units.dimensions}) and "
+            "number density ({number_density.dimensions}) are supported."
+        )
+        pass  # TODO: raise ValueError
     if fixed_L is None:
         L = vol ** (1 / 3)
     else:

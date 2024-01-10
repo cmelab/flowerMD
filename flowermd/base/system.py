@@ -43,11 +43,6 @@ class System(ABC):
     ----------
     molecules : flowermd.Molecule or a list of Molecule objects, required
         The molecules to be placed in the system.
-    density : float, required
-        The desired density of the system (g/cm^3). Used to set the
-        target_box attribute. Can be useful when initializing
-        systems at low density and running a shrink simulation
-        to achieve a target density.
     base_units : dict, default {}
         Dictionary of base units to use for scaling.
         Dictionary keys are "length", "mass", and "energy". Values should be an
@@ -71,11 +66,9 @@ class System(ABC):
     def __init__(
         self,
         molecules,
-        density: float,
         base_units=dict(),
     ):
         self._molecules = check_return_iterable(molecules)
-        self.density = density
         self.all_molecules = []
         self.gmso_system = None
         self._reference_values = base_units
@@ -623,7 +616,7 @@ class System(ABC):
         self._hoomd_snapshot = self._create_hoomd_snapshot()
 
     def set_target_box(
-        self, x_constraint=None, y_constraint=None, z_constraint=None
+        self, density, x_constraint=None, y_constraint=None, z_constraint=None
     ):
         """Set the target box size of the system.
 
@@ -633,6 +626,8 @@ class System(ABC):
 
         Parameters
         ----------
+        density : float, required
+            Density used when calculating the lengths (g/cm^3).
         x_constraint : float, optional, defualt=None
             Fixes the box length (nm) along the x axis.
         y_constraint : float, optional, default=None
@@ -642,13 +637,13 @@ class System(ABC):
 
         """
         if not any([x_constraint, y_constraint, z_constraint]):
-            Lx = Ly = Lz = self._calculate_L()
+            Lx = Ly = Lz = self._calculate_L(density=density)
         else:
             constraints = np.array([x_constraint, y_constraint, z_constraint])
             fixed_L = constraints[np.not_equal(constraints, None).nonzero()]
             # Conv from nm to cm for _calculate_L
             fixed_L *= 1e-7
-            L = self._calculate_L(fixed_L=fixed_L)
+            L = self._calculate_L(density=density, fixed_L=fixed_L)
             constraints[np.equal(constraints, None).nonzero()] = L
             Lx, Ly, Lz = constraints
 
@@ -663,7 +658,7 @@ class System(ABC):
                 "The initial configuraiton has not been created yet."
             )
 
-    def _calculate_L(self, fixed_L=None):
+    def _calculate_L(self, density, fixed_L=None):
         """Calculate the box length.
 
         Calculate the required box length(s) given the mass of a system and
@@ -680,7 +675,7 @@ class System(ABC):
 
         """
         mass_quantity = u.unyt_quantity(self.mass, u.g / u.mol).to("g")
-        density_quantity = u.unyt_quantity(self.density, u.g / u.cm**3)
+        density_quantity = u.unyt_quantity(density, u.g / u.cm**3)
         if fixed_L is not None:
             fixed_L = u.unyt_array(fixed_L, u.cm)
         L = calculate_box_length(
@@ -697,6 +692,11 @@ class Pack(System):
 
     Parameters
     ----------
+    density : float, required
+        The desired density of the system (g/cm^3). Used to set the
+        target_box attribute. Can be useful when initializing
+        systems at low density and running a shrink simulation
+        to achieve a target density.
     packing_expand_factor : int, default 5
         The factor by which to expand the box for packing.
     edge : float, default 0.2
@@ -731,12 +731,12 @@ class Pack(System):
         edge=0.2,
         overlap=0.2,
     ):
+        self.density = density
         self.packing_expand_factor = packing_expand_factor
         self.edge = edge
         self.overlap = overlap
         super(Pack, self).__init__(
             molecules=molecules,
-            density=density,
             base_units=base_units,
         )
 
@@ -773,7 +773,6 @@ class Lattice(System):
     def __init__(
         self,
         molecules,
-        density: float,
         x: float,
         y: float,
         n: int,
@@ -786,7 +785,6 @@ class Lattice(System):
         self.basis_vector = basis_vector
         super(Lattice, self).__init__(
             molecules=molecules,
-            density=density,
             base_units=base_units,
         )
 
