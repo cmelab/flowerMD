@@ -127,7 +127,7 @@ def calculate_box_length(density, mass=None, n_beads=None, fixed_L=None):
     """
     # Check units of density
     mass_density = u.Unit("kg") / u.Unit("m**3")
-    number_density = 1 / u.Unit("m**3")
+    number_density = u.Unit("m**-3")
     if density.units.dimensions == mass_density.dimensions:
         if not mass:
             raise ValueError(
