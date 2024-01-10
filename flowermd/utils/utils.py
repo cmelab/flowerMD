@@ -104,6 +104,7 @@ def calculate_box_length(density, mass=None, n_beads=None, fixed_L=None):
     If constraints are set, this will solve for the required
     lengths of the remaining non-constrained edges to match
     the target density.
+    #TODO: Add example of using box constraints
 
     Parameters
     ----------
@@ -133,13 +134,14 @@ def calculate_box_length(density, mass=None, n_beads=None, fixed_L=None):
                 f"The given density has units of {mass_density.dimensions}"
                 "but the mass is not given."
             )
-        vol = mass / density  # cm^3
+        vol = mass / density
     elif density.units.dimensions == number_density.dimensions:
         if not n_beads:
             raise ValueError(
                 f"The given density has units of {number_density.dimensions}"
-                "but the mass is not given"
+                "but the number of beads is not given."
             )
+        vol = n_beads / density
     else:
         raise ValueError(
             f"Density units of {density.units.dimensions} were given."
@@ -151,7 +153,6 @@ def calculate_box_length(density, mass=None, n_beads=None, fixed_L=None):
         L = vol ** (1 / 3)
     else:
         L = vol / np.prod(fixed_L)
-        if fixed_L.size == 1:  # L is cm^2
+        if fixed_L.size == 1:  # L is units of area
             L = L ** (1 / 2)
-    # L is cm
     return L
