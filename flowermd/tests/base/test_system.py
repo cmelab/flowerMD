@@ -782,7 +782,6 @@ class TestSystem(BaseTest):
         polyethylene = polyethylene(lengths=2, num_mols=32)
         system = Lattice(
             molecules=[polyethylene],
-            density=1.0,
             x=1,
             y=1,
             n=4,
@@ -807,7 +806,6 @@ class TestSystem(BaseTest):
         benzene_mol = benzene_molecule(n_mols=32)
         system = Lattice(
             molecules=[benzene_mol],
-            density=1.0,
             x=1,
             y=1,
             n=4,

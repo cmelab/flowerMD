@@ -818,7 +818,6 @@ class Lattice(System):
         x_len = bounding_box.lengths[0] + self.x
         y_len = bounding_box.lengths[1] + self.y
         z_len = bounding_box.lengths[2] + 0.2
-        self.set_target_box(x_constraint=x_len, y_constraint=y_len)
         # Center the lattice in its box
         system.box = mb.box.Box(np.array([x_len, y_len, z_len]))
         system.translate_to(
