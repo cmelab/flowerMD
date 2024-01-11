@@ -679,7 +679,7 @@ class System(ABC):
         if fixed_L is not None:
             fixed_L = u.unyt_array(fixed_L, u.cm)
         L = calculate_box_length(
-            mass_quantity, density_quantity, fixed_L=fixed_L
+            mass=mass_quantity, density=density_quantity, fixed_L=fixed_L
         )
         return L.to("nm").value
 
@@ -731,7 +731,7 @@ class Pack(System):
         edge=0.2,
         overlap=0.2,
     ):
-        self.density = density
+        self.density = density * u.g / (u.cm ** (3))
         self.packing_expand_factor = packing_expand_factor
         self.edge = edge
         self.overlap = overlap
@@ -741,7 +741,7 @@ class Pack(System):
         )
 
     def _build_system(self):
-        self.set_target_box()
+        self.set_target_box(density=self.density)
         system = mb.packing.fill_box(
             compound=self.all_molecules,
             n_compounds=[1 for i in self.all_molecules],
