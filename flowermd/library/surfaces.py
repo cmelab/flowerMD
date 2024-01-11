@@ -93,7 +93,6 @@ class Graphene(System):
         surface_mol = Molecule(num_mols=1, compound=surface)
         super(Graphene, self).__init__(
             molecules=[surface_mol],
-            density=1.0,
             base_units=base_units,
         )
 

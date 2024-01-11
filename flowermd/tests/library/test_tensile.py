@@ -10,7 +10,6 @@ class TestTensileSimulation(BaseTest):
         pps = PPS(lengths=6, num_mols=32)
         system = Lattice(
             molecules=[pps],
-            density=1.0,
             x=1.2,
             y=1.2,
             n=4,
