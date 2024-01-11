@@ -46,25 +46,41 @@ class TestUtils:
     def test_calculate_box_length_mass_density(self):
         mass = u.unyt_quantity(4.0, u.g)
         density = u.unyt_quantity(0.5, u.g / u.cm**3)
-        box_length = calculate_box_length(mass, density)
+        box_length = calculate_box_length(density=density, mass=mass)
         assert box_length == 2.0 * u.cm
 
     def test_calculate_box_length_number_density(self):
-        pass
+        sigma = 1 * u.nm
+        n_beads = 100
+        density = 1 / sigma**3
+        box_length = calculate_box_length(density=density, n_beads=n_beads)
+        assert box_length == 100 ** (1 / 3) * u.nm
 
-    def test_calculate_box_length_missing_args(self):
-        pass
+    def test_calculate_box_length_bad_args(self):
+        mass_density = 1 * u.g / (u.cm**3)
+        number_density = 1 / (1 * u.nm) ** 3
+        invalid_density = 1 * u.J / u.kg
+        with pytest.raises(ValueError):
+            calculate_box_length(density=mass_density, n_beads=100)
+        with pytest.raises(ValueError):
+            calculate_box_length(density=number_density, mass=100)
+        with pytest.raises(ValueError):
+            calculate_box_length(density=invalid_density, mass=100)
 
     def test_calculate_box_length_fixed_l_1d(self):
         mass = u.unyt_quantity(6.0, u.g)
         density = u.unyt_quantity(0.5, u.g / u.cm**3)
         fixed_L = u.unyt_quantity(3.0, u.cm)
-        box_length = calculate_box_length(mass, density, fixed_L=fixed_L)
+        box_length = calculate_box_length(
+            mass=mass, density=density, fixed_L=fixed_L
+        )
         assert box_length == 2.0 * u.cm
 
     def test_calculate_box_length_fixed_l_2d(self):
         mass = u.unyt_quantity(12.0, u.g)
         density = u.unyt_quantity(0.5, u.g / u.cm**3)
         fixed_L = u.unyt_array([3.0, 2.0], u.cm)
-        box_length = calculate_box_length(mass, density, fixed_L=fixed_L)
+        box_length = calculate_box_length(
+            mass=mass, density=density, fixed_L=fixed_L
+        )
         assert box_length == 4.0 * u.cm
