@@ -773,7 +773,6 @@ class Lattice(System):
     def __init__(
         self,
         molecules,
-        density: float,
         x: float,
         y: float,
         n: int,
@@ -786,7 +785,6 @@ class Lattice(System):
         self.basis_vector = basis_vector
         super(Lattice, self).__init__(
             molecules=molecules,
-            density=density,
             base_units=base_units,
         )
 
