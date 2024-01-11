@@ -43,11 +43,17 @@ class TestUtils:
         with pytest.raises(ValueError):
             validate_ref_value("test g", u.dimensions.mass)
 
-    def test_calculate_box_length(self):
+    def test_calculate_box_length_mass_density(self):
         mass = u.unyt_quantity(4.0, u.g)
         density = u.unyt_quantity(0.5, u.g / u.cm**3)
         box_length = calculate_box_length(mass, density)
         assert box_length == 2.0 * u.cm
+
+    def test_calculate_box_length_number_density(self):
+        pass
+
+    def test_calculate_box_length_missing_args(self):
+        pass
 
     def test_calculate_box_length_fixed_l_1d(self):
         mass = u.unyt_quantity(6.0, u.g)

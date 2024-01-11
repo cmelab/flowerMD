@@ -145,10 +145,9 @@ def calculate_box_length(density, mass=None, n_beads=None, fixed_L=None):
     else:
         raise ValueError(
             f"Density units of {density.units.dimensions} were given."
-            "Only mass density ({mass_density.units.dimensions}) and "
-            "number density ({number_density.dimensions}) are supported."
+            f"Only mass density ({mass_density.units.dimensions}) and "
+            f"number density ({number_density.dimensions}) are supported."
         )
-        pass  # TODO: raise ValueError
     if fixed_L is None:
         L = vol ** (1 / 3)
     else:
