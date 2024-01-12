@@ -13,10 +13,8 @@ from flowermd.utils import (
     HOOMDThermostats,
     StdOutLogger,
     UpdateWalls,
-    calculate_box_length,
     validate_ref_value,
 )
-from flowermd.utils.exceptions import ReferenceUnitError
 
 
 class Simulation(hoomd.simulation.Simulation):
@@ -586,12 +584,11 @@ class Simulation(hoomd.simulation.Simulation):
 
     def run_update_volume(
         self,
+        final_box_lengths,
         n_steps,
         period,
         kT,
         tau_kt,
-        final_box_lengths=None,
-        final_density=None,
         thermalize_particles=True,
         write_at_start=True,
     ):
@@ -604,6 +601,8 @@ class Simulation(hoomd.simulation.Simulation):
 
         Parameters
         ----------
+        final_box_lengths : np.ndarray, shape=(3,), dtype=float, default None
+            The final box edge lengths in (x, y, z) order.
         n_steps : int, required
             Number of steps to run during volume update.
         period : int, required
@@ -612,52 +611,17 @@ class Simulation(hoomd.simulation.Simulation):
             The temperature to use during volume update.
         tau_kt : float, required
             Thermostat coupling period (in simulation time units).
-        final_box_lengths : np.ndarray, shape=(3,), dtype=float, default None
-            The final box edge lengths in (x, y, z) order.
-        final_density : float, default None
-            The final density of the simulation in g/cm^3.
         write_at_start : bool, default True
             When set to True, triggers writers that evaluate to True
             for the initial step to execute before the next simulation
             time step.
 
         """
-        if final_box_lengths is None and final_density is None:
-            raise ValueError(
-                "Must provide either `final_box_lengths` or `final_density`"
-            )
-        if final_box_lengths is not None and final_density is not None:
-            raise ValueError(
-                "Cannot provide both `final_box_lengths` and `final_density`."
-            )
-        if final_box_lengths is not None:
-            final_box = hoomd.Box(
-                Lx=final_box_lengths[0],
-                Ly=final_box_lengths[1],
-                Lz=final_box_lengths[2],
-            )
-        else:
-            if not self.reference_values:
-                raise ReferenceUnitError(
-                    "Missing simulation units. Please "
-                    "provide units for mass, length, and"
-                    " energy."
-                )
-
-            if isinstance(final_density, u.unyt_quantity):
-                density_quantity = final_density.to(u.g / u.cm**3)
-            else:
-                density_quantity = u.unyt_quantity(
-                    final_density, u.g / u.cm**3
-                )
-            mass_g = self.mass.to("g")
-            L = calculate_box_length(mass=mass_g, density=density_quantity)
-            # convert L from cm to reference units
-            L = (
-                L.to(self.reference_length.units) / self.reference_length.value
-            ).value
-            final_box = hoomd.Box(Lx=L, Ly=L, Lz=L)
-
+        final_box = hoomd.Box(
+            Lx=final_box_lengths[0],
+            Ly=final_box_lengths[1],
+            Lz=final_box_lengths[2],
+        )
         resize_trigger = hoomd.trigger.Periodic(period)
         box_ramp = hoomd.variant.Ramp(
             A=0, B=1, t_start=self.timestep, t_ramp=int(n_steps)

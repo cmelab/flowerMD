@@ -96,9 +96,61 @@ def validate_ref_value(ref_value, dimension):
         )
 
 
-def calculate_box_length(density, mass=None, n_beads=None, fixed_L=None):
-    """Calculates the required box length(s) given the
-    mass of a sytem and the target density.
+def get_target_box_mass_density(
+    density,
+    mass,
+    x_constraint=None,
+    y_constraint=None,
+    z_constraint=None,
+):
+    required_units = u.Unit("kg") / u.Unit("m**3")
+    if density.units.dimensions != required_units.dimensions:
+        raise ValueError(
+            f"The density given has units of {density.units.dimensions} "
+            f"but should have units of {required_units.dimensions}."
+        )
+
+    if not any([x_constraint, y_constraint, z_constraint]):
+        Lx = Ly = Lz = _calculate_box_length(density=density, mass=mass)
+    else:
+        constraints = np.array([x_constraint, y_constraint, z_constraint])
+        fixed_L = constraints[np.not_equal(constraints, None).nonzero()]
+        L = _calculate_box_length(density=density, mass=mass, fixed_L=fixed_L)
+        constraints[np.equal(constraints, None).nonzero()] = L
+        Lx, Ly, Lz = constraints
+    return np.array([Lx, Ly, Lz])
+
+
+def get_target_box_number_density(
+    density,
+    n_beads,
+    x_constraint=None,
+    y_constraint=None,
+    z_constraint=None,
+):
+    required_units = u.Unit("m**-3")
+    if density.units.dimensions != required_units.dimensions:
+        raise ValueError(
+            f"The density given has units of {density.units.dimensions} "
+            f"but should have units of {required_units.dimensions}."
+        )
+    if not any([x_constraint, y_constraint, z_constraint]):
+        Lx = Ly = Lz = _calculate_box_length(density=density, n_beads=n_beads)
+    else:
+        constraints = np.array([x_constraint, y_constraint, z_constraint])
+        fixed_L = constraints[np.not_equal(constraints, None).nonzero()]
+        L = _calculate_box_length(
+            density=density, n_beads=n_beads, fixed_L=fixed_L
+        )
+        constraints[np.equal(constraints, None).nonzero()] = L
+        Lx, Ly, Lz = constraints
+    return np.array([Lx, Ly, Lz])
+
+
+def _calculate_box_length(density, mass=None, n_beads=None, fixed_L=None):
+    """Helper function to calculate box lengths that match a given density.
+
+    Works with either mass density or number density.
 
     Box edge length constraints can be set by set_target_box().
     If constraints are set, this will solve for the required
@@ -110,12 +162,12 @@ def calculate_box_length(density, mass=None, n_beads=None, fixed_L=None):
     ----------
     density : unyt.unyt_quantity, required
         Target density of the system
-    mass : unyt.unyt_quantity, required
+    mass : unyt.unyt_quantity, optional
         Mass of the system.
-        Use when using mass density rather than number density.
+        Use for mass density rather than number density.
     n_beads : int, optional
         Number of beads in the system.
-        Use when using number density rather than mass density.
+        Use for number density rather than mass density.
     fixed_L : np.array, optional, defualt=None
         Array of fixed box lengths to be accounted for
         when solving for L

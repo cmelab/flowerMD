@@ -14,8 +14,9 @@ from gmso.parameterization import apply
 from flowermd.base.forcefield import BaseHOOMDForcefield, BaseXMLForcefield
 from flowermd.base.molecule import Molecule
 from flowermd.utils import (
-    calculate_box_length,
     check_return_iterable,
+    get_target_box_mass_density,
+    get_target_box_number_density,
     validate_ref_value,
 )
 from flowermd.utils.exceptions import ForceFieldError, MoleculeLoadError
@@ -615,40 +616,6 @@ class System(ABC):
         )
         self._hoomd_snapshot = self._create_hoomd_snapshot()
 
-    def set_target_box(
-        self, density, x_constraint=None, y_constraint=None, z_constraint=None
-    ):
-        """Set the target box size of the system.
-
-        If no constraints are set, the target box is cubic.
-        Setting constraints will hold those box vectors
-        constant and adjust others to match the target density.
-
-        Parameters
-        ----------
-        density : float, required
-            Density used when calculating the lengths (g/cm^3).
-        x_constraint : float, optional, defualt=None
-            Fixes the box length (nm) along the x axis.
-        y_constraint : float, optional, default=None
-            Fixes the box length (nm) along the y axis.
-        z_constraint : float, optional, default=None
-            Fixes the box length (nm) along the z axis.
-
-        """
-        if not any([x_constraint, y_constraint, z_constraint]):
-            Lx = Ly = Lz = self._calculate_L(density=density)
-        else:
-            constraints = np.array([x_constraint, y_constraint, z_constraint])
-            fixed_L = constraints[np.not_equal(constraints, None).nonzero()]
-            # Conv from nm to cm for _calculate_L
-            fixed_L *= 1e-7
-            L = self._calculate_L(density=density, fixed_L=fixed_L)
-            constraints[np.equal(constraints, None).nonzero()] = L
-            Lx, Ly, Lz = constraints
-
-        self._target_box = np.array([Lx, Ly, Lz])
-
     def visualize(self):
         """Visualize the system."""
         if self.system:
@@ -657,31 +624,6 @@ class System(ABC):
             raise ValueError(
                 "The initial configuraiton has not been created yet."
             )
-
-    def _calculate_L(self, density, fixed_L=None):
-        """Calculate the box length.
-
-        Calculate the required box length(s) given the mass of a system and
-        the target density.
-        Box edge length constraints can be set by set_target_box().
-        If constraints are set, this will solve for the required
-        lengths of the remaining non-constrained edges to match
-        the target density.
-
-        Parameters
-        ----------
-        fixed_L : np.array, optional, defualt=None
-            Array of fixed box lengths to be accounted for when solving for L.
-
-        """
-        mass_quantity = u.unyt_quantity(self.mass, u.g / u.mol).to("g")
-        density_quantity = u.unyt_quantity(density, u.g / u.cm**3)
-        if fixed_L is not None:
-            fixed_L = u.unyt_array(fixed_L, u.cm)
-        L = calculate_box_length(
-            mass=mass_quantity, density=density_quantity, fixed_L=fixed_L
-        )
-        return L.to("nm").value
 
 
 class Pack(System):
@@ -731,6 +673,7 @@ class Pack(System):
         edge=0.2,
         overlap=0.2,
     ):
+        # TODO: Remove this
         self.density = density * u.g / (u.cm ** (3))
         self.packing_expand_factor = packing_expand_factor
         self.edge = edge
@@ -741,11 +684,28 @@ class Pack(System):
         )
 
     def _build_system(self):
-        self.set_target_box(density=self.density)
+        mass_density = u.Unit("kg") / u.Unit("m**3")
+        number_density = u.Unit("m**-3")
+        if self.density.units.dimensions == mass_density.dimensions:
+            target_box = get_target_box_mass_density(
+                density=self.density, mass=self.mass
+            )
+        elif self.density.units.dimensions == number_density.dimensions:
+            target_box = get_target_box_number_density(
+                density=self.density, n_beads=self.n_particles
+            )
+        else:
+            raise ValueError(
+                f"Density dimensions of {self.density.units.dimensions} "
+                "were given, but only mass density "
+                f"({mass_density.dimensions}) and "
+                f"number density ({number_density.dimensions}) are supported."
+            )
+
         system = mb.packing.fill_box(
             compound=self.all_molecules,
             n_compounds=[1 for i in self.all_molecules],
-            box=list(self._target_box * self.packing_expand_factor),
+            box=list(target_box * self.packing_expand_factor),
             overlap=self.overlap,
             edge=self.edge,
         )
