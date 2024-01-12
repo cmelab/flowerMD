@@ -188,22 +188,13 @@ class TestSystem(BaseTest):
         )
         assert sum(snap.particles.charge) == 0
 
-    def test_target_box(self, benzene_molecule):
+    def test_pack_box(self, benzene_molecule):
         benzene_mol = benzene_molecule(n_mols=3)
-        low_density_system = Pack(
-            molecules=[benzene_mol],
-            density=0.1,
-        )
-        low_density_system.apply_forcefield(
-            r_cut=2.5, force_field=OPLS_AA(), auto_scale=True
-        )
-
+        low_density_system = Pack(molecules=[benzene_mol], density=0.1)
         high_density_system = Pack(molecules=[benzene_mol], density=0.9)
-        high_density_system.apply_forcefield(
-            r_cut=2.5, force_field=OPLS_AA(), auto_scale=True
-        )
-        assert all(
-            low_density_system.target_box > high_density_system.target_box
+        np.prod(low_density_system.box)
+        assert np.prod(low_density_system.box.lengths) > np.prod(
+            high_density_system.box.lengths
         )
 
     def test_mass(self, pps_molecule):

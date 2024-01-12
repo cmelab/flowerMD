@@ -76,7 +76,6 @@ class System(ABC):
         self._hoomd_snapshot = None
         self._hoomd_forcefield = []
         self._gmso_forcefields_dict = dict()
-        self._target_box = None
         # Reference values used when last writing snapshot and forcefields
         self._ff_refs = dict()
         self._snap_refs = dict()
@@ -318,24 +317,6 @@ class System(ABC):
                 **self._ff_kwargs
             )
         return self._hoomd_forcefield
-
-    @property
-    def target_box(self):
-        """The target box size of the system in form of a numpy array.
-
-        If reference length is set, the target box is in reduced units.
-
-        Notes
-        -----
-        The `target_box` property can be passed to
-        `flowermd.base.Simulation.run_update_volume` method to reach the
-        target density.
-
-        """
-        if self.reference_length:
-            return self._target_box / self.reference_length.value
-        else:
-            return self._target_box
 
     def remove_hydrogens(self):
         """Call this method to remove hydrogen atoms from the system.
