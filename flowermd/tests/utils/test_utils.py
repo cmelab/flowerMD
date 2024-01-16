@@ -59,8 +59,8 @@ class TestUtils:
         target_box = get_target_box_number_density(
             density=density, n_beads=n_beads
         )
-        np.prod(target_box)
-        assert np.allclose(np.prod(target_box), 100, atol=1e-8)
+        L = target_box[0].value
+        assert np.allclose(L**3, 100, atol=1e-8)
 
     def test_calculate_box_length_bad_args(self):
         mass_density = 1 * u.g / (u.cm**3)
