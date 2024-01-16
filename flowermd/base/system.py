@@ -669,11 +669,11 @@ class Pack(System):
         if self.density.units.dimensions == mass_density.dimensions:
             target_box = get_target_box_mass_density(
                 density=self.density, mass=(self.mass * u.Unit("amu")).to("g")
-            )
+            ).to("nm")
         elif self.density.units.dimensions == number_density.dimensions:
             target_box = get_target_box_number_density(
                 density=self.density, n_beads=self.n_particles
-            )
+            ).to("nm")
         else:
             raise ValueError(
                 f"Density dimensions of {self.density.units.dimensions} "
