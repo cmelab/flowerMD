@@ -654,8 +654,7 @@ class Pack(System):
         edge=0.2,
         overlap=0.2,
     ):
-        # TODO: Remove this
-        self.density = density * u.g / (u.cm ** (3))
+        self.density = density
         self.packing_expand_factor = packing_expand_factor
         self.edge = edge
         self.overlap = overlap
@@ -669,7 +668,7 @@ class Pack(System):
         number_density = u.Unit("m**-3")
         if self.density.units.dimensions == mass_density.dimensions:
             target_box = get_target_box_mass_density(
-                density=self.density, mass=self.mass
+                density=self.density, mass=(self.mass * u.Unit("amu")).to("g")
             )
         elif self.density.units.dimensions == number_density.dimensions:
             target_box = get_target_box_number_density(

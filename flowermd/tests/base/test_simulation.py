@@ -10,6 +10,9 @@ import unyt as u
 
 from flowermd import Simulation
 from flowermd.tests import BaseTest
+from flowermd.utils import (  # get_target_box_number_density,
+    get_target_box_mass_density,
+)
 
 
 class TestSimulate(BaseTest):
@@ -150,8 +153,15 @@ class TestSimulate(BaseTest):
 
     def test_update_volume_density(self, benzene_system):
         sim = Simulation.from_system(benzene_system)
+        target_box = get_target_box_mass_density(
+            density=0.05 * u.Unit("g") / u.Unit("cm**3"), mass=sim.mass.to(u.g)
+        )
         sim.run_update_volume(
-            kT=1.0, tau_kt=0.01, n_steps=500, period=1, final_density=0.05
+            kT=1.0,
+            tau_kt=0.01,
+            n_steps=500,
+            period=1,
+            final_box_lengths=target_box,
         )
         assert np.isclose(
             sim.density.to(u.g / u.cm**3).value,
