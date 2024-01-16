@@ -617,6 +617,13 @@ class Simulation(hoomd.simulation.Simulation):
             time step.
 
         """
+        if self.reference_length and hasattr(final_box_lengths, "to"):
+            ref_unit = self.reference_length.units
+            final_box_lengths = final_box_lengths.to(ref_unit)
+            final_box_lengths /= self.reference_length
+        else:
+            # TODO: Do we need to do anything here?
+            pass
         final_box = hoomd.Box(
             Lx=final_box_lengths[0],
             Ly=final_box_lengths[1],

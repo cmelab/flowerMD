@@ -172,47 +172,19 @@ class TestSimulate(BaseTest):
     def test_update_volume_by_density_factor(self, benzene_system):
         sim = Simulation.from_system(benzene_system)
         init_density = copy.deepcopy(sim.density)
+        target_box = get_target_box_mass_density(
+            density=init_density * 5, mass=sim.mass.to(u.g)
+        )
         sim.run_update_volume(
             kT=1.0,
             tau_kt=0.01,
             n_steps=500,
             period=1,
-            final_density=sim.density * 5,
+            final_box_lengths=target_box,
         )
         assert np.isclose(
             sim.density.value, (init_density * 5).value, atol=1e-4
         )
-
-    def test_update_volume_missing_values(self, benzene_system):
-        sim = Simulation.from_system(benzene_system)
-        with pytest.raises(ValueError):
-            sim.run_update_volume(kT=1.0, tau_kt=0.01, n_steps=500, period=1)
-
-    def test_update_volume_two_values(self, benzene_system):
-        sim = Simulation.from_system(benzene_system)
-        with pytest.raises(ValueError):
-            sim.run_update_volume(
-                kT=1.0,
-                tau_kt=0.01,
-                n_steps=500,
-                period=1,
-                final_box_lengths=sim.box_lengths_reduced * 0.5,
-                final_density=0.1,
-            )
-
-    # def test_update_volume_with_density_no_ref_values(self, benzene_system):
-    #     sim_no_ref = Simulation(
-    #         initial_state=benzene_system.hoomd_snapshot,
-    #         forcefield=benzene_system.hoomd_forcefield,
-    #     )
-    #     with pytest.raises(ReferenceUnitError):
-    #         sim_no_ref.run_update_volume(
-    #             kT=1.0,
-    #             tau_kt=0.01,
-    #             n_steps=500,
-    #             period=1,
-    #             final_density=0.1,
-    #         )
 
     def test_change_methods(self, benzene_system):
         sim = Simulation.from_system(benzene_system)
