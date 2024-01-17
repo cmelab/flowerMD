@@ -192,7 +192,6 @@ class TestSystem(BaseTest):
         benzene_mol = benzene_molecule(n_mols=3)
         low_density_system = Pack(molecules=[benzene_mol], density=0.1)
         high_density_system = Pack(molecules=[benzene_mol], density=0.9)
-        np.prod(low_density_system.box)
         assert np.prod(low_density_system.box.lengths) > np.prod(
             high_density_system.box.lengths
         )
@@ -899,7 +898,8 @@ class TestSystem(BaseTest):
     def test_density_warning(self, benzene_molecule):
         benzene_mol = benzene_molecule(n_mols=100)
         with pytest.warns():
-            Pack(molecules=[benzene_mol], density=0.8)
+            system = Pack(molecules=[benzene_mol], density=0.8)
+            assert system.density.units == u.g / u.cm**3
 
     def test_n_particles_no_ff(self, benzene_molecule):
         benzene_mol = benzene_molecule(n_mols=100)
