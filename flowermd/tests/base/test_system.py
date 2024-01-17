@@ -880,3 +880,28 @@ class TestSystem(BaseTest):
         )
         with pytest.raises(ValueError):
             system.pickle_forcefield("forcefield.pickle")
+
+    def test_mass_density(self, benzene_molecule):
+        benzene_mol = benzene_molecule(n_mols=100)
+        system = Pack(molecules=[benzene_mol], density=0.8 * u.g / u.cm**3)
+        assert system.density.units == u.g / u.cm**3
+
+    def test_number_density(self, benzene_molecule):
+        benzene_mol = benzene_molecule(n_mols=100)
+        system = Pack(molecules=[benzene_mol], density=0.8 / u.cm**3)
+        assert system.density.units == u.cm**-3
+
+    def test_bad_density(self, benzene_molecule):
+        benzene_mol = benzene_molecule(n_mols=100)
+        with pytest.raises(ValueError):
+            Pack(molecules=[benzene_mol], density=0.8 * u.J / u.kg)
+
+    def test_density_warning(self, benzene_molecule):
+        benzene_mol = benzene_molecule(n_mols=100)
+        with pytest.warns():
+            Pack(molecules=[benzene_mol], density=0.8)
+
+    def test_n_particles_no_ff(self, benzene_molecule):
+        benzene_mol = benzene_molecule(n_mols=100)
+        system = Pack(molecules=[benzene_mol], density=0.8 * u.g / u.cm**3)
+        assert system.n_particles == 100 * 12

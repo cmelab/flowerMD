@@ -140,7 +140,10 @@ class System(ABC):
     @property
     def n_particles(self):
         """Total number of particles in the system."""
-        return self.gmso_system.n_sites
+        if self.gmso_system:
+            return self.gmso_system.n_sites
+        else:
+            return sum(mol.n_particles for mol in self.all_molecules)
 
     @property
     def mass(self):
