@@ -149,11 +149,8 @@ class System(ABC):
     def mass(self):
         """Total mass of the system in amu."""
         if self.gmso_system:
-            return sum(
-                float(site.mass.to("amu").value)
-                for site in self.gmso_system.sites
-            )
-        return sum(mol.mass for mol in self.all_molecules)
+            return sum(site.mass.to("amu") for site in self.gmso_system.sites)
+        return sum(mol.mass * u.Unit("amu") for mol in self.all_molecules)
 
     @property
     def net_charge(self):
@@ -668,17 +665,14 @@ class Pack(System):
         self.packing_expand_factor = packing_expand_factor
         self.edge = edge
         self.overlap = overlap
-        super(Pack, self).__init__(
-            molecules=molecules,
-            base_units=base_units,
-        )
+        super(Pack, self).__init__(molecules=molecules, base_units=base_units)
 
     def _build_system(self):
         mass_density = u.Unit("kg") / u.Unit("m**3")
         number_density = u.Unit("m**-3")
         if self.density.units.dimensions == mass_density.dimensions:
             target_box = get_target_box_mass_density(
-                density=self.density, mass=(self.mass * u.Unit("amu")).to("g")
+                density=self.density, mass=self.mass
             ).to("nm")
         elif self.density.units.dimensions == number_density.dimensions:
             target_box = get_target_box_number_density(
