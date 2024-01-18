@@ -200,7 +200,9 @@ class TestSystem(BaseTest):
         pps_mol = pps_molecule(n_mols=20)
         system = Pack(molecules=[pps_mol], density=1.0)
         assert np.allclose(
-            system.mass, ((12.011 * 6) + (1.008 * 6) + 32.06) * 20, atol=1e-4
+            system.mass.value,
+            ((12.011 * 6) + (1.008 * 6) + 32.06) * 20,
+            atol=1e-4,
         )
 
     def test_ref_length(self, polyethylene):
@@ -227,7 +229,7 @@ class TestSystem(BaseTest):
         )
         total_red_mass = sum(system.hoomd_snapshot.particles.mass)
         assert np.allclose(
-            system.mass,
+            system.mass.value,
             total_red_mass * system.reference_mass.to("amu").value,
             atol=1e-1,
         )

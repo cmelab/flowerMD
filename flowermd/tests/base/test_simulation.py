@@ -57,7 +57,9 @@ class TestSimulate(BaseTest):
             forcefield=benzene_system.hoomd_forcefield,
             reference_values=benzene_system.reference_values,
         )
-        assert np.isclose(float(sim.mass.value), benzene_system.mass, atol=1e-4)
+        assert np.isclose(
+            float(sim.mass.value), benzene_system.mass.value, atol=1e-4
+        )
         assert np.allclose(benzene_system.box.lengths, sim.box_lengths.value)
 
     def test_set_ref_values(self, benzene_system):
