@@ -103,6 +103,25 @@ def get_target_box_mass_density(
     y_constraint=None,
     z_constraint=None,
 ):
+    """Helper function to calculate box lengths that match a given mass density.
+
+    If no constraints are set, the target box is cubic.
+    Setting constraints will hold those box vectors
+    constant and adjust others to match the target density.
+
+    Parameters
+    ----------
+    density : float, or unyt.unyt_array, required
+        The density used to calculate volume.
+    mass : float, or unyt.unyt_array, required
+        The mass used to calculate volume.
+    x_constraint : float, optional, defualt=None
+        Fixes the box length (nm) along the x axis.
+    y_constraint : float, optional, default=None
+        Fixes the box length (nm) along the y axis.
+    z_constraint : float, optional, default=None
+        Fixes the box length (nm) along the z axis.
+    """
     required_units = u.Unit("kg") / u.Unit("m**3")
     if density.units.dimensions != required_units.dimensions:
         raise ValueError(
@@ -128,6 +147,26 @@ def get_target_box_number_density(
     y_constraint=None,
     z_constraint=None,
 ):
+    """Helper function to calculate box lengths that match a given number
+    density.
+
+    If no constraints are set, the target box is cubic.
+    Setting constraints will hold those box vectors
+    constant and adjust others to match the target density.
+
+    Parameters
+    ----------
+    density : float, or unyt.unyt_array, required
+        The density used to calculate volume.
+    n_beads : int, required
+        The number of beads used to calculate volume.
+    x_constraint : float, optional, defualt=None
+        Fixes the box length (nm) along the x axis.
+    y_constraint : float, optional, default=None
+        Fixes the box length (nm) along the y axis.
+    z_constraint : float, optional, default=None
+        Fixes the box length (nm) along the z axis.
+    """
     required_units = u.Unit("m**-3")
     if density.units.dimensions != required_units.dimensions:
         raise ValueError(
@@ -150,13 +189,8 @@ def get_target_box_number_density(
 def _calculate_box_length(density, mass=None, n_beads=None, fixed_L=None):
     """Helper function to calculate box lengths that match a given density.
 
-    Works with either mass density or number density.
-
-    Box edge length constraints can be set by set_target_box().
-    If constraints are set, this will solve for the required
-    lengths of the remaining non-constrained edges to match
-    the target density.
-    #TODO: Add example of using box constraints
+    See `flowermd.utils.get_target_box_mass_density` and
+    `flowermd.utils.get_target_box_number_density`
 
     Parameters
     ----------
@@ -201,7 +235,7 @@ def _calculate_box_length(density, mass=None, n_beads=None, fixed_L=None):
             f"number density ({number_density.dimensions}) are supported."
         )
     if fixed_L is None:
-        L = vol ** (1 / 3)
+        L = vol ** (1 / 3)  # L is in units of volume
     else:
         L = vol / np.prod(fixed_L)
         if fixed_L.size == 1:  # L is units of area
