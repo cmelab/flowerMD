@@ -153,6 +153,22 @@ class TestSimulate(BaseTest):
             final_box_lengths=sim.box_lengths_reduced * 0.5,
         )
 
+    def test_update_volume_no_units(self, benzene_system):
+        sim = Simulation(
+            initial_state=benzene_system.hoomd_snapshot,
+            forcefield=benzene_system.hoomd_forcefield,
+            reference_values=dict(),
+        )
+        init_box = sim.box_lengths_reduced
+        sim.run_update_volume(
+            final_box_lengths=init_box / 2,
+            kT=1.0,
+            tau_kt=0.01,
+            n_steps=500,
+            period=1,
+        )
+        assert np.allclose(sim.box_lengths_reduced * 2, init_box)
+
     def test_update_volume_density(self, benzene_system):
         sim = Simulation.from_system(benzene_system)
         target_box = get_target_box_mass_density(
