@@ -9,12 +9,9 @@ import hoomd.md
 import numpy as np
 import unyt as u
 
-from flowermd.utils import (
-    HOOMDThermostats,
-    StdOutLogger,
-    UpdateWalls,
-    validate_ref_value,
-)
+from flowermd.internal import validate_ref_value
+from flowermd.utils.actions import StdOutLogger, UpdateWalls
+from flowermd.utils.base_types import HOOMDThermostats
 
 
 class Simulation(hoomd.simulation.Simulation):
