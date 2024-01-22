@@ -2,14 +2,13 @@ import numpy as np
 import pytest
 import unyt as u
 
+from flowermd.internal import check_return_iterable, validate_ref_value
+from flowermd.internal.exceptions import ReferenceUnitError
 from flowermd.utils import (
     _calculate_box_length,
-    check_return_iterable,
     get_target_box_mass_density,
     get_target_box_number_density,
-    validate_ref_value,
 )
-from flowermd.utils.exceptions import ReferenceUnitError
 
 
 class TestUtils:
