@@ -1,11 +1,18 @@
 Utils
 =======
 
-.. rubric:: Overview
 
 .. py:currentmodule:: flowermd.utils
 
-.. rubric:: Utils
+Utils
+-----
 
-.. automodule:: flowermd.utils
+.. automodule:: flowermd.utils.utils
+   :members:
+
+
+Base Types
+----------
+
+.. automodule:: flowermd.utils.base_types
    :members:
