@@ -1,5 +1,6 @@
 import gsd.hoomd
 import numpy as np
+import pytest
 import unyt as u
 
 from flowermd.base import Pack
@@ -33,18 +34,84 @@ class TestDropletSimulation(BaseTest):
             shrink_kT=5.0,
             shrink_steps=200,
             shrink_period=10,
-            shrink_density=0.2,
+            shrink_density=0.2 * u.g / u.cm**3,
             expand_kT=0.5,
             expand_steps=200,
             expand_period=10,
             hold_kT=1.0,
             hold_steps=100,
-            final_density=0.05,
+            final_density=0.05 * u.g / u.cm**3,
             tau_kt=drop_sim.dt * 100,
         )
         assert np.isclose(
             drop_sim.density.to(u.g / u.cm**3).value, 0.05, atol=1e-2
         )
+
+    def test_droplet_sim_no_units(self, polyethylene):
+        drop_mol = polyethylene(num_mols=10, lengths=5)
+        drop_system = Pack(molecules=drop_mol, density=0.1)
+        drop_system.apply_forcefield(
+            force_field=OPLS_AA(),
+            auto_scale=True,
+            remove_charges=True,
+            remove_hydrogens=True,
+            r_cut=2.5,
+        )
+        drop_sim = DropletSimulation(
+            initial_state=drop_system.hoomd_snapshot,
+            forcefield=drop_system.hoomd_forcefield,
+            reference_values=drop_system.reference_values,
+        )
+        with pytest.warns():
+            drop_sim.run_droplet(
+                shrink_kT=5.0,
+                shrink_steps=200,
+                shrink_period=10,
+                shrink_density=0.2,
+                expand_kT=0.5,
+                expand_steps=200,
+                expand_period=10,
+                hold_kT=1.0,
+                hold_steps=100,
+                final_density=0.05,
+                tau_kt=drop_sim.dt * 100,
+            )
+            assert np.isclose(
+                drop_sim.density.to(u.g / u.cm**3).value, 0.05, atol=1e-2
+            )
+
+    def test_droplet_sim_bad_units(self, polyethylene):
+        drop_mol = polyethylene(num_mols=10, lengths=5)
+        drop_system = Pack(molecules=drop_mol, density=0.1)
+        drop_system.apply_forcefield(
+            force_field=OPLS_AA(),
+            auto_scale=True,
+            remove_charges=True,
+            remove_hydrogens=True,
+            r_cut=2.5,
+        )
+        drop_sim = DropletSimulation(
+            initial_state=drop_system.hoomd_snapshot,
+            forcefield=drop_system.hoomd_forcefield,
+            reference_values=drop_system.reference_values,
+        )
+        with pytest.raises(ValueError):
+            drop_sim.run_droplet(
+                shrink_kT=5.0,
+                shrink_steps=200,
+                shrink_period=10,
+                shrink_density=0.2 * (u.cm**-3),
+                expand_kT=0.5,
+                expand_steps=200,
+                expand_period=10,
+                hold_kT=1.0,
+                hold_steps=100,
+                final_density=0.05 * (u.cm**-3),
+                tau_kt=drop_sim.dt * 100,
+            )
+            assert np.isclose(
+                drop_sim.density.to(u.g / u.cm**3).value, 0.05, atol=1e-2
+            )
 
 
 class TestInterfaceBuilder(BaseTest):
