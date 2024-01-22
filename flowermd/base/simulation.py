@@ -9,12 +9,9 @@ import hoomd.md
 import numpy as np
 import unyt as u
 
-from flowermd.utils import (
-    HOOMDThermostats,
-    StdOutLogger,
-    UpdateWalls,
-    validate_ref_value,
-)
+from flowermd.internal import validate_ref_value
+from flowermd.utils.actions import StdOutLogger, UpdateWalls
+from flowermd.utils.base_types import HOOMDThermostats
 
 
 class Simulation(hoomd.simulation.Simulation):
@@ -624,29 +621,32 @@ class Simulation(hoomd.simulation.Simulation):
         and a box matching a density of 1.1 g/cm^3 is passed into
         `final_box_lengths`.
 
-        import unyt
-        from flowermd.base import Pack, Simulation
-        from flowermd.library import PPS, OPLS_AA_PPS
+        ::
 
-        pps_mols = PPS(num_mols=20, lengths=15)
-        pps_system = Pack(
-            molecules=[pps_mols],
-            force_field=OPLS_AA_PPS(),
-            r_cut=2.5,
-            density=0.5,
-            auto_scale=True,
-            scale_charges=True
-        )
-        sim = Simulation(
-            initial_state=pps_system.hoomd_snapshot,
-            forcefield=pps_system.hoomd_forcefield
-        )
-        target_box = flowermd.utils.get_target_box_mass_density(
-            density=1.1 * unyt.g/unyt.cm**3, mass=sim.mass.to("g")
-        )
-        sim.run_update_volume(
-            n_steps=1e4, kT=1.0, tau_kt=1.0, final_box_lengths=target_box
-        )
+            import unyt
+            from flowermd.base import Pack, Simulation
+            from flowermd.library import PPS, OPLS_AA_PPS
+
+            pps_mols = PPS(num_mols=20, lengths=15)
+            pps_system = Pack(
+                molecules=[pps_mols],
+                force_field=OPLS_AA_PPS(),
+                r_cut=2.5,
+                density=0.5,
+                auto_scale=True,
+                scale_charges=True
+            )
+            sim = Simulation(
+                initial_state=pps_system.hoomd_snapshot,
+                forcefield=pps_system.hoomd_forcefield
+            )
+            target_box = flowermd.utils.get_target_box_mass_density(
+                density=1.1 * unyt.g/unyt.cm**3, mass=sim.mass.to("g")
+            )
+            sim.run_update_volume(
+                n_steps=1e4, kT=1.0, tau_kt=1.0, final_box_lengths=target_box
+            )
+
         """
         if self.reference_length and hasattr(final_box_lengths, "to"):
             ref_unit = self.reference_length.units

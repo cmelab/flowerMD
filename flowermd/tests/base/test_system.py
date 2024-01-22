@@ -9,9 +9,9 @@ from cmeutils.geometry import get_backbone_vector
 from unyt import Unit
 
 from flowermd import Lattice, Pack
+from flowermd.internal.exceptions import ForceFieldError, ReferenceUnitError
 from flowermd.library import OPLS_AA, OPLS_AA_DIMETHYLETHER, OPLS_AA_PPS
 from flowermd.tests import BaseTest
-from flowermd.utils.exceptions import ForceFieldError, ReferenceUnitError
 
 
 class TestSystem(BaseTest):

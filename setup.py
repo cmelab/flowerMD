@@ -92,6 +92,8 @@ setup(
             "library/**",
             "assets/forcefields/*",
             "assets/molecule_files/*",
+            "utils/**",
+            "internal/**",
         ]
     },
     install_requires=REQUIRED,

@@ -13,13 +13,12 @@ from gmso.parameterization import apply
 
 from flowermd.base.forcefield import BaseHOOMDForcefield, BaseXMLForcefield
 from flowermd.base.molecule import Molecule
+from flowermd.internal import check_return_iterable, validate_ref_value
+from flowermd.internal.exceptions import ForceFieldError, MoleculeLoadError
 from flowermd.utils import (
-    check_return_iterable,
     get_target_box_mass_density,
     get_target_box_number_density,
-    validate_ref_value,
 )
-from flowermd.utils.exceptions import ForceFieldError, MoleculeLoadError
 
 
 class System(ABC):
