@@ -1,4 +1,6 @@
 """Module for simulating surface wetting."""
+import warnings
+
 import gsd.hoomd
 import hoomd
 import numpy as np
@@ -6,7 +8,7 @@ import unyt as u
 
 from flowermd.base import Simulation
 from flowermd.modules.surface_wetting.utils import combine_forces
-from flowermd.utils import HOOMDThermostats
+from flowermd.utils import HOOMDThermostats, get_target_box_mass_density
 
 
 class DropletSimulation(Simulation):
@@ -95,12 +97,46 @@ class DropletSimulation(Simulation):
 
         """
         # Shrink down to high density
+        if not isinstance(
+            shrink_density, u.array.unyt_quantity
+        ) and not isinstance(final_density, u.array.unyt_quantity):
+            warnings.warn(
+                "Units for density were not given, assuming "
+                "units of g/cm**3."
+            )
+            target_box_shrink = get_target_box_mass_density(
+                density=shrink_density * (u.g / (u.cm**3)),
+                mass=self.mass.to("g"),
+            )
+            target_box_final = get_target_box_mass_density(
+                density=final_density * (u.g / (u.cm**3)),
+                mass=self.mass.to("g"),
+            )
+        else:
+            mass_density = u.Unit("kg") / u.Unit("m**3")
+            number_density = u.Unit("m**-3")
+            if shrink_density.units.dimensions == mass_density.units.dimensions:
+                target_box_shrink = get_target_box_mass_density(
+                    density=shrink_density, mass=self.mass.to("g")
+                )
+                target_box_final = get_target_box_mass_density(
+                    density=final_density, mass=self.mass.to("g")
+                )
+            elif (
+                shrink_density.units.dimensions
+                == number_density.units.dimensions
+            ):
+                raise ValueError(
+                    "For now, only mass density is supported "
+                    "in the surface wetting module."
+                )
+        # Shrink down to higher density
         self.run_update_volume(
             n_steps=shrink_steps,
             period=shrink_period,
             kT=shrink_kT,
             tau_kt=tau_kt,
-            final_density=shrink_density * (u.g / (u.cm**3)),
+            final_box_lengths=target_box_shrink,
             write_at_start=True,
         )
         # Expand back up to low density
@@ -109,7 +145,7 @@ class DropletSimulation(Simulation):
             period=expand_period,
             kT=expand_kT,
             tau_kt=tau_kt,
-            final_density=final_density * (u.g / (u.cm**3)),
+            final_box_lengths=target_box_final,
         )
         # Run at low density
         self.run_NVT(n_steps=hold_steps, kT=hold_kT, tau_kt=tau_kt)

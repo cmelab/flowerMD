@@ -43,5 +43,5 @@ repos:
     rev: '6.3.0'
     hooks:
       - id: pydocstyle
-        exclude: ^(flowermd/tests/|flowermd/utils/|setup.py|flowermd/__version__.py|docs/)
+        exclude: ^(flowermd/tests/|flowermd/internal/|flowermd/utils|setup.py|flowermd/__version__.py|docs/)
         args: [ --convention=numpy ]

@@ -3,8 +3,8 @@ import os
 import pytest
 from gmso.core.forcefield import ForceField
 
+from flowermd.internal.ff_utils import find_xml_ff, xml_to_gmso_ff
 from flowermd.tests import BaseTest
-from flowermd.utils.ff_utils import find_xml_ff, xml_to_gmso_ff
 
 
 class TestFFUtils(BaseTest):

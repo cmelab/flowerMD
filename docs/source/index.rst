@@ -52,6 +52,7 @@ Resources
    base
    modules
    library
+   utils
 
 
 

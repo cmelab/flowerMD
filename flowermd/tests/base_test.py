@@ -3,6 +3,7 @@ import os
 import hoomd
 import mbuild as mb
 import pytest
+import unyt as u
 from gmso.external.convert_mbuild import from_mbuild
 
 from flowermd import Molecule, Pack, Polymer, Simulation
@@ -218,7 +219,7 @@ class BaseTest:
         benzene = Molecule(num_mols=20, compound=benzene_mb)
         system = Pack(
             molecules=[benzene],
-            density=0.2,
+            density=0.2 * u.g / u.cm**3,
         )
         system.apply_forcefield(
             r_cut=2.5, force_field=OPLS_AA(), auto_scale=True

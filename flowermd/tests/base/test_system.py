@@ -9,9 +9,9 @@ from cmeutils.geometry import get_backbone_vector
 from unyt import Unit
 
 from flowermd import Lattice, Pack
+from flowermd.internal.exceptions import ForceFieldError, ReferenceUnitError
 from flowermd.library import OPLS_AA, OPLS_AA_DIMETHYLETHER, OPLS_AA_PPS
 from flowermd.tests import BaseTest
-from flowermd.utils.exceptions import ForceFieldError, ReferenceUnitError
 
 
 class TestSystem(BaseTest):
@@ -188,29 +188,21 @@ class TestSystem(BaseTest):
         )
         assert sum(snap.particles.charge) == 0
 
-    def test_target_box(self, benzene_molecule):
+    def test_pack_box(self, benzene_molecule):
         benzene_mol = benzene_molecule(n_mols=3)
-        low_density_system = Pack(
-            molecules=[benzene_mol],
-            density=0.1,
-        )
-        low_density_system.apply_forcefield(
-            r_cut=2.5, force_field=OPLS_AA(), auto_scale=True
-        )
-
+        low_density_system = Pack(molecules=[benzene_mol], density=0.1)
         high_density_system = Pack(molecules=[benzene_mol], density=0.9)
-        high_density_system.apply_forcefield(
-            r_cut=2.5, force_field=OPLS_AA(), auto_scale=True
-        )
-        assert all(
-            low_density_system.target_box > high_density_system.target_box
+        assert np.prod(low_density_system.box.lengths) > np.prod(
+            high_density_system.box.lengths
         )
 
     def test_mass(self, pps_molecule):
         pps_mol = pps_molecule(n_mols=20)
         system = Pack(molecules=[pps_mol], density=1.0)
         assert np.allclose(
-            system.mass, ((12.011 * 6) + (1.008 * 6) + 32.06) * 20, atol=1e-4
+            system.mass.value,
+            ((12.011 * 6) + (1.008 * 6) + 32.06) * 20,
+            atol=1e-4,
         )
 
     def test_ref_length(self, polyethylene):
@@ -237,7 +229,7 @@ class TestSystem(BaseTest):
         )
         total_red_mass = sum(system.hoomd_snapshot.particles.mass)
         assert np.allclose(
-            system.mass,
+            system.mass.value,
             total_red_mass * system.reference_mass.to("amu").value,
             atol=1e-1,
         )
@@ -889,3 +881,29 @@ class TestSystem(BaseTest):
         )
         with pytest.raises(ValueError):
             system.pickle_forcefield("forcefield.pickle")
+
+    def test_mass_density(self, benzene_molecule):
+        benzene_mol = benzene_molecule(n_mols=100)
+        system = Pack(molecules=[benzene_mol], density=0.8 * u.g / u.cm**3)
+        assert system.density.units == u.g / u.cm**3
+
+    def test_number_density(self, benzene_molecule):
+        benzene_mol = benzene_molecule(n_mols=100)
+        system = Pack(molecules=[benzene_mol], density=0.8 / u.cm**3)
+        assert system.density.units == u.cm**-3
+
+    def test_bad_density(self, benzene_molecule):
+        benzene_mol = benzene_molecule(n_mols=100)
+        with pytest.raises(ValueError):
+            Pack(molecules=[benzene_mol], density=0.8 * u.J / u.kg)
+
+    def test_density_warning(self, benzene_molecule):
+        benzene_mol = benzene_molecule(n_mols=100)
+        with pytest.warns():
+            system = Pack(molecules=[benzene_mol], density=0.8)
+            assert system.density.units == u.g / u.cm**3
+
+    def test_n_particles_no_ff(self, benzene_molecule):
+        benzene_mol = benzene_molecule(n_mols=100)
+        system = Pack(molecules=[benzene_mol], density=0.8 * u.g / u.cm**3)
+        assert system.n_particles == 100 * 12

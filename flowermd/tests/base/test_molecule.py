@@ -3,9 +3,9 @@ import pytest
 from cmeutils.geometry import get_backbone_vector
 
 from flowermd import CoPolymer, Molecule, Polymer
+from flowermd.internal import exceptions
 from flowermd.library import OPLS_AA, BeadSpring, FF_from_file
 from flowermd.tests import BaseTest
-from flowermd.utils import exceptions
 
 
 class TestMolecule(BaseTest):
