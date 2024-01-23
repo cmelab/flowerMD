@@ -26,7 +26,7 @@ class TestWelding(BaseTest):
         )
         sim.save_restart_gsd()
         interface = Interface(
-            gsd_file="restart.gsd", interface_axis=(1, 0, 0), gap=0.1
+            gsd_files="restart.gsd", interface_axis=(1, 0, 0), gap=0.1
         )
         interface_snap = interface.hoomd_snapshot
         with gsd.hoomd.open("restart.gsd", "r") as traj:
@@ -90,7 +90,7 @@ class TestWelding(BaseTest):
         sim.save_restart_gsd()
         # Create interface system from slab restart.gsd file
         interface = Interface(
-            gsd_file="restart.gsd", interface_axis="x", gap=0.1
+            gsd_files="restart.gsd", interface_axis="x", gap=0.1
         )
         sim = WeldSimulation(
             initial_state=interface.hoomd_snapshot,
