@@ -256,3 +256,6 @@ class WeldSimulation(Simulation):
             wall_r_cut,
             wall_r_extrap,
         )
+        snap = self.state.get_snapshot()
+        integrate_types = [i for i in snap.particles.types if i != "VOID"]
+        self.integrate_group = hoomd.filter.Type(integrate_types)
