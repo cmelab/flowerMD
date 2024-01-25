@@ -25,11 +25,19 @@ class Interface:
 
     """
 
-    def __init__(self, gsd_files, interface_axis, gap, wall_sigma=1.0):
+    def __init__(
+        self,
+        gsd_files,
+        interface_axis,
+        gap,
+        wall_sigma=1.0,
+        remove_void_particles=True,
+    ):
         self.gsd_files = check_return_iterable(gsd_files)
         self.interface_axis = interface_axis
         self.gap = gap
         self.wall_sigma = wall_sigma
+        self._remove_void_particles = remove_void_particles
         self.hoomd_snapshot = self._build()
 
     def _build(self):
@@ -45,8 +53,23 @@ class Interface:
         snap_R = gsd_file_R[-1]
         gsd_file_L.close()
         gsd_file_R.close()
-
-        axis_index = np.where(self.interface_axis != 0)[0]
+        # Remove VOID partilces if needed
+        if self._remove_void_particles:
+            for snap in [snap_L, snap_R]:
+                if "VOID" in snap.particles.types:
+                    snap.particles.N -= 1
+                    void_id = snap.particles.types.index("VOID")
+                    snap.particles.types.remove("VOID")
+                    keep_indices = np.where(snap.particles.typeid != void_id)[0]
+                    snap.particles.position = snap.particles.position[
+                        keep_indices
+                    ]
+                    snap.particles.mass = snap.particles.mass[keep_indices]
+                    snap.particles.charge = snap.particles.charge[keep_indices]
+                    snap.particles.orientation = snap.particles.orientation[
+                        keep_indices
+                    ]
+                    snap.particles.typeid = snap.particles.typeid[keep_indices]
 
         interface = gsd.hoomd.Frame()
         interface.particles.N = snap_L.particles.N + snap_R.particles.N
@@ -63,6 +86,7 @@ class Interface:
 
         # Set up box. Box edge is doubled along the interface axis direction,
         # plus the gap
+        axis_index = np.where(self.interface_axis != 0)[0]
         interface.configuration.box = np.copy(snap_L.configuration.box)
         interface.configuration.box[axis_index] *= 2
         interface.configuration.box[axis_index] += self.gap - self.wall_sigma
