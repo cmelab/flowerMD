@@ -155,3 +155,51 @@ class TestWelding(BaseTest):
         for p_type in init_types:
             assert lj.params[(p_type, "VOID")]["sigma"] == 0.4
             assert lj.params[(p_type, "VOID")]["epsilon"] == 1
+
+    def test_interface_with_void_particle(self, polyethylene_system):
+        init_snap = polyethylene_system.hoomd_snapshot
+        void_snap, ff = add_void_particles(
+            init_snap,
+            polyethylene_system.hoomd_forcefield,
+            void_diameter=0.10,
+            num_voids=1,
+            void_axis=(1, 0, 0),
+            epsilon=0.7,
+            r_cut=0.7,
+        )
+        sim = SlabSimulation(
+            initial_state=void_snap,
+            forcefield=ff,
+            log_write_freq=2000,
+        )
+        sim.run_update_volume(
+            n_steps=1000,
+            period=10,
+            kT=2.0,
+            tau_kt=0.01,
+            final_box_lengths=sim.box_lengths / 2,
+        )
+        sim.save_restart_gsd("restart.gsd")
+        interface = Interface(
+            gsd_files=["restart.gsd"],
+            interface_axis=(1, 0, 0),
+            gap=0.1,
+        )
+
+        interface_snap = interface.hoomd_snapshot
+        with gsd.hoomd.open("restart.gsd", "r") as traj:
+            slab_snap = traj[0]
+
+        assert "VOID" not in interface_snap.particles.types
+        assert interface_snap.particles.N == (slab_snap.particles.N * 2) - 2
+        assert interface_snap.bonds.N == slab_snap.bonds.N * 2
+        assert interface_snap.bonds.M == slab_snap.bonds.M
+        assert interface_snap.angles.N == slab_snap.angles.N * 2
+        assert interface_snap.angles.M == slab_snap.angles.M
+        assert interface_snap.dihedrals.N == slab_snap.dihedrals.N * 2
+        assert interface_snap.dihedrals.M == slab_snap.dihedrals.M
+        assert interface_snap.pairs.N == slab_snap.pairs.N * 2
+        assert interface_snap.pairs.M == slab_snap.pairs.M
+
+        if os.path.isfile("restart.gsd"):
+            os.remove("restart.gsd")
