@@ -2,6 +2,7 @@ import os
 
 import gsd.hoomd
 import hoomd
+import numpy as np
 
 from flowermd import Simulation
 from flowermd.modules.welding import Interface, SlabSimulation, WeldSimulation
@@ -158,6 +159,7 @@ class TestWelding(BaseTest):
 
     def test_interface_with_void_particle(self, polyethylene_system):
         init_snap = polyethylene_system.hoomd_snapshot
+        init_N = np.copy(init_snap.particles.N)
         void_snap, ff = add_void_particles(
             init_snap,
             polyethylene_system.hoomd_forcefield,
@@ -167,6 +169,7 @@ class TestWelding(BaseTest):
             epsilon=0.7,
             r_cut=0.7,
         )
+        assert void_snap.particles.N == init_N + 1
         sim = SlabSimulation(
             initial_state=void_snap,
             forcefield=ff,
