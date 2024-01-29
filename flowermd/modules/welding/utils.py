@@ -32,12 +32,32 @@ def add_void_particles(
     """
     void_axis = np.asarray(void_axis)
     snapshot.particles.N += num_voids
-    snapshot.particles.position[-1] = (
-        void_axis * snapshot.configuration.box[0:3] / 2
+    # Set updated positions
+    void_pos = void_axis * snapshot.configuration.box[0:3] / 2
+    init_pos = snapshot.particles.position
+    new_pos = np.empty((init_pos.shape[0] + 1, 3))
+    new_pos[: init_pos.shape[0]] = init_pos
+    new_pos[-1] = void_pos
+    snapshot.particles.position = np.concatenate(
+        (init_pos, void_pos.reshape(1, 3)), axis=0
     )
-    snapshot.particles.types = snapshot.particles.types + ["VOID"]
-    snapshot.particles.typeid[-1] = len(snapshot.particles.types) - 1
-    snapshot.particles.mass[-1] = 1
+    # Set updated types and type IDs
+    snapshot.particles.types.append("VOID")
+    void_id = len(snapshot.particles.types) - 1
+    init_ids = snapshot.particles.typeid
+    snapshot.particles.typeid = np.concatenate(
+        (init_ids, np.array([void_id])), axis=None
+    )
+    # Set updated mass and charges
+    init_mass = snapshot.particles.mass
+    snapshot.particles.mass = np.concatenate(
+        (init_mass, np.array([1])), axis=None
+    )
+    init_charges = snapshot.particles.charge
+    snapshot.particles.charge = np.concatenate(
+        (init_charges, np.array([0])), axis=None
+    )
+    # Updated LJ params
     lj = [i for i in forcefield if isinstance(i, hoomd.md.pair.LJ)][0]
     for ptype in snapshot.particles.types:
         lj.params[(ptype, "VOID")] = {
@@ -45,5 +65,4 @@ def add_void_particles(
             "epsilon": epsilon,
         }
         lj.r_cut[(ptype, "VOID")] = r_cut
-
     return snapshot, forcefield
