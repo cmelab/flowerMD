@@ -1,4 +1,5 @@
 """Base class for all flowerMD molecules, Polymers, and CoPolymers."""
+
 import itertools
 import os.path
 import random

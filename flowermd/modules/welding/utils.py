@@ -1,4 +1,5 @@
 """Utility functions for the Welding module."""
+
 import hoomd
 import numpy as np
 
