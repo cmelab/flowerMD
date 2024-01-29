@@ -38,11 +38,9 @@ def add_void_particles(
     new_pos = np.empty((init_pos.shape[0] + 1, 3))
     new_pos[: init_pos.shape[0]] = init_pos
     new_pos[-1] = void_pos
-    # snapshot.particles.position = new_pos
     snapshot.particles.position = np.concatenate(
         (init_pos, void_pos.reshape(1, 3)), axis=0
     )
-
     # Set updated types and type IDs
     snapshot.particles.types.append("VOID")
     void_id = len(snapshot.particles.types) - 1
