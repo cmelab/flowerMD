@@ -1,4 +1,5 @@
 """Base forcefield classes."""
+
 import forcefield_utilities as ffutils
 import foyer
 

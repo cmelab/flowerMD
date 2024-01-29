@@ -1,4 +1,5 @@
 """Module for simulating interfaces and welding."""
+
 import gsd.hoomd
 import hoomd
 import numpy as np
