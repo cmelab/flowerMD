@@ -75,16 +75,12 @@ class Interface:
         interface = gsd.hoomd.Frame()
         interface.particles.N = snap_L.particles.N + snap_R.particles.N
         interface.bonds.N = snap_L.bonds.N + snap_R.bonds.N
-        # TODO: Do we need bonds.M?
-        interface.bonds.M = snap_L.bonds.M
+        interface.bonds.M = 2
         interface.angles.N = snap_L.angles.N + snap_R.angles.N
-        # TODO: Do we need angles.M?
-        interface.angles.M = snap_L.angles.M
+        interface.angles.M = 3
         interface.dihedrals.N = snap_L.dihedrals.N + snap_R.dihedrals.N
-        # TODO: Do we need dihedrals.M?
-        interface.dihedrals.M = snap_L.dihedrals.M
+        interface.dihedrals.M = 4
         interface.pairs.N = snap_L.pairs.N + snap_R.pairs.N
-
         # Set up box. Box edge is doubled along the interface axis direction,
         # plus the gap
         axis_index = np.where(self.interface_axis != 0)[0]
