@@ -1,4 +1,5 @@
 """flowerMD package."""
+
 from .base import (
     CoPolymer,
     Lattice,

@@ -1,4 +1,5 @@
 """Module for simulating surface wetting."""
+
 import warnings
 
 import gsd.hoomd

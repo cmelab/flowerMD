@@ -1,4 +1,5 @@
 """Base simulation class for flowerMD."""
+
 import inspect
 import pickle
 import warnings

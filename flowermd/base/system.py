@@ -1,4 +1,5 @@
 """System class for arranging Molecules into a box."""
+
 import pickle
 import warnings
 from abc import ABC, abstractmethod
@@ -99,9 +100,9 @@ class System(ABC):
                             mol_item.force_field.hoomd_forces
                         )
                     elif isinstance(mol_item.force_field, BaseXMLForcefield):
-                        self._gmso_forcefields_dict[
-                            str(self.n_mol_types)
-                        ] = mol_item.force_field.gmso_ff
+                        self._gmso_forcefields_dict[str(self.n_mol_types)] = (
+                            mol_item.force_field.gmso_ff
+                        )
                     elif isinstance(mol_item.force_field, list):
                         self._hoomd_forcefield.extend(mol_item.force_field)
                 self.n_mol_types += 1
@@ -418,9 +419,9 @@ class System(ABC):
             nlist_buffer=nlist_buffer,
             pppm_kwargs=pppm_kwargs,
             auto_scale=False,
-            base_units=self._reference_values
-            if self._reference_values
-            else None,
+            base_units=(
+                self._reference_values if self._reference_values else None
+            ),
         )
         for force in ff:
             force_list.extend(ff[force])
@@ -432,9 +433,9 @@ class System(ABC):
         snap, refs = to_gsd_snapshot(
             top=self.gmso_system,
             auto_scale=False,
-            base_units=self._reference_values
-            if self._reference_values
-            else None,
+            base_units=(
+                self._reference_values if self._reference_values else None
+            ),
         )
         self._snap_refs = self._reference_values.copy()
         return snap
