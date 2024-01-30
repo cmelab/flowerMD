@@ -272,3 +272,31 @@ class LJChain(Polymer):
                     chain.add_bond([next_bead, last_bead])
                 last_bead = next_bead
         return chain
+
+
+class P3HT(Polymer):
+    """Create a P3HT chain.
+
+    Parameters
+    ----------
+    lengths : int, required
+        The number of monomer repeat units in the chain.
+    num_mols : int, required
+        The number of chains to create.
+
+    """
+
+    def __init__(self, lengths, num_mols, **kwargs):
+        smiles = "CCCCCCC1=C(SC(=C1))"
+        bond_indices = [24,25]
+        bond_length = 0.149
+        bond_orientation = [[0,0,1],[0,0,-1]]
+        super(P3HT, self).__init__(
+            lengths=lengths,
+            num_mols=num_mols,
+            smiles=smiles,
+            bond_indices=bond_indices,
+            bond_length=bond_length,
+            bond_orientation=bond_orientation,
+            **kwargs,
+        )
