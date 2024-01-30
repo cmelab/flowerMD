@@ -287,10 +287,10 @@ class P3HT(Polymer):
     """
 
     def __init__(self, lengths, num_mols, **kwargs):
-        smiles = "CCCCCCC1=C(SC(=C1))"
-        bond_indices = [24,25]
+        smiles = "c1c(CCCCCC)csc1"
+        bond_indices = [25,26]
         bond_length = 0.149
-        bond_orientation = [[0,0,1],[0,0,-1]]
+        bond_orientation = [None,None]
         super(P3HT, self).__init__(
             lengths=lengths,
             num_mols=num_mols,
