@@ -56,6 +56,16 @@ conda activate flowermd-dev
 python -m pip install -e .
 ```
 
+**A note on GPU compatibility:** 
+
+To install a GPU compatible version of HOOMD-blue in your flowerMD 
+environment, you need to manually set the cuda version **before installing flowermd**.
+This is to ensure that the HOOMD build pulled from conda-forge is compatible with your cuda version.
+To set the cuda version, run the following command before installing flowermd:
+```
+export CONDA_OVERRIDE_CUDA="YOUR_CUDA_VERSION"
+```
+
 ## Basic Usage
 Please check out the [tutorials](tutorials) for a detailed description of
 how to use flowerMD and what functionalities it provides.
@@ -63,7 +73,12 @@ how to use flowerMD and what functionalities it provides.
 ## Documentation
 Documentation is available at [https://flowermd.readthedocs.io](https://flowermd.readthedocs.io)
 
-## Contributing
+## Citing flowerMD
+If you use flowerMD in your research, please cite the following paper:
+
+Albooyeh, M., Jones, C., Barrett, R., & Jankowski, E. (2023). FlowerMD: Flexible Library of Organic Workflows and Extensible Recipes for Molecular Dynamics. Journal of Open Source Software, 8(92), 5989, https://doi.org/10.21105/joss.05989
+
+## Contributing to flowerMD
 We welcome all contributions to flowerMD. Please see
 [contributing guidelines](CONTRIBUTING.md) for more information.
 
