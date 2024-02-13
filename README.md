@@ -56,9 +56,9 @@ conda activate flowermd-dev
 python -m pip install -e .
 ```
 
-**A note on GPU compatibility:** 
+**A note on GPU compatibility:**
 
-To install a GPU compatible version of HOOMD-blue in your flowerMD 
+To install a GPU compatible version of HOOMD-blue in your flowerMD
 environment, you need to manually set the CUDA version **before installing flowermd**.
 This is to ensure that the HOOMD build pulled from conda-forge is compatible with your CUDA version.
 To set the CUDA version, run the following command before installing flowermd:
