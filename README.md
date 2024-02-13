@@ -63,7 +63,7 @@ environment, you need to manually set the cuda version **before installing flowe
 This is to ensure that the HOOMD build pulled from conda-forge is compatible with your cuda version.
 To set the cuda version, run the following command before installing flowermd:
 ```
-export CONDA_OVERRIDE_CUDA="YOUR_CUDA_VERSION"
+export CONDA_OVERRIDE_CUDA="[YOUR_CUDA_VERSION]"
 ```
 
 ## Basic Usage

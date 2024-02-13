@@ -32,4 +32,6 @@ Install from source
     This is to ensure that the HOOMD build pulled from conda-forge is compatible with your cuda version.
     To set the cuda version, run the following command before installing flowermd::
 
-        $ export CONDA_OVERRIDE_CUDA="YOUR_CUDA_VERSION"
+        $ export CONDA_OVERRIDE_CUDA="[YOUR_CUDA_VERSION]"
+
+    Please see the `HOOMD-blue installation instructions <https://hoomd-blue.readthedocs.io/en/stable/installation.html>`_ for more information.
