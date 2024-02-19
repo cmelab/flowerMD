@@ -48,15 +48,9 @@ class TestRigidBody(BaseTest):
         x = points[:, 0]
         y = points[:, 1]
         z = points[:, 2]
-        I_xx = np.sum(
-            (y**2 + z**2) * system.hoomd_snapshot.particles.mass[:4]
-        )
-        I_yy = np.sum(
-            (x**2 + z**2) * system.hoomd_snapshot.particles.mass[:4]
-        )
-        I_zz = np.sum(
-            (x**2 + y**2) * system.hoomd_snapshot.particles.mass[:4]
-        )
+        I_xx = np.sum((y**2 + z**2) * system.hoomd_snapshot.particles.mass[:4])
+        I_yy = np.sum((x**2 + z**2) * system.hoomd_snapshot.particles.mass[:4])
+        I_zz = np.sum((x**2 + y**2) * system.hoomd_snapshot.particles.mass[:4])
         assert np.all(
             np.isclose(
                 rigid_frame.particles.moment_inertia[0],
