@@ -1,4 +1,5 @@
 """Polymer and CoPolymer example classes."""
+
 import os
 
 import mbuild as mb

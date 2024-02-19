@@ -40,9 +40,17 @@ Quick start
 Resources
 =========
 
-`GitHub Repository <https://github.com/cmelab/flowerMD>`_: Source code and issue tracker.
+- `GitHub Repository <https://github.com/cmelab/flowerMD>`_: Source code and issue tracker.
 
-`Tutorials <https://github.com/cmelab/flowerMD/tree/main/tutorials>`_: Examples of how to use flowerMD.
+- `Tutorials <https://github.com/cmelab/flowerMD/tree/main/tutorials>`_: Examples of how to use flowerMD.
+
+- `FlowerMD JOSS paper <https://joss.theoj.org/papers/10.21105/joss.05989>`_
+
+Citation
+========
+If you use flowerMD in your research, please cite the following paper:
+
+Albooyeh, M., Jones, C., Barrett, R., & Jankowski, E. (2023). FlowerMD: Flexible Library of Organic Workflows and Extensible Recipes for Molecular Dynamics. Journal of Open Source Software, 8(92), 5989, https://doi.org/10.21105/joss.05989
 
 
 .. toctree::
@@ -52,6 +60,7 @@ Resources
    base
    modules
    library
+   utils
 
 
 

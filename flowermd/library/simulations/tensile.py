@@ -1,4 +1,5 @@
 """Tensile simulation class."""
+
 import hoomd
 import numpy as np
 

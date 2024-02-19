@@ -1,4 +1,5 @@
 """System class for arranging Molecules into a box."""
+
 import pickle
 import warnings
 from abc import ABC, abstractmethod
@@ -13,12 +14,12 @@ from gmso.parameterization import apply
 
 from flowermd.base.forcefield import BaseHOOMDForcefield, BaseXMLForcefield
 from flowermd.base.molecule import Molecule
+from flowermd.internal import check_return_iterable, validate_ref_value
+from flowermd.internal.exceptions import ForceFieldError, MoleculeLoadError
 from flowermd.utils import (
-    calculate_box_length,
-    check_return_iterable,
-    validate_ref_value,
+    get_target_box_mass_density,
+    get_target_box_number_density,
 )
-from flowermd.utils.exceptions import ForceFieldError, MoleculeLoadError
 
 
 class System(ABC):
@@ -43,11 +44,6 @@ class System(ABC):
     ----------
     molecules : flowermd.Molecule or a list of Molecule objects, required
         The molecules to be placed in the system.
-    density : float, required
-        The desired density of the system (g/cm^3). Used to set the
-        target_box attribute. Can be useful when initializing
-        systems at low density and running a shrink simulation
-        to achieve a target density.
     base_units : dict, default {}
         Dictionary of base units to use for scaling.
         Dictionary keys are "length", "mass", and "energy". Values should be an
@@ -71,18 +67,15 @@ class System(ABC):
     def __init__(
         self,
         molecules,
-        density: float,
         base_units=dict(),
     ):
         self._molecules = check_return_iterable(molecules)
-        self.density = density
         self.all_molecules = []
         self.gmso_system = None
         self._reference_values = base_units
         self._hoomd_snapshot = None
         self._hoomd_forcefield = []
         self._gmso_forcefields_dict = dict()
-        self._target_box = None
         # Reference values used when last writing snapshot and forcefields
         self._ff_refs = dict()
         self._snap_refs = dict()
@@ -107,9 +100,9 @@ class System(ABC):
                             mol_item.force_field.hoomd_forces
                         )
                     elif isinstance(mol_item.force_field, BaseXMLForcefield):
-                        self._gmso_forcefields_dict[
-                            str(self.n_mol_types)
-                        ] = mol_item.force_field.gmso_ff
+                        self._gmso_forcefields_dict[str(self.n_mol_types)] = (
+                            mol_item.force_field.gmso_ff
+                        )
                     elif isinstance(mol_item.force_field, list):
                         self._hoomd_forcefield.extend(mol_item.force_field)
                 self.n_mol_types += 1
@@ -147,17 +140,17 @@ class System(ABC):
     @property
     def n_particles(self):
         """Total number of particles in the system."""
-        return self.gmso_system.n_sites
+        if self.gmso_system:
+            return self.gmso_system.n_sites
+        else:
+            return sum(mol.n_particles for mol in self.all_molecules)
 
     @property
     def mass(self):
         """Total mass of the system in amu."""
         if self.gmso_system:
-            return sum(
-                float(site.mass.to("amu").value)
-                for site in self.gmso_system.sites
-            )
-        return sum(mol.mass for mol in self.all_molecules)
+            return sum(site.mass.to("amu") for site in self.gmso_system.sites)
+        return sum(mol.mass * u.Unit("amu") for mol in self.all_molecules)
 
     @property
     def net_charge(self):
@@ -325,24 +318,6 @@ class System(ABC):
             )
         return self._hoomd_forcefield
 
-    @property
-    def target_box(self):
-        """The target box size of the system in form of a numpy array.
-
-        If reference length is set, the target box is in reduced units.
-
-        Notes
-        -----
-        The `target_box` property can be passed to
-        `flowermd.base.Simulation.run_update_volume` method to reach the
-        target density.
-
-        """
-        if self.reference_length:
-            return self._target_box / self.reference_length.value
-        else:
-            return self._target_box
-
     def remove_hydrogens(self):
         """Call this method to remove hydrogen atoms from the system.
 
@@ -444,9 +419,9 @@ class System(ABC):
             nlist_buffer=nlist_buffer,
             pppm_kwargs=pppm_kwargs,
             auto_scale=False,
-            base_units=self._reference_values
-            if self._reference_values
-            else None,
+            base_units=(
+                self._reference_values if self._reference_values else None
+            ),
         )
         for force in ff:
             force_list.extend(ff[force])
@@ -458,9 +433,9 @@ class System(ABC):
         snap, refs = to_gsd_snapshot(
             top=self.gmso_system,
             auto_scale=False,
-            base_units=self._reference_values
-            if self._reference_values
-            else None,
+            base_units=(
+                self._reference_values if self._reference_values else None
+            ),
         )
         self._snap_refs = self._reference_values.copy()
         return snap
@@ -622,38 +597,6 @@ class System(ABC):
         )
         self._hoomd_snapshot = self._create_hoomd_snapshot()
 
-    def set_target_box(
-        self, x_constraint=None, y_constraint=None, z_constraint=None
-    ):
-        """Set the target box size of the system.
-
-        If no constraints are set, the target box is cubic.
-        Setting constraints will hold those box vectors
-        constant and adjust others to match the target density.
-
-        Parameters
-        ----------
-        x_constraint : float, optional, defualt=None
-            Fixes the box length (nm) along the x axis.
-        y_constraint : float, optional, default=None
-            Fixes the box length (nm) along the y axis.
-        z_constraint : float, optional, default=None
-            Fixes the box length (nm) along the z axis.
-
-        """
-        if not any([x_constraint, y_constraint, z_constraint]):
-            Lx = Ly = Lz = self._calculate_L()
-        else:
-            constraints = np.array([x_constraint, y_constraint, z_constraint])
-            fixed_L = constraints[np.not_equal(constraints, None).nonzero()]
-            # Conv from nm to cm for _calculate_L
-            fixed_L *= 1e-7
-            L = self._calculate_L(fixed_L=fixed_L)
-            constraints[np.equal(constraints, None).nonzero()] = L
-            Lx, Ly, Lz = constraints
-
-        self._target_box = np.array([Lx, Ly, Lz])
-
     def visualize(self):
         """Visualize the system."""
         if self.system:
@@ -662,31 +605,6 @@ class System(ABC):
             raise ValueError(
                 "The initial configuraiton has not been created yet."
             )
-
-    def _calculate_L(self, fixed_L=None):
-        """Calculate the box length.
-
-        Calculate the required box length(s) given the mass of a system and
-        the target density.
-        Box edge length constraints can be set by set_target_box().
-        If constraints are set, this will solve for the required
-        lengths of the remaining non-constrained edges to match
-        the target density.
-
-        Parameters
-        ----------
-        fixed_L : np.array, optional, defualt=None
-            Array of fixed box lengths to be accounted for when solving for L.
-
-        """
-        mass_quantity = u.unyt_quantity(self.mass, u.g / u.mol).to("g")
-        density_quantity = u.unyt_quantity(self.density, u.g / u.cm**3)
-        if fixed_L is not None:
-            fixed_L = u.unyt_array(fixed_L, u.cm)
-        L = calculate_box_length(
-            mass_quantity, density_quantity, fixed_L=fixed_L
-        )
-        return L.to("nm").value
 
 
 class Pack(System):
@@ -697,6 +615,11 @@ class Pack(System):
 
     Parameters
     ----------
+    density : float, required
+        The desired density of the system (g/cm^3). Used to set the
+        target_box attribute. Can be useful when initializing
+        systems at low density and running a shrink simulation
+        to achieve a target density.
     packing_expand_factor : int, default 5
         The factor by which to expand the box for packing.
     edge : float, default 0.2
@@ -734,22 +657,43 @@ class Pack(System):
         overlap=0.2,
         fix_orientation=False,
     ):
+        if not isinstance(density, u.array.unyt_quantity):
+            self.density = density * u.Unit("g") / u.Unit("cm**3")
+            warnings.warn(
+                "Units for density were not given, assuming "
+                "units of g/cm**3."
+            )
+        else:
+            self.density = density
         self.packing_expand_factor = packing_expand_factor
         self.edge = edge
         self.overlap = overlap
         self.fix_orientation = fix_orientation
-        super(Pack, self).__init__(
-            molecules=molecules,
-            density=density,
-            base_units=base_units,
-        )
+        super(Pack, self).__init__(molecules=molecules, base_units=base_units)
 
     def _build_system(self):
-        self.set_target_box()
+        mass_density = u.Unit("kg") / u.Unit("m**3")
+        number_density = u.Unit("m**-3")
+        if self.density.units.dimensions == mass_density.dimensions:
+            target_box = get_target_box_mass_density(
+                density=self.density, mass=self.mass
+            ).to("nm")
+        elif self.density.units.dimensions == number_density.dimensions:
+            target_box = get_target_box_number_density(
+                density=self.density, n_beads=self.n_particles
+            ).to("nm")
+        else:
+            raise ValueError(
+                f"Density dimensions of {self.density.units.dimensions} "
+                "were given, but only mass density "
+                f"({mass_density.dimensions}) and "
+                f"number density ({number_density.dimensions}) are supported."
+            )
+
         system = mb.packing.fill_box(
             compound=self.all_molecules,
             n_compounds=[1 for i in self.all_molecules],
-            box=list(self._target_box * self.packing_expand_factor),
+            box=list(target_box * self.packing_expand_factor),
             overlap=self.overlap,
             edge=self.edge,
             fix_orientation=self.fix_orientation,
@@ -778,7 +722,6 @@ class Lattice(System):
     def __init__(
         self,
         molecules,
-        density: float,
         x: float,
         y: float,
         n: int,
@@ -791,7 +734,6 @@ class Lattice(System):
         self.basis_vector = basis_vector
         super(Lattice, self).__init__(
             molecules=molecules,
-            density=density,
             base_units=base_units,
         )
 
@@ -825,7 +767,6 @@ class Lattice(System):
         x_len = bounding_box.lengths[0] + self.x
         y_len = bounding_box.lengths[1] + self.y
         z_len = bounding_box.lengths[2] + 0.2
-        self.set_target_box(x_constraint=x_len, y_constraint=y_len)
         # Center the lattice in its box
         system.box = mb.box.Box(np.array([x_len, y_len, z_len]))
         system.translate_to(

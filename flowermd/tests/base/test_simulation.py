@@ -13,7 +13,7 @@ from flowermd.base import Pack
 from flowermd.library.forcefields import EllipsoidForcefield
 from flowermd.library.polymers import EllipsoidChain
 from flowermd.tests import BaseTest
-from flowermd.utils import create_rigid_body
+from flowermd.utils import create_rigid_body, get_target_box_mass_density
 
 
 class TestSimulate(BaseTest):
@@ -58,7 +58,9 @@ class TestSimulate(BaseTest):
             forcefield=benzene_system.hoomd_forcefield,
             reference_values=benzene_system.reference_values,
         )
-        assert np.isclose(float(sim.mass.value), benzene_system.mass, atol=1e-4)
+        assert np.isclose(
+            float(sim.mass.value), benzene_system.mass.value, atol=1e-4
+        )
         assert np.allclose(benzene_system.box.lengths, sim.box_lengths.value)
 
     def test_set_ref_values(self, benzene_system):
@@ -152,10 +154,33 @@ class TestSimulate(BaseTest):
             final_box_lengths=sim.box_lengths_reduced * 0.5,
         )
 
+    def test_update_volume_no_units(self, benzene_system):
+        sim = Simulation(
+            initial_state=benzene_system.hoomd_snapshot,
+            forcefield=benzene_system.hoomd_forcefield,
+            reference_values=dict(),
+        )
+        init_box = sim.box_lengths_reduced
+        sim.run_update_volume(
+            final_box_lengths=init_box / 2,
+            kT=1.0,
+            tau_kt=0.01,
+            n_steps=500,
+            period=1,
+        )
+        assert np.allclose(sim.box_lengths_reduced * 2, init_box)
+
     def test_update_volume_density(self, benzene_system):
         sim = Simulation.from_system(benzene_system)
+        target_box = get_target_box_mass_density(
+            density=0.05 * u.Unit("g") / u.Unit("cm**3"), mass=sim.mass.to(u.g)
+        )
         sim.run_update_volume(
-            kT=1.0, tau_kt=0.01, n_steps=500, period=1, final_density=0.05
+            kT=1.0,
+            tau_kt=0.01,
+            n_steps=500,
+            period=1,
+            final_box_lengths=target_box,
         )
         assert np.isclose(
             sim.density.to(u.g / u.cm**3).value,
@@ -166,47 +191,19 @@ class TestSimulate(BaseTest):
     def test_update_volume_by_density_factor(self, benzene_system):
         sim = Simulation.from_system(benzene_system)
         init_density = copy.deepcopy(sim.density)
+        target_box = get_target_box_mass_density(
+            density=init_density * 5, mass=sim.mass.to(u.g)
+        )
         sim.run_update_volume(
             kT=1.0,
             tau_kt=0.01,
             n_steps=500,
             period=1,
-            final_density=sim.density * 5,
+            final_box_lengths=target_box,
         )
         assert np.isclose(
             sim.density.value, (init_density * 5).value, atol=1e-4
         )
-
-    def test_update_volume_missing_values(self, benzene_system):
-        sim = Simulation.from_system(benzene_system)
-        with pytest.raises(ValueError):
-            sim.run_update_volume(kT=1.0, tau_kt=0.01, n_steps=500, period=1)
-
-    def test_update_volume_two_values(self, benzene_system):
-        sim = Simulation.from_system(benzene_system)
-        with pytest.raises(ValueError):
-            sim.run_update_volume(
-                kT=1.0,
-                tau_kt=0.01,
-                n_steps=500,
-                period=1,
-                final_box_lengths=sim.box_lengths_reduced * 0.5,
-                final_density=0.1,
-            )
-
-    # def test_update_volume_with_density_no_ref_values(self, benzene_system):
-    #     sim_no_ref = Simulation(
-    #         initial_state=benzene_system.hoomd_snapshot,
-    #         forcefield=benzene_system.hoomd_forcefield,
-    #     )
-    #     with pytest.raises(ReferenceUnitError):
-    #         sim_no_ref.run_update_volume(
-    #             kT=1.0,
-    #             tau_kt=0.01,
-    #             n_steps=500,
-    #             period=1,
-    #             final_density=0.1,
-    #         )
 
     def test_change_methods(self, benzene_system):
         sim = Simulation.from_system(benzene_system)

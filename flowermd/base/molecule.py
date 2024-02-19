@@ -1,4 +1,5 @@
 """Base class for all flowerMD molecules, Polymers, and CoPolymers."""
+
 import itertools
 import os.path
 import random
@@ -14,9 +15,9 @@ from grits import CG_Compound
 from mbuild.lib.recipes import Polymer as mbPolymer
 
 from flowermd.base import BaseHOOMDForcefield, BaseXMLForcefield
-from flowermd.utils import check_return_iterable
-from flowermd.utils.exceptions import ForceFieldError, MoleculeLoadError
-from flowermd.utils.ff_utils import _validate_hoomd_ff
+from flowermd.internal import check_return_iterable
+from flowermd.internal.exceptions import ForceFieldError, MoleculeLoadError
+from flowermd.internal.ff_utils import _validate_hoomd_ff
 
 
 class Molecule:
