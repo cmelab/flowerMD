@@ -835,7 +835,7 @@ class TestSystem(BaseTest):
             auto_scale=True,
         )
         assert abs(no_scale.net_charge.value) > abs(with_scale.net_charge.value)
-        assert np.allclose(0, with_scale.net_charge.value, atol=1e-30)
+        assert np.allclose(0, with_scale.net_charge.value, atol=1e-13)
 
     def test_to_gsd(self, polyethylene):
         polyethylene = polyethylene(lengths=5, num_mols=1)

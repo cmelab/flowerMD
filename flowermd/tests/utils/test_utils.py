@@ -50,7 +50,7 @@ class TestUtils:
         density = u.unyt_quantity(0.5, u.g / u.cm**3)
         target_box = get_target_box_mass_density(density=density, mass=mass)
         assert target_box[0] == target_box[1] == target_box[2]
-        assert np.array_equal(target_box, np.array([2 * u.cm] * 3))
+        assert np.array_equal(target_box, np.array([2] * 3) * u.cm)
 
     def test_target_box_one_constraint_mass(self):
         mass = u.unyt_quantity(4.0, u.g)
