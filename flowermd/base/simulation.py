@@ -68,9 +68,7 @@ class Simulation(hoomd.simulation.Simulation):
         log_file_name="sim_data.txt",
         thermostat=HOOMDThermostats.MTTK,
     ):
-        if not isinstance(forcefield, Iterable) and not isinstance(
-            forcefield, str
-        ):
+        if not isinstance(forcefield, Iterable) or isinstance(forcefield, str):
             raise ValueError(
                 "forcefield must be a sequence of "
                 "hoomd.md.force.Force objects."
