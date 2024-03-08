@@ -3,6 +3,7 @@
 import inspect
 import pickle
 import warnings
+from collections.abc import Iterable
 
 import gsd.hoomd
 import hoomd
@@ -68,6 +69,18 @@ class Simulation(hoomd.simulation.Simulation):
         thermostat=HOOMDThermostats.MTTK,
         rigid_constraint=None,
     ):
+        if not isinstance(forcefield, Iterable) or isinstance(forcefield, str):
+            raise ValueError(
+                "forcefield must be a sequence of "
+                "hoomd.md.force.Force objects."
+            )
+        else:
+            for obj in forcefield:
+                if not isinstance(obj, hoomd.md.force.Force):
+                    raise ValueError(
+                        "forcefield must be a sequence of "
+                        "hoomd.md.force.Force objects."
+                    )
         super(Simulation, self).__init__(device, seed)
         self.initial_state = initial_state
         self._forcefield = forcefield

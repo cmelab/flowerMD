@@ -10,6 +10,7 @@ import unyt as u
 
 from flowermd import Simulation
 from flowermd.base import Pack
+from flowermd.library import OPLS_AA_PPS
 from flowermd.library.forcefields import EllipsoidForcefield
 from flowermd.library.polymers import EllipsoidChain
 from flowermd.tests import BaseTest
@@ -400,6 +401,22 @@ class TestSimulate(BaseTest):
 
         os.remove("trajectory.gsd")
         os.remove("sim_data.txt")
+
+    def test_bad_ff(self, benzene_system):
+        with pytest.raises(ValueError):
+            Simulation(
+                initial_state=benzene_system.hoomd_snapshot, forcefield="gaff"
+            )
+        with pytest.raises(ValueError):
+            Simulation(
+                initial_state=benzene_system.hoomd_snapshot,
+                forcefield=OPLS_AA_PPS,
+            )
+        with pytest.raises(ValueError):
+            Simulation(
+                initial_state=benzene_system.hoomd_snapshot,
+                forcefield=[1, 2, 3],
+            )
 
     def test_flush(self, benzene_system):
         sim = Simulation.from_system(benzene_system, gsd_write_freq=100)
