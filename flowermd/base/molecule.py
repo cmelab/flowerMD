@@ -581,7 +581,7 @@ class CoPolymer(Molecule):
         self._B_count = 0
         self.smiles = [self.monomer_A.smiles, self.monomer_B.smiles]
         self.file = [self.monomer_A.file, self.monomer_B.file]
-        random.seed(self.seed)
+        random.seed = self.seed
         super(CoPolymer, self).__init__(
             num_mols=num_mols,
             smiles=self.smiles,
