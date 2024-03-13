@@ -33,6 +33,11 @@ class TestPolymers:
         assert chain.random_sequence is True
         assert chain.AB_ratio == 0.50
 
+    def test_pekk_set_sequence(self):
+        chain = PEKK(lengths=5, num_mols=1, sequence="PPPMMP")
+        assert chain.random_sequence is False 
+        assert chain.sequence == "PPPMMP"
+
     def test_pekk_para(self):
         chain = PEKK_para(lengths=5, num_mols=1)
         monomer = mb.load(chain.smiles, smiles=True)
