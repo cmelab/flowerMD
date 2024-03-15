@@ -24,7 +24,7 @@ class TestSimulate(BaseTest):
         assert sim.reference_values == benzene_system.reference_values
 
     def test_initialize_from_system_separate_ff(
-            self, benzene_cg_system, cg_single_bead_ff
+        self, benzene_cg_system, cg_single_bead_ff
     ):
         sim = Simulation.from_system(
             benzene_cg_system, forcefield=cg_single_bead_ff
@@ -183,8 +183,8 @@ class TestSimulate(BaseTest):
             final_box_lengths=target_box,
         )
         assert np.isclose(
-            sim.density.to(u.g / u.cm ** 3).value,
-            (0.05 * (u.g / u.cm ** 3)).value,
+            sim.density.to(u.g / u.cm**3).value,
+            (0.05 * (u.g / u.cm**3)).value,
             atol=1e-4,
         )
 

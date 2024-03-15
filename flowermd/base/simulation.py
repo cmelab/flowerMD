@@ -54,19 +54,19 @@ class Simulation(hoomd.simulation.Simulation):
     """
 
     def __init__(
-            self,
-            initial_state,
-            forcefield,
-            reference_values=dict(),
-            dt=0.0001,
-            device=hoomd.device.auto_select(),
-            seed=42,
-            gsd_write_freq=1e4,
-            gsd_file_name="trajectory.gsd",
-            gsd_max_buffer_size=64 * 1024 * 1024,
-            log_write_freq=1e3,
-            log_file_name="sim_data.txt",
-            thermostat=HOOMDThermostats.MTTK,
+        self,
+        initial_state,
+        forcefield,
+        reference_values=dict(),
+        dt=0.0001,
+        device=hoomd.device.auto_select(),
+        seed=42,
+        gsd_write_freq=1e4,
+        gsd_file_name="trajectory.gsd",
+        gsd_max_buffer_size=64 * 1024 * 1024,
+        log_write_freq=1e3,
+        log_file_name="sim_data.txt",
+        thermostat=HOOMDThermostats.MTTK,
     ):
         if not isinstance(forcefield, Iterable) or isinstance(forcefield, str):
             raise ValueError(
@@ -366,8 +366,8 @@ class Simulation(hoomd.simulation.Simulation):
             energy = self.reference_energy.to("J")
         else:
             energy = 1 * u.J
-        tau = (mass * (dist ** 2)) / energy
-        timestep = self.dt * (tau ** 0.5)
+        tau = (mass * (dist**2)) / energy
+        timestep = self.dt * (tau**0.5)
         return timestep
 
     @property
@@ -434,7 +434,7 @@ class Simulation(hoomd.simulation.Simulation):
             The type of thermostat to use.
         """
         if not issubclass(
-                self._thermostat, hoomd.md.methods.thermostats.Thermostat
+            self._thermostat, hoomd.md.methods.thermostats.Thermostat
         ):
             raise ValueError(
                 f"Invalid thermostat. Please choose from: {HOOMDThermostats}"
@@ -611,14 +611,14 @@ class Simulation(hoomd.simulation.Simulation):
         self.remove_force(wall_force)
 
     def run_update_volume(
-            self,
-            final_box_lengths,
-            n_steps,
-            period,
-            kT,
-            tau_kt,
-            thermalize_particles=True,
-            write_at_start=True,
+        self,
+        final_box_lengths,
+        n_steps,
+        period,
+        kT,
+        tau_kt,
+        thermalize_particles=True,
+        write_at_start=True,
     ):
         """Run an NVT simulation while shrinking or expanding simulation box.
 
@@ -732,14 +732,14 @@ class Simulation(hoomd.simulation.Simulation):
         self.operations.updaters.remove(box_resizer)
 
     def run_langevin(
-            self,
-            n_steps,
-            kT,
-            tally_reservoir_energy=False,
-            default_gamma=1.0,
-            default_gamma_r=(1.0, 1.0, 1.0),
-            thermalize_particles=True,
-            write_at_start=True,
+        self,
+        n_steps,
+        kT,
+        tally_reservoir_energy=False,
+        default_gamma=1.0,
+        default_gamma_r=(1.0, 1.0, 1.0),
+        thermalize_particles=True,
+        write_at_start=True,
     ):
         """Run the simulation using the Langevin dynamics integrator.
 
@@ -787,18 +787,18 @@ class Simulation(hoomd.simulation.Simulation):
         self.operations.updaters.remove(std_out_logger_printer)
 
     def run_NPT(
-            self,
-            n_steps,
-            kT,
-            pressure,
-            tau_kt,
-            tau_pressure,
-            couple="xyz",
-            box_dof=[True, True, True, False, False, False],
-            rescale_all=False,
-            gamma=0.0,
-            thermalize_particles=True,
-            write_at_start=True,
+        self,
+        n_steps,
+        kT,
+        pressure,
+        tau_kt,
+        tau_pressure,
+        couple="xyz",
+        box_dof=[True, True, True, False, False, False],
+        rescale_all=False,
+        gamma=0.0,
+        thermalize_particles=True,
+        write_at_start=True,
     ):
         """Run the simulation in the NPT ensemble.
 
@@ -859,12 +859,12 @@ class Simulation(hoomd.simulation.Simulation):
         self.operations.updaters.remove(std_out_logger_printer)
 
     def run_NVT(
-            self,
-            n_steps,
-            kT,
-            tau_kt,
-            thermalize_particles=True,
-            write_at_start=True,
+        self,
+        n_steps,
+        kT,
+        tau_kt,
+        thermalize_particles=True,
+        write_at_start=True,
     ):
         """Run the simulation in the NVT ensemble.
 
@@ -932,10 +932,10 @@ class Simulation(hoomd.simulation.Simulation):
         self.operations.updaters.remove(std_out_logger_printer)
 
     def run_displacement_cap(
-            self,
-            n_steps,
-            maximum_displacement=1e-3,
-            write_at_start=True,
+        self,
+        n_steps,
+        maximum_displacement=1e-3,
+        write_at_start=True,
     ):
         """NVE integrator with a cap on the maximum displacement per time step.
 
