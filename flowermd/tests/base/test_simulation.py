@@ -24,7 +24,7 @@ class TestSimulate(BaseTest):
         assert sim.reference_values == benzene_system.reference_values
 
     def test_initialize_from_system_separate_ff(
-        self, benzene_cg_system, cg_single_bead_ff
+            self, benzene_cg_system, cg_single_bead_ff
     ):
         sim = Simulation.from_system(
             benzene_cg_system, forcefield=cg_single_bead_ff
@@ -183,8 +183,8 @@ class TestSimulate(BaseTest):
             final_box_lengths=target_box,
         )
         assert np.isclose(
-            sim.density.to(u.g / u.cm**3).value,
-            (0.05 * (u.g / u.cm**3)).value,
+            sim.density.to(u.g / u.cm ** 3).value,
+            (0.05 * (u.g / u.cm ** 3)).value,
             atol=1e-4,
         )
 
@@ -382,3 +382,10 @@ class TestSimulate(BaseTest):
         with gsd.hoomd.open("trajectory.gsd") as traj:
             assert len(traj) > 0
         os.remove("trajectory.gsd")
+
+    def test_real_temperature(self, benzene_system):
+        sim = Simulation.from_system(benzene_system)
+        with pytest.raises(ValueError):
+            sim.real_temperature
+        sim.run_NVT(kT=1.0, tau_kt=0.01, n_steps=500)
+        assert np.isclose(sim.real_temperature, 35.225, atol=1e-4)
