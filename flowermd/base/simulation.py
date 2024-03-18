@@ -402,16 +402,16 @@ class Simulation(hoomd.simulation.Simulation):
         return float(kT)
 
     def _setup_temperature(self, kT=None, temperature=None):
-        if kT and temperature:
+        if kT is not None and temperature is not None:
             raise ValueError(
                 "Both kT and temperature are provided. Please provide only one."
             )
-        if not kT and not temperature:
+        if kT is None and temperature is None:
             raise ValueError(
                 "Either kT or temperature  must be "
                 "provided for the simulation."
             )
-        if kT:
+        if kT is not None:
             return kT
         else:
             return self._temperature_to_kT(temperature)
@@ -428,17 +428,17 @@ class Simulation(hoomd.simulation.Simulation):
         return int(time_length / real_timestep)
 
     def _setup_n_steps(self, n_steps=None, time_length=None):
-        if n_steps and time_length:
+        if n_steps is not None and time_length is not None:
             raise ValueError(
                 "Both n_steps and time_length are provided. Please provide only"
                 " one."
             )
-        if not n_steps and not time_length:
+        if n_steps is None and time_length is None:
             raise ValueError(
                 "Either n_steps or time_length must be provided for the "
                 "simulation."
             )
-        if n_steps:
+        if n_steps is not None:
             return n_steps
         else:
             return self._time_length_to_n_steps(time_length)
