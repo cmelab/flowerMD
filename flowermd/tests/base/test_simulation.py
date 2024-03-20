@@ -404,3 +404,17 @@ class TestSimulate(BaseTest):
         sim = Simulation.from_system(benzene_system)
         with pytest.raises(ValueError):
             sim.run_NVT(tau_kt=0.01, n_steps=500)
+
+    def test_NVT_time_length(self, benzene_system):
+        sim = Simulation.from_system(benzene_system)
+        sim.run_NVT(kT=1.0, tau_kt=0.01, time_length=2 * u.Unit("ps"))
+        assert sim.timestep == int(2 * u.Unit("ps") / sim.real_timestep)
+
+    def test_NVT_time_length_n_steps(self, benzene_system):
+        sim = Simulation.from_system(benzene_system)
+        with pytest.raises(ValueError):
+            sim.run_NVT(
+                kT=1.0, tau_kt=0.01, time_length=2 * u.Unit("ps"), n_steps=1000
+            )
+        with pytest.raises(ValueError):
+            sim.run_NVT(kT=1.0, tau_kt=0.01)
