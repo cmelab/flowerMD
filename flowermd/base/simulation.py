@@ -692,18 +692,31 @@ class Simulation(hoomd.simulation.Simulation):
         ----------
         final_box_lengths : np.ndarray or unyt.array.unyt_array, shape=(3,), required # noqa: E501
             The final box edge lengths in (x, y, z) order.
-        n_steps : int, required
-            Number of steps to run during volume update.
         period : int, required
             The number of steps ran between each box update iteration.
-        kT : float or hoomd.variant.Ramp, required
-            The temperature to use during volume update.
         tau_kt : float, required
             Thermostat coupling period (in simulation time units).
+        n_steps : int, optional
+            Number of steps to run during volume update.
+        time_length : unyt.unyt_quantity or float, optional
+            The length of time to run the simulation. If no unit is provided,
+            the time is assumed to be in seconds.
+        kT : float or hoomd.variant.Ramp, optional
+            The temperature to use during volume update.
+        temperature : unyt.unyt_quantity or float, optional
+            The temperature to use during volume update. If no unit is provided,
+            Kelvin is assumed.
         write_at_start : bool, default True
             When set to True, triggers writers that evaluate to True
             for the initial step to execute before the next simulation
             time step.
+
+        Notes
+        -----
+        For the temperature, either `kT` or `temperature` must be provided.
+        If both are provided, an error will be raised. And for the number of
+        steps, either `n_steps` or `time_length` must be provided. If both are
+        provided, an error will be raised.
 
         Examples
         --------
@@ -807,10 +820,16 @@ class Simulation(hoomd.simulation.Simulation):
 
         Parameters
         ----------
-        n_steps : int, required
+        n_steps : int, optional
             Number of steps to run the simulation.
-        kT : int or hoomd.variant.Ramp, required
+        time_length : unyt.unyt_quantity or float, optional
+            The length of time to run the simulation. If no unit is provided,
+            the time is assumed to be in seconds.
+        kT : int or hoomd.variant.Ramp, optional
             The temperature to use during the simulation.
+        temperature : unyt.unyt_quantity or float, optional
+            The temperature to use during the simulation. If no unit is
+            provided, Kelvin is assumed.
         tally_reservoir_energy : bool, default False
             When set to True, energy exchange between the thermal reservoir
              and the particles is tracked.
@@ -824,6 +843,13 @@ class Simulation(hoomd.simulation.Simulation):
             When set to True, triggers writers that evaluate to True
             for the initial step to execute before the next simulation
             time step.
+
+        Notes
+        -----
+        For the temperature, either `kT` or `temperature` must be provided.
+        If both are provided, an error will be raised. And for the number of
+        steps, either `n_steps` or `time_length` must be provided. If both are
+        provided, an error will be raised.
 
         """
         self._kT = self._setup_temperature(kT, temperature)
@@ -869,16 +895,22 @@ class Simulation(hoomd.simulation.Simulation):
 
         Parameters
         ----------
-        n_steps: int, required
-            Number of steps to run the simulation.
-        kT: int or hoomd.variant.Ramp, required
-            The temperature to use during the simulation.
         pressure: int or hoomd.variant.Ramp, required
             The pressure to use during the simulation.
-        tau_kt: float, required
-            Thermostat coupling period (in simulation time units).
         tau_pressure: float, required
             Barostat coupling period.
+        tau_kt: float, required
+            Thermostat coupling period (in simulation time units).
+        kT: int or hoomd.variant.Ramp, optional
+            The temperature to use during the simulation.
+        temperature: unyt.unyt_quantity or float, optional
+            The temperature to use during the simulation. If no unit is
+            provided, Kelvin is assumed.
+        n_steps: int, optional
+            Number of steps to run the simulation.
+        time_length: unyt.unyt_quantity or float, optional
+            The length of time to run the simulation. If no unit is provided,
+            the time is assumed to be in seconds.
         couple: str, default "xyz"
             Couplings of diagonal elements of the stress tensor/
         box_dof: list of bool;
@@ -894,6 +926,13 @@ class Simulation(hoomd.simulation.Simulation):
             When set to True, triggers writers that evaluate to True
             for the initial step to execute before the next simulation
             time step.
+
+        Notes
+        -----
+        For the temperature, either `kT` or `temperature` must be provided.
+        If both are provided, an error will be raised. And for the number of
+        steps, either `n_steps` or `time_length` must be provided. If both are
+        provided, an error will be raised.
 
         """
         self._kT = self._setup_temperature(kT, temperature)
@@ -938,18 +977,31 @@ class Simulation(hoomd.simulation.Simulation):
 
         Parameters
         ----------
-        n_steps: int, required
-            Number of steps to run the simulation.
-        kT: int or hoomd.variant.Ramp, required
-            The temperature to use during the simulation.
         tau_kt: float, required
             Thermostat coupling period (in simulation time units).
+        kT: int or hoomd.variant.Ramp, optional
+            The temperature to use during the simulation.
+        temperature: unyt.unyt_quantity or float, optional
+            The temperature to use during the simulation. If no unit is
+            provided, Kelvin is assumed.
+        n_steps: int, optional
+            Number of steps to run the simulation.
+        time_length: unyt.unyt_quantity or float, optional
+            The length of time to run the simulation. If no unit is provided,
+            the time is assumed to be in seconds.
         thermalize_particles: bool, default True
             When set to True, assigns random velocities to all particles.
         write_at_start : bool, default True
             When set to True, triggers writers that evaluate to True
             for the initial step to execute before the next simulation
             time step.
+
+        Notes
+        -----
+        For the temperature, either `kT` or `temperature` must be provided.
+        If both are provided, an error will be raised. And for the number of
+        steps, either `n_steps` or `time_length` must be provided. If both are
+        provided, an error will be raised.
 
         """
         self._kT = self._setup_temperature(kT, temperature)
@@ -979,12 +1031,20 @@ class Simulation(hoomd.simulation.Simulation):
 
         Parameters
         ----------
-        n_steps: int, required
+        n_steps: int, optional
             Number of steps to run the simulation.
+        time_length: unyt.unyt_quantity or float, optional
+            The length of time to run the simulation. If no unit is provided,
+            the time is assumed to be in seconds.
         write_at_start : bool, default True
             When set to True, triggers writers that evaluate to True
             for the initial step to execute before the next simulation
             time step.
+
+        Notes
+        -----
+        For the number of steps, either `n_steps` or `time_length` must be
+        provided. If both are provided, an error will be raised.
 
         """
         _n_steps = self._setup_n_steps(n_steps, time_length)
@@ -1018,15 +1078,22 @@ class Simulation(hoomd.simulation.Simulation):
 
         Parameters
         ----------
-        n_steps : int, required
+        n_steps : int, optional
             Number of steps to run the simulation.
+        time_length : unyt.unyt_quantity or float, optional
+            The length of time to run the simulation. If no unit is provided,
+            the time is assumed to be in seconds.
         maximum_displacement : float, default 1e-3
             Maximum displacement per step (length)
-
         write_at_start : bool, default True
             When set to True, triggers writers that evaluate to True
             for the initial step to execute before the next simulation
             time step.
+
+        Notes
+        -----
+        For the number of steps, either `n_steps` or `time_length` must be
+        provided. If both are provided, an error will be raised.
 
         """
         _n_steps = self._setup_n_steps(n_steps, time_length)
@@ -1059,12 +1126,26 @@ class Simulation(hoomd.simulation.Simulation):
 
         Parameters
         ----------
-        n_steps : int, required
+        n_steps : int, optional
             The number of steps to ramp the temperature over.
-        kT_start : float, required
+        time_length : unyt.unyt_quantity or float, optional
+            The length of time to ramp the temperature over. If no unit is
+            provided, the time is assumed to be in seconds.
+        kT_start : float, optional
             The starting temperature.
-        kT_final : float, required
+        temperature_start : unyt.unyt_quantity or float, optional
+            The starting temperature. If no unit is provided, Kelvin is assumed.
+        kT_final : float, optional
             The final temperature.
+        temperature_final : unyt.unyt_quantity or float, optional
+            The final temperature. If no unit is provided, Kelvin is assumed.
+
+        Notes
+        -----
+        For the temperature, either `kT` or `temperature` must be provided.
+        If both are provided, an error will be raised. And for the number of
+        steps, either `n_steps` or `time_length` must be provided. If both are
+        provided, an error will be raised.
 
         """
         _kT_start = self._setup_temperature(kT_start, temperature_start)
