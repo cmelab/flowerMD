@@ -16,7 +16,10 @@ This is bolstered by a library-based approach to system initialization, making
 flowerMD agnostic to system identity, forcefield, and thermodynamic
 ensemble, and allowing for growth on an as-needed basis.
 
+flowerMD's design allows for creation of "modules" where an end-to-end interface is designed with a complex task in mind, such as fusion welding of polymers and surface wetting:
 <img src='docs/images/interface.png' width='250' height='160'> <img src='docs/images/adhesion.png' width='250' height='160'> <img src='docs/images/tensile2.png' width='320' height='160'>
+
+<img src='docs/images/surface-wetting.png' width='500' height='250'> <img src='docs/images/surface-wetting2.png' width='500' height='250'>
 
 Installing flowermd
 ===================
