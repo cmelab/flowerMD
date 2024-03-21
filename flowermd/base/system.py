@@ -404,6 +404,23 @@ class System(ABC):
         with gsd.hoomd.open(file_name, "w") as traj:
             traj.append(self.hoomd_snapshot)
 
+    def save_reference_values(self, file_path="reference_values.pickle"):
+        """Save the reference values of the system to a pickle file.
+
+        Parameters
+        ----------
+        file_path : str, default "reference_values.pickle"
+            The path to save the pickle file to.
+
+        """
+        if not self.reference_values:
+            raise ValueError(
+                "Reference values have not been set. "
+                "See System.reference_values"
+            )
+        f = open(file_path, "wb")
+        pickle.dump(self.reference_values, f)
+
     def _convert_to_gmso(self):
         """Convert the mbuild system to a gmso system."""
         topology = from_mbuild(self.system)
