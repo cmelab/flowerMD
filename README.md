@@ -20,7 +20,7 @@ flowerMD's design allows for creation of "modules" where an end-to-end interface
 
 <img src='docs/images/interface.png' width='250' height='160'> <img src='docs/images/adhesion.png' width='250' height='160'> <img src='docs/images/tensile2.png' width='320' height='160'>
 
-<img src='docs/images/surface-wetting.png' width='410' height='200'> <img src='docs/images/surface-wetting2.png' width='410' height='200'>
+<img src='docs/images/surface-wetting.png' width='410' height='180'> <img src='docs/images/surface-wetting2.png' width='410' height='180'>
 
 Installing flowermd
 ===================
