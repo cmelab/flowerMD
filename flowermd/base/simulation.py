@@ -979,7 +979,7 @@ class Simulation(hoomd.simulation.Simulation):
         ----------
         tau_kt: float, required
             Thermostat coupling period (in simulation time units).
-        kT: int or hoomd.variant.Ramp, optional
+        kT: float or hoomd.variant.Ramp, optional
             The temperature to use during the simulation.
         temperature: unyt.unyt_quantity or float, optional
             The temperature to use during the simulation. If no unit is
