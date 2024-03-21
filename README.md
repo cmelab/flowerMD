@@ -16,7 +16,7 @@ This is bolstered by a library-based approach to system initialization, making
 flowerMD agnostic to system identity, forcefield, and thermodynamic
 ensemble, and allowing for growth on an as-needed basis.
 
-<img src='docs/images/interface.png', width='50'>
+<img src='docs/images/interface.png' width='50'>
 
 Installing flowermd
 ===================
