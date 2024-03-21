@@ -1,4 +1,5 @@
 import os
+import pickle
 
 import gmso
 import hoomd
@@ -881,6 +882,35 @@ class TestSystem(BaseTest):
         )
         with pytest.raises(ValueError):
             system.pickle_forcefield("forcefield.pickle")
+
+    def test_save_reference_values(self, polyethylene):
+        polyethylene = polyethylene(lengths=5, num_mols=1)
+        system = Pack(
+            molecules=[polyethylene],
+            density=1.0,
+        )
+        system.apply_forcefield(
+            r_cut=2.5, force_field=[OPLS_AA()], auto_scale=True
+        )
+        system.save_reference_values()
+        assert os.path.isfile(
+            os.path.join(os.getcwd(), "reference_values.pickle")
+        )
+        ref_values = pickle.load(
+            open(os.path.join(os.getcwd(), "reference_values.pickle"), "rb")
+        )
+        assert ref_values == system.reference_values
+        os.remove(os.path.join(os.getcwd(), "reference_values.pickle"))
+
+    def test_save_empty_reference_values(self, polyethylene):
+        polyethylene = polyethylene(lengths=5, num_mols=1)
+        system = Pack(
+            molecules=[polyethylene],
+            density=1.0,
+            base_units=dict(),
+        )
+        with pytest.raises(ValueError):
+            system.save_reference_values()
 
     def test_mass_density(self, benzene_molecule):
         benzene_mol = benzene_molecule(n_mols=100)
