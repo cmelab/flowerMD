@@ -624,6 +624,8 @@ class Pack(System):
         The factor by which to expand the box for packing.
     edge : float, default 0.2
         The space (nm) between the edge of the box and the molecules.
+    overlap : float, default 0.2
+        Minimum separation (nm) between particles of different molecules.
 
 
     .. warning::
@@ -653,6 +655,7 @@ class Pack(System):
         packing_expand_factor=5,
         edge=0.2,
         overlap=0.2,
+        fix_orientation=False,
     ):
         if not isinstance(density, u.array.unyt_quantity):
             self.density = density * u.Unit("g") / u.Unit("cm**3")
@@ -665,6 +668,7 @@ class Pack(System):
         self.packing_expand_factor = packing_expand_factor
         self.edge = edge
         self.overlap = overlap
+        self.fix_orientation = fix_orientation
         super(Pack, self).__init__(molecules=molecules, base_units=base_units)
 
     def _build_system(self):
@@ -692,6 +696,7 @@ class Pack(System):
             box=list(target_box * self.packing_expand_factor),
             overlap=self.overlap,
             edge=self.edge,
+            fix_orientation=self.fix_orientation,
         )
         return system
 
