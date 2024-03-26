@@ -35,7 +35,7 @@ class Interface:
         remove_void_particles=True,
     ):
         self.gsd_files = check_return_iterable(gsd_files)
-        self.interface_axis = interface_axis
+        self.interface_axis = np.asarray(interface_axis)
         self.gap = gap
         self.wall_sigma = wall_sigma
         self._remove_void_particles = remove_void_particles
@@ -84,6 +84,7 @@ class Interface:
         # Set up box. Box edge is doubled along the interface axis direction,
         # plus the gap
         axis_index = np.where(self.interface_axis != 0)[0]
+        print("Axis index:", axis_index)
         interface.configuration.box = np.copy(snap_L.configuration.box)
         interface.configuration.box[axis_index] *= 2
         interface.configuration.box[axis_index] += self.gap - self.wall_sigma
