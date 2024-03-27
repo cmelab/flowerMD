@@ -101,6 +101,7 @@ class Simulation(hoomd.simulation.Simulation):
         ]
         self.integrator = None
         self._dt = dt
+        self._kT = None
         self._reference_values = dict()
         self._reference_values = reference_values
         self._integrate_group = hoomd.filter.All()
@@ -370,6 +371,79 @@ class Simulation(hoomd.simulation.Simulation):
         return timestep
 
     @property
+    def real_temperature(self):
+        """The temperature of the simulation in Kelvin."""
+        if not self._kT:
+            raise ValueError(
+                "Temperature is not set. Please specify the temperature when "
+                "running the simulation, using one of the following run"
+                " methods: `run_nvt`, `run_npt`, `run_update_volume`."
+            )
+        if self._reference_values.get("energy"):
+            energy = self.reference_energy.to("J")
+        else:
+            energy = 1 * u.J
+        temperature = (self._kT * energy) / u.boltzmann_constant_mks
+        return temperature
+
+    def _temperature_to_kT(self, temperature):
+        """Convert temperature to kT."""
+        if self._reference_values.get("energy"):
+            energy = self.reference_energy.to("J")
+        else:
+            energy = 1 * u.J
+        if isinstance(temperature, u.unyt_array) or isinstance(
+            temperature, u.unyt_quantity
+        ):
+            temperature = temperature.to("K")
+        else:
+            temperature = temperature * u.K
+        kT = (temperature * u.boltzmann_constant_mks) / energy
+        return float(kT)
+
+    def _setup_temperature(self, kT=None, temperature=None):
+        if kT is not None and temperature is not None:
+            raise ValueError(
+                "Both kT and temperature are provided. Please provide only one."
+            )
+        if kT is None and temperature is None:
+            raise ValueError(
+                "Either kT or temperature  must be "
+                "provided for the simulation."
+            )
+        if kT is not None:
+            return kT
+        else:
+            return self._temperature_to_kT(temperature)
+
+    def _time_length_to_n_steps(self, time_length):
+        """Convert time length to number of steps."""
+        if isinstance(time_length, u.unyt_array) or isinstance(
+            time_length, u.unyt_quantity
+        ):
+            time_length = time_length.to("s")
+        else:
+            time_length = time_length * u.s
+        real_timestep = self.real_timestep.to("s")
+        return int(time_length / real_timestep)
+
+    def _setup_n_steps(self, n_steps=None, time_length=None):
+        if n_steps is not None and time_length is not None:
+            raise ValueError(
+                "Both n_steps and time_length are provided. Please provide only"
+                " one."
+            )
+        if n_steps is None and time_length is None:
+            raise ValueError(
+                "Either n_steps or time_length must be provided for the "
+                "simulation."
+            )
+        if n_steps is not None:
+            return n_steps
+        else:
+            return self._time_length_to_n_steps(time_length)
+
+    @property
     def integrate_group(self):
         """The group of particles to apply the integrator to.
 
@@ -596,10 +670,12 @@ class Simulation(hoomd.simulation.Simulation):
     def run_update_volume(
         self,
         final_box_lengths,
-        n_steps,
         period,
-        kT,
         tau_kt,
+        n_steps=None,
+        time_length=None,
+        kT=None,
+        temperature=None,
         thermalize_particles=True,
         write_at_start=True,
     ):
@@ -616,18 +692,31 @@ class Simulation(hoomd.simulation.Simulation):
         ----------
         final_box_lengths : np.ndarray or unyt.array.unyt_array, shape=(3,), required # noqa: E501
             The final box edge lengths in (x, y, z) order.
-        n_steps : int, required
-            Number of steps to run during volume update.
         period : int, required
             The number of steps ran between each box update iteration.
-        kT : float or hoomd.variant.Ramp, required
-            The temperature to use during volume update.
         tau_kt : float, required
             Thermostat coupling period (in simulation time units).
+        n_steps : int, optional
+            Number of steps to run during volume update.
+        time_length : unyt.unyt_quantity or float, optional
+            The length of time to run the simulation. If no unit is provided,
+            the time is assumed to be in seconds.
+        kT : float or hoomd.variant.Ramp, optional
+            The temperature to use during volume update.
+        temperature : unyt.unyt_quantity or float, optional
+            The temperature to use during volume update. If no unit is provided,
+            Kelvin is assumed.
         write_at_start : bool, default True
             When set to True, triggers writers that evaluate to True
             for the initial step to execute before the next simulation
             time step.
+
+        Notes
+        -----
+        For the temperature, either `kT` or `temperature` must be provided.
+        If both are provided, an error will be raised. And for the number of
+        steps, either `n_steps` or `time_length` must be provided. If both are
+        provided, an error will be raised.
 
         Examples
         --------
@@ -662,6 +751,8 @@ class Simulation(hoomd.simulation.Simulation):
             )
 
         """
+        self._kT = self._setup_temperature(kT, temperature)
+        _n_steps = self._setup_n_steps(n_steps, time_length)
         if self.reference_length and hasattr(final_box_lengths, "to"):
             ref_unit = self.reference_length.units
             final_box_lengths = final_box_lengths.to(ref_unit)
@@ -674,7 +765,7 @@ class Simulation(hoomd.simulation.Simulation):
         )
         resize_trigger = hoomd.trigger.Periodic(period)
         box_ramp = hoomd.variant.Ramp(
-            A=0, B=1, t_start=self.timestep, t_ramp=int(n_steps)
+            A=0, B=1, t_start=self.timestep, t_ramp=int(_n_steps)
         )
         initial_box = self.state.box
 
@@ -689,13 +780,13 @@ class Simulation(hoomd.simulation.Simulation):
             integrator_method=hoomd.md.methods.ConstantVolume,
             method_kwargs={
                 "thermostat": self._initialize_thermostat(
-                    {"kT": kT, "tau": tau_kt}
+                    {"kT": self._kT, "tau": tau_kt}
                 ),
                 "filter": self.integrate_group,
             },
         )
         if thermalize_particles:
-            self._thermalize_system(kT)
+            self._thermalize_system(self._kT)
 
         if self._wall_forces:
             wall_update = UpdateWalls(sim=self)
@@ -703,20 +794,22 @@ class Simulation(hoomd.simulation.Simulation):
                 trigger=resize_trigger, action=wall_update
             )
             self.operations.updaters.append(wall_updater)
-        std_out_logger = StdOutLogger(n_steps=n_steps, sim=self)
+        std_out_logger = StdOutLogger(n_steps=_n_steps, sim=self)
         std_out_logger_printer = hoomd.update.CustomUpdater(
             trigger=hoomd.trigger.Periodic(self._std_out_freq),
             action=std_out_logger,
         )
         self.operations.updaters.append(std_out_logger_printer)
-        self.run(steps=n_steps + 1, write_at_start=write_at_start)
+        self.run(steps=_n_steps + 1, write_at_start=write_at_start)
         self.operations.updaters.remove(std_out_logger_printer)
         self.operations.updaters.remove(box_resizer)
 
     def run_langevin(
         self,
-        n_steps,
-        kT,
+        n_steps=None,
+        time_length=None,
+        kT=None,
+        temperature=None,
         tally_reservoir_energy=False,
         default_gamma=1.0,
         default_gamma_r=(1.0, 1.0, 1.0),
@@ -727,10 +820,16 @@ class Simulation(hoomd.simulation.Simulation):
 
         Parameters
         ----------
-        n_steps : int, required
+        n_steps : int, optional
             Number of steps to run the simulation.
-        kT : int or hoomd.variant.Ramp, required
+        time_length : unyt.unyt_quantity or float, optional
+            The length of time to run the simulation. If no unit is provided,
+            the time is assumed to be in seconds.
+        kT : int or hoomd.variant.Ramp, optional
             The temperature to use during the simulation.
+        temperature : unyt.unyt_quantity or float, optional
+            The temperature to use during the simulation. If no unit is
+            provided, Kelvin is assumed.
         tally_reservoir_energy : bool, default False
             When set to True, energy exchange between the thermal reservoir
              and the particles is tracked.
@@ -745,35 +844,46 @@ class Simulation(hoomd.simulation.Simulation):
             for the initial step to execute before the next simulation
             time step.
 
+        Notes
+        -----
+        For the temperature, either `kT` or `temperature` must be provided.
+        If both are provided, an error will be raised. And for the number of
+        steps, either `n_steps` or `time_length` must be provided. If both are
+        provided, an error will be raised.
+
         """
+        self._kT = self._setup_temperature(kT, temperature)
+        _n_steps = self._setup_n_steps(n_steps, time_length)
         self.set_integrator_method(
             integrator_method=hoomd.md.methods.Langevin,
             method_kwargs={
                 "filter": self.integrate_group,
-                "kT": kT,
+                "kT": self._kT,
                 "tally_reservoir_energy": tally_reservoir_energy,
                 "default_gamma": default_gamma,
                 "default_gamma_r": default_gamma_r,
             },
         )
         if thermalize_particles:
-            self._thermalize_system(kT)
-        std_out_logger = StdOutLogger(n_steps=n_steps, sim=self)
+            self._thermalize_system(self._kT)
+        std_out_logger = StdOutLogger(n_steps=_n_steps, sim=self)
         std_out_logger_printer = hoomd.update.CustomUpdater(
             trigger=hoomd.trigger.Periodic(self._std_out_freq),
             action=std_out_logger,
         )
         self.operations.updaters.append(std_out_logger_printer)
-        self.run(steps=n_steps, write_at_start=write_at_start)
+        self.run(steps=_n_steps, write_at_start=write_at_start)
         self.operations.updaters.remove(std_out_logger_printer)
 
     def run_NPT(
         self,
-        n_steps,
-        kT,
         pressure,
-        tau_kt,
         tau_pressure,
+        tau_kt,
+        kT=None,
+        temperature=None,
+        n_steps=None,
+        time_length=None,
         couple="xyz",
         box_dof=[True, True, True, False, False, False],
         rescale_all=False,
@@ -785,16 +895,22 @@ class Simulation(hoomd.simulation.Simulation):
 
         Parameters
         ----------
-        n_steps: int, required
-            Number of steps to run the simulation.
-        kT: int or hoomd.variant.Ramp, required
-            The temperature to use during the simulation.
         pressure: int or hoomd.variant.Ramp, required
             The pressure to use during the simulation.
-        tau_kt: float, required
-            Thermostat coupling period (in simulation time units).
         tau_pressure: float, required
             Barostat coupling period.
+        tau_kt: float, required
+            Thermostat coupling period (in simulation time units).
+        kT: int or hoomd.variant.Ramp, optional
+            The temperature to use during the simulation.
+        temperature: unyt.unyt_quantity or float, optional
+            The temperature to use during the simulation. If no unit is
+            provided, Kelvin is assumed.
+        n_steps: int, optional
+            Number of steps to run the simulation.
+        time_length: unyt.unyt_quantity or float, optional
+            The length of time to run the simulation. If no unit is provided,
+            the time is assumed to be in seconds.
         couple: str, default "xyz"
             Couplings of diagonal elements of the stress tensor/
         box_dof: list of bool;
@@ -811,7 +927,16 @@ class Simulation(hoomd.simulation.Simulation):
             for the initial step to execute before the next simulation
             time step.
 
+        Notes
+        -----
+        For the temperature, either `kT` or `temperature` must be provided.
+        If both are provided, an error will be raised. And for the number of
+        steps, either `n_steps` or `time_length` must be provided. If both are
+        provided, an error will be raised.
+
         """
+        self._kT = self._setup_temperature(kT, temperature)
+        _n_steps = self._setup_n_steps(n_steps, time_length)
         self.set_integrator_method(
             integrator_method=hoomd.md.methods.ConstantPressure,
             method_kwargs={
@@ -823,26 +948,28 @@ class Simulation(hoomd.simulation.Simulation):
                 "gamma": gamma,
                 "filter": self.integrate_group,
                 "thermostat": self._initialize_thermostat(
-                    {"kT": kT, "tau": tau_kt}
+                    {"kT": self._kT, "tau": tau_kt}
                 ),
             },
         )
         if thermalize_particles:
-            self._thermalize_system(kT)
-        std_out_logger = StdOutLogger(n_steps=n_steps, sim=self)
+            self._thermalize_system(self._kT)
+        std_out_logger = StdOutLogger(n_steps=_n_steps, sim=self)
         std_out_logger_printer = hoomd.update.CustomUpdater(
             trigger=hoomd.trigger.Periodic(self._std_out_freq),
             action=std_out_logger,
         )
         self.operations.updaters.append(std_out_logger_printer)
-        self.run(steps=n_steps, write_at_start=write_at_start)
+        self.run(steps=_n_steps, write_at_start=write_at_start)
         self.operations.updaters.remove(std_out_logger_printer)
 
     def run_NVT(
         self,
-        n_steps,
-        kT,
         tau_kt,
+        kT=None,
+        temperature=None,
+        n_steps=None,
+        time_length=None,
         thermalize_particles=True,
         write_at_start=True,
     ):
@@ -850,12 +977,18 @@ class Simulation(hoomd.simulation.Simulation):
 
         Parameters
         ----------
-        n_steps: int, required
-            Number of steps to run the simulation.
-        kT: int or hoomd.variant.Ramp, required
-            The temperature to use during the simulation.
         tau_kt: float, required
             Thermostat coupling period (in simulation time units).
+        kT: float or hoomd.variant.Ramp, optional
+            The temperature to use during the simulation.
+        temperature: unyt.unyt_quantity or float, optional
+            The temperature to use during the simulation. If no unit is
+            provided, Kelvin is assumed.
+        n_steps: int, optional
+            Number of steps to run the simulation.
+        time_length: unyt.unyt_quantity or float, optional
+            The length of time to run the simulation. If no unit is provided,
+            the time is assumed to be in seconds.
         thermalize_particles: bool, default True
             When set to True, assigns random velocities to all particles.
         write_at_start : bool, default True
@@ -863,56 +996,75 @@ class Simulation(hoomd.simulation.Simulation):
             for the initial step to execute before the next simulation
             time step.
 
+        Notes
+        -----
+        For the temperature, either `kT` or `temperature` must be provided.
+        If both are provided, an error will be raised. And for the number of
+        steps, either `n_steps` or `time_length` must be provided. If both are
+        provided, an error will be raised.
+
         """
+        self._kT = self._setup_temperature(kT, temperature)
+        _n_steps = self._setup_n_steps(n_steps, time_length)
         self.set_integrator_method(
             integrator_method=hoomd.md.methods.ConstantVolume,
             method_kwargs={
                 "thermostat": self._initialize_thermostat(
-                    {"kT": kT, "tau": tau_kt}
+                    {"kT": self._kT, "tau": tau_kt}
                 ),
                 "filter": self.integrate_group,
             },
         )
         if thermalize_particles:
-            self._thermalize_system(kT)
-        std_out_logger = StdOutLogger(n_steps=n_steps, sim=self)
+            self._thermalize_system(self._kT)
+        std_out_logger = StdOutLogger(n_steps=_n_steps, sim=self)
         std_out_logger_printer = hoomd.update.CustomUpdater(
             trigger=hoomd.trigger.Periodic(self._std_out_freq),
             action=std_out_logger,
         )
         self.operations.updaters.append(std_out_logger_printer)
-        self.run(steps=n_steps, write_at_start=write_at_start)
+        self.run(steps=_n_steps, write_at_start=write_at_start)
         self.operations.updaters.remove(std_out_logger_printer)
 
-    def run_NVE(self, n_steps, write_at_start=True):
+    def run_NVE(self, n_steps=None, time_length=None, write_at_start=True):
         """Run the simulation in the NVE ensemble.
 
         Parameters
         ----------
-        n_steps: int, required
+        n_steps: int, optional
             Number of steps to run the simulation.
+        time_length: unyt.unyt_quantity or float, optional
+            The length of time to run the simulation. If no unit is provided,
+            the time is assumed to be in seconds.
         write_at_start : bool, default True
             When set to True, triggers writers that evaluate to True
             for the initial step to execute before the next simulation
             time step.
 
+        Notes
+        -----
+        For the number of steps, either `n_steps` or `time_length` must be
+        provided. If both are provided, an error will be raised.
+
         """
+        _n_steps = self._setup_n_steps(n_steps, time_length)
         self.set_integrator_method(
             integrator_method=hoomd.md.methods.ConstantVolume,
             method_kwargs={"filter": self.integrate_group},
         )
-        std_out_logger = StdOutLogger(n_steps=n_steps, sim=self)
+        std_out_logger = StdOutLogger(n_steps=_n_steps, sim=self)
         std_out_logger_printer = hoomd.update.CustomUpdater(
             trigger=hoomd.trigger.Periodic(self._std_out_freq),
             action=std_out_logger,
         )
         self.operations.updaters.append(std_out_logger_printer)
-        self.run(steps=n_steps, write_at_start=write_at_start)
+        self.run(steps=_n_steps, write_at_start=write_at_start)
         self.operations.updaters.remove(std_out_logger_printer)
 
     def run_displacement_cap(
         self,
-        n_steps,
+        n_steps=None,
+        time_length=None,
         maximum_displacement=1e-3,
         write_at_start=True,
     ):
@@ -926,17 +1078,25 @@ class Simulation(hoomd.simulation.Simulation):
 
         Parameters
         ----------
-        n_steps : int, required
+        n_steps : int, optional
             Number of steps to run the simulation.
+        time_length : unyt.unyt_quantity or float, optional
+            The length of time to run the simulation. If no unit is provided,
+            the time is assumed to be in seconds.
         maximum_displacement : float, default 1e-3
             Maximum displacement per step (length)
-
         write_at_start : bool, default True
             When set to True, triggers writers that evaluate to True
             for the initial step to execute before the next simulation
             time step.
 
+        Notes
+        -----
+        For the number of steps, either `n_steps` or `time_length` must be
+        provided. If both are provided, an error will be raised.
+
         """
+        _n_steps = self._setup_n_steps(n_steps, time_length)
         self.set_integrator_method(
             integrator_method=hoomd.md.methods.DisplacementCapped,
             method_kwargs={
@@ -944,30 +1104,58 @@ class Simulation(hoomd.simulation.Simulation):
                 "maximum_displacement": maximum_displacement,
             },
         )
-        std_out_logger = StdOutLogger(n_steps=n_steps, sim=self)
+        std_out_logger = StdOutLogger(n_steps=_n_steps, sim=self)
         std_out_logger_printer = hoomd.update.CustomUpdater(
             trigger=hoomd.trigger.Periodic(self._std_out_freq),
             action=std_out_logger,
         )
         self.operations.updaters.append(std_out_logger_printer)
-        self.run(steps=n_steps, write_at_start=write_at_start)
+        self.run(steps=_n_steps, write_at_start=write_at_start)
         self.operations.updaters.remove(std_out_logger_printer)
 
-    def temperature_ramp(self, n_steps, kT_start, kT_final):
+    def temperature_ramp(
+        self,
+        n_steps=None,
+        time_length=None,
+        kT_start=None,
+        temperature_start=None,
+        kT_final=None,
+        temperature_final=None,
+    ):
         """Create a temperature ramp.
 
         Parameters
         ----------
-        n_steps : int, required
+        n_steps : int, optional
             The number of steps to ramp the temperature over.
-        kT_start : float, required
+        time_length : unyt.unyt_quantity or float, optional
+            The length of time to ramp the temperature over. If no unit is
+            provided, the time is assumed to be in seconds.
+        kT_start : float, optional
             The starting temperature.
-        kT_final : float, required
+        temperature_start : unyt.unyt_quantity or float, optional
+            The starting temperature. If no unit is provided, Kelvin is assumed.
+        kT_final : float, optional
             The final temperature.
+        temperature_final : unyt.unyt_quantity or float, optional
+            The final temperature. If no unit is provided, Kelvin is assumed.
+
+        Notes
+        -----
+        For the temperature, either `kT` or `temperature` must be provided.
+        If both are provided, an error will be raised. And for the number of
+        steps, either `n_steps` or `time_length` must be provided. If both are
+        provided, an error will be raised.
 
         """
+        _kT_start = self._setup_temperature(kT_start, temperature_start)
+        _kT_final = self._setup_temperature(kT_final, temperature_final)
+        _n_steps = self._setup_n_steps(n_steps, time_length)
         return hoomd.variant.Ramp(
-            A=kT_start, B=kT_final, t_start=self.timestep, t_ramp=int(n_steps)
+            A=_kT_start,
+            B=_kT_final,
+            t_start=self.timestep,
+            t_ramp=int(_n_steps),
         )
 
     def pickle_forcefield(self, file_path="forcefield.pickle"):

@@ -382,3 +382,58 @@ class TestSimulate(BaseTest):
         with gsd.hoomd.open("trajectory.gsd") as traj:
             assert len(traj) > 0
         os.remove("trajectory.gsd")
+
+    def test_real_temperature(self, benzene_system):
+        sim = Simulation.from_system(benzene_system)
+        with pytest.raises(ValueError):
+            sim.real_temperature
+        sim.run_NVT(kT=1.0, tau_kt=0.01, n_steps=100)
+        assert np.isclose(sim.real_temperature, 35.225, atol=1e-4)
+
+    def test_real_temperature_no_energy_units(self, benzene_system):
+        sim = Simulation(
+            initial_state=benzene_system.hoomd_snapshot,
+            forcefield=benzene_system.hoomd_forcefield,
+            reference_values=dict(),
+        )
+        sim.run_NVT(kT=1e-10, tau_kt=0.01, n_steps=100)
+        assert np.isclose(sim.real_temperature, 7.2429e12)
+
+    def test_NVT_with_temperature(self, benzene_system):
+        sim = Simulation.from_system(benzene_system)
+        sim.run_NVT(tau_kt=0.01, n_steps=500, temperature=35.225)
+        assert np.isclose(sim._kT, 1.0, atol=1e-4)
+
+    def test_NVT_with_temperature_units(self, benzene_system):
+        sim = Simulation.from_system(benzene_system)
+        sim.run_NVT(tau_kt=0.01, n_steps=500, temperature=35.225 * u.K)
+        assert np.isclose(sim._kT, 1.0, atol=1e-4)
+
+    def test_NVT_with_temperature_and_kT(self, benzene_system):
+        sim = Simulation.from_system(benzene_system)
+        with pytest.raises(ValueError):
+            sim.run_NVT(tau_kt=0.01, n_steps=500, temperature=35.225, kT=1.0)
+
+    def test_NVT_no_temperature(self, benzene_system):
+        sim = Simulation.from_system(benzene_system)
+        with pytest.raises(ValueError):
+            sim.run_NVT(tau_kt=0.01, n_steps=500)
+
+    def test_NVT_time_length(self, benzene_system):
+        sim = Simulation.from_system(benzene_system)
+        sim.run_NVT(kT=1.0, tau_kt=0.01, time_length=2 * u.Unit("ps"))
+        assert sim.timestep == int(2 * u.Unit("ps") / sim.real_timestep)
+
+    def test_NVT_time_length_no_units(self, benzene_system):
+        sim = Simulation.from_system(benzene_system)
+        sim.run_NVT(kT=1.0, tau_kt=0.01, time_length=2e-12)
+        assert sim.timestep == int(2e-12 / sim.real_timestep)
+
+    def test_NVT_time_length_n_steps(self, benzene_system):
+        sim = Simulation.from_system(benzene_system)
+        with pytest.raises(ValueError):
+            sim.run_NVT(
+                kT=1.0, tau_kt=0.01, time_length=2 * u.Unit("ps"), n_steps=1000
+            )
+        with pytest.raises(ValueError):
+            sim.run_NVT(kT=1.0, tau_kt=0.01)
