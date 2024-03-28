@@ -21,7 +21,4 @@ dependencies:
   - fresnel >=0.13.5
   - cmeutils >=1.1.1
   - pip:
-      - git+https://github.com/cmelab/cmeutils.git@master
       - git+https://github.com/cmelab/grits.git@main
-
-
