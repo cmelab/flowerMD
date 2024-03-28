@@ -19,7 +19,13 @@ on:
 
 jobs:
   pytest:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ['3.9', '3.10', '3.11', '3.12']
+
+    runs-on: ${{ matrix.os }}
 
     steps:
     - name: Check out repository
@@ -39,7 +45,7 @@ jobs:
 
     - name: Run pytest with coverage report
       shell: bash -l {0}
-      run: python -m pytest -rs -v --cov=./ --cov-report=xml
+      run: python -m pytest -rs -v --cov=./ --cov-report=xml --nbmake "../../tutorials/"
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
