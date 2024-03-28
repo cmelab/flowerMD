@@ -90,11 +90,12 @@ setup(
         "flowermd": [
             "modules/**",
             "library/**",
-            "assets/forcefields/*",
-            "assets/molecule_files/*",
+            "assets/forcefields/**",
+            "assets/molecule_files/**",
             "utils/**",
             "internal/**",
-        ]
+            "tutorials/**"
+        ],
     },
     install_requires=REQUIRED,
     include_package_data=True,
