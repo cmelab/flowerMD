@@ -94,7 +94,6 @@ setup(
             "assets/molecule_files/**",
             "utils/**",
             "internal/**",
-            "tutorials/**"
         ],
     },
     install_requires=REQUIRED,
