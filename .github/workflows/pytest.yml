@@ -45,7 +45,11 @@ jobs:
 
     - name: Run pytest with coverage report
       shell: bash -l {0}
-      run: python -m pytest -rs -v --cov=./ --cov-report=xml --nbmake tutorials/
+      run: python -m pytest -rs -v --cov=./ --cov-report=xml
+
+    - name: Run pytest on tutorials
+      shell: bash -l {0}
+      run: python -m pytest -rs -v --nbmake tutorials/
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
