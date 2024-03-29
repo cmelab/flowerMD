@@ -13,7 +13,7 @@ dependencies:
   - openbabel >=3
   - pip
   - py3Dmol
-  - python >=3.10, <3.12
+  - python >=3.10, <=3.12
   - fresnel >=0.13.5
   - cmeutils >=1.1.1
   - grits >=0.3.0
