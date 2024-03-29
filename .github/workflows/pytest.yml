@@ -14,7 +14,9 @@ on:
       - flowermd/**
       - environment-dev.yml
       - .github/workflows/pytest.yml
-  # Allows workflow to be manually triggered
+  issue_comment:
+    types: [created]
+
   workflow_dispatch:
 
 jobs:
