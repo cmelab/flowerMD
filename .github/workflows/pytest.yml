@@ -35,8 +35,7 @@ jobs:
       uses: conda-incubator/setup-miniconda@v2
       with:
         environment-file: environment-dev.yml
-        python-version: >-
-          python=${{ matrix.python-version }}
+        python-version: ${{ matrix.python-version }}
         miniforge-variant: Mambaforge
         miniforge-version: 4.9.2-4
         use-mamba: true
