@@ -22,7 +22,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest]
+        os: [macOS-latest, ubuntu-latest]
         python-version: ['3.9', '3.10', '3.11', '3.12']
 
     runs-on: ${{ matrix.os }}
@@ -35,6 +35,8 @@ jobs:
       uses: conda-incubator/setup-miniconda@v2
       with:
         environment-file: environment-dev.yml
+        create-args: >-
+          python=${{ matrix.python-version }}
         miniforge-variant: Mambaforge
         miniforge-version: 4.9.2-4
         use-mamba: true
