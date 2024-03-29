@@ -57,7 +57,7 @@ jobs:
         file: ./coverage.xml
 
   test-tutorials:
-    if: contains(github.event.comment.body, 'run-test-tutorials')
+    if: contains(github.event.comment.body, '/testtutorials')
     runs-on: ubuntu-latest
     steps:
     - name: Check out repository
