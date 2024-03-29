@@ -49,12 +49,31 @@ jobs:
       shell: bash -l {0}
       run: python -m pytest -rs -v --cov=./ --cov-report=xml
 
-    - name: Run pytest on tutorials
-      shell: bash -l {0}
-      run: python -m pytest -rs -v --nbmake tutorials/
-
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
         file: ./coverage.xml
+
+  test-tutorials:
+    if: contains(github.event.comment.body, 'run-test-tutorials')
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out repository
+      uses: actions/checkout@v2
+
+    - name: Build environment
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        environment-file: environment-dev.yml
+        miniforge-variant: Mambaforge
+        miniforge-version: 4.9.2-4
+        use-mamba: true
+
+    - name: Install package
+      shell: bash -l {0}
+      run: pip install .
+
+    - name: Run pytest on tutorials
+      shell: bash -l {0}
+      run: python -m pytest -rs -v --nbmake tutorials/
