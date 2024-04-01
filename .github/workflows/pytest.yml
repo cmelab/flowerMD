@@ -62,7 +62,7 @@ jobs:
         file: ./coverage.xml
 
   test-tutorials:
-    if: ${{ github.event.issue.pull_request && github.event.comment.body== '/testtutorials')}}
+    if: ${{ github.event.issue.pull_request && github.event.comment.body== '/testtutorials'}}
     runs-on: ubuntu-latest
     steps:
     - name: Check out repository
