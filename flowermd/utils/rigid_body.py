@@ -6,10 +6,10 @@ from cmeutils.geometry import moit
 
 
 def create_rigid_body(
-        snapshot,
-        bead_constituents_types,
-        bead_name="R",
-        initial_orientation=[1, 0, 0, 0]
+    snapshot,
+    bead_constituents_types,
+    bead_name="R",
+    initial_orientation=[1, 0, 0, 0],
 ):
     """Create rigid bodies from a snapshot.
 
