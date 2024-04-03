@@ -5,7 +5,12 @@ import numpy as np
 from cmeutils.geometry import moit
 
 
-def create_rigid_body(snapshot, bead_constituents_types, bead_name="R"):
+def create_rigid_body(
+        snapshot,
+        bead_constituents_types,
+        bead_name="R",
+        initial_orientation=[1, 0, 0, 0]
+):
     """Create rigid bodies from a snapshot.
 
     Parameters
@@ -102,7 +107,7 @@ def create_rigid_body(snapshot, bead_constituents_types, bead_name="R"):
     rigid_frame.particles.moment_inertia = np.concatenate(
         (com_moi, np.zeros((snapshot.particles.N, 3)))
     )
-    rigid_frame.particles.orientation = [(1.0, 0.0, 0.0, 0.0)] * (
+    rigid_frame.particles.orientation = [initial_orientation] * (
         n_rigid + snapshot.particles.N
     )
     rigid_frame.particles.body = np.concatenate(
@@ -149,7 +154,7 @@ def create_rigid_body(snapshot, bead_constituents_types, bead_name="R"):
     rigid_constrain.body["R"] = {
         "constituent_types": bead_constituents_types,
         "positions": local_coords,
-        "orientations": [(1.0, 0.0, 0.0, 0.0)] * len(local_coords),
+        "orientations": [initial_orientation] * len(local_coords),
     }
     return rigid_frame, rigid_constrain
 

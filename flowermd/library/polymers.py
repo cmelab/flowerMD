@@ -320,16 +320,16 @@ class EllipsoidChain(Polymer):
         # Build up ellipsoid bead
         bead = mb.Compound(name="ellipsoid")
         head = mb.Compound(
-            pos=(self.lpar, 0, 0), name="A", mass=self.bead_mass / 4
+            pos=(0, 0, self.lpar), name="A", mass=self.bead_mass / 4
         )
         tail = mb.Compound(
-            pos=(-self.lpar, 0, 0), name="A", mass=self.bead_mass / 4
+            pos=(0, 0, -self.lpar), name="A", mass=self.bead_mass / 4
         )
         head_mid = mb.Compound(
-            pos=(self.lpar / 2, 0, 0), name="B", mass=self.bead_mass / 4
+            pos=(0, 0, self.lpar / 2), name="B", mass=self.bead_mass / 4
         )
         tail_mid = mb.Compound(
-            pos=(-self.lpar / 2, 0, 0), name="B", mass=self.bead_mass / 4
+            pos=(0, 0, -self.lpar / 2), name="B", mass=self.bead_mass / 4
         )
         bead.add([head, tail, head_mid, tail_mid])
         # Build the bead chain
@@ -337,7 +337,7 @@ class EllipsoidChain(Polymer):
         chain.add_monomer(
             bead,
             indices=[0, 1],
-            orientation=[[1, 0, 0], [-1, 0, 0]],
+            orientation=[[0, 0, 1], [0, 0, -1]],
             replace=False,
             separation=self.bead_bond_length,
         )
