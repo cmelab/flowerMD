@@ -4,6 +4,7 @@ import itertools
 import os.path
 import random
 from typing import List
+import warnings
 
 import mbuild as mb
 import numpy as np
@@ -211,13 +212,20 @@ class Molecule:
         backbone_direction = np.array([0, 0, 1])
         for mol in self.molecules:
             if heavy_atoms_only:
-                positions = np.array(
-                    [
-                        p.xyz[0]
-                        for p in mol.particles()
-                        if p.element.symbol != "H"
-                    ]
-                )
+                try:
+                    positions = np.array(
+                        [
+                            p.xyz[0]
+                            for p in mol.particles()
+                            if p.element.symbol != "H"
+                        ]
+                    )
+                except AttributeError:
+                    positions = mol.xyz
+                    warnings.warn(
+                        "No element information found." 
+                        "Using all particle positions to fit backbone axis."
+                    )
             else:
                 positions = mol.xyz
             backbone = get_backbone_vector(positions)
