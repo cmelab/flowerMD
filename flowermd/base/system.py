@@ -716,7 +716,7 @@ class Lattice(System):
     -----
     The system is built in a way that the long axis of the
     molecules is aligned with the z direction, and the
-    lattice is made by repeating and translating in the 
+    lattice is made by repeating and translating in the
     x and y directions.
 
     """

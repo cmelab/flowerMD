@@ -3,8 +3,8 @@
 import itertools
 import os.path
 import random
-from typing import List
 import warnings
+from typing import List
 
 import mbuild as mb
 import numpy as np
@@ -223,7 +223,7 @@ class Molecule:
                 except AttributeError:
                     positions = mol.xyz
                     warnings.warn(
-                        "No element information found." 
+                        "No element information found."
                         "Using all particle positions to fit backbone axis."
                     )
             else:
