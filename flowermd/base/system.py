@@ -712,6 +712,13 @@ class Lattice(System):
     basis_vector : array-like, default [0.5, 0.5, 0]
         The vector between points in the unit cell.
 
+    Notes
+    -----
+    The system is built in a way that the long axis of the
+    molecules is aligned with the z direction, and the
+    lattice is made by repeating and translating in the 
+    x and y directions.
+
     """
 
     def __init__(
