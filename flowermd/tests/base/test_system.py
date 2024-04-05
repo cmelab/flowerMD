@@ -818,7 +818,7 @@ class TestSystem(BaseTest):
 
     def test_lattice_bead_spring(self):
         chains = LJChain(lengths=10, num_mols=32)
-        system = Lattice(molecules=chains, x=1, y=1, n=4)
+        Lattice(molecules=chains, x=1, y=1, n=4)
 
     def test_scale_charges(self, pps):
         pps_mol = pps(num_mols=5, lengths=5)
