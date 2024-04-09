@@ -9,11 +9,12 @@ import pytest
 import unyt as u
 
 from flowermd import Simulation
+from flowermd.base import Pack
 from flowermd.library import OPLS_AA_PPS
+from flowermd.library.forcefields import EllipsoidForcefield
+from flowermd.library.polymers import EllipsoidChain
 from flowermd.tests import BaseTest
-from flowermd.utils import (  # get_target_box_number_density,
-    get_target_box_mass_density,
-)
+from flowermd.utils import create_rigid_body, get_target_box_mass_density
 
 
 class TestSimulate(BaseTest):
@@ -293,6 +294,48 @@ class TestSimulate(BaseTest):
         for i, j in zip(sim.forces, hoomd_ff):
             assert type(i) is type(j)
         os.remove("forcefield.pickle")
+
+    def test_bad_rigid(self, benzene_system):
+        with pytest.raises(ValueError):
+            Simulation.from_system(benzene_system, rigid_constraint="A")
+
+    def test_rigid_sim(self):
+        ellipsoid_chain = EllipsoidChain(
+            lengths=4,
+            num_mols=2,
+            lpar=0.5,
+            bead_mass=100,
+            bond_length=0.01,
+        )
+        system = Pack(
+            molecules=ellipsoid_chain,
+            density=0.1,
+            base_units=dict(),
+            fix_orientation=True,
+        )
+        ellipsoid_ff = EllipsoidForcefield(
+            lpar=0.5,
+            lperp=0.25,
+            epsilon=1.0,
+            r_cut=2.0,
+            bond_k=500,
+            bond_r0=0.01,
+            angle_k=250,
+            angle_theta0=2.2,
+        )
+        rigid_frame, rigid = create_rigid_body(
+            system.hoomd_snapshot,
+            ellipsoid_chain.bead_constituents_types,
+            bead_name="R",
+        )
+        sim = Simulation(
+            initial_state=rigid_frame,
+            forcefield=ellipsoid_ff.hoomd_forces,
+            rigid_constraint=rigid,
+        )
+        sim.run_NVT(n_steps=0, kT=1.0, tau_kt=sim.dt * 100)
+        assert sim.integrator.integrate_rotational_dof is True
+        assert sim.mass_reduced == 800.0
 
     def test_save_restart_gsd(self, benzene_system):
         sim = Simulation.from_system(benzene_system)

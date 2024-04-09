@@ -5,6 +5,7 @@ from flowermd.library import (
     PEEK,
     PEKK,
     PPS,
+    EllipsoidChain,
     LJChain,
     PEKK_meta,
     PEKK_para,
@@ -106,3 +107,16 @@ class TestPolymers:
 
     def test_copolymer(self):
         pass
+
+    def test_ellipsoid_chain(self):
+        ellipsoid_chain = EllipsoidChain(
+            lengths=4,
+            num_mols=2,
+            lpar=0.5,
+            bead_mass=100,
+            bond_length=0.01,
+        )
+        assert ellipsoid_chain.n_particles == 32
+        assert ellipsoid_chain.molecules[0].mass == 400
+        assert ellipsoid_chain.molecules[0].n_particles == 16
+        assert ellipsoid_chain.molecules[0].n_bonds == 10
