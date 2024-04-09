@@ -10,7 +10,12 @@ from unyt import Unit
 
 from flowermd import Lattice, Pack
 from flowermd.internal.exceptions import ForceFieldError, ReferenceUnitError
-from flowermd.library import OPLS_AA, OPLS_AA_DIMETHYLETHER, OPLS_AA_PPS
+from flowermd.library import (
+    OPLS_AA,
+    OPLS_AA_DIMETHYLETHER,
+    OPLS_AA_PPS,
+    LJChain,
+)
 from flowermd.tests import BaseTest
 
 
@@ -810,6 +815,10 @@ class TestSystem(BaseTest):
         assert len(system.hoomd_forcefield) > 0
         assert system.n_particles == system.hoomd_snapshot.particles.N
         assert system.reference_values.keys() == {"energy", "length", "mass"}
+
+    def test_lattice_bead_spring(self):
+        chains = LJChain(lengths=10, num_mols=32)
+        Lattice(molecules=chains, x=1, y=1, n=4)
 
     def test_scale_charges(self, pps):
         pps_mol = pps(num_mols=5, lengths=5)
