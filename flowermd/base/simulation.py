@@ -1002,6 +1002,35 @@ class Simulation(hoomd.simulation.Simulation):
             for the initial step to execute before the next simulation
             time step.
 
+        Examples
+        --------
+        In this example, a system is initialized with `Pack` and a simulation
+        is run in the NVT ensemble at 300 K for 1 ns.
+
+        ::
+
+            import unyt
+            from flowermd.base import Pack, Simulation
+            from flowermd.library import PPS, OPLS_AA_PPS
+
+            pps_mols = PPS(num_mols=20, lengths=15)
+            pps_system = Pack(
+                molecules=[pps_mols],
+                density=0.5,
+            )
+            pps_system.apply_forcefield(
+                r_cut=2.5,
+                force_field=OPLS_AA_PPS(),
+                auto_scale=True,
+                scale_charges=True
+            )
+            sim = Simulation.from_system(pps_system)
+            sim.run_NVT(
+                temperature=300 * flowermd.utils.units.K,
+                tau_kt=1.0,
+                duration= 1 * flowermd.utils.units.ns,
+            )
+
         """
         self._kT = self._setup_temperature(temperature)
         _n_steps = self._setup_n_steps(duration)
