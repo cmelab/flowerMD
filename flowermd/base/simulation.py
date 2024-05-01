@@ -1059,20 +1059,13 @@ class Simulation(hoomd.simulation.Simulation):
 
         Parameters
         ----------
-        n_steps: int, optional
-            Number of steps to run the simulation.
-        time_length: unyt.unyt_quantity or float, optional
-            The length of time to run the simulation. If no unit is provided,
-            the time is assumed to be in seconds.
+        duration : int or flowermd.utils.units, required
+            The number of steps or time length to run the simulation. If no unit
+            is provided, the time is assumed to be the number of steps.
         write_at_start : bool, default True
             When set to True, triggers writers that evaluate to True
             for the initial step to execute before the next simulation
             time step.
-
-        Notes
-        -----
-        For the number of steps, either `n_steps` or `time_length` must be
-        provided. If both are provided, an error will be raised.
 
         """
         _n_steps = self._setup_n_steps(duration)
@@ -1105,22 +1098,15 @@ class Simulation(hoomd.simulation.Simulation):
 
         Parameters
         ----------
-        n_steps : int, optional
-            Number of steps to run the simulation.
-        time_length : unyt.unyt_quantity or float, optional
-            The length of time to run the simulation. If no unit is provided,
-            the time is assumed to be in seconds.
+        duration : int or flowermd.utils.units, required
+            The number of steps or time length to run the simulation. If no unit
+            is provided, the time is assumed to be the number of steps.
         maximum_displacement : float, default 1e-3
             Maximum displacement per step (length)
         write_at_start : bool, default True
             When set to True, triggers writers that evaluate to True
             for the initial step to execute before the next simulation
             time step.
-
-        Notes
-        -----
-        For the number of steps, either `n_steps` or `time_length` must be
-        provided. If both are provided, an error will be raised.
 
         """
         _n_steps = self._setup_n_steps(duration)
@@ -1150,26 +1136,15 @@ class Simulation(hoomd.simulation.Simulation):
 
         Parameters
         ----------
-        n_steps : int, optional
-            The number of steps to ramp the temperature over.
-        time_length : unyt.unyt_quantity or float, optional
-            The length of time to ramp the temperature over. If no unit is
-            provided, the time is assumed to be in seconds.
-        kT_start : float, optional
-            The starting temperature.
-        temperature_start : unyt.unyt_quantity or float, optional
-            The starting temperature. If no unit is provided, Kelvin is assumed.
-        kT_final : float, optional
-            The final temperature.
-        temperature_final : unyt.unyt_quantity or float, optional
-            The final temperature. If no unit is provided, Kelvin is assumed.
-
-        Notes
-        -----
-        For the temperature, either `kT` or `temperature` must be provided.
-        If both are provided, an error will be raised. And for the number of
-        steps, either `n_steps` or `time_length` must be provided. If both are
-        provided, an error will be raised.
+        duration : int or flowermd.utils.units, required
+            The number of steps or time length to run the simulation. If no unit
+            is provided, the time is assumed to be the number of steps.
+        temperature_start : unyt.unyt_quantity or float, required
+            The initial temperature. If no unit is provided, the temperature is
+            assumed to be kT (temperature times Boltzmann constant).
+        temperature_final : unyt.unyt_quantity or float, required
+            The final temperature. If no unit is provided, the temperature is
+            assumed to be kT (temperature times Boltzmann constant).
 
         """
         _kT_start = self._setup_temperature(temperature_start)
