@@ -67,6 +67,7 @@ class Simulation(hoomd.simulation.Simulation):
         log_write_freq=1e3,
         log_file_name="sim_data.txt",
         thermostat=HOOMDThermostats.MTTK,
+        rigid_constraint=None,
     ):
         if not isinstance(forcefield, Iterable) or isinstance(forcefield, str):
             raise ValueError(
@@ -104,7 +105,17 @@ class Simulation(hoomd.simulation.Simulation):
         self._kT = None
         self._reference_values = dict()
         self._reference_values = reference_values
-        self._integrate_group = hoomd.filter.All()
+        if rigid_constraint and not isinstance(
+            rigid_constraint, hoomd.md.constrain.Rigid
+        ):
+            raise ValueError(
+                "Invalid rigid constraint. Please provide a "
+                "hoomd.md.constrain.Rigid object."
+            )
+        self._rigid_constraint = rigid_constraint
+        self._integrate_group = self._create_integrate_group(
+            rigid=True if rigid_constraint else False
+        )
         self._wall_forces = dict()
         self._create_state(self.initial_state)
         # Add a gsd and thermo props logger to sim operations
@@ -290,7 +301,16 @@ class Simulation(hoomd.simulation.Simulation):
     def mass_reduced(self):
         """The total mass of the system in reduced units."""
         with self.state.cpu_local_snapshot as snap:
-            return sum(snap.particles.mass)
+            if self._rigid_constraint:
+                last_body_tag = -1
+                for body_tag in snap.particles.body:
+                    if body_tag > last_body_tag:
+                        last_body_tag += 1
+                    else:
+                        break
+                return sum(snap.particles.mass[last_body_tag + 1 :])
+            else:
+                return sum(snap.particles.mass)
 
     @property
     def mass(self):
@@ -603,7 +623,14 @@ class Simulation(hoomd.simulation.Simulation):
 
         """
         if not self.integrator:  # Integrator and method not yet created
-            self.integrator = hoomd.md.Integrator(dt=self.dt)
+            self.integrator = hoomd.md.Integrator(
+                dt=self.dt,
+                integrate_rotational_dof=(
+                    True if self._rigid_constraint else False
+                ),
+            )
+            if self._rigid_constraint:
+                self.integrator.rigid = self._rigid_constraint
             self.integrator.forces = self._forcefield
             self.operations.add(self.integrator)
             new_method = integrator_method(**method_kwargs)
@@ -1285,6 +1312,11 @@ class Simulation(hoomd.simulation.Simulation):
                 if isinstance(f, hoomd.md.pair.pair.LJ)
             ][0]
         return lj_force
+
+    def _create_integrate_group(self, rigid):
+        if rigid:
+            return hoomd.filter.Rigid(("center", "free"))
+        return hoomd.filter.All()
 
     def _create_state(self, initial_state):
         """Create the simulation state.

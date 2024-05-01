@@ -5,6 +5,7 @@ from flowermd.library import (
     PEEK,
     PEKK,
     PPS,
+    EllipsoidChain,
     LJChain,
     PEKK_meta,
     PEKK_para,
@@ -47,12 +48,14 @@ class TestPolymers:
         cg_chain = LJChain(
             lengths=3,
             num_mols=1,
-            bead_sequence=["A"],
-            bead_mass={"A": 100},
-            bond_lengths={"A-A": 1.5},
+            bead_sequence=["_A"],
+            bead_mass={"_A": 100},
+            bond_lengths={"_A-_A": 1.5},
         )
         assert cg_chain.n_particles == 3
         assert cg_chain.molecules[0].mass == 300
+        with pytest.warns():
+            cg_chain._align_backbones_z_axis(heavy_atoms_only=True)
 
     def test_lj_chain_sequence(self):
         cg_chain = LJChain(
@@ -104,3 +107,16 @@ class TestPolymers:
 
     def test_copolymer(self):
         pass
+
+    def test_ellipsoid_chain(self):
+        ellipsoid_chain = EllipsoidChain(
+            lengths=4,
+            num_mols=2,
+            lpar=0.5,
+            bead_mass=100,
+            bond_length=0.01,
+        )
+        assert ellipsoid_chain.n_particles == 32
+        assert ellipsoid_chain.molecules[0].mass == 400
+        assert ellipsoid_chain.molecules[0].n_particles == 16
+        assert ellipsoid_chain.molecules[0].n_bonds == 10

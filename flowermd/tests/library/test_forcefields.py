@@ -11,6 +11,7 @@ from flowermd.library import (
     OPLS_AA_DIMETHYLETHER,
     OPLS_AA_PPS,
     BeadSpring,
+    EllipsoidForcefield,
     FF_from_file,
     KremerGrestBeadSpring,
     TableForcefield,
@@ -103,6 +104,31 @@ class TestForceFields:
             assert ff.hoomd_forces[3].params[param]["k"] == 100
             assert ff.hoomd_forces[3].params[param]["d"] == -1
             assert ff.hoomd_forces[3].params[param]["n"] == 1
+
+    def test_ellipsoid_ff(self):
+        ellipsoid_ff = EllipsoidForcefield(
+            epsilon=1.0,
+            lperp=0.5,
+            lpar=1.0,
+            r_cut=3,
+            bond_k=500,
+            bond_r0=0.1,
+            angle_k=100,
+            angle_theta0=1.57,
+        )
+        assert len(ellipsoid_ff.hoomd_forces) == 3
+        assert isinstance(
+            ellipsoid_ff.hoomd_forces[-1], hoomd.md.pair.aniso.GayBerne
+        )
+        assert ("R", "R") in list(
+            dict(ellipsoid_ff.hoomd_forces[-1].params).keys()
+        )
+        assert ("B", "R") in list(
+            dict(ellipsoid_ff.hoomd_forces[-1].params).keys()
+        )
+        assert ellipsoid_ff.hoomd_forces[-1].params["A", "A"]["epsilon"] == 0.0
+        assert ellipsoid_ff.hoomd_forces[-1].params["A", "A"]["lperp"] == 0.0
+        assert ellipsoid_ff.hoomd_forces[-1].params["A", "A"]["lpar"] == 0.0
 
 
 class TestTableForcefield:
