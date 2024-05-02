@@ -11,6 +11,7 @@ import hoomd.md
 import numpy as np
 import unyt as u
 
+from flowermd import Units
 from flowermd.internal import validate_unit
 from flowermd.utils.actions import StdOutLogger, UpdateWalls
 from flowermd.utils.base_types import HOOMDThermostats
@@ -370,15 +371,15 @@ class Simulation(hoomd.simulation.Simulation):
         if self._reference_values.get("mass"):
             mass = self._reference_values["mass"].to("kg")
         else:
-            mass = 1 * u.kg
+            mass = 1 * Units.kg
         if self._reference_values.get("length"):
             dist = self.reference_length.to("m")
         else:
-            dist = 1 * u.m
+            dist = 1 * Units.m
         if self._reference_values.get("energy"):
             energy = self.reference_energy.to("J")
         else:
-            energy = 1 * u.J
+            energy = 1 * Units.J
         tau = (mass * (dist**2)) / energy
         timestep = self.dt * (tau**0.5)
         return timestep
@@ -395,7 +396,7 @@ class Simulation(hoomd.simulation.Simulation):
         if self._reference_values.get("energy"):
             energy = self.reference_energy.to("J")
         else:
-            energy = 1 * u.J
+            energy = 1 * Units.J
         temperature = (self._kT * energy) / u.boltzmann_constant_mks
         return temperature
 
@@ -404,13 +405,13 @@ class Simulation(hoomd.simulation.Simulation):
         if self._reference_values.get("energy"):
             energy = self.reference_energy.to("J")
         else:
-            energy = 1 * u.J
+            energy = 1 * Units.J
         if isinstance(temperature, u.unyt_array) or isinstance(
             temperature, u.unyt_quantity
         ):
             temperature = temperature.to("K")
         else:
-            temperature = temperature * u.K
+            temperature = temperature * Units.K
         kT = (temperature * u.boltzmann_constant_mks) / energy
         return float(kT)
 
@@ -430,7 +431,7 @@ class Simulation(hoomd.simulation.Simulation):
         ):
             time_length = time_length.to("s")
         else:
-            time_length = time_length * u.s
+            time_length = time_length * Units.s
         real_timestep = self.real_timestep.to("s")
         return int(time_length / real_timestep)
 

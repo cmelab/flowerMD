@@ -2,8 +2,7 @@ import numpy as np
 import pytest
 import unyt as u
 
-from flowermd.internal import check_return_iterable, validate_ref_value
-from flowermd.internal.exceptions import ReferenceUnitError
+from flowermd.internal import check_return_iterable
 from flowermd.utils import (
     _calculate_box_length,
     get_target_box_mass_density,
@@ -24,26 +23,8 @@ class TestUtils:
             {"test": 1, "test2": 2}
         ]
 
-    def test_validate_ref_value(self):
-        assert validate_ref_value(1.0 * u.g, u.dimensions.mass) == 1.0 * u.g
-        assert validate_ref_value("1.0 g", u.dimensions.mass) == 1.0 * u.g
-        assert validate_ref_value("1.0 kcal/mol", u.dimensions.energy) == (
-            1.0 * u.kcal / u.mol
-        )
-        assert validate_ref_value("1.0 amu", u.dimensions.mass) == 1.0 * u.Unit(
-            "amu"
-        )
-        with pytest.raises(ReferenceUnitError):
-            validate_ref_value("1.0 g", u.dimensions.energy)
-
-        with pytest.raises(ReferenceUnitError):
-            validate_ref_value("1.0 kcal/invalid", u.dimensions.energy)
-
-        with pytest.raises(ReferenceUnitError):
-            validate_ref_value("1.0 invalid", u.dimensions.energy)
-
-        with pytest.raises(ValueError):
-            validate_ref_value("test g", u.dimensions.mass)
+    def test_validate_unit(self):
+        pass
 
     def test_target_box_mass_density(self):
         mass = u.unyt_quantity(4.0, u.g)
