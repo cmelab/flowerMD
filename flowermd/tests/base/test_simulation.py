@@ -254,18 +254,22 @@ class TestSimulate(BaseTest):
 
     def test_change_methods(self, benzene_system):
         sim = Simulation.from_system(benzene_system)
-        sim.run_NVT(kT=1.0, tau_kt=0.01, n_steps=0)
+        sim.run_NVT(temperature=1.0, tau_kt=0.01, duration=0)
         assert isinstance(sim.method, hoomd.md.methods.ConstantVolume)
         sim.run_NPT(
-            kT=1.0, tau_kt=0.01, tau_pressure=0.1, pressure=0.001, n_steps=0
+            temperature=1.0,
+            tau_kt=0.01,
+            tau_pressure=0.1,
+            pressure=0.001,
+            duration=0,
         )
         assert isinstance(sim.method, hoomd.md.methods.ConstantPressure)
 
     def test_change_dt(self, benzene_system):
         sim = Simulation.from_system(benzene_system)
-        sim.run_NVT(kT=1.0, tau_kt=0.01, n_steps=0)
+        sim.run_NVT(temperature=1.0, tau_kt=0.01, duration=0)
         sim.dt = 0.003
-        sim.run_NVT(kT=1.0, tau_kt=0.01, n_steps=0)
+        sim.run_NVT(temperature=1.0, tau_kt=0.01, duration=0)
         assert sim.dt == 0.003
 
     def test_scale_epsilon(self, benzene_system):
@@ -328,7 +332,7 @@ class TestSimulate(BaseTest):
         tag_filter = hoomd.filter.Tags([0, 1, 2, 3])
         sim.integrate_group = tag_filter
         assert not isinstance(sim.integrate_group, hoomd.filter.All)
-        sim.run_NVT(n_steps=200, kT=1.0, tau_kt=0.01)
+        sim.run_NVT(duration=200, temperature=1.0, tau_kt=0.01)
 
     def test_pickle_ff(self, benzene_system):
         sim = Simulation.from_system(benzene_system)
@@ -379,7 +383,7 @@ class TestSimulate(BaseTest):
             forcefield=ellipsoid_ff.hoomd_forces,
             rigid_constraint=rigid,
         )
-        sim.run_NVT(n_steps=0, kT=1.0, tau_kt=sim.dt * 100)
+        sim.run_NVT(duration=0, temperature=1.0, tau_kt=sim.dt * 100)
         assert sim.integrator.integrate_rotational_dof is True
         assert sim.mass_reduced == 800.0
 
@@ -398,7 +402,7 @@ class TestSimulate(BaseTest):
 
     def test_gsd_logger(self, benzene_system):
         sim = Simulation.from_system(benzene_system, gsd_write_freq=1)
-        sim.run_NVT(n_steps=5, kT=1.0, tau_kt=0.001)
+        sim.run_NVT(duration=5, temperature=1.0, tau_kt=0.001)
         sim.operations.writers[-2].flush()
         expected_gsd_quantities = [
             "flowermd/base/simulation/Simulation/timestep",
@@ -466,18 +470,21 @@ class TestSimulate(BaseTest):
 
     def test_flush(self, benzene_system):
         sim = Simulation.from_system(benzene_system, gsd_write_freq=100)
-        sim.run_NVT(kT=1.0, tau_kt=0.01, n_steps=500, write_at_start=False)
+        sim.run_NVT(
+            temperature=1.0, tau_kt=0.01, duration=500, write_at_start=False
+        )
         sim.flush_writers()
         with gsd.hoomd.open("trajectory.gsd") as traj:
             assert len(traj) > 0
         os.remove("trajectory.gsd")
 
-    # def test_real_temperature(self, benzene_system):
-    #     sim = Simulation.from_system(benzene_system)
-    #     with pytest.raises(ValueError):
-    #         sim.real_temperature
-    #     sim.run_NVT(kT=1.0, tau_kt=0.01, n_steps=100)
-    #     assert np.isclose(sim.real_temperature, 35.225, atol=1e-4)
+    def test_real_temperature(self, benzene_system):
+        sim = Simulation.from_system(benzene_system)
+        with pytest.raises(ValueError):
+            sim.real_temperature
+        sim.run_NVT(temperature=1.0, tau_kt=0.01, duration=100)
+        assert np.isclose(sim.real_temperature, 35.225, atol=1e-4)
+
     #
     # def test_real_temperature_no_energy_units(self, benzene_system):
     #     sim = Simulation(
@@ -485,28 +492,28 @@ class TestSimulate(BaseTest):
     #         forcefield=benzene_system.hoomd_forcefield,
     #         reference_values=dict(),
     #     )
-    #     sim.run_NVT(kT=1e-10, tau_kt=0.01, n_steps=100)
+    #     sim.run_NVT(kT=1e-10, tau_kt=0.01, duration=100)
     #     assert np.isclose(sim.real_temperature, 7.2429e12)
     #
     # def test_NVT_with_temperature(self, benzene_system):
     #     sim = Simulation.from_system(benzene_system)
-    #     sim.run_NVT(tau_kt=0.01, n_steps=500, temperature=35.225)
+    #     sim.run_NVT(tau_kt=0.01, duration=500, temperature=35.225)
     #     assert np.isclose(sim._kT, 1.0, atol=1e-4)
     #
     # def test_NVT_with_temperature_units(self, benzene_system):
     #     sim = Simulation.from_system(benzene_system)
-    #     sim.run_NVT(tau_kt=0.01, n_steps=500, temperature=35.225 * Units.K)
+    #     sim.run_NVT(tau_kt=0.01, duration=500, temperature=35.225 * Units.K)
     #     assert np.isclose(sim._kT, 1.0, atol=1e-4)
     #
     # def test_NVT_with_temperature_and_kT(self, benzene_system):
     #     sim = Simulation.from_system(benzene_system)
     #     with pytest.raises(ValueError):
-    #         sim.run_NVT(tau_kt=0.01, n_steps=500, temperature=35.225, kT=1.0)
+    #         sim.run_NVT(tau_kt=0.01, duration=500, temperature=35.225, kT=1.0)
     #
     # def test_NVT_no_temperature(self, benzene_system):
     #     sim = Simulation.from_system(benzene_system)
     #     with pytest.raises(ValueError):
-    #         sim.run_NVT(tau_kt=0.01, n_steps=500)
+    #         sim.run_NVT(tau_kt=0.01, duration=500)
     #
     # def test_NVT_time_length(self, benzene_system):
     #     sim = Simulation.from_system(benzene_system)
@@ -523,7 +530,7 @@ class TestSimulate(BaseTest):
     #     with pytest.raises(ValueError):
     #         sim.run_NVT(
     #             kT=1.0, tau_kt=0.01, time_length=2 * u.Unit("ps"),
-    #             n_steps=1000
+    #             duration=1000
     #         )
     #     with pytest.raises(ValueError):
     #         sim.run_NVT(kT=1.0, tau_kt=0.01)
