@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
-import unyt as u
 
+from flowermd import Units
 from flowermd.internal import check_return_iterable
 from flowermd.utils import (
     _calculate_box_length,
@@ -27,15 +27,15 @@ class TestUtils:
         pass
 
     def test_target_box_mass_density(self):
-        mass = u.unyt_quantity(4.0, u.g)
-        density = u.unyt_quantity(0.5, u.g / u.cm**3)
+        mass = 4 * Units.g
+        density = 0.5 * (Units.g / Units.cm**3)
         target_box = get_target_box_mass_density(density=density, mass=mass)
         assert target_box[0] == target_box[1] == target_box[2]
-        assert np.array_equal(target_box, np.array([2] * 3) * u.cm)
+        assert np.array_equal(target_box, np.array([2] * 3) * Units.cm)
 
     def test_target_box_one_constraint_mass(self):
-        mass = u.unyt_quantity(4.0, u.g)
-        density = u.unyt_quantity(0.5, u.g / u.cm**3)
+        mass = 4 * Units.g
+        density = 0.5 * Units.g / Units.cm**3
         cubic_box = get_target_box_mass_density(density=density, mass=mass)
         tetragonal_box = get_target_box_mass_density(
             density=density, mass=mass, x_constraint=cubic_box[0] / 2
@@ -45,8 +45,8 @@ class TestUtils:
         assert tetragonal_box[0] == cubic_box[0] / 2
 
     def test_target_box_two_constraint_mass(self):
-        mass = u.unyt_quantity(4.0, u.g)
-        density = u.unyt_quantity(0.5, u.g / u.cm**3)
+        mass = 4 * Units.g
+        density = 0.5 * (Units.g / Units.cm**3)
         cubic_box = get_target_box_mass_density(density=density, mass=mass)
         ortho_box = get_target_box_mass_density(
             density=density,
@@ -59,7 +59,7 @@ class TestUtils:
         assert ortho_box[0] == cubic_box[0] / 2
 
     def test_target_box_number_density(self):
-        sigma = 1 * u.nm
+        sigma = 1 * Units.nm
         n_beads = 100
         density = 1 / sigma**3
         target_box = get_target_box_number_density(
@@ -69,7 +69,7 @@ class TestUtils:
         assert np.allclose(L**3, 100, atol=1e-8)
 
     def test_target_box_one_constraint_number_density(self):
-        sigma = 1 * u.nm
+        sigma = 1 * Units.nm
         n_beads = 100
         density = 1 / sigma**3
         cubic_box = get_target_box_number_density(
@@ -84,7 +84,7 @@ class TestUtils:
         assert np.allclose(tetragonal_box[1].value, 6.56419787945, atol=1e-5)
 
     def test_target_box_two_constraint_number_density(self):
-        sigma = 1 * u.nm
+        sigma = 1 * Units.nm
         n_beads = 100
         density = 1 / sigma**3
         cubic_box = get_target_box_number_density(
@@ -102,27 +102,27 @@ class TestUtils:
         )
 
     def test_calculate_box_length_bad_args(self):
-        mass_density = 1 * u.g / (u.cm**3)
-        number_density = 1 / (1 * u.nm**3)
+        mass_density = 1 * Units.g / (Units.cm**3)
+        number_density = 1 / (1 * Units.nm**3)
         with pytest.raises(ValueError):
             get_target_box_mass_density(density=number_density, mass=100)
         with pytest.raises(ValueError):
             get_target_box_number_density(density=mass_density, n_beads=100)
 
     def test_calculate_box_length_fixed_l_1d(self):
-        mass = u.unyt_quantity(6.0, u.g)
-        density = u.unyt_quantity(0.5, u.g / u.cm**3)
-        fixed_L = u.unyt_quantity(3.0, u.cm)
+        mass = 6.0 * Units.g
+        density = 0.5 * (Units.g / Units.cm**3)
+        fixed_L = 3.0 * Units.cm
         box_length = _calculate_box_length(
             mass=mass, density=density, fixed_L=fixed_L
         )
-        assert box_length == 2.0 * u.cm
+        assert box_length == 2.0 * Units.cm
 
     def test_calculate_box_length_fixed_l_2d(self):
-        mass = u.unyt_quantity(12.0, u.g)
-        density = u.unyt_quantity(0.5, u.g / u.cm**3)
-        fixed_L = u.unyt_array([3.0, 2.0], u.cm)
+        mass = 12.0 * Units.g
+        density = 0.5 * Units.g / Units.cm**3
+        fixed_L = [3.0, 2.0] * Units.cm
         box_length = _calculate_box_length(
             mass=mass, density=density, fixed_L=fixed_L
         )
-        assert box_length == 4.0 * u.cm
+        assert box_length == 4.0 * Units.cm

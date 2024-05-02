@@ -9,7 +9,7 @@ from cmeutils.geometry import get_backbone_vector
 from unyt import Unit
 
 from flowermd import Lattice, Pack, Units
-from flowermd.internal.exceptions import ForceFieldError, ReferenceUnitError
+from flowermd.internal.exceptions import ForceFieldError, UnitError
 from flowermd.library import (
     OPLS_AA,
     OPLS_AA_DIMETHYLETHER,
@@ -339,7 +339,7 @@ class TestSystem(BaseTest):
             "energy": 3.0 * Units.kcal_mol,
             "mass": 1.25,
         }
-        with pytest.raises(ReferenceUnitError):
+        with pytest.raises(UnitError):
             system.reference_values = ref_value_dict
 
     def test_set_ref_values_auto_scale_true(self, polyethylene):
@@ -380,7 +380,7 @@ class TestSystem(BaseTest):
         system.apply_forcefield(
             r_cut=2.5, force_field=[OPLS_AA()], auto_scale=False
         )
-        with pytest.raises(ReferenceUnitError):
+        with pytest.raises(UnitError):
             system.reference_length = 1.0
 
     def test_ref_length_invalid_dimension(self, polyethylene):
@@ -392,7 +392,7 @@ class TestSystem(BaseTest):
         system.apply_forcefield(
             r_cut=2.5, force_field=[OPLS_AA()], auto_scale=False
         )
-        with pytest.raises(ReferenceUnitError):
+        with pytest.raises(UnitError):
             system.reference_length = 1.0 * Units.g
 
     def test_ref_length_auto_scale_true(self, polyethylene):
@@ -428,7 +428,7 @@ class TestSystem(BaseTest):
         system.apply_forcefield(
             r_cut=2.5, force_field=[OPLS_AA()], auto_scale=False
         )
-        with pytest.raises(ReferenceUnitError):
+        with pytest.raises(UnitError):
             system.reference_energy = 1.0
 
     def test_ref_energy_invalid_dimension(self, polyethylene):
@@ -440,7 +440,7 @@ class TestSystem(BaseTest):
         system.apply_forcefield(
             r_cut=2.5, force_field=[OPLS_AA()], auto_scale=False
         )
-        with pytest.raises(ReferenceUnitError):
+        with pytest.raises(UnitError):
             system.reference_energy = 1.0 * Units.g
 
     def test_set_ref_energy_auto_scale_true(self, polyethylene):
@@ -477,7 +477,7 @@ class TestSystem(BaseTest):
         system.apply_forcefield(
             r_cut=2.5, force_field=[OPLS_AA()], auto_scale=False
         )
-        with pytest.raises(ReferenceUnitError):
+        with pytest.raises(UnitError):
             system.reference_mass = 1.0
 
     def test_ref_mass_invalid_dimension(self, polyethylene):
@@ -489,7 +489,7 @@ class TestSystem(BaseTest):
         system.apply_forcefield(
             r_cut=2.5, force_field=[OPLS_AA()], auto_scale=False
         )
-        with pytest.raises(ReferenceUnitError):
+        with pytest.raises(UnitError):
             system.reference_energy = 1.0 * Units.m
 
     def test_set_ref_mass_auto_scale_true(self, polyethylene):

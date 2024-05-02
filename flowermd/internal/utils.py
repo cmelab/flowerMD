@@ -1,6 +1,6 @@
 import unyt as u
 
-from flowermd.internal.exceptions import ReferenceUnitError
+from flowermd.internal.exceptions import UnitError
 
 """utils.py
    Internal utility methods for flowerMD.
@@ -44,14 +44,14 @@ def validate_unit(value, dimension):
 
     if isinstance(value, u.unyt_quantity):
         if value.units.dimensions != dimension:
-            raise ReferenceUnitError(
+            raise UnitError(
                 f"Invalid unit dimension. The unit must be in "
                 f"{dimension} dimension. Check `flowermd.Units` for "
                 f"valid units."
             )
         return value
     else:
-        raise ReferenceUnitError(
+        raise UnitError(
             "The unit value must be provided from the "
             "`flowermd.Units` class. For example, "
             f"{_sample_unit_str(dimension)}. Check "
