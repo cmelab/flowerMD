@@ -11,7 +11,7 @@ import hoomd.md
 import numpy as np
 import unyt as u
 
-from flowermd.internal import validate_ref_value
+from flowermd.internal import validate_unit
 from flowermd.utils.actions import StdOutLogger, UpdateWalls
 from flowermd.utils.base_types import HOOMDThermostats
 
@@ -199,15 +199,13 @@ class Simulation(hoomd.simulation.Simulation):
 
         Parameters
         ----------
-        length : string or unyt.unyt_quantity, required
+        length : reference length * `flowermd.Units`, required
             The reference length of the system.
-            It can be provided in the following forms:
-            1) A string with the format of "value unit", for example "1 nm".
-            2) A unyt.unyt_quantity object with the correct dimension. For
-            example, unyt.unyt_quantity(1, "nm").
+            It can be provided in the following form of:
+            value * `flowermd.Units`, for example 1 * `flowermd.Units.angstrom`.
 
         """
-        validated_length = validate_ref_value(length, u.dimensions.length)
+        validated_length = validate_unit(length, u.dimensions.length)
         self._reference_values["length"] = validated_length
 
     @reference_energy.setter
@@ -216,15 +214,13 @@ class Simulation(hoomd.simulation.Simulation):
 
         Parameters
         ----------
-        energy : string or unyt.unyt_quantity, required
+        energy : reference energy * `flowermd.Units`, required
             The reference energy of the system.
-            It can be provided in the following forms:
-            1) A string with the format of "value unit", for example "1 kJ/mol".
-            2) A unyt.unyt_quantity object with the correct dimension. For
-            example, unyt.unyt_quantity(1, "kJ/mol").
+            It can be provided in the following form of:
+            value * `flowermd.Units`, for example 1 * `flowermd.Units.kcal/mol`.
 
         """
-        validated_energy = validate_ref_value(energy, u.dimensions.energy)
+        validated_energy = validate_unit(energy, u.dimensions.energy)
         self._reference_values["energy"] = validated_energy
 
     @reference_mass.setter
@@ -233,15 +229,12 @@ class Simulation(hoomd.simulation.Simulation):
 
         Parameters
         ----------
-        mass : string or unyt.unyt_quantity, required
+        mass : reference mass * `flowermd.Units`, required
             The reference mass of the system.
-            It can be provided in the following forms:
-            1) A string with the format of "value unit", for example "1 amu".
-            2) A unyt.unyt_quantity object with the correct dimension. For
-            example, unyt.unyt_quantity(1, "amu").
-
+            It can be provided in the following form of:
+            value * `flowermd.Units`, for example 1 * `flowermd.Units.amu`.
         """
-        validated_mass = validate_ref_value(mass, u.dimensions.mass)
+        validated_mass = validate_unit(mass, u.dimensions.mass)
         self._reference_values["mass"] = validated_mass
 
     @reference_values.setter
@@ -425,24 +418,10 @@ class Simulation(hoomd.simulation.Simulation):
         if isinstance(temperature, (float, int)):
             # assuming temperature is kT
             return temperature
-        if isinstance(temperature, u.Unit):
-            if temperature.dimensions == u.dimensions.temperature:
-                return self._temperature_to_kT(temperature)
-            else:
-                raise ValueError(
-                    "Temperature unit dimension is wrong."
-                    "Suggested units: `flowermd.utils.units.K`, "
-                    "`flowermd.utils.units.C`or "
-                    "`flowermd.utils.units.F`. Please see "
-                    "`flowermd.utils.units` for valid"
-                    "temperature units."
-                )
-        raise ValueError(
-            "Accepted temperatures:"
-            "1) int or float (kT),"
-            "2) Temperature with units from"
-            " `flowermd.utils.units`. "
-        )
+        else:
+            return self._temperature_to_kT(
+                validate_unit(temperature, u.dimensions.temperature)
+            )
 
     def _time_length_to_n_steps(self, time_length):
         """Convert time length to number of steps."""
@@ -459,25 +438,10 @@ class Simulation(hoomd.simulation.Simulation):
         if isinstance(duration, int):
             # assuming duration is num steps
             return duration
-        if isinstance(duration, u.Unit):
-            if duration.dimensions == u.dimensions.time:
-                return self._time_length_to_n_steps(duration)
-            else:
-                raise ValueError(
-                    "Duration unit dimension is wrong."
-                    "Suggested units: `flowermd.utils.units.s`, "
-                    "`flowermd.utils.units.ns`or "
-                    "`flowermd.utils.units.ps`. Please see "
-                    "`flowermd.utils.units` for valid"
-                    "time units."
-                )
-
-        raise ValueError(
-            "Accepted durations:"
-            "1) int (number of steps),"
-            "2) Time length with units from"
-            " `flowermd.utils.units`. "
-        )
+        else:
+            return self._time_length_to_n_steps(
+                validate_unit(duration, u.dimensions.time)
+            )
 
     @property
     def integrate_group(self):

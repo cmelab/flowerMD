@@ -14,7 +14,7 @@ from gmso.parameterization import apply
 
 from flowermd.base.forcefield import BaseHOOMDForcefield, BaseXMLForcefield
 from flowermd.base.molecule import Molecule
-from flowermd.internal import check_return_iterable, validate_ref_value
+from flowermd.internal import check_return_iterable, validate_unit
 from flowermd.internal.exceptions import ForceFieldError, MoleculeLoadError
 from flowermd.utils import (
     get_target_box_mass_density,
@@ -208,12 +208,10 @@ class System(ABC):
 
         Parameters
         ----------
-        length : string or unyt.unyt_quantity, required
+        length : reference length * `flowermd.Units`, required
             The reference length of the system.
-            It can be provided in the following forms:
-            1) A string with the format of "value unit", for example "1 nm".
-            2) A unyt.unyt_quantity object with the correct dimension. For
-            example, unyt.unyt_quantity(1, "nm").
+            It can be provided in the following form of:
+            value * `flowermd.Units`, for example 1 * `flowermd.Units.angstrom`.
 
         """
         if self.auto_scale:
@@ -222,7 +220,7 @@ class System(ABC):
                 "Setting reference length manually disables auto "
                 "scaling."
             )
-        validated_length = validate_ref_value(length, u.dimensions.length)
+        validated_length = validate_unit(length, u.dimensions.length)
         self._reference_values["length"] = validated_length
 
     @reference_energy.setter
@@ -231,12 +229,10 @@ class System(ABC):
 
         Parameters
         ----------
-        energy : string or unyt.unyt_quantity, required
+        energy : reference energy * `flowermd.Units`, required
             The reference energy of the system.
-            It can be provided in the following forms:
-            1) A string with the format of "value unit", for example "1 kJ/mol".
-            2) A unyt.unyt_quantity object with the correct dimension. For
-            example, unyt.unyt_quantity(1, "kJ/mol").
+            It can be provided in the following form of:
+            value * `flowermd.Units`, for example 1 * `flowermd.Units.kcal/mol`.
 
         """
         if self.auto_scale:
@@ -245,7 +241,7 @@ class System(ABC):
                 "Setting reference energy manually disables auto "
                 "scaling."
             )
-        validated_energy = validate_ref_value(energy, u.dimensions.energy)
+        validated_energy = validate_unit(energy, u.dimensions.energy)
         self._reference_values["energy"] = validated_energy
 
     @reference_mass.setter
@@ -254,13 +250,10 @@ class System(ABC):
 
         Parameters
         ----------
-        mass : string or unyt.unyt_quantity, required
+        mass : reference mass * `flowermd.Units`, required
             The reference mass of the system.
-            It can be provided in the following forms:
-            1) A string with the format of "value unit", for example "1 amu".
-            2) A unyt.unyt_quantity object with the correct dimension. For
-            example, unyt.unyt_quantity(1, "amu").
-
+            It can be provided in the following form of:
+            value * `flowermd.Units`, for example 1 * `flowermd.Units.amu`.
         """
         if self.auto_scale:
             warnings.warn(
@@ -268,7 +261,7 @@ class System(ABC):
                 "Setting reference mass manually disables auto "
                 "scaling."
             )
-        validated_mass = validate_ref_value(mass, u.dimensions.mass)
+        validated_mass = validate_unit(mass, u.dimensions.mass)
         self._reference_values["mass"] = validated_mass
 
     @reference_values.setter
