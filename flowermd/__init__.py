@@ -1,5 +1,6 @@
 """flowerMD package."""
 
+from .internal.units import Units
 from .base import (
     CoPolymer,
     Lattice,
@@ -9,4 +10,3 @@ from .base import (
     Simulation,
     System,
 )
-from .internal.units import Units
