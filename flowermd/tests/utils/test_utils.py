@@ -1,8 +1,10 @@
 import numpy as np
 import pytest
+import unyt as u
 
 from flowermd import Units
-from flowermd.internal import check_return_iterable
+from flowermd.internal import check_return_iterable, validate_unit
+from flowermd.internal.exceptions import UnitError
 from flowermd.utils import (
     _calculate_box_length,
     get_target_box_mass_density,
@@ -24,7 +26,27 @@ class TestUtils:
         ]
 
     def test_validate_unit(self):
-        pass
+        value = 1.0 * Units.g
+        dimension = u.dimensions.mass
+        assert validate_unit(value, dimension) == value
+        value = 1.0 * Units.kcal_mol
+        dimension = u.dimensions.energy
+        assert validate_unit(value, dimension) == value
+        value = 1.0 * Units.angstrom
+        dimension = u.dimensions.length
+        assert validate_unit(value, dimension) == value
+        value = 1.0 * Units.ps
+        dimension = u.dimensions.time
+        assert validate_unit(value, dimension) == value
+        value = 300 * Units.K
+        dimension = u.dimensions.temperature
+        assert validate_unit(value, dimension) == value
+        with pytest.raises(UnitError):
+            validate_unit(1.0 * Units.nm, u.dimensions.mass)
+        with pytest.raises(UnitError):
+            validate_unit(1.0 * Units.g, u.dimensions.length)
+        with pytest.raises(UnitError):
+            validate_unit(1.0, u.dimensions.energy)
 
     def test_target_box_mass_density(self):
         mass = 4 * Units.g
