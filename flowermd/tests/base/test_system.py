@@ -5,11 +5,10 @@ import gmso
 import hoomd
 import numpy as np
 import pytest
-import unyt as u
 from cmeutils.geometry import get_backbone_vector
 from unyt import Unit
 
-from flowermd import Lattice, Pack
+from flowermd import Lattice, Pack, Units
 from flowermd.internal.exceptions import ForceFieldError, ReferenceUnitError
 from flowermd.library import (
     OPLS_AA,
@@ -264,9 +263,9 @@ class TestSystem(BaseTest):
         init_snap = system.hoomd_snapshot
         new_snap = system.hoomd_snapshot
         assert init_snap == new_snap
-        system.reference_length = 1 * u.angstrom
-        system.reference_energy = 1 * u.kcal / u.mol
-        system.reference_mass = 1 * u.amu
+        system.reference_length = 1 * Units.angstrom
+        system.reference_energy = 1 * Units.kcal_mol
+        system.reference_mass = 1 * Units.amu
         assert system._snap_refs != system.reference_values
         assert system._ff_refs != system.reference_values
         new_snap = system.hoomd_snapshot
@@ -281,9 +280,9 @@ class TestSystem(BaseTest):
         system.apply_forcefield(
             r_cut=2.5, force_field=[OPLS_AA()], auto_scale=False
         )
-        system.reference_length = 1 * u.angstrom
-        system.reference_energy = 1 * u.kcal / u.mol
-        system.reference_mass = 1 * u.amu
+        system.reference_length = 1 * Units.angstrom
+        system.reference_energy = 1 * Units.kcal_mol
+        system.reference_mass = 1 * Units.amu
         assert np.allclose(
             system.hoomd_snapshot.configuration.box[:3],
             system.gmso_system.box.lengths.to("angstrom").value,
@@ -301,33 +300,14 @@ class TestSystem(BaseTest):
             r_cut=2.5, force_field=[OPLS_AA()], auto_scale=False
         )
         ref_value_dict = {
-            "length": 1 * u.angstrom,
-            "energy": 3.0 * u.kcal / u.mol,
-            "mass": 1.25 * u.Unit("amu"),
+            "length": 1 * Units.angstrom,
+            "energy": 3.0 * Units.kcal_mol,
+            "mass": 1.25 * Units.amu,
         }
         system.reference_values = ref_value_dict
         assert system.reference_length == ref_value_dict["length"]
         assert system.reference_energy == ref_value_dict["energy"]
         assert system.reference_mass == ref_value_dict["mass"]
-
-    def test_set_ref_values_string(self, polyethylene):
-        polyethylene = polyethylene(lengths=5, num_mols=1)
-        system = Pack(
-            molecules=[polyethylene],
-            density=1.0,
-        )
-        system.apply_forcefield(
-            r_cut=2.5, force_field=[OPLS_AA()], auto_scale=False
-        )
-        ref_value_dict = {
-            "length": "1 angstrom",
-            "energy": "3 kcal/mol",
-            "mass": "1.25 amu",
-        }
-        system.reference_values = ref_value_dict
-        assert system.reference_length == 1 * u.angstrom
-        assert system.reference_energy == 3 * u.kcal / u.mol
-        assert system.reference_mass == 1.25 * u.amu
 
     def test_set_ref_values_missing_key(self, polyethylene):
         polyethylene = polyethylene(lengths=5, num_mols=1)
@@ -339,8 +319,8 @@ class TestSystem(BaseTest):
             r_cut=2.5, force_field=[OPLS_AA()], auto_scale=False
         )
         ref_value_dict = {
-            "length": 1 * u.angstrom,
-            "energy": 3.0 * u.kcal / u.mol,
+            "length": 1 * Units.angstrom,
+            "energy": 3.0 * Units.kcal_mol,
         }
         with pytest.raises(ValueError):
             system.reference_values = ref_value_dict
@@ -355,8 +335,8 @@ class TestSystem(BaseTest):
             r_cut=2.5, force_field=[OPLS_AA()], auto_scale=False
         )
         ref_value_dict = {
-            "length": 1 * u.angstrom,
-            "energy": 3.0 * u.kcal / u.mol,
+            "length": 1 * Units.angstrom,
+            "energy": 3.0 * Units.kcal_mol,
             "mass": 1.25,
         }
         with pytest.raises(ReferenceUnitError):
@@ -372,9 +352,9 @@ class TestSystem(BaseTest):
             r_cut=2.5, force_field=[OPLS_AA()], auto_scale=True
         )
         ref_value_dict = {
-            "length": 1 * u.angstrom,
-            "energy": 3.0 * u.kcal / u.mol,
-            "mass": 1.25 * u.Unit("amu"),
+            "length": 1 * Units.angstrom,
+            "energy": 3.0 * Units.kcal_mol,
+            "mass": 1.25 * Units.amu,
         }
         with pytest.warns():
             system.reference_values = ref_value_dict
@@ -388,8 +368,8 @@ class TestSystem(BaseTest):
         system.apply_forcefield(
             r_cut=2.5, force_field=[OPLS_AA()], auto_scale=False
         )
-        system.reference_length = 1 * u.angstrom
-        assert system.reference_length == 1 * u.angstrom
+        system.reference_length = 1 * Units.angstrom
+        assert system.reference_length == 1 * Units.angstrom
 
     def test_set_ref_length_invalid_type(self, polyethylene):
         polyethylene = polyethylene(lengths=5, num_mols=5)
@@ -403,42 +383,6 @@ class TestSystem(BaseTest):
         with pytest.raises(ReferenceUnitError):
             system.reference_length = 1.0
 
-    def test_ref_length_string(self, polyethylene):
-        polyethylene = polyethylene(lengths=5, num_mols=1)
-        system = Pack(
-            molecules=[polyethylene],
-            density=1.0,
-        )
-        system.apply_forcefield(
-            r_cut=2.5, force_field=[OPLS_AA()], auto_scale=False
-        )
-        system.reference_length = "1 angstrom"
-        assert system.reference_length == 1 * u.angstrom
-
-    def test_ref_length_invalid_string(self, polyethylene):
-        polyethylene = polyethylene(lengths=5, num_mols=1)
-        system = Pack(
-            molecules=[polyethylene],
-            density=1.0,
-        )
-        system.apply_forcefield(
-            r_cut=2.5, force_field=[OPLS_AA()], auto_scale=False
-        )
-        with pytest.raises(ReferenceUnitError):
-            system.reference_length = "1.0"
-
-    def test_ref_length_invalid_unit_string(self, polyethylene):
-        polyethylene = polyethylene(lengths=5, num_mols=1)
-        system = Pack(
-            molecules=[polyethylene],
-            density=1.0,
-        )
-        system.apply_forcefield(
-            r_cut=2.5, force_field=[OPLS_AA()], auto_scale=False
-        )
-        with pytest.raises(ReferenceUnitError):
-            system.reference_length = "1.0 invalid_unit"
-
     def test_ref_length_invalid_dimension(self, polyethylene):
         polyethylene = polyethylene(lengths=5, num_mols=1)
         system = Pack(
@@ -449,19 +393,7 @@ class TestSystem(BaseTest):
             r_cut=2.5, force_field=[OPLS_AA()], auto_scale=False
         )
         with pytest.raises(ReferenceUnitError):
-            system.reference_length = 1.0 * u.g
-
-    def test_ref_length_invalid_dimension_string(self, polyethylene):
-        polyethylene = polyethylene(lengths=5, num_mols=1)
-        system = Pack(
-            molecules=[polyethylene],
-            density=1.0,
-        )
-        system.apply_forcefield(
-            r_cut=2.5, force_field=[OPLS_AA()], auto_scale=False
-        )
-        with pytest.raises(ReferenceUnitError):
-            system.reference_length = "1.0 g"
+            system.reference_length = 1.0 * Units.g
 
     def test_ref_length_auto_scale_true(self, polyethylene):
         polyethylene = polyethylene(lengths=5, num_mols=1)
@@ -472,8 +404,8 @@ class TestSystem(BaseTest):
         system.apply_forcefield(
             r_cut=2.5, force_field=[OPLS_AA()], auto_scale=True
         )
-        system.reference_length = 1 * u.angstrom
-        assert system.reference_length == 1 * u.angstrom
+        system.reference_length = 1 * Units.angstrom
+        assert system.reference_length == 1 * Units.angstrom
 
     def test_set_ref_energy(self, polyethylene):
         polyethylene = polyethylene(lengths=5, num_mols=1)
@@ -484,8 +416,8 @@ class TestSystem(BaseTest):
         system.apply_forcefield(
             r_cut=2.5, force_field=[OPLS_AA()], auto_scale=False
         )
-        system.reference_energy = 1 * u.kcal / u.mol
-        assert system.reference_energy == 1 * u.kcal / u.mol
+        system.reference_energy = 1 * Units.kcal_mol
+        assert system.reference_energy == 1 * Units.kcal_mol
 
     def test_set_ref_energy_invalid_type(self, polyethylene):
         polyethylene = polyethylene(lengths=5, num_mols=1)
@@ -499,54 +431,6 @@ class TestSystem(BaseTest):
         with pytest.raises(ReferenceUnitError):
             system.reference_energy = 1.0
 
-    def test_ref_energy_string(self, polyethylene):
-        polyethylene = polyethylene(lengths=5, num_mols=1)
-        system = Pack(
-            molecules=[polyethylene],
-            density=1.0,
-        )
-        system.apply_forcefield(
-            r_cut=2.5, force_field=[OPLS_AA()], auto_scale=False
-        )
-        system.reference_energy = "1 kJ"
-        assert system.reference_energy == 1 * u.kJ
-
-    def test_ref_energy_string_comb_units(self, polyethylene):
-        polyethylene = polyethylene(lengths=5, num_mols=1)
-        system = Pack(
-            molecules=[polyethylene],
-            density=1.0,
-        )
-        system.apply_forcefield(
-            r_cut=2.5, force_field=[OPLS_AA()], auto_scale=False
-        )
-        system.reference_energy = "1 kcal/mol"
-        assert system.reference_energy == 1 * u.kcal / u.mol
-
-    def test_ref_energy_invalid_string(self, polyethylene):
-        polyethylene = polyethylene(lengths=5, num_mols=1)
-        system = Pack(
-            molecules=[polyethylene],
-            density=1.0,
-        )
-        system.apply_forcefield(
-            r_cut=2.5, force_field=[OPLS_AA()], auto_scale=False
-        )
-        with pytest.raises(ReferenceUnitError):
-            system.reference_energy = "1.0"
-
-    def test_ref_energy_invalid_unit_string(self, polyethylene):
-        polyethylene = polyethylene(lengths=5, num_mols=1)
-        system = Pack(
-            molecules=[polyethylene],
-            density=1.0,
-        )
-        system.apply_forcefield(
-            r_cut=2.5, force_field=[OPLS_AA()], auto_scale=False
-        )
-        with pytest.raises(ReferenceUnitError):
-            system.reference_energy = "1.0 invalid_unit"
-
     def test_ref_energy_invalid_dimension(self, polyethylene):
         polyethylene = polyethylene(lengths=5, num_mols=1)
         system = Pack(
@@ -557,19 +441,7 @@ class TestSystem(BaseTest):
             r_cut=2.5, force_field=[OPLS_AA()], auto_scale=False
         )
         with pytest.raises(ReferenceUnitError):
-            system.reference_energy = 1.0 * u.g
-
-    def test_ref_energy_invalid_dimension_string(self, polyethylene):
-        polyethylene = polyethylene(lengths=5, num_mols=1)
-        system = Pack(
-            molecules=[polyethylene],
-            density=1.0,
-        )
-        system.apply_forcefield(
-            r_cut=2.5, force_field=[OPLS_AA()], auto_scale=False
-        )
-        with pytest.raises(ReferenceUnitError):
-            system.reference_energy = "1.0 m"
+            system.reference_energy = 1.0 * Units.g
 
     def test_set_ref_energy_auto_scale_true(self, polyethylene):
         polyethylene = polyethylene(lengths=5, num_mols=1)
@@ -580,8 +452,8 @@ class TestSystem(BaseTest):
         system.apply_forcefield(
             r_cut=2.5, force_field=[OPLS_AA()], auto_scale=True
         )
-        system.reference_energy = 1 * u.kcal / u.mol
-        assert system.reference_energy == 1 * u.kcal / u.mol
+        system.reference_energy = 1 * Units.kcal_mol
+        assert system.reference_energy == 1 * Units.kcal_mol
 
     def test_set_ref_mass(self, polyethylene):
         polyethylene = polyethylene(lengths=5, num_mols=1)
@@ -593,8 +465,8 @@ class TestSystem(BaseTest):
             r_cut=2.5, force_field=[OPLS_AA()], auto_scale=False
         )
 
-        system.reference_mass = 1.0 * u.amu
-        assert system.reference_mass == 1.0 * u.amu
+        system.reference_mass = 1.0 * Units.amu
+        assert system.reference_mass == 1.0 * Units.amu
 
     def test_set_ref_mass_invalid_type(self, polyethylene):
         polyethylene = polyethylene(lengths=5, num_mols=1)
@@ -608,42 +480,6 @@ class TestSystem(BaseTest):
         with pytest.raises(ReferenceUnitError):
             system.reference_mass = 1.0
 
-    def test_ref_mass_string(self, polyethylene):
-        polyethylene = polyethylene(lengths=5, num_mols=1)
-        system = Pack(
-            molecules=[polyethylene],
-            density=1.0,
-        )
-        system.apply_forcefield(
-            r_cut=2.5, force_field=[OPLS_AA()], auto_scale=False
-        )
-        system.reference_mass = "1 g"
-        assert system.reference_mass == 1.0 * u.g
-
-    def test_ref_mass_invalid_string(self, polyethylene):
-        polyethylene = polyethylene(lengths=5, num_mols=1)
-        system = Pack(
-            molecules=[polyethylene],
-            density=1.0,
-        )
-        system.apply_forcefield(
-            r_cut=2.5, force_field=[OPLS_AA()], auto_scale=False
-        )
-        with pytest.raises(ReferenceUnitError):
-            system.reference_mass = "1.0"
-
-    def test_ref_mass_invalid_unit_string(self, polyethylene):
-        polyethylene = polyethylene(lengths=5, num_mols=1)
-        system = Pack(
-            molecules=[polyethylene],
-            density=1.0,
-        )
-        system.apply_forcefield(
-            r_cut=2.5, force_field=[OPLS_AA()], auto_scale=False
-        )
-        with pytest.raises(ReferenceUnitError):
-            system.reference_mass = "1.0 invalid_unit"
-
     def test_ref_mass_invalid_dimension(self, polyethylene):
         polyethylene = polyethylene(lengths=5, num_mols=1)
         system = Pack(
@@ -654,19 +490,7 @@ class TestSystem(BaseTest):
             r_cut=2.5, force_field=[OPLS_AA()], auto_scale=False
         )
         with pytest.raises(ReferenceUnitError):
-            system.reference_energy = 1.0 * u.m
-
-    def test_ref_mass_invalid_dimension_string(self, polyethylene):
-        polyethylene = polyethylene(lengths=5, num_mols=1)
-        system = Pack(
-            molecules=[polyethylene],
-            density=1.0,
-        )
-        system.apply_forcefield(
-            r_cut=2.5, force_field=[OPLS_AA()], auto_scale=False
-        )
-        with pytest.raises(ReferenceUnitError):
-            system.reference_mass = "1.0 m"
+            system.reference_energy = 1.0 * Units.m
 
     def test_set_ref_mass_auto_scale_true(self, polyethylene):
         polyethylene = polyethylene(lengths=5, num_mols=1)
@@ -678,8 +502,8 @@ class TestSystem(BaseTest):
             r_cut=2.5, force_field=[OPLS_AA()], auto_scale=True
         )
 
-        system.reference_mass = 1.0 * u.amu
-        assert system.reference_mass == 1.0 * u.amu
+        system.reference_mass = 1.0 * Units.amu
+        assert system.reference_mass == 1.0 * Units.amu
 
     def test_apply_forcefield_no_forcefield(self, polyethylene):
         polyethylene = polyethylene(lengths=5, num_mols=1)
@@ -923,26 +747,30 @@ class TestSystem(BaseTest):
 
     def test_mass_density(self, benzene_molecule):
         benzene_mol = benzene_molecule(n_mols=100)
-        system = Pack(molecules=[benzene_mol], density=0.8 * u.g / u.cm**3)
-        assert system.density.units == u.g / u.cm**3
+        system = Pack(
+            molecules=[benzene_mol], density=0.8 * Units.g / Units.cm**3
+        )
+        assert system.density.units == Units.g / Units.cm**3
 
     def test_number_density(self, benzene_molecule):
         benzene_mol = benzene_molecule(n_mols=100)
-        system = Pack(molecules=[benzene_mol], density=0.8 / u.cm**3)
-        assert system.density.units == u.cm**-3
+        system = Pack(molecules=[benzene_mol], density=0.8 / Units.cm**3)
+        assert system.density.units == Units.cm**-3
 
     def test_bad_density(self, benzene_molecule):
         benzene_mol = benzene_molecule(n_mols=100)
         with pytest.raises(ValueError):
-            Pack(molecules=[benzene_mol], density=0.8 * u.J / u.kg)
+            Pack(molecules=[benzene_mol], density=0.8 * Units.J / Units.kg)
 
     def test_density_warning(self, benzene_molecule):
         benzene_mol = benzene_molecule(n_mols=100)
         with pytest.warns():
             system = Pack(molecules=[benzene_mol], density=0.8)
-            assert system.density.units == u.g / u.cm**3
+            assert system.density.units == Units.g / Units.cm**3
 
     def test_n_particles_no_ff(self, benzene_molecule):
         benzene_mol = benzene_molecule(n_mols=100)
-        system = Pack(molecules=[benzene_mol], density=0.8 * u.g / u.cm**3)
+        system = Pack(
+            molecules=[benzene_mol], density=0.8 * Units.g / Units.cm**3
+        )
         assert system.n_particles == 100 * 12
