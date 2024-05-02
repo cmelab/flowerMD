@@ -25,6 +25,7 @@ class Units:
     g = u.g
     gram = u.g
     amu = u.amu
+    kg = u.kg
 
     # Mol units
     mol = u.mol
