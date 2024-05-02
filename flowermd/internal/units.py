@@ -1,7 +1,24 @@
+"""FlowerMD Unit class."""
+
 import unyt as u
 
 
 class Units:
+    """FlowerMD Unit class.
+
+    Example usage:
+    --------------
+
+    ::
+        length = 1.0 * flowermd.Units.angstrom
+        energy = 1.0 * flowermd.Units.kcal_mol
+        mass = 1.0 * flowermd.Units.amu
+        time = 1.0 * flowermd.Units.ps
+        temperature = 1.0 * flowermd.Units.K
+
+
+    """
+
     # length units
     m = u.m
     meter = u.m
@@ -20,6 +37,8 @@ class Units:
     kJ = u.kJ
     cal = u.cal
     kcal = u.kcal
+    kcal_mol = u.kcal / u.mol
+    kJ_mol = u.kJ / u.mol
 
     # mass units
     g = u.g
@@ -27,10 +46,7 @@ class Units:
     amu = u.amu
     kg = u.kg
 
-    # Mol units
     mol = u.mol
-    kcal_mol = u.kcal / u.mol
-    kJ_mol = u.kJ / u.mol
 
     # time units
     s = u.s
