@@ -24,7 +24,7 @@ def validate_unit(value, dimension):
 
     Parameters
     ----------
-    value : `unit value * flowermd.utils.Units`; required
+    value : `unit value * flowermd.Units`; required
         The unit value to be validated.
     dimension : unyt_dimension; required
         The dimension of the unit.
@@ -32,30 +32,30 @@ def validate_unit(value, dimension):
 
     def _sample_unit_str(dimension):
         if dimension == u.dimensions.temperature:
-            return "temperature = 300 * flowermd.utils.Units.K"
+            return "temperature = 300 * flowermd.Units.K"
         elif dimension == u.dimensions.mass:
-            return "mass = 1.0 * flowermd.utils.Units.g"
+            return "mass = 1.0 * flowermd.Units.g"
         elif dimension == u.dimensions.length:
-            return "length = 1.0 * flowermd.utils.Units.angstrom"
+            return "length = 1.0 * flowermd.Units.angstrom"
         elif dimension == u.dimensions.time:
-            return "time = 1.0 * flowermd.utils.Units.ps"
+            return "time = 1.0 * flowermd.Units.ps"
         elif dimension == u.dimensions.energy:
-            return "energy = 1.0 * flowermd.utils.Units.kcal/mol"
+            return "energy = 1.0 * flowermd.Units.kcal_mol"
 
     if isinstance(value, u.unyt_quantity):
         if value.units.dimensions != dimension:
             raise ReferenceUnitError(
                 f"Invalid unit dimension. The unit must be in "
-                f"{dimension} dimension. Check `flowermd.utils.Units` for "
+                f"{dimension} dimension. Check `flowermd.Units` for "
                 f"valid units."
             )
         return value
     else:
         raise ReferenceUnitError(
             "The unit value must be provided from the "
-            "`flowermd.utils.Units` class. For example, "
+            "`flowermd.Units` class. For example, "
             f"{_sample_unit_str(dimension)}. Check "
-            "`flowermd.utils.Units` for valid units."
+            "`flowermd.Units` for valid units."
         )
 
 
