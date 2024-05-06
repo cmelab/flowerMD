@@ -55,6 +55,8 @@ class Units:
     nanosecond = u.ns
     ps = u.ps
     picosecond = u.ps
+    fs = u.fs
+    femtosecond = u.fs
 
     # temperature units
     K = u.K
