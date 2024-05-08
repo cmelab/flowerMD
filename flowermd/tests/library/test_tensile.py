@@ -14,9 +14,7 @@ class TestTensileSimulation(BaseTest):
             y=1.2,
             n=4,
         )
-        system.apply_forcefield(
-            r_cut=2.5, force_field=[OPLS_AA_PPS()], auto_scale=True
-        )
+        system.apply_forcefield(r_cut=2.5, force_field=[OPLS_AA_PPS()], auto_scale=True)
 
         tensile_sim = Tensile(
             initial_state=system.hoomd_snapshot,

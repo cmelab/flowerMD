@@ -29,8 +29,7 @@ class TestRigidBody(BaseTest):
         )
         assert rigid_frame.particles.N == 8 + ellipsoid_chain.n_particles
         assert (
-            rigid_frame.particles.types
-            == ["R"] + system.hoomd_snapshot.particles.types
+            rigid_frame.particles.types == ["R"] + system.hoomd_snapshot.particles.types
         )
         assert rigid_frame.particles.mass[0] == 100
         assert np.all(

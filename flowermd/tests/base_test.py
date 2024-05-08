@@ -103,9 +103,7 @@ class BaseTest:
             )
             bonds = self.benzene_hoomd_bond(include_hydrogen=include_hydrogen)
             angles = self.benzene_hoomd_angle(include_hydrogen=include_hydrogen)
-            dihedrals = self.benzene_hoomd_dihedral(
-                include_hydrogen=include_hydrogen
-            )
+            dihedrals = self.benzene_hoomd_dihedral(include_hydrogen=include_hydrogen)
             return [pairs, bonds, angles, dihedrals]
 
         return _hoomd_ff
@@ -147,9 +145,7 @@ class BaseTest:
     @pytest.fixture()
     def dimethylether_molecule(self, dimethylether_smiles):
         def _dimethylether_molecule(n_mols):
-            dimethylether = Molecule(
-                num_mols=n_mols, smiles=dimethylether_smiles
-            )
+            dimethylether = Molecule(num_mols=n_mols, smiles=dimethylether_smiles)
             return dimethylether
 
         return _dimethylether_molecule
@@ -169,7 +165,7 @@ class BaseTest:
                     bond_indices=bond_indices,
                     bond_length=bond_length,
                     bond_orientation=bond_orientation,
-                    **kwargs
+                    **kwargs,
                 )
 
         return _PolyEthylene
@@ -189,7 +185,7 @@ class BaseTest:
                     bond_indices=bond_indices,
                     bond_length=bond_length,
                     bond_orientation=bond_orientation,
-                    **kwargs
+                    **kwargs,
                 )
 
         return _PPS
@@ -209,7 +205,7 @@ class BaseTest:
                     bond_indices=bond_indices,
                     bond_length=bond_length,
                     bond_orientation=bond_orientation,
-                    **kwargs
+                    **kwargs,
                 )
 
         return _PolyDME
@@ -221,9 +217,7 @@ class BaseTest:
             molecules=[benzene],
             density=0.2 * u.g / u.cm**3,
         )
-        system.apply_forcefield(
-            r_cut=2.5, force_field=OPLS_AA(), auto_scale=True
-        )
+        system.apply_forcefield(r_cut=2.5, force_field=OPLS_AA(), auto_scale=True)
         return system
 
     @pytest.fixture()

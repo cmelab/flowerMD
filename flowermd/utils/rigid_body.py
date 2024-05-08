@@ -70,9 +70,7 @@ def create_rigid_body(
     """
     # find typeid sequence of the constituent particles types in a rigid bead
     p_types = np.array(snapshot.particles.types)
-    constituent_type_ids = np.where(
-        p_types[:, None] == bead_constituents_types
-    )[0]
+    constituent_type_ids = np.where(p_types[:, None] == bead_constituents_types)[0]
 
     # find indices that matches the constituent particle types
     typeids = snapshot.particles.typeid
@@ -88,9 +86,7 @@ def create_rigid_body(
     n_rigid = rigid_const_idx.shape[0]  # number of rigid bodies
 
     # calculate center of mass and its position for each rigid body
-    com_mass, com_position, com_moi = _get_com_mass_pos_moi(
-        snapshot, rigid_const_idx
-    )
+    com_mass, com_position, com_moi = _get_com_mass_pos_moi(snapshot, rigid_const_idx)
 
     rigid_frame = gsd.hoomd.Frame()
     rigid_frame.particles.types = [bead_name] + snapshot.particles.types
@@ -98,9 +94,7 @@ def create_rigid_body(
     rigid_frame.particles.typeid = np.concatenate(
         (([0] * n_rigid), snapshot.particles.typeid + 1)
     )
-    rigid_frame.particles.mass = np.concatenate(
-        (com_mass, snapshot.particles.mass)
-    )
+    rigid_frame.particles.mass = np.concatenate((com_mass, snapshot.particles.mass))
     rigid_frame.particles.position = np.concatenate(
         (com_position, snapshot.particles.position)
     )
@@ -146,9 +140,7 @@ def create_rigid_body(
 
     # find local coordinates of the particles in the first rigid body
     # only need to find the local coordinates for the first rigid body
-    local_coords = (
-        snapshot.particles.position[rigid_const_idx[0]] - com_position[0]
-    )
+    local_coords = snapshot.particles.position[rigid_const_idx[0]] - com_position[0]
 
     rigid_constrain = hoomd.md.constrain.Rigid()
     rigid_constrain.body["R"] = {

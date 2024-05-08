@@ -50,13 +50,9 @@ def add_void_particles(
     )
     # Set updated mass and charges
     init_mass = snapshot.particles.mass
-    snapshot.particles.mass = np.concatenate(
-        (init_mass, np.array([1])), axis=None
-    )
+    snapshot.particles.mass = np.concatenate((init_mass, np.array([1])), axis=None)
     init_charges = snapshot.particles.charge
-    snapshot.particles.charge = np.concatenate(
-        (init_charges, np.array([0])), axis=None
-    )
+    snapshot.particles.charge = np.concatenate((init_charges, np.array([0])), axis=None)
     # Updated LJ params
     lj = [i for i in forcefield if isinstance(i, hoomd.md.pair.LJ)][0]
     for ptype in snapshot.particles.types:

@@ -77,9 +77,7 @@ def validate_ref_value(ref_value, dimension):
             raise ValueError("The reference value is not a number.")
 
     # if ref_value is an instance of unyt_quantity, check the dimension.
-    if isinstance(ref_value, u.unyt_quantity) and _is_valid_dimension(
-        ref_value.units
-    ):
+    if isinstance(ref_value, u.unyt_quantity) and _is_valid_dimension(ref_value.units):
         return ref_value
     # if ref_value is a string, check if it is a number and if it is, check if
     # the unit exists in unyt and has the correct dimension.

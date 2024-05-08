@@ -2,7 +2,6 @@ name: pytest
 
 on:
   push:
-    # Action will run when any changes to these paths are pushed or pr'ed to master
     branches: [ main ]
     paths:
       - flowermd/**
@@ -26,6 +25,7 @@ on:
 
 jobs:
   pytest:
+    if: github.event.pull_request.draft == false
     strategy:
       fail-fast: false
       matrix:

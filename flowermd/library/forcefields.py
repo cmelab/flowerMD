@@ -61,9 +61,7 @@ class OPLS_AA_DIMETHYLETHER(BaseXMLForcefield):
     """OPLS All Atom for dimethyl ether molecule forcefield class."""
 
     def __init__(self, forcefield_files=f"{FF_DIR}/dimethylether_opls.xml"):
-        super(OPLS_AA_DIMETHYLETHER, self).__init__(
-            forcefield_files=forcefield_files
-        )
+        super(OPLS_AA_DIMETHYLETHER, self).__init__(forcefield_files=forcefield_files)
         self.description = (
             "Based on flowermd.forcefields.OPLS_AA. "
             "Trimmed down to include only dimethyl ether parameters."
@@ -408,9 +406,7 @@ class TableForcefield(BaseHOOMDForcefield):
                 pair_dict[pair_type]["U"] = table[:, 1]
                 pair_dict[pair_type]["F"] = table[:, 2]
             if len(pair_r_min) != len(pair_r_max) != 1:
-                raise ValueError(
-                    "All pair files must have the same r-range values"
-                )
+                raise ValueError("All pair files must have the same r-range values")
         # Read bond files
         bond_dict = dict()
         if bonds:
@@ -430,12 +426,9 @@ class TableForcefield(BaseHOOMDForcefield):
             for angle_type in angles:
                 table = _load_file(angles[angle_type], **kwargs)
                 thetas = table[:, 0]
-                if thetas[0] != 0 or not np.allclose(
-                    thetas[-1], np.pi, atol=1e-5
-                ):
+                if thetas[0] != 0 or not np.allclose(thetas[-1], np.pi, atol=1e-5):
                     raise ValueError(
-                        "Angle values must be evenly spaced and "
-                        "range from 0 to Pi."
+                        "Angle values must be evenly spaced and " "range from 0 to Pi."
                     )
                 angle_dict[angle_type] = dict()
                 angle_dict[angle_type]["U"] = table[:, 1]
@@ -446,9 +439,9 @@ class TableForcefield(BaseHOOMDForcefield):
             for dih_type in dihedrals:
                 table = _load_file(dihedrals[dih_type], **kwargs)
                 thetas = table[:, 0]
-                if not np.allclose(
-                    thetas[0], -np.pi, atol=1e-5
-                ) or not np.allclose(thetas[-1], np.pi, atol=1e-5):
+                if not np.allclose(thetas[0], -np.pi, atol=1e-5) or not np.allclose(
+                    thetas[-1], np.pi, atol=1e-5
+                ):
                     raise ValueError(
                         "Dihedral angle values must be evenly spaced and "
                         "range from -Pi to Pi."
@@ -474,9 +467,7 @@ class TableForcefield(BaseHOOMDForcefield):
             nlist = hoomd.md.nlist.Cell(
                 buffer=self.nlist_buffer, exclusions=self.exclusions
             )
-            pair_table = hoomd.md.pair.Table(
-                nlist=nlist, default_r_cut=self.r_cut
-            )
+            pair_table = hoomd.md.pair.Table(nlist=nlist, default_r_cut=self.r_cut)
             for pair_type in self.pairs:
                 U = self.pairs[pair_type]["U"]
                 F = self.pairs[pair_type]["F"]
@@ -484,9 +475,7 @@ class TableForcefield(BaseHOOMDForcefield):
                     raise ValueError(
                         "The energy and force arrays are not the same size."
                     )
-                pair_table.params[tuple(pair_type)] = dict(
-                    r_min=self.r_min, U=U, F=F
-                )
+                pair_table.params[tuple(pair_type)] = dict(r_min=self.r_min, U=U, F=F)
             forces.append(pair_table)
         # Create bond forces
         if self.bonds:

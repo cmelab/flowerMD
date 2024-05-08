@@ -90,9 +90,7 @@ class TestWelding(BaseTest):
             forcefield=polyethylene_system.hoomd_forcefield,
             log_write_freq=2000,
         )
-        assert any(
-            [isinstance(i, hoomd.md.external.wall.LJ) for i in sim.forces]
-        )
+        assert any([isinstance(i, hoomd.md.external.wall.LJ) for i in sim.forces])
         sim.run_NVT(kT=1.0, tau_kt=0.01, n_steps=500)
 
     def test_slab_sim_yaxis(self, polyethylene_system):
@@ -102,9 +100,7 @@ class TestWelding(BaseTest):
             interface_axis=(0, 1, 0),
             log_write_freq=2000,
         )
-        assert any(
-            [isinstance(i, hoomd.md.external.wall.LJ) for i in sim.forces]
-        )
+        assert any([isinstance(i, hoomd.md.external.wall.LJ) for i in sim.forces])
         sim.run_NVT(kT=1.0, tau_kt=0.01, n_steps=500)
 
     def test_slab_sim_zaxis(self, polyethylene_system):
@@ -114,9 +110,7 @@ class TestWelding(BaseTest):
             interface_axis=(0, 0, 1),
             log_write_freq=2000,
         )
-        assert any(
-            [isinstance(i, hoomd.md.external.wall.LJ) for i in sim.forces]
-        )
+        assert any([isinstance(i, hoomd.md.external.wall.LJ) for i in sim.forces])
         sim.run_NVT(kT=1.0, tau_kt=0.01, n_steps=500)
 
     def test_weld_sim(self, polyethylene_system):
@@ -128,9 +122,7 @@ class TestWelding(BaseTest):
         sim.run_NVT(kT=1.0, tau_kt=0.01, n_steps=500)
         sim.save_restart_gsd()
         # Create interface system from slab restart.gsd file
-        interface = Interface(
-            gsd_files="restart.gsd", interface_axis="x", gap=0.1
-        )
+        interface = Interface(gsd_files="restart.gsd", interface_axis="x", gap=0.1)
         sim = WeldSimulation(
             initial_state=interface.hoomd_snapshot,
             forcefield=polyethylene_system.hoomd_forcefield,

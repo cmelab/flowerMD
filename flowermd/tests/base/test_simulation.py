@@ -27,9 +27,7 @@ class TestSimulate(BaseTest):
     def test_initialize_from_system_separate_ff(
         self, benzene_cg_system, cg_single_bead_ff
     ):
-        sim = Simulation.from_system(
-            benzene_cg_system, forcefield=cg_single_bead_ff
-        )
+        sim = Simulation.from_system(benzene_cg_system, forcefield=cg_single_bead_ff)
         sim.run_NVT(kT=0.1, tau_kt=10, n_steps=500)
 
     def test_initialize_from_system_missing_ff(self, benzene_cg_system):
@@ -59,9 +57,7 @@ class TestSimulate(BaseTest):
             forcefield=benzene_system.hoomd_forcefield,
             reference_values=benzene_system.reference_values,
         )
-        assert np.isclose(
-            float(sim.mass.value), benzene_system.mass.value, atol=1e-4
-        )
+        assert np.isclose(float(sim.mass.value), benzene_system.mass.value, atol=1e-4)
         assert np.allclose(benzene_system.box.lengths, sim.box_lengths.value)
 
     def test_set_ref_values(self, benzene_system):
@@ -202,17 +198,13 @@ class TestSimulate(BaseTest):
             period=1,
             final_box_lengths=target_box,
         )
-        assert np.isclose(
-            sim.density.value, (init_density * 5).value, atol=1e-4
-        )
+        assert np.isclose(sim.density.value, (init_density * 5).value, atol=1e-4)
 
     def test_change_methods(self, benzene_system):
         sim = Simulation.from_system(benzene_system)
         sim.run_NVT(kT=1.0, tau_kt=0.01, n_steps=0)
         assert isinstance(sim.method, hoomd.md.methods.ConstantVolume)
-        sim.run_NPT(
-            kT=1.0, tau_kt=0.01, tau_pressure=0.1, pressure=0.001, n_steps=0
-        )
+        sim.run_NPT(kT=1.0, tau_kt=0.01, tau_pressure=0.1, pressure=0.001, n_steps=0)
         assert isinstance(sim.method, hoomd.md.methods.ConstantPressure)
 
     def test_change_dt(self, benzene_system):
@@ -404,9 +396,7 @@ class TestSimulate(BaseTest):
 
     def test_bad_ff(self, benzene_system):
         with pytest.raises(ValueError):
-            Simulation(
-                initial_state=benzene_system.hoomd_snapshot, forcefield="gaff"
-            )
+            Simulation(initial_state=benzene_system.hoomd_snapshot, forcefield="gaff")
         with pytest.raises(ValueError):
             Simulation(
                 initial_state=benzene_system.hoomd_snapshot,

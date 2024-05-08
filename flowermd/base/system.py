@@ -89,16 +89,12 @@ class System(ABC):
             if isinstance(mol_item, Molecule):
                 # keep track of molecule types indices to assign to sites
                 # before applying forcefield
-                self._mol_type_idx.extend(
-                    [self.n_mol_types] * mol_item.n_particles
-                )
+                self._mol_type_idx.extend([self.n_mol_types] * mol_item.n_particles)
                 self.all_molecules.extend(mol_item.molecules)
                 # if ff is provided in the Molecule class use that as the ff
                 if mol_item.force_field:
                     if isinstance(mol_item.force_field, BaseHOOMDForcefield):
-                        self._hoomd_forcefield.extend(
-                            mol_item.force_field.hoomd_forces
-                        )
+                        self._hoomd_forcefield.extend(mol_item.force_field.hoomd_forces)
                     elif isinstance(mol_item.force_field, BaseXMLForcefield):
                         self._gmso_forcefields_dict[str(self.n_mol_types)] = (
                             mol_item.force_field.gmso_ff
@@ -155,9 +151,7 @@ class System(ABC):
     @property
     def net_charge(self):
         """Net charge of the system."""
-        return sum(
-            site.charge if site.charge else 0 for site in self.gmso_system.sites
-        )
+        return sum(site.charge if site.charge else 0 for site in self.gmso_system.sites)
 
     @property
     def box(self):
@@ -309,13 +303,8 @@ class System(ABC):
     @property
     def hoomd_forcefield(self):
         """List of HOOMD forces."""
-        if (
-            self._ff_refs != self.reference_values
-            and self._gmso_forcefields_dict
-        ):
-            self._hoomd_forcefield = self._create_hoomd_forcefield(
-                **self._ff_kwargs
-            )
+        if self._ff_refs != self.reference_values and self._gmso_forcefields_dict:
+            self._hoomd_forcefield = self._create_hoomd_forcefield(**self._ff_kwargs)
         return self._hoomd_forcefield
 
     def remove_hydrogens(self):
@@ -327,9 +316,7 @@ class System(ABC):
         """
         # Try by element first:
         hydrogens = [
-            site
-            for site in self.gmso_system.sites
-            if site.element.atomic_number == 1
+            site for site in self.gmso_system.sites if site.element.atomic_number == 1
         ]
         # If none found by element; try by mass
         if len(hydrogens) == 0:
@@ -339,9 +326,7 @@ class System(ABC):
                 if site.mass.to("amu").value == 1.008
             ]
             if len(hydrogens) == 0:
-                warnings.warn(
-                    "Hydrogen atoms could not be found by element or mass"
-                )
+                warnings.warn("Hydrogen atoms could not be found by element or mass")
         for h in hydrogens:
             # Find bond and other site in bond, add mass and charge
             for bond in self.gmso_system.iter_connections_by_site(
@@ -365,18 +350,15 @@ class System(ABC):
 
         """
         charges = np.array(
-            [
-                site.charge if site.charge else 0
-                for site in self.gmso_system.sites
-            ]
+            [site.charge if site.charge else 0 for site in self.gmso_system.sites]
         )
         net_charge = sum(charges)
         abs_charge = sum(abs(charges))
         if abs_charge != 0:
             for site in self.gmso_system.sites:
-                site.charge -= abs(
-                    site.charge if site.charge else 0 * u.Unit("C")
-                ) * (net_charge / abs_charge)
+                site.charge -= abs(site.charge if site.charge else 0 * u.Unit("C")) * (
+                    net_charge / abs_charge
+                )
 
     def pickle_forcefield(self, file_path="forcefield.pickle"):
         """Pickle the list of HOOMD forces.
@@ -419,9 +401,7 @@ class System(ABC):
             nlist_buffer=nlist_buffer,
             pppm_kwargs=pppm_kwargs,
             auto_scale=False,
-            base_units=(
-                self._reference_values if self._reference_values else None
-            ),
+            base_units=(self._reference_values if self._reference_values else None),
         )
         for force in ff:
             force_list.extend(ff[force])
@@ -433,9 +413,7 @@ class System(ABC):
         snap, refs = to_gsd_snapshot(
             top=self.gmso_system,
             auto_scale=False,
-            base_units=(
-                self._reference_values if self._reference_values else None
-            ),
+            base_units=(self._reference_values if self._reference_values else None),
         )
         self._snap_refs = self._reference_values.copy()
         return snap
@@ -482,9 +460,7 @@ class System(ABC):
                     else:
                         # if there is only one ff for all molecule types
                         ff_index = 0
-                    self._gmso_forcefields_dict[str(i)] = _force_field[
-                        ff_index
-                    ].gmso_ff
+                    self._gmso_forcefields_dict[str(i)] = _force_field[ff_index].gmso_ff
 
     def _assign_site_mol_type_idx(self):
         """Assign molecule type index to the gmso sites."""
@@ -563,24 +539,17 @@ class System(ABC):
 
         if not self._reference_values:
             epsilons = [
-                s.atom_type.parameters["epsilon"]
-                for s in self.gmso_system.sites
+                s.atom_type.parameters["epsilon"] for s in self.gmso_system.sites
             ]
-            sigmas = [
-                s.atom_type.parameters["sigma"] for s in self.gmso_system.sites
-            ]
+            sigmas = [s.atom_type.parameters["sigma"] for s in self.gmso_system.sites]
             masses = [s.mass for s in self.gmso_system.sites]
 
             energy_scale = np.max(epsilons) if self.auto_scale else 1.0
             length_scale = np.max(sigmas) if self.auto_scale else 1.0
             mass_scale = np.max(masses) if self.auto_scale else 1.0
 
-            self._reference_values["energy"] = (
-                energy_scale * epsilons[0].unit_array
-            )
-            self._reference_values["length"] = (
-                length_scale * sigmas[0].unit_array
-            )
+            self._reference_values["energy"] = energy_scale * epsilons[0].unit_array
+            self._reference_values["length"] = length_scale * sigmas[0].unit_array
             self._reference_values["mass"] = mass_scale * masses[0].unit_array
 
         if remove_hydrogens:
@@ -602,9 +571,7 @@ class System(ABC):
         if self.system:
             self.system.visualize().show()
         else:
-            raise ValueError(
-                "The initial configuraiton has not been created yet."
-            )
+            raise ValueError("The initial configuraiton has not been created yet.")
 
 
 class Pack(System):
@@ -660,8 +627,7 @@ class Pack(System):
         if not isinstance(density, u.array.unyt_quantity):
             self.density = density * u.Unit("g") / u.Unit("cm**3")
             warnings.warn(
-                "Units for density were not given, assuming "
-                "units of g/cm**3."
+                "Units for density were not given, assuming " "units of g/cm**3."
             )
         else:
             self.density = density
@@ -755,9 +721,7 @@ class Lattice(System):
                 try:
                     comp1 = self.all_molecules[next_idx]
                     comp2 = self.all_molecules[next_idx + 1]
-                    comp2.translate(
-                        self.basis_vector * np.array([self.x, self.y, 0])
-                    )
+                    comp2.translate(self.basis_vector * np.array([self.x, self.y, 0]))
                     # TODO: what if comp1 and comp2 have different names?
                     unit_cell = mb.Compound(
                         subcompounds=[comp1, comp2], name=comp1.name
@@ -776,7 +740,5 @@ class Lattice(System):
         z_len = bounding_box.lengths[2] + 0.2
         # Center the lattice in its box
         system.box = mb.box.Box(np.array([x_len, y_len, z_len]))
-        system.translate_to(
-            (system.box.Lx / 2, system.box.Ly / 2, system.box.Lz / 2)
-        )
+        system.translate_to((system.box.Lx / 2, system.box.Ly / 2, system.box.Lz / 2))
         return system

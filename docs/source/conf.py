@@ -10,9 +10,7 @@ import os
 import sys
 
 project = "flowerMD"
-copyright = (
-    "2023, Chris Jones, Marjan Albooyeh, Rainier Barrett, Eric Jankowski"
-)
+copyright = "2023, Chris Jones, Marjan Albooyeh, Rainier Barrett, Eric Jankowski"
 author = "Chris Jones, Marjan Albooyeh, Rainier Barrett, Eric Jankowski"
 
 sys.path.insert(0, os.path.abspath("../.."))

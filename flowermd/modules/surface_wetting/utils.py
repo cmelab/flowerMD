@@ -102,9 +102,7 @@ def _combine_lj_forces(
                 surface_ptype,
                 drop_ptype,
             ) not in list(lj.params.keys()):
-                drop_epsilon = drop_lj.params[(drop_ptype, drop_ptype)][
-                    "epsilon"
-                ]
+                drop_epsilon = drop_lj.params[(drop_ptype, drop_ptype)]["epsilon"]
                 surface_epsilon = surface_lj.params[
                     (surface_ptype[1:], surface_ptype[1:])
                 ]["epsilon"]

@@ -43,9 +43,7 @@ class TestMolecule(BaseTest):
         assert not any(molecule.topology_information["particle_charge"])
 
     def test_validate_force_field_oplsaa(self, benzene_mb):
-        molecule = Molecule(
-            num_mols=2, force_field=OPLS_AA(), compound=benzene_mb
-        )
+        molecule = Molecule(num_mols=2, force_field=OPLS_AA(), compound=benzene_mb)
         assert molecule.gmso_molecule.is_typed()
         assert set(molecule.topology_information["particle_types"]) == {
             "opls_145",
@@ -66,23 +64,15 @@ class TestMolecule(BaseTest):
         }
         assert any(molecule.topology_information["particle_charge"])
 
-    def test_validate_force_field_hoomd_ff_aa(
-        self, benzene_mb, benzene_hoomd_ff
-    ):
+    def test_validate_force_field_hoomd_ff_aa(self, benzene_mb, benzene_hoomd_ff):
         hoomd_ff = benzene_hoomd_ff(include_hydrogen=True)
-        molecule = Molecule(
-            num_mols=2, force_field=hoomd_ff, compound=benzene_mb
-        )
+        molecule = Molecule(num_mols=2, force_field=hoomd_ff, compound=benzene_mb)
         assert molecule.force_field == hoomd_ff
         assert not molecule.gmso_molecule.is_typed()
 
-    def test_validate_fore_field_hoomd_ff_ua(
-        self, benzene_mb, benzene_hoomd_ff
-    ):
+    def test_validate_fore_field_hoomd_ff_ua(self, benzene_mb, benzene_hoomd_ff):
         hoomd_ff = benzene_hoomd_ff(include_hydrogen=False)
-        molecule = Molecule(
-            num_mols=2, force_field=hoomd_ff, compound=benzene_mb
-        )
+        molecule = Molecule(num_mols=2, force_field=hoomd_ff, compound=benzene_mb)
         assert molecule.force_field == hoomd_ff
         assert not molecule.gmso_molecule.is_typed()
 
@@ -165,9 +155,7 @@ class TestMolecule(BaseTest):
         assert molecule.molecules[0].n_particles == 4
         assert molecule.topology_information["bond_types"] == {("A", "A")}
 
-    def test_coarse_grain_with_different_beads(
-        self, pps_smiles, benzene_smiles
-    ):
+    def test_coarse_grain_with_different_beads(self, pps_smiles, benzene_smiles):
         molecule = Molecule(num_mols=2, smiles=pps_smiles)
         molecule.coarse_grain(beads={"A": benzene_smiles, "B": "S"})
         assert molecule.molecules[0].n_particles == 2
@@ -193,9 +181,7 @@ class TestPolymer(BaseTest):
         assert polymer.n_particles == 23
         assert polymer.n_bonds == 22
         assert ("O", "C", "C") in polymer.topology_information["angle_types"]
-        assert ("O", "C", "C", "O") in polymer.topology_information[
-            "dihedral_types"
-        ]
+        assert ("O", "C", "C", "O") in polymer.topology_information["dihedral_types"]
 
     def test_polymer_different_chain_lengths(self, dimethylether_smiles):
         polymer = Polymer(
@@ -247,9 +233,7 @@ class TestCopolymer(BaseTest):
         )
         assert copolymer.n_particles == 22
         assert copolymer.random_sequence is False
-        assert ("C", "C", "C", "C") in copolymer.topology_information[
-            "dihedral_types"
-        ]
+        assert ("C", "C", "C", "C") in copolymer.topology_information["dihedral_types"]
 
     def test_copolymer_with_sequence_different_chain_lengths(
         self, polyethylene, polyDME
@@ -265,9 +249,7 @@ class TestCopolymer(BaseTest):
         assert copolymer.molecules[0].n_particles == 42
         assert copolymer.molecules[1].n_particles == 62
 
-    def test_copolymer_with_sequence_different_num_mol(
-        self, polyethylene, polyDME
-    ):
+    def test_copolymer_with_sequence_different_num_mol(self, polyethylene, polyDME):
         copolymer = CoPolymer(
             monomer_A=polyDME,
             monomer_B=polyethylene,
@@ -290,9 +272,7 @@ class TestCopolymer(BaseTest):
         )
         # sequence is BAA
         assert copolymer.n_particles == 22
-        assert ("O", "C", "C", "O") in copolymer.topology_information[
-            "dihedral_types"
-        ]
+        assert ("O", "C", "C", "O") in copolymer.topology_information["dihedral_types"]
 
     def test_align_z_axis(self, polyethylene):
         pe = polyethylene(num_mols=5, lengths=20)

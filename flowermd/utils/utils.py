@@ -88,9 +88,7 @@ def get_target_box_number_density(
     else:
         constraints = np.array([x_constraint, y_constraint, z_constraint])
         fixed_L = constraints[np.not_equal(constraints, None).nonzero()]
-        L = _calculate_box_length(
-            density=density, n_beads=n_beads, fixed_L=fixed_L
-        )
+        L = _calculate_box_length(density=density, n_beads=n_beads, fixed_L=fixed_L)
         constraints[np.equal(constraints, None).nonzero()] = L
         Lx, Ly, Lz = constraints
     return np.array([Lx, Ly, Lz]) * u.Unit(Lx.units)
