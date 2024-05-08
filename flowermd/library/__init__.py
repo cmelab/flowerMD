@@ -1,3 +1,4 @@
+# ruff: noqa: F401
 """Library of predefined molecules, recipes and forcefields."""
 
 from .forcefields import (
