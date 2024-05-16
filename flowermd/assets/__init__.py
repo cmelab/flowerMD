@@ -1,3 +1,4 @@
+# ruff: noqa: F401
 """Paths to the assets used by flowerMD."""
 
 from .forcefields import FF_DIR

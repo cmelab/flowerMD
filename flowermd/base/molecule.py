@@ -314,7 +314,7 @@ class Molecule:
                 or bond.connection_members[1].name
             )
             bond_connections = [p1_name, p2_name]
-            if not tuple(bond_connections[::-1]) in self.bond_types:
+            if tuple(bond_connections[::-1]) not in self.bond_types:
                 self.bond_types.add(tuple(bond_connections))
 
     def _identify_angle_types(self, gmso_molecule):
@@ -341,7 +341,7 @@ class Molecule:
                 or angle.connection_members[2].name
             )
             angle_connections = [p1_name, p2_name, p3_name]
-            if not tuple(angle_connections[::-1]) in self.angle_types:
+            if tuple(angle_connections[::-1]) not in self.angle_types:
                 self.angle_types.add(tuple(angle_connections))
 
     def _identify_dihedral_types(self, gmso_molecule):
@@ -372,7 +372,7 @@ class Molecule:
                 or dihedral.connection_members[3].name
             )
             dihedral_connections = [p1_name, p2_name, p3_name, p4_name]
-            if not tuple(dihedral_connections[::-1]) in self.dihedral_types:
+            if tuple(dihedral_connections[::-1]) not in self.dihedral_types:
                 self.dihedral_types.add(tuple(dihedral_connections))
 
     def _identify_improper_types(self, gmso_molecule):
@@ -403,7 +403,7 @@ class Molecule:
                 or improper.connection_members[3].name
             )
             improper_connections = [p1_name, p2_name, p3_name, p4_name]
-            if not tuple(improper_connections[::-1]) in self.improper_types:
+            if tuple(improper_connections[::-1]) not in self.improper_types:
                 self.improper_types.add(tuple(improper_connections))
 
     def _identify_topology_information(self, gmso_molecule):

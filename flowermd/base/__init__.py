@@ -1,3 +1,4 @@
+# ruff: noqa: F401
 """Base classes for flowerMD."""
 
 from .forcefield import BaseHOOMDForcefield, BaseXMLForcefield
