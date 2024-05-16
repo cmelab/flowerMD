@@ -43,7 +43,9 @@ class TestDropletSimulation(BaseTest):
             final_density=0.05 * u.g / u.cm**3,
             tau_kt=drop_sim.dt * 100,
         )
-        assert np.isclose(drop_sim.density.to(u.g / u.cm**3).value, 0.05, atol=1e-2)
+        assert np.isclose(
+            drop_sim.density.to(u.g / u.cm**3).value, 0.05, atol=1e-2
+        )
 
     def test_droplet_sim_no_units(self, polyethylene):
         drop_mol = polyethylene(num_mols=10, lengths=5)
@@ -74,7 +76,9 @@ class TestDropletSimulation(BaseTest):
                 final_density=0.05,
                 tau_kt=drop_sim.dt * 100,
             )
-            assert np.isclose(drop_sim.density.to(u.g / u.cm**3).value, 0.05, atol=1e-2)
+            assert np.isclose(
+                drop_sim.density.to(u.g / u.cm**3).value, 0.05, atol=1e-2
+            )
 
     def test_droplet_sim_bad_units(self, polyethylene):
         drop_mol = polyethylene(num_mols=10, lengths=5)
@@ -105,7 +109,9 @@ class TestDropletSimulation(BaseTest):
                 final_density=0.05 * (u.cm**-3),
                 tau_kt=drop_sim.dt * 100,
             )
-            assert np.isclose(drop_sim.density.to(u.g / u.cm**3).value, 0.05, atol=1e-2)
+            assert np.isclose(
+                drop_sim.density.to(u.g / u.cm**3).value, 0.05, atol=1e-2
+            )
 
 
 class TestInterfaceBuilder(BaseTest):
@@ -154,7 +160,8 @@ class TestInterfaceBuilder(BaseTest):
             + drop_snapshot.particles.types
         )
         assert np.isclose(
-            interface.hoomd_snapshot.configuration.box[2] * drop_refs["length"].value,
+            interface.hoomd_snapshot.configuration.box[2]
+            * drop_refs["length"].value,
             15,
             atol=1e-2,
         )
@@ -182,7 +189,9 @@ class TestInterfaceBuilder(BaseTest):
 
 
 class TestWettingSimulation(BaseTest):
-    def test_wetting_sim(self, surface_wetting_init_snapshot, surface_wetting_init_ff):
+    def test_wetting_sim(
+        self, surface_wetting_init_snapshot, surface_wetting_init_ff
+    ):
         # load surface wetting init snapshot
         snapshot = gsd.hoomd.open(surface_wetting_init_snapshot)[0]
         # load ff from pickle

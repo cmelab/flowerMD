@@ -258,7 +258,9 @@ class LJChain(Polymer):
                     bead_pair = "-".join([last_bead.name, next_bead.name])
                     bond_length = self.bond_lengths.get(bead_pair, None)
                     if not bond_length:
-                        bead_pair_rev = "-".join([next_bead.name, last_bead.name])
+                        bead_pair_rev = "-".join(
+                            [next_bead.name, last_bead.name]
+                        )
                         bond_length = self.bond_lengths.get(bead_pair_rev, None)
                         if not bond_length:
                             raise ValueError(
@@ -317,8 +319,12 @@ class EllipsoidChain(Polymer):
     def _build(self, length):
         # Build up ellipsoid bead
         bead = mb.Compound(name="ellipsoid")
-        head = mb.Compound(pos=(0, 0, self.lpar), name="A", mass=self.bead_mass / 4)
-        tail = mb.Compound(pos=(0, 0, -self.lpar), name="A", mass=self.bead_mass / 4)
+        head = mb.Compound(
+            pos=(0, 0, self.lpar), name="A", mass=self.bead_mass / 4
+        )
+        tail = mb.Compound(
+            pos=(0, 0, -self.lpar), name="A", mass=self.bead_mass / 4
+        )
         head_mid = mb.Compound(
             pos=(0, 0, self.lpar / 2), name="B", mass=self.bead_mass / 4
         )

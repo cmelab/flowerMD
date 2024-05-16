@@ -98,11 +98,12 @@ class DropletSimulation(Simulation):
 
         """
         # Shrink down to high density
-        if not isinstance(shrink_density, u.array.unyt_quantity) and not isinstance(
-            final_density, u.array.unyt_quantity
-        ):
+        if not isinstance(
+            shrink_density, u.array.unyt_quantity
+        ) and not isinstance(final_density, u.array.unyt_quantity):
             warnings.warn(
-                "Units for density were not given, assuming " "units of g/cm**3."
+                "Units for density were not given, assuming "
+                "units of g/cm**3."
             )
             target_box_shrink = get_target_box_mass_density(
                 density=shrink_density * (u.g / (u.cm**3)),
@@ -122,7 +123,10 @@ class DropletSimulation(Simulation):
                 target_box_final = get_target_box_mass_density(
                     density=final_density, mass=self.mass.to("g")
                 )
-            elif shrink_density.units.dimensions == number_density.units.dimensions:
+            elif (
+                shrink_density.units.dimensions
+                == number_density.units.dimensions
+            ):
                 raise ValueError(
                     "For now, only mass density is supported "
                     "in the surface wetting module."
@@ -249,7 +253,9 @@ class InterfaceBuilder:
         ]
         self.drop_ptypes = self.drop_snapshot.particles.types
 
-        wetting_snapshot.particles.types = self.surface_ptypes + self.drop_ptypes
+        wetting_snapshot.particles.types = (
+            self.surface_ptypes + self.drop_ptypes
+        )
 
         wetting_snapshot.particles.typeid = np.concatenate(
             (
@@ -332,7 +338,8 @@ class InterfaceBuilder:
             self.surface_snapshot.dihedrals.N + self.drop_snapshot.dihedrals.N
         )
         wetting_snapshot.dihedrals.types = (
-            self.surface_snapshot.dihedrals.types + self.drop_snapshot.dihedrals.types
+            self.surface_snapshot.dihedrals.types
+            + self.drop_snapshot.dihedrals.types
         )
         wetting_snapshot.dihedrals.typeid = np.concatenate(
             (
@@ -404,7 +411,9 @@ class InterfaceBuilder:
             self.drop_snapshot.particles.position, axis=0
         )
         # shift drop particles z position to be at the top of surface
-        z_shift = np.abs(min(drop_pos[:, 2]) - max(surface_pos[:, 2])) - self.gap
+        z_shift = (
+            np.abs(min(drop_pos[:, 2]) - max(surface_pos[:, 2])) - self.gap
+        )
         drop_pos[:, 2] -= z_shift
         wetting_pos = np.concatenate((surface_pos, drop_pos), axis=0)
         return wetting_pos

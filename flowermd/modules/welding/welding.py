@@ -62,7 +62,9 @@ class Interface:
                     void_id = snap.particles.types.index("VOID")
                     snap.particles.types.remove("VOID")
                     keep_indices = np.where(snap.particles.typeid != void_id)[0]
-                    snap.particles.position = snap.particles.position[keep_indices]
+                    snap.particles.position = snap.particles.position[
+                        keep_indices
+                    ]
                     snap.particles.mass = snap.particles.mass[keep_indices]
                     snap.particles.charge = snap.particles.charge[keep_indices]
                     snap.particles.orientation = snap.particles.orientation[
@@ -87,14 +89,18 @@ class Interface:
 
         # Set up snapshot.particles info:
         # Get set of new coordiantes, shifted along interface axis
-        shift = (snap_L.configuration.box[axis_index] + self.gap - self.wall_sigma) / 2
+        shift = (
+            snap_L.configuration.box[axis_index] + self.gap - self.wall_sigma
+        ) / 2
         right_pos = np.copy(snap_R.particles.position)
         right_pos[:, axis_index] += shift
         left_pos = np.copy(snap_L.particles.position)
         left_pos[:, axis_index] -= shift
 
         pos = np.concatenate((left_pos, right_pos), axis=None)
-        mass = np.concatenate((snap_L.particles.mass, snap_R.particles.mass), axis=None)
+        mass = np.concatenate(
+            (snap_L.particles.mass, snap_R.particles.mass), axis=None
+        )
         charges = np.concatenate(
             (snap_L.particles.charge, snap_R.particles.charge), axis=None
         )
@@ -110,7 +116,9 @@ class Interface:
         # Set up bonds:
         bond_group_left = np.copy(snap_L.bonds.group)
         bond_group_right = np.copy(snap_R.bonds.group) + snap_R.particles.N
-        bond_group = np.concatenate((bond_group_left, bond_group_right), axis=None)
+        bond_group = np.concatenate(
+            (bond_group_left, bond_group_right), axis=None
+        )
         bond_type_ids = np.concatenate(
             (snap_L.bonds.typeid, snap_R.bonds.typeid), axis=None
         )
@@ -121,7 +129,9 @@ class Interface:
         # Set up angles:
         angle_group_left = np.copy(snap_L.angles.group)
         angle_group_right = np.copy(snap_R.angles.group) + snap_L.particles.N
-        angle_group = np.concatenate((angle_group_left, angle_group_right), axis=None)
+        angle_group = np.concatenate(
+            (angle_group_left, angle_group_right), axis=None
+        )
         angle_type_ids = np.concatenate(
             (snap_L.angles.typeid, snap_R.angles.typeid), axis=None
         )
@@ -131,7 +141,9 @@ class Interface:
 
         # Set up dihedrals:
         dihedral_group_left = np.copy(snap_L.dihedrals.group)
-        dihedral_group_right = np.copy(snap_R.dihedrals.group) + snap_L.particles.N
+        dihedral_group_right = (
+            np.copy(snap_R.dihedrals.group) + snap_L.particles.N
+        )
         dihedral_group = np.concatenate(
             (dihedral_group_left, dihedral_group_right), axis=None
         )

@@ -6,7 +6,9 @@ from setuptools import Command, find_packages, setup
 
 # Package meta-data.
 NAME = "flowermd"
-DESCRIPTION = "Package making it easier to build and simulate polymers in Hoomd-Blue."
+DESCRIPTION = (
+    "Package making it easier to build and simulate polymers in Hoomd-Blue."
+)
 URL = "https://github.com/cmelab/flowerMD"
 EMAIL = "chrisjones4@u.boisestate.edu"
 AUTHOR = "CME Lab"
@@ -56,7 +58,9 @@ class UploadCommand(Command):
             pass
 
         self.status("Building Source and Wheel (universal) distribution…")
-        os.system("{0} setup.py sdist bdist_wheel --universal".format(sys.executable))
+        os.system(
+            "{0} setup.py sdist bdist_wheel --universal".format(sys.executable)
+        )
 
         self.status("Uploading the package to PyPi via Twine…")
         os.system("twine upload dist/*")

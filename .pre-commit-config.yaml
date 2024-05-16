@@ -12,8 +12,9 @@ repos:
     rev: v0.4.2 # Ruff version
     hooks:
       - id: ruff
-        args: [--line-length=80, --fix, --extend-ignore=E203]
+        args: [--fix, --extend-ignore=E203]
       - id: ruff-format
+        args: [ --line-length=80 ]
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.6.0
     hooks:

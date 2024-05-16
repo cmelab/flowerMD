@@ -117,9 +117,15 @@ class TestForceFields:
             angle_theta0=1.57,
         )
         assert len(ellipsoid_ff.hoomd_forces) == 3
-        assert isinstance(ellipsoid_ff.hoomd_forces[-1], hoomd.md.pair.aniso.GayBerne)
-        assert ("R", "R") in list(dict(ellipsoid_ff.hoomd_forces[-1].params).keys())
-        assert ("B", "R") in list(dict(ellipsoid_ff.hoomd_forces[-1].params).keys())
+        assert isinstance(
+            ellipsoid_ff.hoomd_forces[-1], hoomd.md.pair.aniso.GayBerne
+        )
+        assert ("R", "R") in list(
+            dict(ellipsoid_ff.hoomd_forces[-1].params).keys()
+        )
+        assert ("B", "R") in list(
+            dict(ellipsoid_ff.hoomd_forces[-1].params).keys()
+        )
         assert ellipsoid_ff.hoomd_forces[-1].params["A", "A"]["epsilon"] == 0.0
         assert ellipsoid_ff.hoomd_forces[-1].params["A", "A"]["lperp"] == 0.0
         assert ellipsoid_ff.hoomd_forces[-1].params["A", "A"]["lpar"] == 0.0
@@ -149,7 +155,9 @@ class TestTableForcefield:
 
     def test_from_csv_file(self):
         pair_file = os.path.join(ASSETS_DIR, "lj_pair_table.csv")
-        ff = TableForcefield.from_files(pairs={("A", "A"): pair_file}, delimiter=",")
+        ff = TableForcefield.from_files(
+            pairs={("A", "A"): pair_file}, delimiter=","
+        )
         pair_data = np.genfromtxt(pair_file, delimiter=",")
         assert ff.r_min == pair_data[:, 0][0]
         assert ff.r_cut == pair_data[:, 0][-1]

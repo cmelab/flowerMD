@@ -204,7 +204,8 @@ class Molecule:
                 return mb.load(self.smiles, smiles=True)
             else:
                 raise MoleculeLoadError(
-                    msg=f"Unable to load the molecule from smiles " f"{self.smiles}."
+                    msg=f"Unable to load the molecule from smiles "
+                    f"{self.smiles}."
                 )
 
     def _align_backbones_z_axis(self, heavy_atoms_only=False):
@@ -213,7 +214,11 @@ class Molecule:
             if heavy_atoms_only:
                 try:
                     positions = np.array(
-                        [p.xyz[0] for p in mol.particles() if p.element.symbol != "H"]
+                        [
+                            p.xyz[0]
+                            for p in mol.particles()
+                            if p.element.symbol != "H"
+                        ]
                     )
                 except AttributeError:
                     positions = mol.xyz
@@ -272,7 +277,9 @@ class Molecule:
             ):
                 self.hydrogen_types.append(p_name)
             self.particle_typeid.append(self.particle_types.index(p_name))
-            self.particle_charge.append(site.charge.to_value() if site.charge else 0)
+            self.particle_charge.append(
+                site.charge.to_value() if site.charge else 0
+            )
 
     def _identify_pairs(self, particle_types):
         """Identify all unique particle pairs from the particle types.
@@ -283,7 +290,9 @@ class Molecule:
             List of all particle types.
 
         """
-        self.pairs = set(itertools.combinations_with_replacement(particle_types, 2))
+        self.pairs = set(
+            itertools.combinations_with_replacement(particle_types, 2)
+        )
 
     def _identify_bond_types(self, gmso_molecule):
         """Identify all unique bond types from the GMSO topology.
@@ -426,7 +435,9 @@ class Molecule:
             # Update topology information from typed gmso after applying ff.
             self._identify_topology_information(self.gmso_molecule)
         elif isinstance(self.force_field, BaseHOOMDForcefield):
-            _validate_hoomd_ff(self.force_field.hoomd_forces, self.topology_information)
+            _validate_hoomd_ff(
+                self.force_field.hoomd_forces, self.topology_information
+            )
         elif isinstance(self.force_field, List):
             _validate_hoomd_ff(self.force_field, self.topology_information)
         else:

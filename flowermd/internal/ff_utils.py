@@ -20,7 +20,9 @@ def ff_xml_directory():
     for dirpath, dirnames, filenames in os.walk(FF_DIR):
         for file in filenames:
             if file.endswith(".xml"):
-                ff_xml_directory[file.split(".xml")[0]] = os.path.join(dirpath, file)
+                ff_xml_directory[file.split(".xml")[0]] = os.path.join(
+                    dirpath, file
+                )
     return ff_xml_directory
 
 

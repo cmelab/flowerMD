@@ -66,12 +66,16 @@ class Tensile(Simulation):
         self.fix_right = hoomd.filter.Tags(right_tags.astype(np.uint32))
         all_fixed = hoomd.filter.Union(self.fix_left, self.fix_right)
         # Set the group of particles to be integrated over
-        self.integrate_group = hoomd.filter.SetDifference(hoomd.filter.All(), all_fixed)
+        self.integrate_group = hoomd.filter.SetDifference(
+            hoomd.filter.All(), all_fixed
+        )
 
     @property
     def strain(self):
         """The current strain of the simulation."""
-        delta_L = self.box_lengths_reduced[self._axis_index] - self.initial_length
+        delta_L = (
+            self.box_lengths_reduced[self._axis_index] - self.initial_length
+        )
         return delta_L / self.initial_length
 
     def run_tensile(self, strain, n_steps, kT, tau_kt, period):

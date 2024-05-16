@@ -11,7 +11,9 @@ class BaseXMLForcefield(foyer.Forcefield):
         super(BaseXMLForcefield, self).__init__(
             forcefield_files=forcefield_files, name=name
         )
-        self.gmso_ff = ffutils.FoyerFFs().load(forcefield_files or name).to_gmso_ff()
+        self.gmso_ff = (
+            ffutils.FoyerFFs().load(forcefield_files or name).to_gmso_ff()
+        )
 
 
 class BaseHOOMDForcefield:
@@ -20,6 +22,8 @@ class BaseHOOMDForcefield:
     def __init__(self, hoomd_forces):
         self.hoomd_forces = hoomd_forces
         if hoomd_forces is None:
-            raise NotImplementedError("`hoomd_forces` must be defined in the subclass.")
+            raise NotImplementedError(
+                "`hoomd_forces` must be defined in the subclass."
+            )
         if not isinstance(hoomd_forces, list):
             raise TypeError("`hoomd_forces` must be a list.")
