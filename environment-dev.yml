@@ -4,11 +4,11 @@ channels:
 dependencies:
   - foyer >=0.12.0
   - fresnel
-  - freud >=2.13.1
-  - gmso >=0.11.2
+  - freud >=3.0
+  - gmso >=0.12.0
   - gsd >=3.0
-  - grits=0.4.1
-  - hoomd=4.3
+  - grits >=0.5.0
+  - hoomd >=4.5
   - mbuild >=0.17.0
   - numpy
   - openbabel >=3
@@ -18,6 +18,6 @@ dependencies:
   - pytest
   - pytest-cov
   - nbmake
-  - python >=3.10, <3.12
+  - python >=3.10, <=3.12
   - fresnel >=0.13.5
-  - cmeutils >=1.1.1
+  - cmeutils >=1.3
