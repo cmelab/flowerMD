@@ -10,7 +10,7 @@ dependencies:
   - grits >=0.5.0
   - hoomd >=4.5
   - mbuild >=0.17.0
-  - numpy
+  - numpy <2.0
   - openbabel >=3
   - pip
   - pre-commit
