@@ -12,7 +12,7 @@ DESCRIPTION = (
 URL = "https://github.com/cmelab/flowerMD"
 EMAIL = "chrisjones4@u.boisestate.edu"
 AUTHOR = "CME Lab"
-REQUIRES_PYTHON = ">=3.9.0"
+REQUIRES_PYTHON = ">=3.10.0"
 VERSION = None
 
 # What packages are required for this module to be executed?
