@@ -1,4 +1,4 @@
-name: flowermd-dev
+name: flowermd
 channels:
   - conda-forge
 dependencies:
