@@ -306,18 +306,16 @@ class TestCopolymer(BaseTest):
         for mol in pe.molecules:
             backbone = get_backbone_vector(mol.xyz)
             assert np.allclose(np.abs(backbone), np.array([0, 0, 1]), atol=1e-1)
-    
+
     @pytest.mark.parametrize("axis", ["x", "y", "z"])
     def test_periodic_bond(self, polyethylene, axis):
         pe_no_bond = polyethylene(num_mols=1, lengths=20)
         n_bonds = pe_no_bond.molecules[0].n_bonds
         n_particles = pe_no_bond.molecules[0].n_particles
         pe_with_bond = polyethylene(
-                num_mols=1,
-                lengths=20,
-                periodic_bond_axis=axis
+            num_mols=1, lengths=20, periodic_bond_axis=axis
         )
         n_bonds_with = pe_with_bond.molecules[0].n_bonds
         n_particles_with = pe_with_bond.molecules[0].n_particles
-        assert n_bonds - n_bonds_with == 1 
+        assert n_bonds - n_bonds_with == 1
         assert n_particles - n_particles_with == 2
