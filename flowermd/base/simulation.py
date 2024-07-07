@@ -1022,7 +1022,9 @@ class Simulation(hoomd.simulation.Simulation):
             A=kT_start, B=kT_final, t_start=self.timestep, t_ramp=int(n_steps)
         )
 
-    def pickle_forcefield(self, file_path="forcefield.pickle"):
+    def pickle_forcefield(
+        self, file_path="forcefield.pickle", save_walls=False
+    ):
         """Pickle the list of HOOMD forces.
 
         This method useful for saving the forcefield of a simulation to a file
@@ -1033,6 +1035,15 @@ class Simulation(hoomd.simulation.Simulation):
         ----------
         file_path : str, default "forcefield.pickle"
             The path to save the pickle file to.
+        save_walls : bool, default False
+            Determines if any wall forces are saved.
+
+        Notes
+        -----
+        Wall forces are not able to be reused when starting
+        a simulation. If your simulation has wall forces,
+        set `save_walls` to `False` and manually re-add them
+        in the new simulation if needed.
 
         Examples
         --------
@@ -1063,8 +1074,15 @@ class Simulation(hoomd.simulation.Simulation):
             tensile_sim.run_tensile(strain=0.05, kT=2.0, n_steps=1e3, period=10)
 
         """
+        if self._wall_forces and save_walls is False:
+            forces = []
+            for force in self._forcefield:
+                if not hasattr(force, "wall"):
+                    forces.append(force)
+        else:
+            forces = self._forcefield
         f = open(file_path, "wb")
-        pickle.dump(self._forcefield, f)
+        pickle.dump(forces, f)
 
     def save_restart_gsd(self, file_path="restart.gsd"):
         """Save a GSD file of the current simulation state.
@@ -1129,9 +1147,10 @@ class Simulation(hoomd.simulation.Simulation):
         This method creates a dictionary that contains the
         simulation's forcefield, references values, and snapshot.
         The key:value pairs are:
+
             'reference_values': dict of str:float
             'forcefield': list of hoomd forces
-            'state': hoomd.snapshot.Snapshot
+            'state': gsd.hoomd.Frame
             'sim_kwargs': dict of flowermd.base.Simulation kwargs
 
         Wall forces are not able to be reused when starting
@@ -1140,6 +1159,7 @@ class Simulation(hoomd.simulation.Simulation):
         in the new simulation if needed.
 
         """
+        # Make list of forces
         if self._wall_forces and save_walls is False:
             forces = []
             for force in self._forcefield:
@@ -1147,7 +1167,6 @@ class Simulation(hoomd.simulation.Simulation):
                     forces.append(force)
         else:
             forces = self._forcefield
-
         # Make a temp restart gsd file.
         with tempfile.TemporaryDirectory() as tmp_dir:
             temp_file_path = os.path.join(tmp_dir, "temp.gsd")
@@ -1166,7 +1185,7 @@ class Simulation(hoomd.simulation.Simulation):
         # Create the final dict that holds everything.
         sim_dict = {
             "reference_values": self.reference_values,
-            "forcefield": self._forcefield,
+            "forcefield": forces,
             "state": snap,
             "sim_kwargs": sim_kwargs,
         }
@@ -1234,7 +1253,7 @@ class Simulation(hoomd.simulation.Simulation):
             self.create_state_from_gsd(initial_state)
         elif isinstance(initial_state, hoomd.snapshot.Snapshot):
             print(
-                "Initializing simulation state from a hoomd.snapshot.Snapshot"
+                "Initializing simulation state from a hoomd.snapshot.Snapshot."
             )
             self.create_state_from_snapshot(initial_state)
         elif isinstance(initial_state, gsd.hoomd.Frame):
