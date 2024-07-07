@@ -1134,6 +1134,11 @@ class Simulation(hoomd.simulation.Simulation):
             'state': hoomd.snapshot.Snapshot
             'sim_kwargs': dict of flowermd.base.Simulation kwargs
 
+        Wall forces are not able to be reused when starting
+        a simulation. If your simulation has wall forces,
+        set `save_walls` to `False` and manually re-add them
+        in the new simulation if needed.
+
         """
         if self._wall_forces and save_walls is False:
             forces = []
@@ -1143,14 +1148,14 @@ class Simulation(hoomd.simulation.Simulation):
         else:
             forces = self._forcefield
 
-        # Make a temp restart gsd file
+        # Make a temp restart gsd file.
         with tempfile.TemporaryDirectory() as tmp_dir:
             temp_file_path = os.path.join(tmp_dir, "temp.gsd")
             self.save_restart_gsd(temp_file_path)
             with gsd.hoomd.open(temp_file_path, "r") as traj:
                 snap = traj[0]
                 os.remove(temp_file_path)
-
+        # Save dict of kwargs needed to restart simulation.
         sim_kwargs = {
             "dt": self.dt,
             "gsd_write_freq": self.gsd_write_freq,
@@ -1158,13 +1163,15 @@ class Simulation(hoomd.simulation.Simulation):
             "gsd_max_buffer_size": self.maximum_write_buffer_size,
             "seed": self.seed,
         }
-
+        # Create the final dict that holds everything.
         sim_dict = {
             "reference_values": self.reference_values,
             "forcefield": self._forcefield,
             "state": snap,
             "sim_kwargs": sim_kwargs,
         }
+        # Add a header to the pickle file.
+        # This will be checked in Simulation.from_simulation_pickle.
         flower_string = b"FLOWERMD"
         with open(file_path, "wb") as f:
             f.write(flower_string)
