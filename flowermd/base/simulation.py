@@ -1077,7 +1077,7 @@ class Simulation(hoomd.simulation.Simulation):
         if self._wall_forces and save_walls is False:
             forces = []
             for force in self._forcefield:
-                if not hasattr(force, "wall"):
+                if not isinstance(force, hoomd.md.external.wall.LJ):
                     forces.append(force)
         else:
             forces = self._forcefield
@@ -1163,7 +1163,7 @@ class Simulation(hoomd.simulation.Simulation):
         if self._wall_forces and save_walls is False:
             forces = []
             for force in self._forcefield:
-                if not hasattr(force, "wall"):
+                if not isinstance(force, hoomd.md.external.wall.LJ):
                     forces.append(force)
         else:
             forces = self._forcefield

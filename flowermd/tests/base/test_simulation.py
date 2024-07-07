@@ -80,6 +80,36 @@ class TestSimulate(BaseTest):
         with pytest.raises(ValueError):
             Simulation.from_simulation_pickle("forces.pickle")
 
+    def test_save_forces_with_walls(self, benzene_system):
+        sim = Simulation.from_snapshot_forces(
+            initial_state=benzene_system.hoomd_snapshot,
+            forcefield=benzene_system.hoomd_forcefield,
+            reference_values=benzene_system.reference_values,
+        )
+        sim.add_walls(wall_axis=(1, 0, 0), sigma=1.0, epsilon=1.0, r_cut=2.0)
+        assert len(sim._wall_forces[(1, 0, 0)]) == 2
+
+        # Test without saving walls
+        sim.pickle_forcefield("forces_no_walls.pickle", save_walls=False)
+        found_wall_force = False
+        with open("forces_no_walls.pickle", "rb") as f:
+            forces = pickle.load(f)
+            for force in forces:
+                if isinstance(force, hoomd.md.external.wall.LJ):
+                    found_wall_force = True
+        assert found_wall_force is False
+        # Make sure wall force is still in sim object
+        assert len(sim._wall_forces[(1, 0, 0)]) == 2
+        # Test with saving walls
+        sim.pickle_forcefield("forces_walls.pickle", save_walls=True)
+        found_wall_force = False
+        with open("forces_walls.pickle", "rb") as f:
+            forces = pickle.load(f)
+            for force in forces:
+                if isinstance(force, hoomd.md.external.wall.LJ):
+                    found_wall_force = True
+        assert found_wall_force is True
+
     def test_no_reference_values(self, benzene_system):
         sim = Simulation.from_snapshot_forces(
             initial_state=benzene_system.hoomd_snapshot,
