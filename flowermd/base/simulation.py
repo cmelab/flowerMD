@@ -1,7 +1,9 @@
 """Base simulation class for flowerMD."""
 
 import inspect
+import os
 import pickle
+import tempfile
 import warnings
 from collections.abc import Iterable
 
@@ -149,6 +151,29 @@ class Simulation(hoomd.simulation.Simulation):
                 "No forcefield provided. Please provide a forcefield "
                 "or a system with a forcefield."
             )
+
+    @classmethod
+    def from_simulation_pickle(cls, file_path):
+        with open(file_path, "rb") as f:
+            string = f.read(len(b"FLOWERMD"))
+            if string != b"FLOWERMD":
+                raise ValueError(
+                    "It appears this pickle file "
+                    "was not created by flowermd.base.Simulation. "
+                    "See flowermd.base.Simulation.save_simulation()."
+                )
+            data = pickle.load(f)
+
+        state = data["state"]
+        forces = data["forcefield"]
+        ref_values = data["reference_values"]
+        sim_kwargs = data["sim_kwargs"]
+        return cls(
+            initial_state=state,
+            forcefield=forces,
+            reference_values=ref_values,
+            **sim_kwargs,
+        )
 
     @classmethod
     def from_snapshot_forces(cls, initial_state, forcefield, **kwargs):
@@ -1084,6 +1109,66 @@ class Simulation(hoomd.simulation.Simulation):
 
         """
         hoomd.write.GSD.write(self.state, filename=file_path)
+
+    def save_simulation(self, file_path="simulation.pickle", save_walls=False):
+        """Save a pickle file with everything needed to retart a simulation.
+
+        This method is useful for saving the state of a simulation to a file
+        and reusing it for restarting a simulation or running a different
+        simulation.
+
+        Parameters
+        ----------
+        file_path : str, default "simulation.pickle"
+            The path to save the pickle file to.
+        save_walls : bool, default False
+            Determines if any wall forces are saved.
+
+        Notes
+        -----
+        This method creates a dictionary that contains the
+        simulation's forcefield, references values, and snapshot.
+        The key:value pairs are:
+            'reference_values': dict of str:float
+            'forcefield': list of hoomd forces
+            'state': hoomd.snapshot.Snapshot
+            'sim_kwargs': dict of flowermd.base.Simulation kwargs
+
+        """
+        if self._wall_forces and save_walls is False:
+            forces = []
+            for force in self._forcefield:
+                if not hasattr(force, "wall"):
+                    forces.append(force)
+        else:
+            forces = self._forcefield
+
+        # Make a temp restart gsd file
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            temp_file_path = os.path.join(tmp_dir, "temp.gsd")
+            self.save_restart_gsd(temp_file_path)
+            with gsd.hoomd.open(temp_file_path, "r") as traj:
+                snap = traj[0]
+                os.remove(temp_file_path)
+
+        sim_kwargs = {
+            "dt": self.dt,
+            "gsd_write_freq": self.gsd_write_freq,
+            "log_write_freq": self.log_write_freq,
+            "gsd_max_buffer_size": self.maximum_write_buffer_size,
+            "seed": self.seed,
+        }
+
+        sim_dict = {
+            "reference_values": self.reference_values,
+            "forcefield": self._forcefield,
+            "state": snap,
+            "sim_kwargs": sim_kwargs,
+        }
+        flower_string = b"FLOWERMD"
+        with open(file_path, "wb") as f:
+            f.write(flower_string)
+            pickle.dump(sim_dict, f)
 
     def flush_writers(self):
         """Flush all write buffers to file."""
