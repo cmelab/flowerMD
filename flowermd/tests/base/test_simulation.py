@@ -43,6 +43,43 @@ class TestSimulate(BaseTest):
             reference_values=benzene_system.reference_values,
         )
 
+    def test_initialize_from_simulation_pickle(self, benzene_system):
+        sim = Simulation.from_snapshot_forces(
+            initial_state=benzene_system.hoomd_snapshot,
+            forcefield=benzene_system.hoomd_forcefield,
+            reference_values=benzene_system.reference_values,
+        )
+        sim.save_simulation("simulation.pickle")
+        new_sim = Simulation.from_simulation_pickle("simulation.pickle")
+        assert new_sim.dt == sim.dt
+        assert new_sim.gsd_write_freq == sim.gsd_write_freq
+        assert new_sim.log_write_freq == sim.log_write_freq
+        assert new_sim.seed == sim.seed
+        assert (
+            new_sim.maximum_write_buffer_size == sim.maximum_write_buffer_size
+        )
+        assert new_sim.volume_reduced == sim.volume_reduced
+        assert new_sim.mass_reduced == sim.mass_reduced
+        assert new_sim.reference_mass == sim.reference_mass
+        assert new_sim.reference_energy == sim.reference_energy
+        assert new_sim.reference_length == sim.reference_length
+        snap = sim.state.get_snapshot()
+        new_snap = new_sim.state.get_snapshot()
+        assert np.array_equal(
+            snap.particles.position, new_snap.particles.position
+        )
+        new_sim.run_NVT(n_steps=2, kT=1.0, tau_kt=0.001)
+
+    def test_initialize_from_bad_pickle(self, benzene_system):
+        sim = Simulation.from_snapshot_forces(
+            initial_state=benzene_system.hoomd_snapshot,
+            forcefield=benzene_system.hoomd_forcefield,
+            reference_values=benzene_system.reference_values,
+        )
+        sim.pickle_forcefield("forces.pickle")
+        with pytest.raises(ValueError):
+            Simulation.from_simulation_pickle("forces.pickle")
+
     def test_no_reference_values(self, benzene_system):
         sim = Simulation.from_snapshot_forces(
             initial_state=benzene_system.hoomd_snapshot,
