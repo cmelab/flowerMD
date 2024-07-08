@@ -478,7 +478,7 @@ class Polymer(Molecule):
     bond_orientation: list, default None
         The orientation of the bond between connected atoms.
     periodic_bond_axis : str, default None
-        Axis along which to orient the polymer backbone along.
+        Axis which to orient the polymer backbone along.
         Once the chain is aligned, a periodic bond between
         head and tail atoms is formed.
         Options are "x", "y", or "z"
@@ -521,6 +521,13 @@ class Polymer(Molecule):
 
     def _build(self, length):
         if self.periodic_bond_axis:
+            if not isinstance(
+                self.periodic_bond_axis, str
+            ) or self.periodic_bond_axis.lower() not in ["x", "y", "z"]:
+                raise ValueError(
+                    "Valid choices for a `periodic_bond_axis` are "
+                    "'x', 'y', 'z'"
+                )
             add_hydrogens = False
         else:
             add_hydrogens = True

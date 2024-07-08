@@ -319,3 +319,9 @@ class TestCopolymer(BaseTest):
         n_particles_with = pe_with_bond.molecules[0].n_particles
         assert n_bonds - n_bonds_with == 1
         assert n_particles - n_particles_with == 2
+
+    def test_periodic_bond_bad_axis(self, polyethylene):
+        with pytest.raises(ValueError):
+            polyethylene(num_mols=1, lengths=20, periodic_bond_axis=1)
+        with pytest.raises(ValueError):
+            polyethylene(num_mols=1, lengths=20, periodic_bond_axis="a")
