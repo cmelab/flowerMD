@@ -168,7 +168,18 @@ class Simulation(hoomd.simulation.Simulation):
         forces = data["forcefield"]
         for force in forces:
             if isinstance(force, hoomd.md.external.wall.LJ):
-                pass
+                new_walls = []
+                for _wall in force.walls:
+                    new_walls.append(
+                        hoomd.wall.Plane(
+                            origin=_wall.origin, normal=_wall.normal
+                        )
+                    )
+                new_wall = hoomd.md.external.wall.LJ(walls=new_walls)
+                for param in force.params:
+                    new_wall.params[param] = force.params[param]
+                forces.remove(force)
+                forces.append(new_wall)
         ref_values = data["reference_values"]
         sim_kwargs = data["sim_kwargs"]
         return cls(
