@@ -799,6 +799,33 @@ class TestSystem(BaseTest):
                     np.abs(backbone), np.array([0, 0, 1]), atol=1e-1
                 )
 
+    @pytest.mark.parametrize("axis", ["x", "y", "z"])
+    def test_lattice_periodic_polymer(self, polyethylene, axis):
+        polyethylene = polyethylene(
+            lengths=10, num_mols=32, periodic_bond_axis=axis
+        )
+        system = Lattice(
+            molecules=[polyethylene],
+            x=1,
+            y=1,
+            n=4,
+        )
+        system.apply_forcefield(
+            r_cut=2.5, force_field=[OPLS_AA()], auto_scale=True
+        )
+
+        assert system.n_mol_types == 1
+        assert len(system.all_molecules) == len(polyethylene.molecules)
+        assert len(system.hoomd_forcefield) > 0
+        assert system.n_particles == system.hoomd_snapshot.particles.N
+        assert system.reference_values.keys() == {"energy", "length", "mass"}
+        for mol_class in system._molecules:
+            for mol in mol_class.molecules:
+                backbone = get_backbone_vector(mol.xyz)
+                assert np.allclose(
+                    np.abs(backbone), np.array([0, 0, 1]), atol=1e-1
+                )
+
     def test_lattice_molecule(self, benzene_molecule):
         benzene_mol = benzene_molecule(n_mols=32)
         system = Lattice(
