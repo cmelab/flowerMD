@@ -166,11 +166,14 @@ class Simulation(hoomd.simulation.Simulation):
 
         state = data["state"]
         forces = data["forcefield"]
+        for force in forces:
+            if isinstance(force, hoomd.md.external.wall.LJ):
+                pass
         ref_values = data["reference_values"]
         sim_kwargs = data["sim_kwargs"]
         return cls(
             initial_state=state,
-            forcefield=forces,
+            forcefield=list(forces),
             reference_values=ref_values,
             **sim_kwargs,
         )
