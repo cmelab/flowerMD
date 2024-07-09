@@ -724,6 +724,10 @@ class Lattice(System):
     lattice is made by repeating and translating in the
     x and y directions.
 
+    See the `periodic_bond_axis` paramter in `flowermd.base.Polymer`
+    if you wish to form head-tail bonds across the periodic boundary
+    in the lattice.
+
     """
 
     def __init__(
