@@ -49,8 +49,11 @@ class TestSimulate(BaseTest):
             forcefield=benzene_system.hoomd_forcefield,
             reference_values=benzene_system.reference_values,
         )
+        sim.run_NVT(n_steps=1e3, kT=1.0, tau_kt=0.001)
         sim.save_simulation("simulation.pickle")
+        sim.save_restart_gsd("sim.gsd")
         new_sim = Simulation.from_simulation_pickle("simulation.pickle")
+        new_sim.save_restart_gsd("new_sim.gsd")
         assert new_sim.dt == sim.dt
         assert new_sim.gsd_write_freq == sim.gsd_write_freq
         assert new_sim.log_write_freq == sim.log_write_freq
@@ -63,11 +66,12 @@ class TestSimulate(BaseTest):
         assert new_sim.reference_mass == sim.reference_mass
         assert new_sim.reference_energy == sim.reference_energy
         assert new_sim.reference_length == sim.reference_length
-        snap = sim.state.get_snapshot()
-        new_snap = new_sim.state.get_snapshot()
-        assert np.array_equal(
-            snap.particles.position, new_snap.particles.position
-        )
+        with gsd.hoomd.open("sim.gsd") as sim_traj:
+            with gsd.hoomd.open("new_sim.gsd") as new_sim_traj:
+                assert np.array_equal(
+                    sim_traj[0].particles.position,
+                    new_sim_traj[0].particles.position,
+                )
         new_sim.run_NVT(n_steps=2, kT=1.0, tau_kt=0.001)
 
     def test_initialize_from_simulation_pickle_with_walls(self, benzene_system):
