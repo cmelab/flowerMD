@@ -1,7 +1,9 @@
 """Base simulation class for flowerMD."""
 
 import inspect
+import os
 import pickle
+import tempfile
 import warnings
 from collections.abc import Iterable
 
@@ -149,6 +151,43 @@ class Simulation(hoomd.simulation.Simulation):
                 "No forcefield provided. Please provide a forcefield "
                 "or a system with a forcefield."
             )
+
+    @classmethod
+    def from_simulation_pickle(cls, file_path):
+        with open(file_path, "rb") as f:
+            string = f.read(len(b"FLOWERMD"))
+            if string != b"FLOWERMD":
+                raise ValueError(
+                    "It appears this pickle file "
+                    "was not created by flowermd.base.Simulation. "
+                    "See flowermd.base.Simulation.save_simulation()."
+                )
+            data = pickle.load(f)
+
+        state = data["state"]
+        forces = data["forcefield"]
+        for force in forces:
+            if isinstance(force, hoomd.md.external.wall.LJ):
+                new_walls = []
+                for _wall in force.walls:
+                    new_walls.append(
+                        hoomd.wall.Plane(
+                            origin=_wall.origin, normal=_wall.normal
+                        )
+                    )
+                new_wall = hoomd.md.external.wall.LJ(walls=new_walls)
+                for param in force.params:
+                    new_wall.params[param] = force.params[param]
+                forces.remove(force)
+                forces.append(new_wall)
+        ref_values = data["reference_values"]
+        sim_kwargs = data["sim_kwargs"]
+        return cls(
+            initial_state=state,
+            forcefield=list(forces),
+            reference_values=ref_values,
+            **sim_kwargs,
+        )
 
     @classmethod
     def from_snapshot_forces(cls, initial_state, forcefield, **kwargs):
@@ -997,7 +1036,9 @@ class Simulation(hoomd.simulation.Simulation):
             A=kT_start, B=kT_final, t_start=self.timestep, t_ramp=int(n_steps)
         )
 
-    def pickle_forcefield(self, file_path="forcefield.pickle"):
+    def pickle_forcefield(
+        self, file_path="forcefield.pickle", save_walls=False
+    ):
         """Pickle the list of HOOMD forces.
 
         This method useful for saving the forcefield of a simulation to a file
@@ -1008,6 +1049,15 @@ class Simulation(hoomd.simulation.Simulation):
         ----------
         file_path : str, default "forcefield.pickle"
             The path to save the pickle file to.
+        save_walls : bool, default False
+            Determines if any wall forces are saved.
+
+        Notes
+        -----
+        Wall forces are not able to be reused when starting
+        a simulation. If your simulation has wall forces,
+        set `save_walls` to `False` and manually re-add them
+        in the new simulation if needed.
 
         Examples
         --------
@@ -1038,8 +1088,15 @@ class Simulation(hoomd.simulation.Simulation):
             tensile_sim.run_tensile(strain=0.05, kT=2.0, n_steps=1e3, period=10)
 
         """
+        if self._wall_forces and save_walls is False:
+            forces = []
+            for force in self._forcefield:
+                if not isinstance(force, hoomd.md.external.wall.LJ):
+                    forces.append(force)
+        else:
+            forces = self._forcefield
         f = open(file_path, "wb")
-        pickle.dump(self._forcefield, f)
+        pickle.dump(forces, f)
 
     def save_restart_gsd(self, file_path="restart.gsd"):
         """Save a GSD file of the current simulation state.
@@ -1084,6 +1141,58 @@ class Simulation(hoomd.simulation.Simulation):
 
         """
         hoomd.write.GSD.write(self.state, filename=file_path)
+
+    def save_simulation(self, file_path="simulation.pickle"):
+        """Save a pickle file with everything needed to retart a simulation.
+
+        This method is useful for saving the state of a simulation to a file
+        and reusing it for restarting a simulation or running a different
+        simulation.
+
+        Parameters
+        ----------
+        file_path : str, default "simulation.pickle"
+            The path to save the pickle file to.
+
+        Notes
+        -----
+        This method creates a dictionary that contains the
+        simulation's forcefield, references values, and snapshot.
+        The key:value pairs are:
+
+            'reference_values': dict of str:float
+            'forcefield': list of hoomd forces
+            'state': gsd.hoomd.Frame
+            'sim_kwargs': dict of flowermd.base.Simulation kwargs
+        """
+        # Make a temp restart gsd file.
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            temp_file_path = os.path.join(tmp_dir, "temp.gsd")
+            self.save_restart_gsd(temp_file_path)
+            with gsd.hoomd.open(temp_file_path, "r") as traj:
+                snap = traj[0]
+                os.remove(temp_file_path)
+        # Save dict of kwargs needed to restart simulation.
+        sim_kwargs = {
+            "dt": self.dt,
+            "gsd_write_freq": self.gsd_write_freq,
+            "log_write_freq": self.log_write_freq,
+            "gsd_max_buffer_size": self.maximum_write_buffer_size,
+            "seed": self.seed,
+        }
+        # Create the final dict that holds everything.
+        sim_dict = {
+            "reference_values": self.reference_values,
+            "forcefield": self._forcefield,
+            "state": snap,
+            "sim_kwargs": sim_kwargs,
+        }
+        # Add a header to the pickle file.
+        # This will be checked in Simulation.from_simulation_pickle.
+        flower_string = b"FLOWERMD"
+        with open(file_path, "wb") as f:
+            f.write(flower_string)
+            pickle.dump(sim_dict, f)
 
     def flush_writers(self):
         """Flush all write buffers to file."""
@@ -1142,7 +1251,7 @@ class Simulation(hoomd.simulation.Simulation):
             self.create_state_from_gsd(initial_state)
         elif isinstance(initial_state, hoomd.snapshot.Snapshot):
             print(
-                "Initializing simulation state from a hoomd.snapshot.Snapshot"
+                "Initializing simulation state from a hoomd.snapshot.Snapshot."
             )
             self.create_state_from_snapshot(initial_state)
         elif isinstance(initial_state, gsd.hoomd.Frame):
