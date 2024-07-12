@@ -1142,7 +1142,7 @@ class Simulation(hoomd.simulation.Simulation):
         """
         hoomd.write.GSD.write(self.state, filename=file_path)
 
-    def save_simulation(self, file_path="simulation.pickle", save_walls=False):
+    def save_simulation(self, file_path="simulation.pickle"):
         """Save a pickle file with everything needed to retart a simulation.
 
         This method is useful for saving the state of a simulation to a file
@@ -1153,8 +1153,6 @@ class Simulation(hoomd.simulation.Simulation):
         ----------
         file_path : str, default "simulation.pickle"
             The path to save the pickle file to.
-        save_walls : bool, default False
-            Determines if any wall forces are saved.
 
         Notes
         -----
@@ -1166,21 +1164,7 @@ class Simulation(hoomd.simulation.Simulation):
             'forcefield': list of hoomd forces
             'state': gsd.hoomd.Frame
             'sim_kwargs': dict of flowermd.base.Simulation kwargs
-
-        Wall forces are not able to be reused when starting
-        a simulation. If your simulation has wall forces,
-        set `save_walls` to `False` and manually re-add them
-        in the new simulation if needed.
-
         """
-        # Make list of forces
-        if self._wall_forces and save_walls is False:
-            forces = []
-            for force in self._forcefield:
-                if not isinstance(force, hoomd.md.external.wall.LJ):
-                    forces.append(force)
-        else:
-            forces = self._forcefield
         # Make a temp restart gsd file.
         with tempfile.TemporaryDirectory() as tmp_dir:
             temp_file_path = os.path.join(tmp_dir, "temp.gsd")
@@ -1199,7 +1183,7 @@ class Simulation(hoomd.simulation.Simulation):
         # Create the final dict that holds everything.
         sim_dict = {
             "reference_values": self.reference_values,
-            "forcefield": forces,
+            "forcefield": self._forcefield,
             "state": snap,
             "sim_kwargs": sim_kwargs,
         }

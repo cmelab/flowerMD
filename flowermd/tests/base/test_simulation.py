@@ -70,6 +70,18 @@ class TestSimulate(BaseTest):
         )
         new_sim.run_NVT(n_steps=2, kT=1.0, tau_kt=0.001)
 
+    def test_initialize_from_simulation_pickle_with_walls(self, benzene_system):
+        sim = Simulation.from_snapshot_forces(
+            initial_state=benzene_system.hoomd_snapshot,
+            forcefield=benzene_system.hoomd_forcefield,
+            reference_values=benzene_system.reference_values,
+        )
+        sim.add_walls(wall_axis=(1, 0, 0), sigma=1, epsilon=1, r_cut=1)
+        sim.save_simulation("simulation.pickle")
+        new_sim = Simulation.from_simulation_pickle("simulation.pickle")
+        assert len(new_sim.forces) == len(sim.forces)
+        new_sim.run_NVT(n_steps=2, kT=1.0, tau_kt=0.001)
+
     def test_initialize_from_bad_pickle(self, benzene_system):
         sim = Simulation.from_snapshot_forces(
             initial_state=benzene_system.hoomd_snapshot,
