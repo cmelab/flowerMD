@@ -314,7 +314,7 @@ class Molecule:
                 or bond.connection_members[1].name
             )
             bond_connections = [p1_name, p2_name]
-            if not tuple(bond_connections[::-1]) in self.bond_types:
+            if tuple(bond_connections[::-1]) not in self.bond_types:
                 self.bond_types.add(tuple(bond_connections))
 
     def _identify_angle_types(self, gmso_molecule):
@@ -341,7 +341,7 @@ class Molecule:
                 or angle.connection_members[2].name
             )
             angle_connections = [p1_name, p2_name, p3_name]
-            if not tuple(angle_connections[::-1]) in self.angle_types:
+            if tuple(angle_connections[::-1]) not in self.angle_types:
                 self.angle_types.add(tuple(angle_connections))
 
     def _identify_dihedral_types(self, gmso_molecule):
@@ -372,7 +372,7 @@ class Molecule:
                 or dihedral.connection_members[3].name
             )
             dihedral_connections = [p1_name, p2_name, p3_name, p4_name]
-            if not tuple(dihedral_connections[::-1]) in self.dihedral_types:
+            if tuple(dihedral_connections[::-1]) not in self.dihedral_types:
                 self.dihedral_types.add(tuple(dihedral_connections))
 
     def _identify_improper_types(self, gmso_molecule):
@@ -403,7 +403,7 @@ class Molecule:
                 or improper.connection_members[3].name
             )
             improper_connections = [p1_name, p2_name, p3_name, p4_name]
-            if not tuple(improper_connections[::-1]) in self.improper_types:
+            if tuple(improper_connections[::-1]) not in self.improper_types:
                 self.improper_types.add(tuple(improper_connections))
 
     def _identify_topology_information(self, gmso_molecule):
@@ -477,6 +477,11 @@ class Polymer(Molecule):
         The bond length between connected atoms (units: nm)
     bond_orientation: list, default None
         The orientation of the bond between connected atoms.
+    periodic_bond_axis : str, default None
+        Axis which to orient the polymer backbone along.
+        Once the chain is aligned, a periodic bond between
+        head and tail atoms is formed.
+        Options are "x", "y", or "z"
 
     """
 
@@ -490,12 +495,14 @@ class Polymer(Molecule):
         bond_indices=None,
         bond_length=None,
         bond_orientation=None,
+        periodic_bond_axis=None,
         **kwargs,
     ):
         self.lengths = check_return_iterable(lengths)
         self.bond_indices = bond_indices
         self.bond_length = bond_length
         self.bond_orientation = bond_orientation
+        self.periodic_bond_axis = periodic_bond_axis
         num_mols = check_return_iterable(num_mols)
         if len(num_mols) != len(self.lengths):
             raise ValueError("Number of molecules and lengths must be equal.")
@@ -513,6 +520,17 @@ class Polymer(Molecule):
         return self._mb_molecule
 
     def _build(self, length):
+        if self.periodic_bond_axis:
+            if not isinstance(
+                self.periodic_bond_axis, str
+            ) or self.periodic_bond_axis.lower() not in ["x", "y", "z"]:
+                raise ValueError(
+                    "Valid choices for a `periodic_bond_axis` are "
+                    "'x', 'y', 'z'"
+                )
+            add_hydrogens = False
+        else:
+            add_hydrogens = True
         chain = mbPolymer()
         chain.add_monomer(
             self.monomer,
@@ -520,7 +538,9 @@ class Polymer(Molecule):
             separation=self.bond_length,
             orientation=self.bond_orientation,
         )
-        chain.build(n=length, sequence="A")
+        chain.build(n=length, sequence="A", add_hydrogens=add_hydrogens)
+        if self.periodic_bond_axis:
+            chain.create_periodic_bond(axis=self.periodic_bond_axis)
         return chain
 
     def _generate(self):
