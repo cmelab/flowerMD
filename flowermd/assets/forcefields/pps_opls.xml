@@ -7,42 +7,42 @@
 		<Type name="sh" class="SH" element="S" mass="32.06" def="[S;X2]H" desc="S in any Thiol (opls_200)" overrides="s"/>
 	</AtomTypes>
 	<HarmonicBondForce>
-		<Bond class1="S" class2="CA" length="0.176" k="209200.0"/>
-		<Bond class1="HS" class2="SH" length="0.1336" k="229283.2"/>
-		<Bond class1="CA" class2="S" length="0.176" k="209200.0"/>
-		<Bond class1="CA" class2="CA" length="0.14" k="392459.2"/>
-		<Bond class1="HA" class2="CA" length="0.108" k="307105.6"/>
-		<Bond class1="SH" class2="CA" length="0.174" k="209200.0"/>
+		<Bond class1="S" class2="CA" length="0.16808" k="125294.1"/>
+		<Bond class1="HS" class2="SH" length="0.127588" k="137322.4"/>
+		<Bond class1="CA" class2="S" length="0.16808" k="125294.1"/>
+		<Bond class1="CA" class2="CA" length="0.1337" k="235051.8"/>
+		<Bond class1="HA" class2="CA" length="0.10314" k="183931.8"/>
+		<Bond class1="SH" class2="CA" length="0.16617" k="125294.1"/>
 	</HarmonicBondForce>
 	<HarmonicAngleForce>
-		<Angle class1="CA" class2="S" class3="CA" angle="1.805" k="627.6"/>
-		<Angle class1="CA" class2="SH" class3="HS" angle="1.67551608191" k="418.4"/>
-		<Angle class1="CA" class2="CA" class3="S" angle="2.08392312688" k="711.28"/>
-		<Angle class1="CA" class2="CA" class3="CA" angle="2.09439510239" k="527.184"/>
-		<Angle class1="CA" class2="CA" class3="SH" angle="2.09439510239" k="585.76"/>
-		<Angle class1="SH" class2="CA" class3="CA" angle="2.09439510239" k="585.76"/>
-		<Angle class1="CA" class2="CA" class3="HA" angle="2.09439510239" k="292.88"/>
-		<Angle class1="S" class2="CA" class3="CA" angle="2.08392312688" k="711.28"/>
+		<Angle class1="CA" class2="S" class3="CA" angle="1.805" k="375.88"/>
+		<Angle class1="CA" class2="SH" class3="HS" angle="1.67551608191" k="250.59"/>
+		<Angle class1="CA" class2="CA" class3="S" angle="2.08392312688" k="426.0"/>
+		<Angle class1="CA" class2="CA" class3="CA" angle="2.09439510239" k="315.741"/>
+		<Angle class1="CA" class2="CA" class3="SH" angle="2.09439510239" k="350.82"/>
+		<Angle class1="SH" class2="CA" class3="CA" angle="2.09439510239" k="350.82"/>
+		<Angle class1="CA" class2="CA" class3="HA" angle="2.09439510239" k="175.41"/>
+		<Angle class1="S" class2="CA" class3="CA" angle="2.08392312688" k="426.0"/>
 	</HarmonicAngleForce>
 	<RBTorsionForce>
-		<Proper class1="CA" class2="CA" class3="S" class4="CA" c0="30.334" c1="0.0" c2="-30.334" c3="0.0" c4="0.0" c5="0.0"/>
-		<Proper class1="CA" class2="CA" class3="CA" class4="S" c0="30.334" c1="0.0" c2="-30.334" c3="0.0" c4="0.0" c5="0.0"/>
-		<Proper class1="S" class2="CA" class3="CA" class4="CA" c0="30.334" c1="0.0" c2="-30.334" c3="0.0" c4="0.0" c5="0.0"/>
-		<Proper class1="S" class2="CA" class3="CA" class4="HA" c0="30.334" c1="0.0" c2="-30.334" c3="0.0" c4="0.0" c5="0.0"/>
-		<Proper class1="SH" class2="CA" class3="CA" class4="CA" c0="30.334" c1="0.0" c2="-30.334" c3="0.0" c4="0.0" c5="0.0"/>
-		<Proper class1="HA" class2="CA" class3="CA" class4="HA" c0="30.334" c1="0.0" c2="-30.334" c3="0.0" c4="0.0" c5="0.0"/>
-		<Proper class1="CA" class2="CA" class3="CA" class4="CA" c0="30.334" c1="0.0" c2="-30.334" c3="0.0" c4="0.0" c5="0.0"/>
-		<Proper class1="CA" class2="CA" class3="CA" class4="HA" c0="30.334" c1="0.0" c2="-30.334" c3="0.0" c4="0.0" c5="0.0"/>
-		<Proper class1="CA" class2="CA" class3="CA" class4="SH" c0="30.334" c1="0.0" c2="-30.334" c3="0.0" c4="0.0" c5="0.0"/>
-		<Proper class1="SH" class2="CA" class3="CA" class4="HA" c0="30.334" c1="0.0" c2="-30.334" c3="0.0" c4="0.0" c5="0.0"/>
-		<Proper class1="CA" class2="S" class3="CA" class4="CA" c0="30.334" c1="0.0" c2="-30.334" c3="0.0" c4="0.0" c5="0.0"/>
-		<Proper class1="CA" class2="CA" class3="SH" class4="HS" c0="4.6024" c1="0.0" c2="-4.6024" c3="0.0" c4="0.0" c5="0.0"/>
+		<Proper class1="CA" class2="CA" class3="S" class4="CA" c0="18.168" c1="0.0" c2="-18.168" c3="0.0" c4="0.0" c5="0.0"/>
+		<Proper class1="CA" class2="CA" class3="CA" class4="S" c0="18.168" c1="0.0" c2="-18.168" c3="0.0" c4="0.0" c5="0.0"/>
+		<Proper class1="S" class2="CA" class3="CA" class4="CA" c0="18.168" c1="0.0" c2="-18.168" c3="0.0" c4="0.0" c5="0.0"/>
+		<Proper class1="S" class2="CA" class3="CA" class4="HA" c0="18.168" c1="0.0" c2="-18.168" c3="0.0" c4="0.0" c5="0.0"/>
+		<Proper class1="SH" class2="CA" class3="CA" class4="CA" c0="18.168" c1="0.0" c2="-18.168" c3="0.0" c4="0.0" c5="0.0"/>
+		<Proper class1="HA" class2="CA" class3="CA" class4="HA" c0="18.168" c1="0.0" c2="-18.168" c3="0.0" c4="0.0" c5="0.0"/>
+		<Proper class1="CA" class2="CA" class3="CA" class4="CA" c0="18.168" c1="0.0" c2="-18.168" c3="0.0" c4="0.0" c5="0.0"/>
+		<Proper class1="CA" class2="CA" class3="CA" class4="HA" c0="18.168" c1="0.0" c2="-18.168" c3="0.0" c4="0.0" c5="0.0"/>
+		<Proper class1="CA" class2="CA" class3="CA" class4="SH" c0="18.168" c1="0.0" c2="-18.168" c3="0.0" c4="0.0" c5="0.0"/>
+		<Proper class1="SH" class2="CA" class3="CA" class4="HA" c0="18.168" c1="0.0" c2="-18.168" c3="0.0" c4="0.0" c5="0.0"/>
+		<Proper class1="CA" class2="S" class3="CA" class4="CA" c0="18.168" c1="0.0" c2="-18.168" c3="0.0" c4="0.0" c5="0.0"/>
+		<Proper class1="CA" class2="CA" class3="SH" class4="HS" c0="2.7565" c1="0.0" c2="-2.7565" c3="0.0" c4="0.0" c5="0.0"/>
 	</RBTorsionForce>
 	<NonbondedForce coulomb14scale="0.5" lj14scale="0.5">
 		<Atom type="hs" charge="0.155" sigma="0.0" epsilon="0.0"/>
-		<Atom type="ca" charge="-0.155" sigma="0.355" epsilon="0.29288"/>
-		<Atom type="s" charge="-0.335" sigma="0.36" epsilon="1.48532"/>
-		<Atom type="ha" charge="0.155" sigma="0.242" epsilon="0.12552"/>
-		<Atom type="sh" charge="-0.335" sigma="0.36" epsilon="1.7782"/>
+		<Atom type="ca" charge="-0.155" sigma="0.3390" epsilon="0.17541"/>
+		<Atom type="s" charge="-0.335" sigma="0.3438" epsilon="0.88959"/>
+		<Atom type="ha" charge="0.155" sigma="0.2311" epsilon="0.07518"/>
+		<Atom type="sh" charge="-0.335" sigma="0.3438" epsilon="1.065"/>
 	</NonbondedForce>
 </ForceField>
