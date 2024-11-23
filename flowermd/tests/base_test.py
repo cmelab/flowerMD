@@ -169,7 +169,7 @@ class BaseTest:
                     bond_indices=bond_indices,
                     bond_length=bond_length,
                     bond_orientation=bond_orientation,
-                    **kwargs
+                    **kwargs,
                 )
 
         return _PolyEthylene
@@ -189,7 +189,7 @@ class BaseTest:
                     bond_indices=bond_indices,
                     bond_length=bond_length,
                     bond_orientation=bond_orientation,
-                    **kwargs
+                    **kwargs,
                 )
 
         return _PPS
@@ -209,7 +209,7 @@ class BaseTest:
                     bond_indices=bond_indices,
                     bond_length=bond_length,
                     bond_orientation=bond_orientation,
-                    **kwargs
+                    **kwargs,
                 )
 
         return _PolyDME

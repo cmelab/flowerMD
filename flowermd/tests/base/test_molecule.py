@@ -207,8 +207,8 @@ class TestPolymer(BaseTest):
             bond_orientation=[None, None],
         )
         assert polymer.n_particles == 53
-        assert len(polymer.molecules[0].labels["monomer"]) == 3
-        assert len(polymer.molecules[1].labels["monomer"]) == 4
+        assert len(polymer.molecules[0].labels["Compound"]) == 3
+        assert len(polymer.molecules[1].labels["Compound"]) == 4
 
     def test_polymer_different_num_mol(self, dimethylether_smiles):
         polymer = Polymer(
@@ -220,9 +220,9 @@ class TestPolymer(BaseTest):
             bond_orientation=[None, None],
         )
         assert polymer.n_particles == 55
-        assert len(polymer.molecules[0].labels["monomer"]) == 3
-        assert len(polymer.molecules[1].labels["monomer"]) == 2
-        assert len(polymer.molecules[2].labels["monomer"]) == 2
+        assert len(polymer.molecules[0].labels["Compound"]) == 3
+        assert len(polymer.molecules[1].labels["Compound"]) == 2
+        assert len(polymer.molecules[2].labels["Compound"]) == 2
 
     def test_polymer_unequal_num_mol_length(self, dimethylether_smiles):
         with pytest.raises(ValueError):
@@ -306,3 +306,22 @@ class TestCopolymer(BaseTest):
         for mol in pe.molecules:
             backbone = get_backbone_vector(mol.xyz)
             assert np.allclose(np.abs(backbone), np.array([0, 0, 1]), atol=1e-1)
+
+    @pytest.mark.parametrize("axis", ["x", "y", "z"])
+    def test_periodic_bond(self, polyethylene, axis):
+        pe_no_bond = polyethylene(num_mols=1, lengths=20)
+        n_bonds = pe_no_bond.molecules[0].n_bonds
+        n_particles = pe_no_bond.molecules[0].n_particles
+        pe_with_bond = polyethylene(
+            num_mols=1, lengths=20, periodic_bond_axis=axis
+        )
+        n_bonds_with = pe_with_bond.molecules[0].n_bonds
+        n_particles_with = pe_with_bond.molecules[0].n_particles
+        assert n_bonds - n_bonds_with == 1
+        assert n_particles - n_particles_with == 2
+
+    def test_periodic_bond_bad_axis(self, polyethylene):
+        with pytest.raises(ValueError):
+            polyethylene(num_mols=1, lengths=20, periodic_bond_axis=1)
+        with pytest.raises(ValueError):
+            polyethylene(num_mols=1, lengths=20, periodic_bond_axis="a")

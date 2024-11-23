@@ -1,3 +1,4 @@
+# ruff: noqa: F401
 """flowerMD package."""
 
 from .internal.units import Units

@@ -42,6 +42,89 @@ class TestSimulate(BaseTest):
             reference_values=benzene_system.reference_values,
         )
 
+    def test_initialize_from_simulation_pickle(self, benzene_system):
+        sim = Simulation.from_snapshot_forces(
+            initial_state=benzene_system.hoomd_snapshot,
+            forcefield=benzene_system.hoomd_forcefield,
+            reference_values=benzene_system.reference_values,
+        )
+        sim.run_NVT(n_steps=1e3, kT=1.0, tau_kt=0.001)
+        sim.save_simulation("simulation.pickle")
+        sim.save_restart_gsd("sim.gsd")
+        new_sim = Simulation.from_simulation_pickle("simulation.pickle")
+        new_sim.save_restart_gsd("new_sim.gsd")
+        assert new_sim.dt == sim.dt
+        assert new_sim.gsd_write_freq == sim.gsd_write_freq
+        assert new_sim.log_write_freq == sim.log_write_freq
+        assert new_sim.seed == sim.seed
+        assert (
+            new_sim.maximum_write_buffer_size == sim.maximum_write_buffer_size
+        )
+        assert new_sim.volume_reduced == sim.volume_reduced
+        assert new_sim.mass_reduced == sim.mass_reduced
+        assert new_sim.reference_mass == sim.reference_mass
+        assert new_sim.reference_energy == sim.reference_energy
+        assert new_sim.reference_length == sim.reference_length
+        with gsd.hoomd.open("sim.gsd") as sim_traj:
+            with gsd.hoomd.open("new_sim.gsd") as new_sim_traj:
+                assert np.array_equal(
+                    sim_traj[0].particles.position,
+                    new_sim_traj[0].particles.position,
+                )
+        new_sim.run_NVT(n_steps=2, kT=1.0, tau_kt=0.001)
+
+    def test_initialize_from_simulation_pickle_with_walls(self, benzene_system):
+        sim = Simulation.from_snapshot_forces(
+            initial_state=benzene_system.hoomd_snapshot,
+            forcefield=benzene_system.hoomd_forcefield,
+            reference_values=benzene_system.reference_values,
+        )
+        sim.add_walls(wall_axis=(1, 0, 0), sigma=1, epsilon=1, r_cut=1)
+        sim.save_simulation("simulation.pickle")
+        new_sim = Simulation.from_simulation_pickle("simulation.pickle")
+        assert len(new_sim.forces) == len(sim.forces)
+        new_sim.run_NVT(n_steps=2, kT=1.0, tau_kt=0.001)
+
+    def test_initialize_from_bad_pickle(self, benzene_system):
+        sim = Simulation.from_snapshot_forces(
+            initial_state=benzene_system.hoomd_snapshot,
+            forcefield=benzene_system.hoomd_forcefield,
+            reference_values=benzene_system.reference_values,
+        )
+        sim.pickle_forcefield("forces.pickle")
+        with pytest.raises(ValueError):
+            Simulation.from_simulation_pickle("forces.pickle")
+
+    def test_save_forces_with_walls(self, benzene_system):
+        sim = Simulation.from_snapshot_forces(
+            initial_state=benzene_system.hoomd_snapshot,
+            forcefield=benzene_system.hoomd_forcefield,
+            reference_values=benzene_system.reference_values,
+        )
+        sim.add_walls(wall_axis=(1, 0, 0), sigma=1.0, epsilon=1.0, r_cut=2.0)
+        assert len(sim._wall_forces[(1, 0, 0)]) == 2
+
+        # Test without saving walls
+        sim.pickle_forcefield("forces_no_walls.pickle", save_walls=False)
+        found_wall_force = False
+        with open("forces_no_walls.pickle", "rb") as f:
+            forces = pickle.load(f)
+            for force in forces:
+                if isinstance(force, hoomd.md.external.wall.LJ):
+                    found_wall_force = True
+        assert found_wall_force is False
+        # Make sure wall force is still in sim object
+        assert len(sim._wall_forces[(1, 0, 0)]) == 2
+        # Test with saving walls
+        sim.pickle_forcefield("forces_walls.pickle", save_walls=True)
+        found_wall_force = False
+        with open("forces_walls.pickle", "rb") as f:
+            forces = pickle.load(f)
+            for force in forces:
+                if isinstance(force, hoomd.md.external.wall.LJ):
+                    found_wall_force = True
+        assert found_wall_force is True
+
     def test_no_reference_values(self, benzene_system):
         sim = Simulation.from_snapshot_forces(
             initial_state=benzene_system.hoomd_snapshot,
