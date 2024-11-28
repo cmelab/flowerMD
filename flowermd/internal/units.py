@@ -65,3 +65,17 @@ class Units:
     Celsius = u.degC
     F = u.degF
     Fahrenheit = u.degF
+
+    # density units
+    g_cm3 = u.g / u.cm**3
+    kg_m3 = u.kg / u.m**3
+    amu_A3 = u.amu / u.angstrom ** 3
+
+    # pressure units
+    atm = u.atm
+    bar = u.bar
+    Pa = u.Pa
+    kPa = u.kPa
+    MPa = u.MPa
+    GPa = u.GPa
+    psi = u.psi
