@@ -495,8 +495,7 @@ class Simulation(hoomd.simulation.Simulation):
             length = self.reference_length.to("m")
         else:
             length = 1 * Units.m
-        validated_pressure = validate_unit(pressure, u.dimensions.pressure)
-        pressure = validated_pressure.to("Pa")
+        pressure = pressure.to("Pa")
         reduced_pressure = (pressure * (length**3)) / energy
         return float(reduced_pressure)
 
