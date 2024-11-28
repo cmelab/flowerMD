@@ -408,6 +408,7 @@ class Simulation(hoomd.simulation.Simulation):
     def real_time_length(self):
         """The simulation time length in nanoseconds."""
         return (self.timestep * self.real_timestep).to("ns")
+
     @property
     def real_timestep(self):
         """The simulation timestep in femtoseconds."""
@@ -442,6 +443,7 @@ class Simulation(hoomd.simulation.Simulation):
             energy = 1 * Units.J
         temperature = (self._kT * energy) / u.boltzmann_constant_mks
         return temperature
+
     @property
     def real_pressure(self):
         """The pressure of the simulation in Pascals."""
@@ -481,54 +483,54 @@ class Simulation(hoomd.simulation.Simulation):
             length = self.reference_length.to("m")
         else:
             length = 1 * Units.m
-        pressure = pressure.to("Pa")
+        validated_pressure = validate_unit(pressure, u.dimensions.pressure)
+        pressure = validated_pressure.to("Pa")
         reduced_pressure = (pressure * (length**3)) / energy
         return float(reduced_pressure)
 
+    def _time_length_to_n_steps(self, time_length):
+        """Convert time length to number of steps."""
+        time_length = time_length.to("s")
+        real_timestep = self.real_timestep.to("s")
+        return int(time_length / real_timestep)
 
     def _setup_temperature(self, temperature):
+        """Set the temperature of the simulation."""
         if isinstance(temperature, (float, int)):
             # assuming temperature is kT
             return temperature
         else:
-            return self._temperature_to_kT(
-                validate_unit(temperature, u.dimensions.temperature)
+            validated_temperature = validate_unit(
+                temperature, u.dimensions.temperature
             )
+            return self._temperature_to_kT(validated_temperature)
+
     def _setup_pressure(self, pressure):
+        """Set the pressure of the simulation."""
         if isinstance(pressure, (float, int)):
             # assuming pressure is in reduced units.
             return pressure
         else:
-            return self._pressure_to_reduced_pressure(
-                validate_unit(pressure, u.dimensions.pressure)
-            )
-
-    def _time_length_to_n_steps(self, time_length):
-        """Convert time length to number of steps."""
-        if isinstance(time_length, u.unyt_array) or isinstance(
-            time_length, u.unyt_quantity
-        ):
-            time_length = time_length.to("s")
-        else:
-            time_length = time_length * Units.s
-        real_timestep = self.real_timestep.to("s")
-        return int(time_length / real_timestep)
+            validated_pressure = validate_unit(pressure, u.dimensions.pressure)
+            return self._pressure_to_reduced_pressure(validated_pressure)
 
     def _setup_n_steps(self, duration):
+        """Set the number of steps to run the simulation."""
         if isinstance(duration, int):
             # assuming duration is num steps
             return duration
         else:
-            return self._time_length_to_n_steps(
-                validate_unit(duration, u.dimensions.time)
-            )
+            validated_duration = validate_unit(duration, u.dimensions.time)
+            return self._time_length_to_n_steps(validated_duration)
+
     def _setup_period(self, period):
+        """Set the period for the simulation."""
         if isinstance(period, int):
+            # assuming period is num steps
             return period
         else:
-            return self._time_length_to_n_steps(
-                validate_unit(period, u.dimensions.time)
-            )
+            validated_period = validate_unit(period, u.dimensions.time)
+            return self._time_length_to_n_steps(validated_period)
 
     @property
     def integrate_group(self):
