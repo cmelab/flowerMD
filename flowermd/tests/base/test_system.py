@@ -774,15 +774,13 @@ class TestSystem(BaseTest):
 
     def test_mass_density(self, benzene_molecule):
         benzene_mol = benzene_molecule(n_mols=100)
-        system = Pack(
-            molecules=[benzene_mol], density=0.8 * Units.g / Units.cm**3
-        )
-        assert system.density.units == Units.g / Units.cm**3
+        system = Pack(molecules=[benzene_mol], density=0.8 * Units.g_cm3)
+        assert system.density.units == Units.g_cm3
 
     def test_number_density(self, benzene_molecule):
         benzene_mol = benzene_molecule(n_mols=100)
-        system = Pack(molecules=[benzene_mol], density=0.8 / Units.cm**3)
-        assert system.density.units == Units.cm**-3
+        system = Pack(molecules=[benzene_mol], density=0.8 * Units.n_cm3)
+        assert system.density.units == Units.n_cm3
 
     def test_bad_density(self, benzene_molecule):
         benzene_mol = benzene_molecule(n_mols=100)
@@ -793,7 +791,7 @@ class TestSystem(BaseTest):
         benzene_mol = benzene_molecule(n_mols=100)
         with pytest.warns():
             system = Pack(molecules=[benzene_mol], density=0.8)
-            assert system.density.units == Units.g / Units.cm**3
+            assert system.density.units == Units.g_cm3
 
     def test_n_particles_no_ff(self, benzene_molecule):
         benzene_mol = benzene_molecule(n_mols=100)

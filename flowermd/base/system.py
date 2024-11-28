@@ -3,7 +3,7 @@
 import pickle
 import warnings
 from abc import ABC, abstractmethod
-from typing import List
+from typing import List, Union
 
 import gsd
 import mbuild as mb
@@ -14,7 +14,7 @@ from gmso.parameterization import apply
 
 from flowermd.base.forcefield import BaseHOOMDForcefield, BaseXMLForcefield
 from flowermd.base.molecule import Molecule
-from flowermd.internal import check_return_iterable, validate_unit
+from flowermd.internal import Units, check_return_iterable, validate_unit
 from flowermd.internal.exceptions import ForceFieldError, MoleculeLoadError
 from flowermd.utils import (
     get_target_box_mass_density,
@@ -625,11 +625,12 @@ class Pack(System):
 
     Parameters
     ----------
-    density : float, required
-        The desired density of the system (g/cm^3). Used to set the
+    density : float or unyt_quantity or flowermd.internal.Units, required
+        The desired density of the system. Used to set the
         target_box attribute. Can be useful when initializing
         systems at low density and running a shrink simulation
-        to achieve a target density.
+        to achieve a target density. If no unit is provided, assuming the
+        density is in g/cm**3.
     packing_expand_factor : int, default 5
         The factor by which to expand the box for packing.
     edge : float, default 0.2
@@ -660,19 +661,19 @@ class Pack(System):
     def __init__(
         self,
         molecules,
-        density: float,
+        density: Union[int, float, u.unyt_quantity, u.unyt_array, Units],
         base_units=dict(),
         packing_expand_factor=5,
         edge=0.2,
         overlap=0.2,
         fix_orientation=False,
     ):
-        if not isinstance(density, u.array.unyt_quantity):
-            self.density = density * u.Unit("g") / u.Unit("cm**3")
+        if isinstance(density, (int, float)):
             warnings.warn(
                 "Units for density were not given, assuming "
                 "units of g/cm**3."
             )
+            self.density = density * Units.g_cm3
         else:
             self.density = density
         self.packing_expand_factor = packing_expand_factor
@@ -682,8 +683,8 @@ class Pack(System):
         super(Pack, self).__init__(molecules=molecules, base_units=base_units)
 
     def _build_system(self):
-        mass_density = u.Unit("kg") / u.Unit("m**3")
-        number_density = u.Unit("m**-3")
+        mass_density = Units.kg_m3
+        number_density = Units.n_m3
         if self.density.units.dimensions == mass_density.dimensions:
             target_box = get_target_box_mass_density(
                 density=self.density, mass=self.mass
