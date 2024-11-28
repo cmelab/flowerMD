@@ -405,8 +405,12 @@ class Simulation(hoomd.simulation.Simulation):
             self.operations.integrator.dt = self.dt
 
     @property
+    def real_time_length(self):
+        """The simulation time length in nanoseconds."""
+        return (self.timestep * self.real_timestep).to("ns")
+    @property
     def real_timestep(self):
-        """The simulation timestep in real units."""
+        """The simulation timestep in femtoseconds."""
         if self._reference_values.get("mass"):
             mass = self._reference_values["mass"].to("kg")
         else:
@@ -421,7 +425,7 @@ class Simulation(hoomd.simulation.Simulation):
             energy = 1 * Units.J
         tau = (mass * (dist**2)) / energy
         timestep = self.dt * (tau**0.5)
-        return timestep
+        return timestep.to("fs")
 
     @property
     def real_temperature(self):
@@ -438,6 +442,24 @@ class Simulation(hoomd.simulation.Simulation):
             energy = 1 * Units.J
         temperature = (self._kT * energy) / u.boltzmann_constant_mks
         return temperature
+    @property
+    def real_pressure(self):
+        """The pressure of the simulation in Pascals."""
+        if not self._reduced_pressure:
+            raise ValueError(
+                "Pressure is not set. Please specify the pressure when "
+                "running the simulation, using the `run_npt` method."
+            )
+        if self._reference_values.get("energy"):
+            energy = self.reference_energy.to("J/mol")
+        else:
+            energy = 1 * Units.J / Units.mol
+        if self._reference_values.get("length"):
+            length = self.reference_length.to("m")
+        else:
+            length = 1 * Units.m
+        pressure = (self._reduced_pressure * energy) / (length**3)
+        return pressure.to("Pa")
 
     def _temperature_to_kT(self, temperature):
         """Convert temperature to kT."""
@@ -445,14 +467,24 @@ class Simulation(hoomd.simulation.Simulation):
             energy = self.reference_energy.to("J")
         else:
             energy = 1 * Units.J
-        if isinstance(temperature, u.unyt_array) or isinstance(
-            temperature, u.unyt_quantity
-        ):
-            temperature = temperature.to("K")
-        else:
-            temperature = temperature * Units.K
+        temperature = temperature.to("K")
         kT = (temperature * u.boltzmann_constant_mks) / energy
         return float(kT)
+
+    def _pressure_to_reduced_pressure(self, pressure):
+        """Convert pressure to reduced units."""
+        if self._reference_values.get("energy"):
+            energy = self.reference_energy.to("J/mol")
+        else:
+            energy = (1 * Units.J).to("J/mol")
+        if self._reference_values.get("length"):
+            length = self.reference_length.to("m")
+        else:
+            length = 1 * Units.m
+        pressure = pressure.to("Pa")
+        reduced_pressure = (pressure * (length**3)) / energy
+        return float(reduced_pressure)
+
 
     def _setup_temperature(self, temperature):
         if isinstance(temperature, (float, int)):
@@ -461,6 +493,14 @@ class Simulation(hoomd.simulation.Simulation):
         else:
             return self._temperature_to_kT(
                 validate_unit(temperature, u.dimensions.temperature)
+            )
+    def _setup_pressure(self, pressure):
+        if isinstance(pressure, (float, int)):
+            # assuming pressure is in reduced units.
+            return pressure
+        else:
+            return self._pressure_to_reduced_pressure(
+                validate_unit(pressure, u.dimensions.pressure)
             )
 
     def _time_length_to_n_steps(self, time_length):
@@ -481,6 +521,13 @@ class Simulation(hoomd.simulation.Simulation):
         else:
             return self._time_length_to_n_steps(
                 validate_unit(duration, u.dimensions.time)
+            )
+    def _setup_period(self, period):
+        if isinstance(period, int):
+            return period
+        else:
+            return self._time_length_to_n_steps(
+                validate_unit(period, u.dimensions.time)
             )
 
     @property
@@ -792,6 +839,7 @@ class Simulation(hoomd.simulation.Simulation):
         """
         self._kT = self._setup_temperature(temperature)
         _n_steps = self._setup_n_steps(duration)
+        _period = self._setup_period(period)
         if self.reference_length and hasattr(final_box_lengths, "to"):
             ref_unit = self.reference_length.units
             final_box_lengths = final_box_lengths.to(ref_unit)
@@ -802,7 +850,7 @@ class Simulation(hoomd.simulation.Simulation):
             Ly=final_box_lengths[1],
             Lz=final_box_lengths[2],
         )
-        resize_trigger = hoomd.trigger.Periodic(period)
+        resize_trigger = hoomd.trigger.Periodic(_period)
         box_ramp = hoomd.variant.Ramp(
             A=0, B=1, t_start=self.timestep, t_ramp=int(_n_steps)
         )
@@ -920,8 +968,10 @@ class Simulation(hoomd.simulation.Simulation):
 
         Parameters
         ----------
-        pressure: int or hoomd.variant.Ramp, required
-            The pressure to use during the simulation.
+        pressure: flowermd.utils.units or int or hoomd.variant.Ramp, required
+            The pressure to use during the simulation. If no unit is provided,
+            the pressure is assumed to in reduced units
+            pressure * (Avogadro constant × reduced length^3 / reduced energy).
         tau_pressure: float, required
             Barostat coupling period.
         temperature: flowermd.utils.units or float or int, required
@@ -951,6 +1001,7 @@ class Simulation(hoomd.simulation.Simulation):
 
         """
         self._kT = self._setup_temperature(temperature)
+        self._reduced_pressure = self._setup_pressure(pressure)
         _n_steps = self._setup_n_steps(duration)
         self.set_integrator_method(
             integrator_method=hoomd.md.methods.ConstantPressure,
