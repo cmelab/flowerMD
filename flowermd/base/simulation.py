@@ -13,8 +13,7 @@ import hoomd.md
 import numpy as np
 import unyt as u
 
-from flowermd import Units
-from flowermd.internal import validate_unit
+from flowermd.internal import Units, validate_unit
 from flowermd.utils.actions import StdOutLogger, UpdateWalls
 from flowermd.utils.base_types import HOOMDThermostats
 
@@ -527,7 +526,7 @@ class Simulation(hoomd.simulation.Simulation):
 
     def _setup_n_steps(self, duration):
         """Set the number of steps to run the simulation."""
-        if isinstance(duration, int):
+        if isinstance(duration, (int, float)):
             # assuming duration is num steps
             return duration
         else:

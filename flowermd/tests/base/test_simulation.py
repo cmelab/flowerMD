@@ -6,6 +6,7 @@ import gsd.hoomd
 import hoomd
 import numpy as np
 import pytest
+import unyt as u
 
 from flowermd import Simulation, Units
 from flowermd.base import Pack
@@ -48,7 +49,7 @@ class TestSimulate(BaseTest):
             forcefield=benzene_system.hoomd_forcefield,
             reference_values=benzene_system.reference_values,
         )
-        sim.run_NVT(n_steps=1e3, kT=1.0, tau_kt=0.001)
+        sim.run_NVT(duration=1e3, temperature=1.0, tau_kt=0.001)
         sim.save_simulation("simulation.pickle")
         sim.save_restart_gsd("sim.gsd")
         new_sim = Simulation.from_simulation_pickle("simulation.pickle")
@@ -71,7 +72,7 @@ class TestSimulate(BaseTest):
                     sim_traj[0].particles.position,
                     new_sim_traj[0].particles.position,
                 )
-        new_sim.run_NVT(n_steps=2, kT=1.0, tau_kt=0.001)
+        new_sim.run_NVT(duration=2, temperature=1.0, tau_kt=0.001)
 
     def test_initialize_from_simulation_pickle_with_walls(self, benzene_system):
         sim = Simulation.from_snapshot_forces(
@@ -83,7 +84,7 @@ class TestSimulate(BaseTest):
         sim.save_simulation("simulation.pickle")
         new_sim = Simulation.from_simulation_pickle("simulation.pickle")
         assert len(new_sim.forces) == len(sim.forces)
-        new_sim.run_NVT(n_steps=2, kT=1.0, tau_kt=0.001)
+        new_sim.run_NVT(duration=2, temperature=1.0, tau_kt=0.001)
 
     def test_initialize_from_bad_pickle(self, benzene_system):
         sim = Simulation.from_snapshot_forces(
@@ -185,22 +186,54 @@ class TestSimulate(BaseTest):
         sim.reference_mass = 1.25 * Units.amu
         assert sim.reference_mass == 1.25 * Units.amu
 
+    def test_timestep_units(self, benzene_system):
+        dt = 0.0001
+        expected_real_timestep = (
+            dt
+            * (
+                benzene_system.reference_mass.to("kg")
+                * (benzene_system.reference_length.to("m") ** 2)
+                / benzene_system.reference_energy.to("J")
+            )
+            ** 0.5
+        )
+        sim = Simulation.from_system(benzene_system)
+        assert np.isclose(
+            sim.real_timestep, expected_real_timestep.to("fs"), atol=1e-1
+        )
+
     def test_NVT(self, benzene_system):
         sim = Simulation.from_system(benzene_system)
-        sim.run_NVT(temperature=1.0, tau_kt=0.01, duration=500)
+        kT = 1.0
+        expected_T = (
+            kT * sim.reference_energy.to(Units.J) / u.boltzmann_constant_mks
+        )
+        n_steps = 5000
+        expected_time_length = (n_steps * sim.real_timestep).to("ns")
+        sim.run_NVT(temperature=kT, tau_kt=0.01, duration=n_steps)
         assert isinstance(sim.method, hoomd.md.methods.ConstantVolume)
+        assert np.isclose(sim.real_temperature, expected_T, atol=1e-3)
+        assert np.isclose(sim.real_time_length, expected_time_length, atol=1e-3)
 
     def test_NVT_real_units(self, benzene_system):
         sim = Simulation.from_system(benzene_system)
-        sim.run_NVT(
-            temperature=35.225 * Units.K, tau_kt=0.01, duration=1 * Units.ps
+        T = 300 * Units.K
+        expected_kT = (T * u.boltzmann_constant_mks) / sim.reference_energy.to(
+            u.J
         )
+        sim.run_NVT(temperature=T, tau_kt=0.01, duration=1 * Units.ps)
         assert isinstance(sim.method, hoomd.md.methods.ConstantVolume)
-        assert np.isclose(sim._kT, 1.0, atol=1e-1)
+        assert np.isclose(sim.reduced_temperature, expected_kT, atol=1e-3)
         assert sim.timestep == int(1 * Units.ps / sim.real_timestep)
 
     def test_NPT(self, benzene_system):
         sim = Simulation.from_system(benzene_system)
+        reduced_pressure = 0.0001
+        expected_real_pressure = (
+            reduced_pressure
+            * sim.reference_energy.to(Units.J)
+            / sim.reference_length.to(Units.m) ** 3
+        )
         sim.run_NPT(
             temperature=1.0,
             duration=500,
@@ -209,17 +242,29 @@ class TestSimulate(BaseTest):
             tau_pressure=0.01,
         )
         assert isinstance(sim.method, hoomd.md.methods.ConstantPressure)
+        assert np.isclose(
+            sim.real_pressure, expected_real_pressure.to("Pa"), atol=1e-1
+        )
 
     def test_NPT_real_units(self, benzene_system):
         sim = Simulation.from_system(benzene_system)
+        p = 1 * Units.atm
+        expected_reduced_pressure = (
+            p.to("Pa")
+            * sim.reference_length.to(Units.m) ** 3
+            / sim.reference_energy.to(Units.J)
+        )
         sim.run_NPT(
             temperature=200.0 * Units.K,
             duration=0.1 * Units.ps,
-            pressure=0.0001,
+            pressure=p,
             tau_kt=0.001,
             tau_pressure=0.01,
         )
         assert isinstance(sim.method, hoomd.md.methods.ConstantPressure)
+        assert np.isclose(
+            sim.reduced_pressure, expected_reduced_pressure, atol=1e-1
+        )
 
     def test_langevin(self, benzene_system):
         sim = Simulation.from_system(benzene_system)
