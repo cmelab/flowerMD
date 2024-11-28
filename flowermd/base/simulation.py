@@ -408,6 +408,7 @@ class Simulation(hoomd.simulation.Simulation):
     def real_time_length(self):
         """The simulation time length in nanoseconds."""
         return (self.timestep * self.real_timestep).to("ns")
+
     @property
     def real_timestep(self):
         """The simulation timestep in femtoseconds."""
@@ -442,6 +443,7 @@ class Simulation(hoomd.simulation.Simulation):
             energy = 1 * Units.J
         temperature = (self._kT * energy) / u.boltzmann_constant_mks
         return temperature
+
     @property
     def real_pressure(self):
         """The pressure of the simulation in Pascals."""
@@ -485,7 +487,6 @@ class Simulation(hoomd.simulation.Simulation):
         reduced_pressure = (pressure * (length**3)) / energy
         return float(reduced_pressure)
 
-
     def _setup_temperature(self, temperature):
         if isinstance(temperature, (float, int)):
             # assuming temperature is kT
@@ -494,6 +495,7 @@ class Simulation(hoomd.simulation.Simulation):
             return self._temperature_to_kT(
                 validate_unit(temperature, u.dimensions.temperature)
             )
+
     def _setup_pressure(self, pressure):
         if isinstance(pressure, (float, int)):
             # assuming pressure is in reduced units.
@@ -522,6 +524,7 @@ class Simulation(hoomd.simulation.Simulation):
             return self._time_length_to_n_steps(
                 validate_unit(duration, u.dimensions.time)
             )
+
     def _setup_period(self, period):
         if isinstance(period, int):
             return period

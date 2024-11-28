@@ -1,8 +1,8 @@
 import unyt
 import unyt as u
 
-from flowermd.internal.exceptions import UnitError
 from flowermd.internal import Units
+from flowermd.internal.exceptions import UnitError
 
 """utils.py
    Internal utility methods for flowerMD.

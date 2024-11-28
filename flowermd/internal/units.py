@@ -69,7 +69,7 @@ class Units:
     # density units
     g_cm3 = u.g / u.cm**3
     kg_m3 = u.kg / u.m**3
-    amu_A3 = u.amu / u.angstrom ** 3
+    amu_A3 = u.amu / u.angstrom**3
 
     # pressure units
     atm = u.atm
