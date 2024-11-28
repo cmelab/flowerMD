@@ -1,6 +1,8 @@
+import unyt
 import unyt as u
 
 from flowermd.internal.exceptions import UnitError
+from flowermd.internal import Units
 
 """utils.py
    Internal utility methods for flowerMD.
@@ -42,7 +44,7 @@ def validate_unit(value, dimension):
         elif dimension == u.dimensions.energy:
             return "energy = 1.0 * flowermd.Units.kcal_mol"
 
-    if isinstance(value, u.unyt_quantity):
+    if isinstance(value, (u.unyt_quantity, unyt.unyt_array, Units)):
         if value.units.dimensions != dimension:
             raise UnitError(
                 f"Invalid unit dimension. The unit must be in "
