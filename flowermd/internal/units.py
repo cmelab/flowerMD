@@ -66,10 +66,15 @@ class Units:
     F = u.degF
     Fahrenheit = u.degF
 
-    # density units
+    # mass density units
     g_cm3 = u.g / u.cm**3
     kg_m3 = u.kg / u.m**3
     amu_A3 = u.amu / u.angstrom**3
+    # number density units
+    n_m3 = u.Unit("m**-3")
+    n_cm3 = u.Unit("cm**-3")
+    n_A3 = u.Unit("angstrom**-3")
+    n_nm3 = u.Unit("nm**-3")
 
     # pressure units
     atm = u.atm
