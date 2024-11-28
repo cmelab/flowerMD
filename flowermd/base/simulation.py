@@ -429,29 +429,41 @@ class Simulation(hoomd.simulation.Simulation):
         return timestep.to("fs")
 
     @property
-    def real_temperature(self):
-        """The temperature of the simulation in Kelvin."""
+    def reduced_temperature(self):
+        """The temperature of the simulation in reduced units."""
         if not self._kT:
             raise ValueError(
                 "Temperature is not set. Please specify the temperature when "
                 "running the simulation, using one of the following run"
                 " methods: `run_nvt`, `run_npt`, `run_update_volume`."
             )
+        return self._kT
+
+    @property
+    def real_temperature(self):
+        """The temperature of the simulation in Kelvin."""
         if self._reference_values.get("energy"):
             energy = self.reference_energy.to("J")
         else:
             energy = 1 * Units.J
-        temperature = (self._kT * energy) / u.boltzmann_constant_mks
+        temperature = (
+            self.reduced_temperature * energy
+        ) / u.boltzmann_constant_mks
         return temperature
 
     @property
-    def real_pressure(self):
-        """The pressure of the simulation in Pascals."""
+    def reduced_pressure(self):
+        """The pressure of the simulation in reduced units."""
         if not self._reduced_pressure:
             raise ValueError(
                 "Pressure is not set. Please specify the pressure when "
                 "running the simulation, using the `run_npt` method."
             )
+        return self._reduced_pressure
+
+    @property
+    def real_pressure(self):
+        """The pressure of the simulation in Pascals."""
         if self._reference_values.get("energy"):
             energy = self.reference_energy.to("J/mol")
         else:
@@ -460,7 +472,7 @@ class Simulation(hoomd.simulation.Simulation):
             length = self.reference_length.to("m")
         else:
             length = 1 * Units.m
-        pressure = (self._reduced_pressure * energy) / (length**3)
+        pressure = (self.reduced_pressure * energy) / (length**3)
         return pressure.to("Pa")
 
     def _temperature_to_kT(self, temperature):
