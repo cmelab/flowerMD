@@ -506,7 +506,7 @@ class Simulation(hoomd.simulation.Simulation):
 
     def _setup_temperature(self, temperature):
         """Set the temperature of the simulation."""
-        if isinstance(temperature, (float, int)):
+        if isinstance(temperature, (float, int, hoomd.variant.scalar.Ramp)):
             # assuming temperature is kT
             return temperature
         else:
@@ -517,7 +517,7 @@ class Simulation(hoomd.simulation.Simulation):
 
     def _setup_pressure(self, pressure):
         """Set the pressure of the simulation."""
-        if isinstance(pressure, (float, int)):
+        if isinstance(pressure, (float, int, hoomd.variant.scalar.Ramp)):
             # assuming pressure is in reduced units.
             return pressure
         else:
