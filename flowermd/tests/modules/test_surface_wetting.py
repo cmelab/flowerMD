@@ -1,9 +1,9 @@
 import gsd.hoomd
 import numpy as np
 import pytest
-import unyt as u
 
 from flowermd.base import Pack
+from flowermd.internal import Units
 from flowermd.library.forcefields import OPLS_AA
 from flowermd.library.surfaces import Graphene
 from flowermd.modules.surface_wetting import (
@@ -31,20 +31,20 @@ class TestDropletSimulation(BaseTest):
             reference_values=drop_system.reference_values,
         )
         drop_sim.run_droplet(
-            shrink_kT=5.0,
-            shrink_steps=200,
+            shrink_temperature=5.0,
+            shrink_duration=200,
             shrink_period=10,
-            shrink_density=0.2 * u.g / u.cm**3,
-            expand_kT=0.5,
-            expand_steps=200,
+            shrink_density=0.2 * Units.g_cm3,
+            expand_temperature=0.5,
+            expand_duration=200,
             expand_period=10,
-            hold_kT=1.0,
-            hold_steps=100,
-            final_density=0.05 * u.g / u.cm**3,
+            hold_temperature=1.0,
+            hold_duration=100,
+            final_density=0.05 * Units.g_cm3,
             tau_kt=drop_sim.dt * 100,
         )
         assert np.isclose(
-            drop_sim.density.to(u.g / u.cm**3).value, 0.05, atol=1e-2
+            drop_sim.density.to(Units.g_cm3).value, 0.05, atol=1e-2
         )
 
     def test_droplet_sim_no_units(self, polyethylene):
@@ -64,20 +64,20 @@ class TestDropletSimulation(BaseTest):
         )
         with pytest.warns():
             drop_sim.run_droplet(
-                shrink_kT=5.0,
-                shrink_steps=200,
+                shrink_temperature=5.0,
+                shrink_duration=200,
                 shrink_period=10,
                 shrink_density=0.2,
-                expand_kT=0.5,
-                expand_steps=200,
+                expand_temperature=0.5,
+                expand_duration=200,
                 expand_period=10,
-                hold_kT=1.0,
-                hold_steps=100,
+                hold_temperature=1.0,
+                hold_duration=100,
                 final_density=0.05,
                 tau_kt=drop_sim.dt * 100,
             )
             assert np.isclose(
-                drop_sim.density.to(u.g / u.cm**3).value, 0.05, atol=1e-2
+                drop_sim.density.to(Units.g_cm3).value, 0.05, atol=1e-2
             )
 
     def test_droplet_sim_bad_units(self, polyethylene):
@@ -97,20 +97,20 @@ class TestDropletSimulation(BaseTest):
         )
         with pytest.raises(ValueError):
             drop_sim.run_droplet(
-                shrink_kT=5.0,
-                shrink_steps=200,
+                shrink_temperature=5.0,
+                shrink_duration=200,
                 shrink_period=10,
-                shrink_density=0.2 * (u.cm**-3),
-                expand_kT=0.5,
-                expand_steps=200,
+                shrink_density=0.2 * (Units.n_cm3),
+                expand_temperature=0.5,
+                expand_duration=200,
                 expand_period=10,
-                hold_kT=1.0,
-                hold_steps=100,
-                final_density=0.05 * (u.cm**-3),
+                hold_temperature=1.0,
+                hold_duration=100,
+                final_density=0.05 * (Units.n_cm3),
                 tau_kt=drop_sim.dt * 100,
             )
             assert np.isclose(
-                drop_sim.density.to(u.g / u.cm**3).value, 0.05, atol=1e-2
+                drop_sim.density.to(Units.g_cm3).value, 0.05, atol=1e-2
             )
 
 
@@ -123,9 +123,9 @@ class TestInterfaceBuilder(BaseTest):
         # recreate droplet forcefield
         polyethylene_ff = polyethylene_system.hoomd_forcefield
         drop_refs = {
-            "energy": u.unyt_quantity(0.276144, "kJ/mol"),
-            "length": u.unyt_quantity(0.35, "nm"),
-            "mass": u.unyt_quantity(12.011, "amu"),
+            "energy": 0.276144 * Units.kJ_mol,
+            "length": 0.35 * Units.nm,
+            "mass": 12.011 * Units.amu,
         }
 
         # load surface snapshot
@@ -147,8 +147,8 @@ class TestInterfaceBuilder(BaseTest):
             drop_snapshot=drop_snapshot,
             drop_ff=polyethylene_ff,
             drop_ref_values=drop_refs,
-            box_height=15 * u.nm,
-            gap=0.4 * u.nm,
+            box_height=15 * Units.nm,
+            gap=0.4 * Units.nm,
         )
         assert (
             interface.hoomd_snapshot.particles.N
@@ -205,7 +205,7 @@ class TestWettingSimulation(BaseTest):
             fix_surface=True,
         )
         wetting_sim.run_NVT(
-            kT=1.0,
+            temperature=1.0,
             tau_kt=1,
-            n_steps=1e3,
+            duration=1e3,
         )

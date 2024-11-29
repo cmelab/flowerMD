@@ -1,6 +1,8 @@
 import numpy as np
 import unyt as u
 
+from flowermd.internal import Units
+
 """utils.py
    utility methods for flowerMD.
 """
@@ -21,9 +23,9 @@ def get_target_box_mass_density(
 
     Parameters
     ----------
-    density : float, or unyt.unyt_array, required
+    density : float or unyt.unyt_array or flowermd.internal.Units, required
         The density used to calculate volume.
-    mass : float, or unyt.unyt_array, required
+    mass : float or unyt.unyt_array or flowermd.internal.Units, required
         The mass used to calculate volume.
     x_constraint : float, optional, defualt=None
         Fixes the box length (nm) along the x axis.
@@ -32,7 +34,7 @@ def get_target_box_mass_density(
     z_constraint : float, optional, default=None
         Fixes the box length (nm) along the z axis.
     """
-    required_units = u.Unit("kg") / u.Unit("m**3")
+    required_units = Units.kg_m3
     if density.units.dimensions != required_units.dimensions:
         raise ValueError(
             f"The density given has units of {density.units.dimensions} "
@@ -66,7 +68,7 @@ def get_target_box_number_density(
 
     Parameters
     ----------
-    density : float, or unyt.unyt_array, required
+    density : float, or unyt.unyt_array or flowermd.internal.Units, required
         The density used to calculate volume.
     n_beads : int, required
         The number of beads used to calculate volume.
@@ -104,9 +106,9 @@ def _calculate_box_length(density, mass=None, n_beads=None, fixed_L=None):
 
     Parameters
     ----------
-    density : unyt.unyt_quantity, required
+    density : unyt.unyt_quantity or flowermd.internal.Units, required
         Target density of the system
-    mass : unyt.unyt_quantity, optional
+    mass : unyt.unyt_quantity or flowermd.internal.Units, optional
         Mass of the system.
         Use for mass density rather than number density.
     n_beads : int, optional
@@ -122,8 +124,8 @@ def _calculate_box_length(density, mass=None, n_beads=None, fixed_L=None):
         Box edge length
     """
     # Check units of density
-    mass_density = u.Unit("kg") / u.Unit("m**3")
-    number_density = u.Unit("m**-3")
+    mass_density = Units.kg_m3
+    number_density = Units.n_m3
     if density.units.dimensions == mass_density.dimensions:
         if not mass:
             raise ValueError(

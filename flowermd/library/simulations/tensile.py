@@ -78,25 +78,32 @@ class Tensile(Simulation):
         )
         return delta_L / self.initial_length
 
-    def run_tensile(self, strain, n_steps, kT, tau_kt, period):
+    def run_tensile(self, strain, duration, temperature, tau_kt, period):
         """Run a tensile test simulation.
 
         Parameters
         ----------
         strain : float, required
             The strain to apply to the simulation.
-        n_steps : int, required
-            The number of steps to run the simulation for.
+        duration : int or flowermd.internal.Units, required
+            The number of steps or time length to run the simulation. If unitless,
+             the time is assumed to be the number of steps.
+        temperature : flowermd.internal.Units or float or int, required
+            The temperature to use during volume update. If no unit is provided,
+            the temperature is assumed to be kT (temperature times Boltzmann
+            constant).
         tau_kt : float, required
             Thermostat coupling period (in simulation time units).
-        period : int, required
-            The period of the strain application.
+        period : int or flowermd.internal.Units, required
+            The number of steps or time length between box updates. If no unit
+            is provided, the period is assumed to be the number of steps.
 
         """
         current_length = self.box_lengths_reduced[self._axis_index]
         final_length = current_length * (1 + strain)
         final_box = np.copy(self.box_lengths_reduced)
         final_box[self._axis_index] = final_length
+        n_steps = self._setup_n_steps(duration)
         shift_by = (final_length - current_length) / (n_steps // period)
         resize_trigger = hoomd.trigger.Periodic(period)
         box_ramp = hoomd.variant.Ramp(
@@ -120,4 +127,6 @@ class Tensile(Simulation):
         )
         self.operations.updaters.append(box_resizer)
         self.operations.updaters.append(particle_updater)
-        self.run_NVT(n_steps=n_steps + 1, kT=kT, tau_kt=tau_kt)
+        self.run_NVT(
+            duration=n_steps + 1, temperature=temperature, tau_kt=tau_kt
+        )
