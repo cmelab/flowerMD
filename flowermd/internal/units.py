@@ -10,11 +10,11 @@ class Units:
     --------------
 
     ::
-        length = 1.0 * flowermd.Units.angstrom
-        energy = 1.0 * flowermd.Units.kcal_mol
-        mass = 1.0 * flowermd.Units.amu
-        time = 1.0 * flowermd.Units.ps
-        temperature = 1.0 * flowermd.Units.K
+        length = 1.0 * flowermd.internal.Units.angstrom
+        energy = 1.0 * flowermd.internal.Units.kcal_mol
+        mass = 1.0 * flowermd.internal.Units.amu
+        time = 1.0 * flowermd.internal.Units.ps
+        temperature = 1.0 * flowermd.internal.Units.K
 
 
     """

@@ -238,10 +238,10 @@ class Simulation(hoomd.simulation.Simulation):
 
         Parameters
         ----------
-        length : reference length * `flowermd.Units`, required
+        length : reference length * `flowermd.internal.Units`, required
             The reference length of the system.
             It can be provided in the following form of:
-            value * `flowermd.Units`, for example 1 * `flowermd.Units.angstrom`.
+            value * `flowermd.internal.Units`, for example 1 * `flowermd.internal.Units.angstrom`.
 
         """
         validated_length = validate_unit(length, u.dimensions.length)
@@ -253,10 +253,10 @@ class Simulation(hoomd.simulation.Simulation):
 
         Parameters
         ----------
-        energy : reference energy * `flowermd.Units`, required
+        energy : reference energy * `flowermd.internal.Units`, required
             The reference energy of the system.
             It can be provided in the following form of:
-            value * `flowermd.Units`, for example 1 * `flowermd.Units.kcal/mol`.
+            value * `flowermd.internal.Units`, for example 1 * `flowermd.internal.Units.kcal/mol`.
 
         """
         validated_energy = validate_unit(energy, u.dimensions.energy)
@@ -268,10 +268,10 @@ class Simulation(hoomd.simulation.Simulation):
 
         Parameters
         ----------
-        mass : reference mass * `flowermd.Units`, required
+        mass : reference mass * `flowermd.internal.Units`, required
             The reference mass of the system.
             It can be provided in the following form of:
-            value * `flowermd.Units`, for example 1 * `flowermd.Units.amu`.
+            value * `flowermd.internal.Units`, for example 1 * `flowermd.internal.Units.amu`.
         """
         validated_mass = validate_unit(mass, u.dimensions.mass)
         self._reference_values["mass"] = validated_mass
@@ -796,17 +796,18 @@ class Simulation(hoomd.simulation.Simulation):
         ----------
         final_box_lengths : np.ndarray or unyt.array.unyt_array, shape=(3,), required # noqa: E501
             The final box edge lengths in (x, y, z) order.
-        temperature : flowermd.utils.units or float or int, required
+        temperature : flowermd.internal.Units or float or int, required
             The temperature to use during volume update. If no unit is provided,
             the temperature is assumed to be kT (temperature times Boltzmann
             constant).
         tau_kt : float, required
             Thermostat coupling period (in simulation time units).
-        duration : int or flowermd.utils.units, required
+        duration : int or flowermd.internal.Units, required
             The number of steps or time length to run the simulation. If no unit
             is provided, the time is assumed to be the number of steps.
-        period : int, required
-            The number of steps ran between each box update iteration.
+        period : int or flowermd.internal.Units, required
+            The number of steps or time length between box updates. If no unit
+            is provided, the period is assumed to be the number of steps.
         write_at_start : bool, default True
             When set to True, triggers writers that evaluate to True
             for the initial step to execute before the next simulation
@@ -917,10 +918,10 @@ class Simulation(hoomd.simulation.Simulation):
 
         Parameters
         ----------
-        duration : int or flowermd.utils.units, required
+        duration : int or flowermd.internal.Units, required
             The number of steps or time length to run the simulation. If no unit
             is provided, the time is assumed to be the number of steps.
-        temperature : flowermd.utils.units or float or int, required
+        temperature : flowermd.internal.Units or float or int, required
             The temperature to use during the simulation. If no unit is
             provided, the temperature is assumed to be kT (temperature times
             Boltzmann constant).
@@ -980,19 +981,19 @@ class Simulation(hoomd.simulation.Simulation):
 
         Parameters
         ----------
-        pressure: flowermd.utils.units or int or hoomd.variant.Ramp, required
+        pressure: flowermd.internal.Units or int or hoomd.variant.Ramp, required
             The pressure to use during the simulation. If no unit is provided,
             the pressure is assumed to in reduced units
             pressure * (Avogadro constant × reduced length^3 / reduced energy).
         tau_pressure: float, required
             Barostat coupling period.
-        temperature: flowermd.utils.units or float or int, required
+        temperature: flowermd.internal.Units or float or int, required
             The temperature to use during the simulation. If no unit is
             provided, the temperature is assumed to be kT (temperature times
             Boltzmann constant).
         tau_kt: float, required
             Thermostat coupling period (in simulation time units).
-        duration: int or flowermd.utils.units, required
+        duration: int or flowermd.internal.Units, required
             The number of steps or time length to run the simulation. If no unit
             is provided, the time is assumed to be the number of steps.
         couple: str, default "xyz"
@@ -1053,13 +1054,13 @@ class Simulation(hoomd.simulation.Simulation):
 
         Parameters
         ----------
-        temperature: flowermd.utils.units or float or int, required
+        temperature: flowermd.internal.Units or float or int, required
             The temperature to use during the simulation. If no unit is
             provided, the temperature is assumed to be kT (temperature times
             Boltzmann constant).
         tau_kt: float, required
             Thermostat coupling period (in simulation time units).
-        duration: int or flowermd.utils.units, required
+        duration: int or flowermd.internal.Units, required
             The number of steps or time length to run the simulation. If no unit
             is provided, the time is assumed to be the number of steps.
         thermalize_particles: bool, default True
@@ -1093,9 +1094,9 @@ class Simulation(hoomd.simulation.Simulation):
             )
             sim = Simulation.from_system(pps_system)
             sim.run_NVT(
-                temperature=300 * flowermd.utils.units.K,
+                temperature=300 * flowermd.internal.Units.K,
                 tau_kt=1.0,
-                duration= 1 * flowermd.utils.units.ns,
+                duration= 1 * flowermd.internal.Units.ns,
             )
 
         """
@@ -1126,7 +1127,7 @@ class Simulation(hoomd.simulation.Simulation):
 
         Parameters
         ----------
-        duration : int or flowermd.utils.units, required
+        duration : int or flowermd.internal.Units, required
             The number of steps or time length to run the simulation. If no unit
             is provided, the time is assumed to be the number of steps.
         write_at_start : bool, default True
@@ -1165,7 +1166,7 @@ class Simulation(hoomd.simulation.Simulation):
 
         Parameters
         ----------
-        duration : int or flowermd.utils.units, required
+        duration : int or flowermd.internal.Units, required
             The number of steps or time length to run the simulation. If no unit
             is provided, the time is assumed to be the number of steps.
         maximum_displacement : float, default 1e-3
@@ -1203,14 +1204,14 @@ class Simulation(hoomd.simulation.Simulation):
 
         Parameters
         ----------
-        duration : int or flowermd.utils.units, required
+        duration : int or flowermd.internal.Units, required
             The number of steps or time length to run the simulation. If no unit
             is provided, the time is assumed to be the number of steps.
         temperature_start : unyt.unyt_quantity or float, required
-            The initial temperature. If no unit is provided, the temperature is
+            The initial temperature. If unitless, the temperature is
             assumed to be kT (temperature times Boltzmann constant).
         temperature_final : unyt.unyt_quantity or float, required
-            The final temperature. If no unit is provided, the temperature is
+            The final temperature. If unitless, the temperature is
             assumed to be kT (temperature times Boltzmann constant).
 
         """
@@ -1265,7 +1266,7 @@ class Simulation(hoomd.simulation.Simulation):
                               scale_charges=True)
             sim = Simulation(initial_state=pps_system.hoomd_snapshot,
                              forcefield=pps_system.hoomd_forcefield)
-            sim.run_NVT(n_steps=1e3, kT=1.0, tau_kt=1.0)
+            sim.run_NVT(duration=1e3, temperature=1.0, tau_kt=1.0)
             sim.pickle_forcefield("pps_forcefield.pickle")
             with open("pps_forcefield.pickle", "rb") as f:
                 pps_forcefield = pickle.load(f)
@@ -1273,7 +1274,7 @@ class Simulation(hoomd.simulation.Simulation):
             tensile_sim = Tensile(initial_state=pps_system.hoomd_snapshot,
                                   forcefield=pps_forcefield,
                                    tensile_axis=(1, 0, 0))
-            tensile_sim.run_tensile(strain=0.05, kT=2.0, n_steps=1e3, period=10)
+            tensile_sim.run_tensile(strain=0.05, temperature=2.0, duration=1e3, period=10)
 
         """
         if self._wall_forces and save_walls is False:
@@ -1315,7 +1316,7 @@ class Simulation(hoomd.simulation.Simulation):
                               scale_charges=True)
             sim = Simulation(initial_state=pps_system.hoomd_snapshot,
                              forcefield=pps_system.hoomd_forcefield)
-            sim.run_NVT(n_steps=1e3, kT=1.0, tau_kt=1.0)
+            sim.run_NVT(duration=1e3, temperature=1.0, tau_kt=1.0)
             sim.pickle_forcefield("pps_forcefield.pickle")
             sim.save_restart_gsd("pps_restart.gsd")
             with open("pps_forcefield.pickle", "rb") as f:
@@ -1324,7 +1325,7 @@ class Simulation(hoomd.simulation.Simulation):
             tensile_sim = Tensile(initial_state="pps_restart.gsd",
                                   forcefield=pps_forcefield,
                                   tensile_axis=(1, 0, 0))
-            tensile_sim.run_tensile(strain=0.05, kT=2.0, n_steps=1e3, period=10)
+            tensile_sim.run_tensile(strain=0.05, temperature=2.0, duration=1e3, period=10)
 
 
         """
