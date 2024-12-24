@@ -44,7 +44,7 @@ jobs:
         environment-file: environment-dev.yml
         python-version: ${{ matrix.python-version }}
         miniforge-variant: Mambaforge
-        miniforge-version: 4.9.2-4
+        miniforge-version: 24.11.0
         use-mamba: true
 
     - name: Install package
@@ -63,7 +63,7 @@ jobs:
 
   test-tutorials:
     if: ${{ github.event.issue.pull_request && github.event.comment.body== '/testtutorials'}}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
     - name: Put a reaction to the comment
       run: gh api graphql --silent --raw-field query="mutation AddReaction {addReaction(input:{subjectId:\"$NODE_ID\",content:EYES}){reaction{content}subject{id}}}"
@@ -96,14 +96,14 @@ jobs:
         PR_NUMBER: ${{ github.event.issue.number }}
 
     - name: Check out repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
 
     - name: Build environment
-      uses: conda-incubator/setup-miniconda@v2
+      uses: conda-incubator/setup-miniconda@v3
       with:
         environment-file: environment-dev.yml
         miniforge-variant: Mambaforge
-        miniforge-version: 4.9.2-4
+        miniforge-version: 24.11.0
         use-mamba: true
 
     - name: Install package
