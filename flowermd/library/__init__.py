@@ -15,6 +15,7 @@ from .forcefields import (
     KremerGrestBeadSpring,
     TableForcefield,
 )
+from .ml_forces import IsotropicCustomForce
 from .polymers import (
     PEEK,
     PEKK,
