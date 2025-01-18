@@ -1,0 +1,53 @@
+[build-system]
+requires = ["setuptools>=61.2", "versioningit"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "flowermd"
+description = "Framework for building and running coplex simulaiton workflows with MosDeF and HOOMD-Blue."
+readme = "README.md"
+authors = [
+  {name = "Chris Jones", email = "chrisjones4@u.boisestate.edu"},
+  {name = "Marjan Albooyeh", email = "marjanalbooyeh@u.boisestate.edu"}
+  {name = "Eric Jankowski", email = "ericjankowski@boisestate.edu"}
+]
+license= {text = "GPLv3"}
+classifiers=[
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+]
+urls = {Homepage = "https://github.com/cmelab/flowermd"}
+requires-python = ">=3.10"
+dynamic = ["version"]
+
+[tool.setuptools]
+zip-safe = false
+include-package-data = true
+license-files = ["LICENSE"]
+
+[tool.setuptools.packages]
+find = {namespaces = false}
+
+[tool.setuptools.package-data]
+flowermd = [
+  '"modules/**"',
+  '"library/**"',
+  '"assets/forcefields/**"',
+  '"assets/molecule_files/**"',
+  '"utils/**"',
+  '"internal/**"',
+]
+
+[tool.versioningit]
+default-version = "1+unknown"
+
+[tool.versioningit.format]
+distance = "{base_version}+{distance}.{vcs}{rev}"
+dirty = "{base_version}+{distance}.{vcs}{rev}.dirty"
+distance-dirty = "{base_version}+{distance}.{vcs}{rev}.dirty"
+
+[tool.versioningit.vcs]
+method = "git"
+match = ["*"]
+default-tag = "0.0.0"
