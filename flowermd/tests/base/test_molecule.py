@@ -207,8 +207,8 @@ class TestPolymer(BaseTest):
             bond_orientation=[None, None],
         )
         assert polymer.n_particles == 53
-        assert len(polymer.molecules[0].labels["Compound"]) == 3
-        assert len(polymer.molecules[1].labels["Compound"]) == 4
+        assert len(polymer.molecules[0].children) == 3
+        assert len(polymer.molecules[1].children]) == 4
 
     def test_polymer_different_num_mol(self, dimethylether_smiles):
         polymer = Polymer(
@@ -220,9 +220,9 @@ class TestPolymer(BaseTest):
             bond_orientation=[None, None],
         )
         assert polymer.n_particles == 55
-        assert len(polymer.molecules[0].labels["Compound"]) == 3
-        assert len(polymer.molecules[1].labels["Compound"]) == 2
-        assert len(polymer.molecules[2].labels["Compound"]) == 2
+        assert len(polymer.molecules[0].children) == 3
+        assert len(polymer.molecules[1].children) == 2
+        assert len(polymer.molecules[2].children) == 2
 
     def test_polymer_unequal_num_mol_length(self, dimethylether_smiles):
         with pytest.raises(ValueError):
