@@ -208,7 +208,7 @@ class TestPolymer(BaseTest):
         )
         assert polymer.n_particles == 53
         assert len(polymer.molecules[0].children) == 3
-        assert len(polymer.molecules[1].children]) == 4
+        assert len(polymer.molecules[1].children) == 4
 
     def test_polymer_different_num_mol(self, dimethylether_smiles):
         polymer = Polymer(
