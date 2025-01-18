@@ -43,7 +43,7 @@ jobs:
       with:
         environment-file: environment-dev.yml
         python-version: ${{ matrix.python-version }}
-        miniforge-variant: Miniforge
+        miniforge-variant: Miniforge3
         miniforge-version: 24.11.0
         use-mamba: true
 
@@ -102,7 +102,7 @@ jobs:
       uses: conda-incubator/setup-miniconda@v3
       with:
         environment-file: environment-dev.yml
-        miniforge-variant: Miniforge
+        miniforge-variant: Miniforge3
         miniforge-version: 24.11.0
         use-mamba: true
 
