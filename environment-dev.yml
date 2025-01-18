@@ -18,6 +18,6 @@ dependencies:
   - pytest
   - pytest-cov
   - nbmake
-  - python >=3.10, <3.12
+  - python >=3.10, <3.13
   - fresnel >=0.13.5
   - cmeutils >=1.3
