@@ -102,8 +102,7 @@ class DropletSimulation(Simulation):
             shrink_density, u.array.unyt_quantity
         ) and not isinstance(final_density, u.array.unyt_quantity):
             warnings.warn(
-                "Units for density were not given, assuming "
-                "units of g/cm**3."
+                "Units for density were not given, assuming units of g/cm**3."
             )
             target_box_shrink = get_target_box_mass_density(
                 density=shrink_density * (u.g / (u.cm**3)),
