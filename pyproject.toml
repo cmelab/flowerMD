@@ -8,7 +8,7 @@ description = "Framework for building and running coplex simulaiton workflows wi
 readme = "README.md"
 authors = [
   {name = "Chris Jones", email = "chrisjones4@u.boisestate.edu"},
-  {name = "Marjan Albooyeh", email = "marjanalbooyeh@u.boisestate.edu"}
+  {name = "Marjan Albooyeh", email = "marjanalbooyeh@u.boisestate.edu"},
   {name = "Eric Jankowski", email = "ericjankowski@boisestate.edu"}
 ]
 license= {text = "GPLv3"}
