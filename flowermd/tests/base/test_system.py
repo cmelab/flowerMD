@@ -200,7 +200,7 @@ class TestSystem(BaseTest):
         assert np.prod(low_density_system.box.lengths) > np.prod(
             high_density_system.box.lengths
         )
-        
+
     def test_pack_seed(self, benzene_molecule):
         benzene_mol = benzene_molecule(n_mols=3)
         default_seed = Pack(molecules=[benzene_mol], density=0.1)
@@ -208,7 +208,7 @@ class TestSystem(BaseTest):
         assert np.prod(low_density_system.box.lengths) > np.prod(
             high_density_system.box.lengths
         )
-    #adding test for kwargs argument in system.py Pack class    
+    #adding test for kwargs argument in system.py Pack class
     def test_pack_kwargs_attr(self, polyethylene):
         polyethylene = polyethylene(lengths=5, num_mols=1)
         system = Pack(

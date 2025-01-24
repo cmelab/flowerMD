@@ -675,7 +675,7 @@ class Pack(System):
         self.fix_orientation = fix_orientation
         super(Pack, self).__init__(molecules=molecules, base_units=base_units)
 
-    def _build_system(self,**kwargs):
+    def _build_system(self, **kwargs):
         mass_density = u.Unit("kg") / u.Unit("m**3")
         number_density = u.Unit("m**-3")
         if self.density.units.dimensions == mass_density.dimensions:
@@ -702,7 +702,7 @@ class Pack(System):
             seed=self.seed,
             edge=self.edge,
             fix_orientation=self.fix_orientation,
-            **kwargs
+            **kwargs,
         )
         return system
 
