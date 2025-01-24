@@ -200,6 +200,32 @@ class TestSystem(BaseTest):
         assert np.prod(low_density_system.box.lengths) > np.prod(
             high_density_system.box.lengths
         )
+        
+    def test_pack_seed(self, benzene_molecule):
+        benzene_mol = benzene_molecule(n_mols=3)
+        default_seed = Pack(molecules=[benzene_mol], density=0.1)
+        change_seed = Pack(molecules=[benzene_mol], density=0.1, seed=12340)
+        assert np.prod(low_density_system.box.lengths) > np.prod(
+            high_density_system.box.lengths
+        )
+    #adding test for kwargs argument in system.py Pack class    
+    def test_pack_kwargs_attr(self, polyethylene):
+        polyethylene = polyethylene(lengths=5, num_mols=1)
+        system = Pack(
+            molecules=[polyethylene],
+            density=1.0,
+            compound,
+            n_compounds=None,
+            box=None,
+            density=None,
+            overlap=0.2,
+            seed=12345,
+            sidemax=100.0, edge=0.2, compound_ratio=None, aspect_ratio=None, fix_orientation=False, temp_file=None, update_port_locations=False, packmol_args=Non
+        )
+        assert system._ff_kwargs["r_cut"] == 2.5
+        assert system._ff_kwargs["nlist_buffer"] == 0.5
+        assert system._ff_kwargs["pppm_kwargs"]["resolution"] == (4, 4, 4)
+        assert system._ff_kwargs["pppm_kwargs"]["order"] == 3
 
     def test_mass(self, pps_molecule):
         pps_mol = pps_molecule(n_mols=20)
