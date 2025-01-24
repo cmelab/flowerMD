@@ -19,9 +19,9 @@ class TestWelding(BaseTest):
         )
         sim.add_walls(wall_axis=(1, 0, 0), sigma=1, epsilon=1, r_cut=2)
         sim.run_update_volume(
-            n_steps=1000,
+            duration=1000,
             period=10,
-            kT=2.0,
+            temperature=2.0,
             tau_kt=0.01,
             final_box_lengths=sim.box_lengths / 2,
         )
@@ -54,9 +54,9 @@ class TestWelding(BaseTest):
         )
         sim.add_walls(wall_axis=(1, 0, 0), sigma=1, epsilon=1, r_cut=2)
         sim.run_update_volume(
-            n_steps=1000,
+            duration=1000,
             period=10,
-            kT=2.0,
+            temperature=2.0,
             tau_kt=0.01,
             final_box_lengths=sim.box_lengths / 2,
         )
@@ -93,7 +93,7 @@ class TestWelding(BaseTest):
         assert any(
             [isinstance(i, hoomd.md.external.wall.LJ) for i in sim.forces]
         )
-        sim.run_NVT(kT=1.0, tau_kt=0.01, n_steps=500)
+        sim.run_NVT(temperature=1.0, tau_kt=0.01, duration=500)
 
     def test_slab_sim_yaxis(self, polyethylene_system):
         sim = SlabSimulation(
@@ -105,7 +105,7 @@ class TestWelding(BaseTest):
         assert any(
             [isinstance(i, hoomd.md.external.wall.LJ) for i in sim.forces]
         )
-        sim.run_NVT(kT=1.0, tau_kt=0.01, n_steps=500)
+        sim.run_NVT(temperature=1.0, tau_kt=0.01, duration=500)
 
     def test_slab_sim_zaxis(self, polyethylene_system):
         sim = SlabSimulation(
@@ -117,7 +117,7 @@ class TestWelding(BaseTest):
         assert any(
             [isinstance(i, hoomd.md.external.wall.LJ) for i in sim.forces]
         )
-        sim.run_NVT(kT=1.0, tau_kt=0.01, n_steps=500)
+        sim.run_NVT(temperature=1.0, tau_kt=0.01, duration=500)
 
     def test_weld_sim(self, polyethylene_system):
         sim = SlabSimulation(
@@ -125,7 +125,7 @@ class TestWelding(BaseTest):
             forcefield=polyethylene_system.hoomd_forcefield,
             log_write_freq=2000,
         )
-        sim.run_NVT(kT=1.0, tau_kt=0.01, n_steps=500)
+        sim.run_NVT(temperature=1.0, tau_kt=0.01, duration=500)
         sim.save_restart_gsd()
         # Create interface system from slab restart.gsd file
         interface = Interface(
@@ -176,9 +176,9 @@ class TestWelding(BaseTest):
             log_write_freq=2000,
         )
         sim.run_update_volume(
-            n_steps=1000,
+            duration=1000,
             period=10,
-            kT=2.0,
+            temperature=2.0,
             tau_kt=0.01,
             final_box_lengths=sim.box_lengths / 2,
         )
