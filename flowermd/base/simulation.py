@@ -73,8 +73,7 @@ class Simulation(hoomd.simulation.Simulation):
     ):
         if not isinstance(forcefield, Iterable) or isinstance(forcefield, str):
             raise ValueError(
-                "forcefield must be a sequence of "
-                "hoomd.md.force.Force objects."
+                "forcefield must be a sequence of hoomd.md.force.Force objects."
             )
         else:
             for obj in forcefield:

@@ -525,8 +525,7 @@ class Polymer(Molecule):
                 self.periodic_bond_axis, str
             ) or self.periodic_bond_axis.lower() not in ["x", "y", "z"]:
                 raise ValueError(
-                    "Valid choices for a `periodic_bond_axis` are "
-                    "'x', 'y', 'z'"
+                    "Valid choices for a `periodic_bond_axis` are 'x', 'y', 'z'"
                 )
             add_hydrogens = False
         else:
