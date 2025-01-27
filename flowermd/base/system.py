@@ -659,7 +659,7 @@ class Pack(System):
         overlap=0.2,
         seed=12345,
         fix_orientation=False,
-        **kwargs
+        **kwargs,
     ):
         if not isinstance(density, u.array.unyt_quantity):
             self.density = density * u.Unit("g") / u.Unit("cm**3")
@@ -674,7 +674,9 @@ class Pack(System):
         self.overlap = overlap
         self.seed = seed
         self.fix_orientation = fix_orientation
-        super(Pack, self).__init__(molecules=molecules, base_units=base_units,**kwargs)
+        super(Pack, self).__init__(
+            molecules=molecules, base_units=base_units, **kwargs
+        )
 
     def _build_system(self):
         mass_density = u.Unit("kg") / u.Unit("m**3")
@@ -702,7 +704,7 @@ class Pack(System):
             overlap=self.overlap,
             seed=self.seed,
             edge=self.edge,
-            fix_orientation=self.fix_orientation
+            fix_orientation=self.fix_orientation,
         )
         return system
 

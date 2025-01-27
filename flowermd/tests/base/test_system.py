@@ -206,7 +206,7 @@ class TestSystem(BaseTest):
         default_seed = Pack(molecules=[benzene_mol], density=0.1)
         change_seed = Pack(molecules=[benzene_mol], density=0.1, seed=12340)
         assert not np.array_equal(default_seed.xyz,change_seed.xyz)
-        
+
     #adding test for kwargs argument in system.py Pack class
     def test_pack_kwargs_attr(self, polyethylene):
         polyethylene = polyethylene(lengths=5, num_mols=1)
@@ -221,7 +221,7 @@ class TestSystem(BaseTest):
             seed=12345,
             sidemax=100.0, edge=0.2, compound_ratio=None, aspect_ratio=None, fix_orientation=False, temp_file=None, update_port_locations=False, packmol_args=None
         )
-        assert 
+        assert
 
     def test_mass(self, pps_molecule):
         pps_mol = pps_molecule(n_mols=20)
