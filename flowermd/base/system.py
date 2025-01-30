@@ -68,6 +68,7 @@ class System(ABC):
         self,
         molecules,
         base_units=dict(),
+        **kwargs,
     ):
         self._molecules = check_return_iterable(molecules)
         self.all_molecules = []
@@ -123,7 +124,7 @@ class System(ABC):
                 self.n_mol_types += 1
 
         # Create mBuild system
-        self.system = self._build_system()
+        self.system = self._build_system(**kwargs)
         # Create GMSO topology
         self.gmso_system = self._convert_to_gmso()
 
@@ -678,7 +679,7 @@ class Pack(System):
             molecules=molecules, base_units=base_units, **kwargs
         )
 
-    def _build_system(self):
+    def _build_system(self, **kwargs):
         mass_density = u.Unit("kg") / u.Unit("m**3")
         number_density = u.Unit("m**-3")
         if self.density.units.dimensions == mass_density.dimensions:
@@ -705,6 +706,7 @@ class Pack(System):
             seed=self.seed,
             edge=self.edge,
             fix_orientation=self.fix_orientation,
+            **kwargs,
         )
         return system
 
