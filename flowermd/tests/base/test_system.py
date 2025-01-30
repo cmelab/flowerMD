@@ -212,13 +212,21 @@ class TestSystem(BaseTest):
     # adding test for kwargs argument in system.py Pack class
     def test_pack_kwargs_attr(self, polyethylene):
         polyethylene = polyethylene(lengths=5, num_mols=1)
-        Pack(
+        system1 = Pack(
             molecules=[polyethylene],
             density=1.0,
             overlap=0.2,
             seed=12345,
-            sidemax=100.0,
+            fix_orientation=True,
         )
+        system2 = Pack(
+            molecules=[polyethylene],
+            density=1.0,
+            overlap=0.2,
+            seed=12345,
+            fix_orientation=False,
+        )
+        assert not np.array_equal(system1.system.xyz, system2.system.xyz)
 
     def test_mass(self, pps_molecule):
         pps_mol = pps_molecule(n_mols=20)
