@@ -665,8 +665,7 @@ class Pack(System):
         if not isinstance(density, u.array.unyt_quantity):
             self.density = density * u.Unit("g") / u.Unit("cm**3")
             warnings.warn(
-                "Units for density were not given, assuming "
-                "units of g/cm**3."
+                "Units for density were not given, assuming units of g/cm**3."
             )
         else:
             self.density = density
