@@ -48,6 +48,8 @@ class System(ABC):
         Dictionary of base units to use for scaling.
         Dictionary keys are "length", "mass", and "energy". Values should be an
         unyt array of the desired base unit.
+    kwargs
+        See classes that inherit from System for kwargs
 
     Warnings
     --------
@@ -628,7 +630,9 @@ class Pack(System):
     overlap : float, default 0.2
         Minimum separation (nm) between particles of different molecules.
     seed : int, default 12345
-        Random seed to be passed to PACKMOL.
+        Change seed to be passed to PACKMOL for different starting positions
+    kwargs
+        Arguments to be passed into mbuild.packing.fill_box
 
 
     .. warning::
