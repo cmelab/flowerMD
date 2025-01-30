@@ -48,6 +48,8 @@ class System(ABC):
         Dictionary of base units to use for scaling.
         Dictionary keys are "length", "mass", and "energy". Values should be an
         unyt array of the desired base unit.
+    kwargs
+        See classes that inherit from System for kwargs
 
     Warnings
     --------
@@ -68,6 +70,7 @@ class System(ABC):
         self,
         molecules,
         base_units=dict(),
+        **kwargs,
     ):
         self._molecules = check_return_iterable(molecules)
         self.all_molecules = []
@@ -123,7 +126,7 @@ class System(ABC):
                 self.n_mol_types += 1
 
         # Create mBuild system
-        self.system = self._build_system()
+        self.system = self._build_system(**kwargs)
         # Create GMSO topology
         self.gmso_system = self._convert_to_gmso()
 
@@ -626,6 +629,10 @@ class Pack(System):
         The space (nm) between the edge of the box and the molecules.
     overlap : float, default 0.2
         Minimum separation (nm) between particles of different molecules.
+    seed : int, default 12345
+        Change seed to be passed to PACKMOL for different starting positions
+    kwargs
+        Arguments to be passed into mbuild.packing.fill_box
 
 
     .. warning::
@@ -655,7 +662,9 @@ class Pack(System):
         packing_expand_factor=5,
         edge=0.2,
         overlap=0.2,
+        seed=12345,
         fix_orientation=False,
+        **kwargs,
     ):
         if not isinstance(density, u.array.unyt_quantity):
             self.density = density * u.Unit("g") / u.Unit("cm**3")
@@ -667,10 +676,13 @@ class Pack(System):
         self.packing_expand_factor = packing_expand_factor
         self.edge = edge
         self.overlap = overlap
+        self.seed = seed
         self.fix_orientation = fix_orientation
-        super(Pack, self).__init__(molecules=molecules, base_units=base_units)
+        super(Pack, self).__init__(
+            molecules=molecules, base_units=base_units, **kwargs
+        )
 
-    def _build_system(self):
+    def _build_system(self, **kwargs):
         mass_density = u.Unit("kg") / u.Unit("m**3")
         number_density = u.Unit("m**-3")
         if self.density.units.dimensions == mass_density.dimensions:
@@ -694,8 +706,10 @@ class Pack(System):
             n_compounds=[1 for i in self.all_molecules],
             box=list(target_box * self.packing_expand_factor),
             overlap=self.overlap,
+            seed=self.seed,
             edge=self.edge,
             fix_orientation=self.fix_orientation,
+            **kwargs,
         )
         return system
 
