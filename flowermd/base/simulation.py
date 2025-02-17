@@ -70,6 +70,7 @@ class Simulation(hoomd.simulation.Simulation):
         log_file_name="sim_data.txt",
         thermostat=HOOMDThermostats.MTTK,
         rigid_constraint=None,
+        integrate_rotational_dof=False,
     ):
         if not isinstance(forcefield, Iterable) or isinstance(forcefield, str):
             raise ValueError(
@@ -123,6 +124,7 @@ class Simulation(hoomd.simulation.Simulation):
         # Add a gsd and thermo props logger to sim operations
         self._add_hoomd_writers()
         self._thermostat = thermostat
+        self.integrate_rotational_dof = integrate_rotational_dof
 
     @classmethod
     def from_system(cls, system, **kwargs):
@@ -705,7 +707,9 @@ class Simulation(hoomd.simulation.Simulation):
             self.integrator = hoomd.md.Integrator(
                 dt=self.dt,
                 integrate_rotational_dof=(
-                    True if self._rigid_constraint else False
+                    True
+                    if (self._rigid_constraint or self.integrate_rotational_dof)
+                    else False
                 ),
             )
             if self._rigid_constraint:
