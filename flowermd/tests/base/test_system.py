@@ -201,6 +201,33 @@ class TestSystem(BaseTest):
             high_density_system.box.lengths
         )
 
+    def test_pack_seed(self, benzene_molecule):
+        benzene_mol = benzene_molecule(n_mols=3)
+        default_seed = Pack(molecules=[benzene_mol], density=0.1)
+        change_seed = Pack(molecules=[benzene_mol], density=0.1, seed=12340)
+        assert not np.array_equal(
+            default_seed.system.xyz, change_seed.system.xyz
+        )
+
+    # adding test for kwargs argument in system.py Pack class
+    def test_pack_kwargs_attr(self, polyethylene):
+        polyethylene = polyethylene(lengths=5, num_mols=1)
+        system1 = Pack(
+            molecules=[polyethylene],
+            density=1.0,
+            overlap=0.2,
+            seed=12345,
+            fix_orientation=True,
+        )
+        system2 = Pack(
+            molecules=[polyethylene],
+            density=1.0,
+            overlap=0.2,
+            seed=12345,
+            fix_orientation=False,
+        )
+        assert not np.array_equal(system1.system.xyz, system2.system.xyz)
+
     def test_mass(self, pps_molecule):
         pps_mol = pps_molecule(n_mols=20)
         system = Pack(molecules=[pps_mol], density=1.0)
