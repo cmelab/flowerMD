@@ -143,7 +143,7 @@ def load_isotropic_custom_force(
             "model"
         ]
     )
-    force = IsotropicCustomForce(
+    custom_force = IsotropicCustomForce(
         model, model_config.box_len, model_config.number_neighbors, device
     )
-    return force
+    return custom_force
