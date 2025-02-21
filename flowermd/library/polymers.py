@@ -320,10 +320,10 @@ class EllipsoidChain(Polymer):
         # Build up ellipsoid bead
         bead = mb.Compound(name="ellipsoid")
         head = mb.Compound(
-            pos=(0, 0, self.lpar), name="A", mass=self.bead_mass / 4
+            pos=(0, 0, self.lpar / 2), name="A", mass=self.bead_mass / 4
         )
         tail = mb.Compound(
-            pos=(0, 0, -self.lpar), name="A", mass=self.bead_mass / 4
+            pos=(0, 0, -self.lpar / 2), name="A", mass=self.bead_mass / 4
         )
         head_mid = mb.Compound(
             pos=(0, 0, self.lpar / 2), name="B", mass=self.bead_mass / 4
@@ -347,7 +347,7 @@ class EllipsoidChain(Polymer):
         chain.freud_generate_bonds(
             name_a="B",
             name_b="B",
-            dmin=self.lpar - 0.1,
-            dmax=self.lpar + self.bead_bond_length + 0.1,
+            dmin=self.bead_bond_length - 0.1,
+            dmax=self.lpar + 0.001,
         )
         return chain
