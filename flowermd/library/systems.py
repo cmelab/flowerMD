@@ -4,6 +4,7 @@ from flowermd.base.system import System
 import numpy as np
 from scipy.spatial.distance import pdist
 
+
 class SingleChainSystem(System):
     """Builds a box around a single chain.
 
@@ -16,7 +17,7 @@ class SingleChainSystem(System):
     """
     
 	def __init__(self, molecules, base_units=dict(),buffer=1.05):
-        self.buffer = buffer
+       		self.buffer = buffer
 		super(SingleChainSystem, self).__init__(
 			molecules=molecules,
 			base_units=base_units
