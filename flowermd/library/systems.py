@@ -1,8 +1,9 @@
 """Examples for the Systems class."""
 
-from flowermd.base.system import System
 import numpy as np
 from scipy.spatial.distance import pdist
+
+from flowermd.base.system import System
 
 
 class SingleChainSystem(System):
@@ -15,7 +16,7 @@ class SingleChainSystem(System):
     See System class.
 
     """
-    
+
 	def __init__(self, molecules, base_units=dict(),buffer=1.05):
        		self.buffer = buffer
 		super(SingleChainSystem, self).__init__(
