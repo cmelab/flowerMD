@@ -601,8 +601,8 @@ class EllipsoidForcefield(BaseHOOMDForcefield):
         lpar,
         lperp,
         r_cut,
-        #bond_k,
-        #bond_r0,
+        # bond_k,
+        # bond_r0,
         angle_k=None,
         angle_theta0=None,
     ):
@@ -610,8 +610,8 @@ class EllipsoidForcefield(BaseHOOMDForcefield):
         self.lperp = lperp
         self.lpar = lpar
         self.r_cut = r_cut
-        #self.bond_k = bond_k
-        #self.bond_r0 = bond_r0
+        # self.bond_k = bond_k
+        # self.bond_r0 = bond_r0
         self.angle_k = angle_k
         self.angle_theta0 = angle_theta0
         hoomd_forces = self._create_forcefield()
@@ -620,10 +620,10 @@ class EllipsoidForcefield(BaseHOOMDForcefield):
     def _create_forcefield(self):
         forces = []
         # Bonds
-        #bond = hoomd.md.bond.Harmonic()
-        #bond.params["A-A"] = dict(k=self.bond_k, r0=self.bond_r0)
-        #bond.params["B-B"] = dict(k=0, r0=self.lpar)
-        #forces.append(bond)
+        # bond = hoomd.md.bond.Harmonic()
+        # bond.params["A-A"] = dict(k=self.bond_k, r0=self.bond_r0)
+        # bond.params["B-B"] = dict(k=0, r0=self.lpar)
+        # forces.append(bond)
 
         # Angles
         if all([self.angle_k, self.angle_theta0]):

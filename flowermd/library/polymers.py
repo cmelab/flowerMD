@@ -314,7 +314,7 @@ class EllipsoidChain(Polymer):
         # Build up ellipsoid bead
         bead = mb.Compound(name="ellipsoid")
         head = mb.Compound(
-            pos=(0, 0, self.lpar), name="_H", mass=self.bead_mass / 2 
+            pos=(0, 0, self.lpar), name="_H", mass=self.bead_mass / 2
         )
         center = mb.Compound(pos=(0, 0, 0), name="_C", mass=self.bead_mass / 2)
         bead.add([center, head])

@@ -10,15 +10,20 @@ def set_bond_constraints(snapshot, bond_type, constrain_value, tolerance=1e-5):
     constraint_values = []
     constraint_groups = []
     bond_type_id = snapshot.bonds.types.index(bond_type)
-    bond_indices = np.where(snapshot.bonds.typeid == np.array(bond_type_id))[0].astype(int)
+    bond_indices = np.where(snapshot.bonds.typeid == np.array(bond_type_id))[
+        0
+    ].astype(int)
     for idx in bond_indices:
         group = snapshot.bonds.group[idx]
-        bond_len = np.linalg.norm(snapshot.particles.position[group[1]] - snapshot.particles.position[group[0]])
+        bond_len = np.linalg.norm(
+            snapshot.particles.position[group[1]]
+            - snapshot.particles.position[group[0]]
+        )
         if not np.isclose(constrain_value, bond_len, atol=tolerance):
             raise ValueError("Values found not within the given tolerance")
         constraint_values.append(constrain_value)
         constraint_groups.append(group)
-    
+
     snapshot.constraints.N = len(constraint_values)
     snapshot.constraints.value = constraint_values
     snapshot.constraints.group = constraint_groups
