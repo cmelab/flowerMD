@@ -320,22 +320,20 @@ class EllipsoidChain(Polymer):
         # Build up ellipsoid bead
         bead = mb.Compound(name="ellipsoid")
         head = mb.Compound(
-            pos=(0, 0, self.lpar), name="_H", mass=self.bead_mass / 3
+            pos=(0, 0, self.lpar), name="_H", mass=self.bead_mass / 2 
         )
-        center = mb.Compound(pos=(0, 0, 0), name="_C", mass=self.bead_mass / 3)
+        center = mb.Compound(pos=(0, 0, 0), name="_C", mass=self.bead_mass / 2)
         bead.add([center, head])
         bead.add_bond([center, head])
         chain = mb.Compound()
         last_bead = None
         for i in range(length):
-            translate_by = np.array(
-                [0, 0, i * (self.lpar + self.bead_bond_length)]
-            )
+            translate_by = np.array([0, 0, i * self.lpar * 2])
             this_bead = mb.clone(bead)
             this_bead.translate(by=translate_by)
             chain.add(this_bead)
             if last_bead:
-                chain.add_bond([this_bead["_C"][0], last_bead["_H"][0]])
+                chain.add_bond([this_bead.children[0], last_bead.children[1]])
             last_bead = this_bead
 
         return chain
