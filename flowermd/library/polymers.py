@@ -288,8 +288,8 @@ class EllipsoidChain(Polymer):
 
     This is meant to be used with
     `flowermd.library.forcefields.EllipsoidForcefield`
-    and requires using `flowermd.utils.rigid_body` to set up
-    the rigid bodies correctly in HOOMD-Blue.
+    and requires using `flowermd.utils.constraints.set_bond_constraints` to set up
+    the fixed bonds correctly in HOOMD-Blue.
 
     Parameters
     ----------
