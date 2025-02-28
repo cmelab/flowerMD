@@ -37,6 +37,39 @@ def set_bond_constraints(snapshot, bond_type, constrain_value, tolerance=1e-5):
     Pass the snapshot and constraint object into flowermd.base.Simulation
     in order for the fixed bond lengths to take effect.
 
+    Examples
+        --------
+        This example demonstrates how to create a snapshot with fixed bonds
+        from a snapshot of a system of ellipsoids.
+        The ellipsoids are created using the EllipsoidChain class from
+        the `flowermd.library.polymers`.
+        The snapshot, and the constraint object are passed into flowermd.Simulation
+        and used by Hoomd-Blue to constrain the bond lengths between
+        bonded ellipsoids.
+
+        ::
+            from flowermd.library import EllipsoidChain, EllipsoidForcefield
+            from flowermd import Pack, Simulation
+            from flowermd.utils import set_bond_constraints
+
+            chain = EllipsoidChain(lengths=30, num_mols=1, lpar=1, bead_mass=1)
+            system = Pack(molecules=chain, density=0.01, packing_expand_factor=25)
+            constrain_snap, d_constraint = set_bond_constraints(
+                    system.hoomd_snapshot, constrain_value=1.0, bond_type="_C-_H"
+            )
+            forces = EllipsoidForcefield(
+                    epsilon=1.0, lpar=1.0, lperp=0.5, r_cut=3.0, angle_k=10, angle_theta0=2.2
+            )
+
+            sim = Simulation(
+                initial_state=constrain_snap,
+                forcefield=forces.hoomd_forces,
+                constraint=d_constraint,
+                gsd_write_freq=5000
+            )
+            sim.run_NVT(kT=1.0, n_steps=500000, tau_kt=100*sim.dt)
+            sim.flush_writers()
+
     """
     constraint_values = []
     constraint_groups = []
@@ -84,46 +117,6 @@ def create_rigid_body(
         The snapshot of the rigid bodies.
     rigid_constrain : hoomd.md.constrain.Rigid
         The rigid body constrain object.
-
-    Examples
-        --------
-        This example demonstrates how to create a rigid body snapshot from a
-        snapshot of a system of ellipsoids. The ellipsoids are created using
-        the EllipsoidChain class from the `flowermd.library.polymers`.
-        The `rigid_frame` snapshot contains all rigid body centers and the
-        constituent particles along with information about the positions of
-        center of mass, orientations and moment of inertia. The
-        `rigid_constrain` object is used by hoomd in the simulation class to
-        constrain the rigid bodies.
-
-        ::
-
-            from flowermd.library.polymers import EllipsoidChain
-            from flowermd.library.forcefields import EllipsoidForcefield
-            from flowermd.base import Pack
-            from flowermd.base import Simulation
-
-            ellipsoid_chain = EllipsoidChain(lengths=9, num_mols=20,
-                                            bead_length=1, bead_mass=100,
-                                            bond_length=0.01)
-
-            system = Pack(molecules=ellipsoid_chain, density=0.1,
-                          fix_orientation=True)
-
-            rigid_frame, rigid = create_rigid_body(system.hoomd_snapshot,
-                                    ellipsoid_chain.bead_constituents_types)
-
-
-            ellipsoid_ff = EllipsoidForcefield(epsilon= 1.0, lperp=0.5 ,
-                                                lpar=1.0, bead_length=1,
-                                                r_cut=3, bond_k=500,
-                                                bond_r0=0.1)
-
-            simulation = Simulation(initial_state=rigid_frame,
-                                    forcefield=ellipsoid_ff.hoomd_forces,
-                                     rigid_constraint=rigid)
-
-            simulation.run_NVT(n_steps=10000, kT=3.5, tau_kt=1)
 
     """
     # find typeid sequence of the constituent particles types in a rigid bead
