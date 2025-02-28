@@ -55,7 +55,7 @@ class Simulation(hoomd.simulation.Simulation):
     constraint : hoomd.md.constrain object
         Sets constraints for the simulation.
         See flowermd.utils.constraints for built-in helpers
-        or see https://hoomd-blue.readthedocs.io/en/stable/hoomd/md/module-constrain.html 
+        or see https://hoomd-blue.readthedocs.io/en/stable/hoomd/md/module-constrain.html
     """
 
     def __init__(
@@ -109,16 +109,12 @@ class Simulation(hoomd.simulation.Simulation):
         self._reference_values = dict()
         self._reference_values = reference_values
         self.constraint = constraint
-        if constraint and isinstance(
-            constraint, hoomd.md.constrain.Rigid
-        ):
+        self._rigid_constraint = None
+        self._distance_constraint = None
+        if constraint and isinstance(constraint, hoomd.md.constrain.Rigid):
             self._rigid_constraint = constraint
-            self._distance_constraint = None
-        elif constraint and isinstance(
-            constraint, hoomd.md.constrain.Distance
-        ):
-            self._rigid_constraint = None 
-            self._distance_constraint = constraint 
+        elif constraint and isinstance(constraint, hoomd.md.constrain.Distance):
+            self._distance_constraint = constraint
         self._integrate_group = self._create_integrate_group(
             rigid=True if self._rigid_constraint else False
         )
@@ -595,9 +591,7 @@ class Simulation(hoomd.simulation.Simulation):
         if not self.integrator:  # Integrator and method not yet created
             self.integrator = hoomd.md.Integrator(
                 dt=self.dt,
-                integrate_rotational_dof=(
-                    True if self.constraint else False
-                ),
+                integrate_rotational_dof=(True if self.constraint else False),
             )
             if self._rigid_constraint:
                 self.integrator.rigid = self._rigid_constraint
