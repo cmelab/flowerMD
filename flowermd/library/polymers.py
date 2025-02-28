@@ -3,8 +3,8 @@
 import os
 
 import mbuild as mb
+import numpy as np
 from mbuild.coordinate_transform import z_axis_transform
-from mbuild.lib.recipes import Polymer as mbPolymer
 
 from flowermd import CoPolymer, Polymer
 from flowermd.assets import MON_DIR
@@ -313,41 +313,29 @@ class EllipsoidChain(Polymer):
         self.bead_bond_length = bond_length
         self.lpar = lpar
         # get the indices of the particles in a rigid body
-        self.bead_constituents_types = ["A", "A", "B", "B"]
+        self.bead_constituents_types = ["_H", "_T", "_C"]
         super(EllipsoidChain, self).__init__(lengths=lengths, num_mols=num_mols)
 
     def _build(self, length):
         # Build up ellipsoid bead
         bead = mb.Compound(name="ellipsoid")
         head = mb.Compound(
-            pos=(0, 0, self.lpar), name="A", mass=self.bead_mass / 4
+            pos=(0, 0, self.lpar), name="_H", mass=self.bead_mass / 3
         )
-        tail = mb.Compound(
-            pos=(0, 0, -self.lpar), name="A", mass=self.bead_mass / 4
-        )
-        head_mid = mb.Compound(
-            pos=(0, 0, self.lpar / 2), name="B", mass=self.bead_mass / 4
-        )
-        tail_mid = mb.Compound(
-            pos=(0, 0, -self.lpar / 2), name="B", mass=self.bead_mass / 4
-        )
-        bead.add([head, tail, head_mid, tail_mid])
-        # Build the bead chain
-        chain = mbPolymer()
-        chain.add_monomer(
-            bead,
-            indices=[0, 1],
-            orientation=[[0, 0, 1], [0, 0, -1]],
-            replace=False,
-            separation=self.bead_bond_length,
-        )
-        chain.build(n=length, add_hydrogens=False)
-        # Generate bonds between the mid-particles.
-        # This is needed to use an angle potential between 2 beads.
-        chain.freud_generate_bonds(
-            name_a="B",
-            name_b="B",
-            dmin=self.lpar - 0.1,
-            dmax=self.lpar + self.bead_bond_length + 0.1,
-        )
+        center = mb.Compound(pos=(0, 0, 0), name="_C", mass=self.bead_mass / 3)
+        bead.add([center, head])
+        bead.add_bond([center, head])
+        chain = mb.Compound()
+        last_bead = None
+        for i in range(length):
+            translate_by = np.array(
+                [0, 0, i * (self.lpar + self.bead_bond_length)]
+            )
+            this_bead = mb.clone(bead)
+            this_bead.translate(by=translate_by)
+            chain.add(this_bead)
+            if last_bead:
+                chain.add_bond([this_bead["_C"][0], last_bead["_H"][0]])
+            last_bead = this_bead
+
         return chain
