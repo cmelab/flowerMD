@@ -301,19 +301,13 @@ class EllipsoidChain(Polymer):
         The semi-axis length of the ellipsoid bead along its major axis.
     bead_mass : float, required
         The mass of the ellipsoid bead.
-    bond_length : float, required
-        The bond length between connected beads.
-        This is used as the bond length between ellipsoid tips
-        rather than between ellipsoid centers.
-
     """
 
-    def __init__(self, lengths, num_mols, lpar, bead_mass, bond_length):
+    def __init__(self, lengths, num_mols, lpar, bead_mass):
         self.bead_mass = bead_mass
-        self.bead_bond_length = bond_length
         self.lpar = lpar
         # get the indices of the particles in a rigid body
-        self.bead_constituents_types = ["_H", "_T", "_C"]
+        self.bead_constituents_types = ["_H", "_C"]
         super(EllipsoidChain, self).__init__(lengths=lengths, num_mols=num_mols)
 
     def _build(self, length):
