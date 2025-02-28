@@ -1,7 +1,7 @@
 """Examples for the Systems class."""
 
-# This is a placeholder for any class that inherits from base.system
-import numpy
+from flowermd.base.system import System
+import numpy as np
 from scipy.spatial.distance import pdist
 
 class SingleChainSystem(System):
@@ -15,7 +15,8 @@ class SingleChainSystem(System):
 
     """
     
-	def __init__(self, molecules, base_units=dict()):
+	def __init__(self, molecules, base_units=dict(),buffer=1.05):
+        self.buffer = buffer
 		super(SingleChainSystem, self).__init__(
 			molecules=molecules,
 			base_units=base_units
@@ -23,12 +24,9 @@ class SingleChainSystem(System):
 
         def _build_system(self):
             chain = self.all_molecules[0]
-            children_pos_array = np.zeros((len(chain.children),3))
-            for i in range(len(chain.children)):
-                children_pos_array[i] = chain.children[i].pos
-            eucl_dist = pdist(children_pos_array)
+            eucl_dist = pdist(self.all_molecules[0].xyz)
             chain_length = np.max(eucl_dist)
-            box = mb.Box(lengths=np.array([chain_length] * 3) * 1.05)
+            box = mb.Box(lengths=np.array([chain_length] * 3) * self.buffer)
             comp = mb.Compound()
             comp.add(chain)
             comp.box = box
