@@ -4,6 +4,7 @@
 import numpy
 from scipy.spatial.distance import pdist
 
+
 class SingleChainSystem(System):
     """Builds a box around a single chain.
 
@@ -14,7 +15,7 @@ class SingleChainSystem(System):
     See System class.
 
     """
-    
+
 	def __init__(self, molecules, base_units=dict()):
 		super(SingleChainSystem, self).__init__(
 			molecules=molecules,
