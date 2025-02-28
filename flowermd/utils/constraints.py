@@ -6,7 +6,38 @@ from cmeutils.geometry import moit
 
 
 def set_bond_constraints(snapshot, bond_type, constrain_value, tolerance=1e-5):
-    """"""
+    """Helper method to add fixed bond constraints to a gsd.hoomd.Frame.
+
+    Parameters
+    ----------
+    snapshot : gsd.hoomd.Frame, required
+        Snapshot of complete topology that will have constraints added.
+    bond_type : str, required
+        The bond type to add constraints for. Must match snapshot.bonds.types.
+    constrain_value : float, required
+        The value to use for the constrained bond length.
+        Must be close to the exisitng bond lenghts in snapshot.bonds
+    tolerance : float, default 1e-5
+        Used to compare actual bond lengths vs `constraint_value`
+        Sets the tolerance property in hoomd.md.constrain.Distance
+
+    Returns
+    -------
+    snapshot : gsd.hoomd.Frame
+        The modified snapshot with populated snapshot.constraints
+    d : gsd.hoomd.constrain.Distance
+        Used when initializing a simulation in flowermd.base.Simulation
+
+    Notes
+    -----
+    This method was added as a helper function to be used with the
+    ellipsoid chain module. See flowermd.library.polymer.EllipsoidChain
+    and flowermd.library.forcefields.EllipsoidForcefield.
+
+    Pass the snapshot and constraint object into flowermd.base.Simulation
+    in order for the fixed bond lengths to take effect.
+
+    """
     constraint_values = []
     constraint_groups = []
     bond_type_id = snapshot.bonds.types.index(bond_type)

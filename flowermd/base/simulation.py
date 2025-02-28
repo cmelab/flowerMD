@@ -115,6 +115,10 @@ class Simulation(hoomd.simulation.Simulation):
             self._rigid_constraint = constraint
         elif constraint and isinstance(constraint, hoomd.md.constrain.Distance):
             self._distance_constraint = constraint
+        elif constraint:
+            raise ValueError(
+                "`constaint` must be an instance of hoomd.md.constrain."
+            )
         self._integrate_group = self._create_integrate_group(
             rigid=True if self._rigid_constraint else False
         )
