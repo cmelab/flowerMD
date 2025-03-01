@@ -378,7 +378,7 @@ class TestSimulate(BaseTest):
             assert type(i) is type(j)
         os.remove("forcefield.pickle")
 
-    def test_bad_rigid(self, benzene_system):
+    def test_bad_constraint(self, benzene_system):
         with pytest.raises(ValueError):
             Simulation.from_system(benzene_system, constraint="A")
 
@@ -411,6 +411,8 @@ class TestSimulate(BaseTest):
             forcefield=ellipsoid_ff.hoomd_forces,
             constraint=d_constraint,
         )
+        assert isinstance(sim._distance_constraint, hoomd.md.constrain.Distance)
+        assert sim._rigid_constraint is None
         sim.run_NVT(n_steps=10, kT=1.0, tau_kt=sim.dt * 100)
         assert sim.integrator.integrate_rotational_dof is True
 
