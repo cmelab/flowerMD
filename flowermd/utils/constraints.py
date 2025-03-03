@@ -5,16 +5,18 @@ import numpy as np
 from cmeutils.geometry import moit
 
 
-def set_bond_constraints(snapshot, bond_type, constrain_value, tolerance=1e-5):
+def set_bond_constraints(
+    snapshot, bond_types, constraint_values, tolerance=1e-5
+):
     """Helper method to add fixed bond constraints to a gsd.hoomd.Frame.
 
     Parameters
     ----------
     snapshot : gsd.hoomd.Frame, required
         Snapshot of complete topology that will have constraints added.
-    bond_type : str, required
+    bond_type : list of str, required
         The bond type to add constraints for. Must match snapshot.bonds.types.
-    constrain_value : float, required
+    constrain_value : list of float, required
         The value to use for the constrained bond length.
         Must be close to the exisitng bond lenghts in snapshot.bonds
     tolerance : float, default 1e-5
@@ -71,27 +73,31 @@ def set_bond_constraints(snapshot, bond_type, constrain_value, tolerance=1e-5):
             sim.flush_writers()
 
     """
-    constraint_values = []
-    constraint_groups = []
-    bond_type_id = snapshot.bonds.types.index(bond_type)
-    bond_indices = np.where(snapshot.bonds.typeid == np.array(bond_type_id))[
-        0
-    ].astype(int)
-    for idx in bond_indices:
-        group = snapshot.bonds.group[idx]
-        bond_len = np.linalg.norm(
-            snapshot.particles.position[group[1]]
-            - snapshot.particles.position[group[0]]
-        )
-        if not np.isclose(constrain_value, bond_len, atol=tolerance):
-            raise ValueError("Values found not within the given tolerance")
-        constraint_values.append(constrain_value)
-        constraint_groups.append(group)
+    constraint_values_list = []
+    constraint_groups_list = []
+    for b_type, val in zip(bond_types, constraint_values):
+        type_values = []
+        type_groups = []
+        b_type_id = snapshot.bonds.types.index(b_type)
+        indices = np.where(snapshot.bonds.typeid == np.array(b_type_id))[
+            0
+        ].astype(int)
+        for idx in indices:
+            group = snapshot.bonds.group[idx]
+            bond_len = np.linalg.norm(
+                snapshot.particles.position[group[1]]
+                - snapshot.particles.position[group[0]]
+            )
+            if not np.isclose(val, bond_len, atol=tolerance):
+                raise ValueError("Values found not within the given tolerance")
+            type_values.append(val)
+            type_groups.append(group)
+        constraint_values_list.extend(type_values)
+        constraint_groups_list.extend(type_groups)
 
-    snapshot.constraints.N = len(constraint_values)
-    snapshot.constraints.value = constraint_values
-    snapshot.constraints.group = constraint_groups
-
+    snapshot.constraints.N = len(constraint_values_list)
+    snapshot.constraints.value = constraint_values_list
+    snapshot.constraints.group = constraint_groups_list
     d = hoomd.md.constrain.Distance(tolerance=tolerance)
     return snapshot, d
 

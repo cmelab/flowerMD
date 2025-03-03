@@ -21,9 +21,11 @@ class TestBondConstraint(BaseTest):
             base_units=dict(),
         )
         snap, d = set_bond_constraints(
-            system.hoomd_snapshot, constrain_value=1.0, bond_type="_C-_H"
+            system.hoomd_snapshot, constraint_values=[1.0], bond_types=["_C-_H"]
         )
         assert snap.constraints.N == (4 * 2 * 2) - 2
+        for group in snap.bonds.group:
+            assert group in snap.constraints.group
         assert d.tolerance == 1e-5
         assert all([val == 1.0 for val in snap.constraints.value])
 
@@ -41,7 +43,9 @@ class TestBondConstraint(BaseTest):
         )
         with pytest.raises(ValueError):
             set_bond_constraints(
-                system.hoomd_snapshot, constrain_value=2.0, bond_type="_C-_H"
+                system.hoomd_snapshot,
+                constraint_values=[2.0],
+                bond_types=["_C-_H"],
             )
 
 

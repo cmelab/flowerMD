@@ -307,18 +307,23 @@ class EllipsoidChain(Polymer):
         self.bead_mass = bead_mass
         self.lpar = lpar
         # get the indices of the particles in a rigid body
-        self.bead_constituents_types = ["_H", "_C"]
+        self.bead_constituents_types = ["_H", "_T", "_C"]
         super(EllipsoidChain, self).__init__(lengths=lengths, num_mols=num_mols)
 
     def _build(self, length):
         # Build up ellipsoid bead
         bead = mb.Compound(name="ellipsoid")
         head = mb.Compound(
-            pos=(0, 0, self.lpar), name="_H", mass=self.bead_mass / 2
+            pos=(0, 0, self.lpar), name="_H", mass=self.bead_mass / 3
         )
-        center = mb.Compound(pos=(0, 0, 0), name="_C", mass=self.bead_mass / 2)
-        bead.add([center, head])
+        tail = mb.Compound(
+            pos=(0, 0, -self.lpar), name="_T", mass=self.bead_mass / 3
+        )
+        center = mb.Compound(pos=(0, 0, 0), name="_C", mass=self.bead_mass / 3)
+        bead.add([tail, center, head])
         bead.add_bond([center, head])
+        bead.add_bond([center, tail])
+
         chain = mb.Compound()
         last_bead = None
         for i in range(length):
@@ -327,7 +332,7 @@ class EllipsoidChain(Polymer):
             this_bead.translate(by=translate_by)
             chain.add(this_bead)
             if last_bead:
-                chain.add_bond([this_bead.children[0], last_bead.children[1]])
+                chain.add_bond([this_bead.children[1], last_bead.children[2]])
             last_bead = this_bead
 
         return chain
