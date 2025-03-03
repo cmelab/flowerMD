@@ -7,13 +7,14 @@ from flowermd.base.system import System
 
 
 class SingleChainSystem(System):
-    """Builds a box around a single chain.
+    """Builds a vacuum box around a single chain.
 
-    Calculates the maximum distance of the chain using scipy.spatial.distance.pdist().
+    The box lengths are chosen so they are at least as long as the largest particle distance. The maximum distance of the chain is calculated using scipy.spatial.distance.pdist(). This distance multiplied by a buffer defines the box dimensions. The chain is centered in the box.
 
     Parameters
     ----------
-    See System class.
+    buffer : float, default 1.05
+	A factor of the length of the chain to define the box dimensions. Needs to be greater than 1 so that the end particles are not on the boundaries.
 
     """
 
