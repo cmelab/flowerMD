@@ -9,7 +9,7 @@ from .actions import (
     UpdateWalls,
 )
 from .base_types import HOOMDThermostats
-from .rigid_body import create_rigid_body
+from .constraints import create_rigid_body, set_bond_constraints
 from .utils import (
     _calculate_box_length,
     get_target_box_mass_density,

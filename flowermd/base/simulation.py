@@ -52,7 +52,10 @@ class Simulation(hoomd.simulation.Simulation):
     thermostat : flowermd.utils.HOOMDThermostats, default
         HOOMDThermostats.MTTK
         The thermostat to use for the simulation.
-
+    constraint : hoomd.md.constrain object
+        Sets constraints for the simulation.
+        See flowermd.utils.constraints for built-in helpers
+        or see https://hoomd-blue.readthedocs.io/en/stable/hoomd/md/module-constrain.html
     """
 
     def __init__(
@@ -69,7 +72,7 @@ class Simulation(hoomd.simulation.Simulation):
         log_write_freq=1e3,
         log_file_name="sim_data.txt",
         thermostat=HOOMDThermostats.MTTK,
-        rigid_constraint=None,
+        constraint=None,
     ):
         if not isinstance(forcefield, Iterable) or isinstance(forcefield, str):
             raise ValueError(
@@ -105,16 +108,19 @@ class Simulation(hoomd.simulation.Simulation):
         self._dt = dt
         self._reference_values = dict()
         self._reference_values = reference_values
-        if rigid_constraint and not isinstance(
-            rigid_constraint, hoomd.md.constrain.Rigid
-        ):
+        self.constraint = constraint
+        self._rigid_constraint = None
+        self._distance_constraint = None
+        if constraint and isinstance(constraint, hoomd.md.constrain.Rigid):
+            self._rigid_constraint = constraint
+        elif constraint and isinstance(constraint, hoomd.md.constrain.Distance):
+            self._distance_constraint = constraint
+        elif constraint:
             raise ValueError(
-                "Invalid rigid constraint. Please provide a "
-                "hoomd.md.constrain.Rigid object."
+                "`constaint` must be an instance of hoomd.md.constrain."
             )
-        self._rigid_constraint = rigid_constraint
         self._integrate_group = self._create_integrate_group(
-            rigid=True if rigid_constraint else False
+            rigid=True if self._rigid_constraint else False
         )
         self._wall_forces = dict()
         self._create_state(self.initial_state)
@@ -589,12 +595,12 @@ class Simulation(hoomd.simulation.Simulation):
         if not self.integrator:  # Integrator and method not yet created
             self.integrator = hoomd.md.Integrator(
                 dt=self.dt,
-                integrate_rotational_dof=(
-                    True if self._rigid_constraint else False
-                ),
+                integrate_rotational_dof=(True if self.constraint else False),
             )
             if self._rigid_constraint:
                 self.integrator.rigid = self._rigid_constraint
+            if self._distance_constraint:
+                self.integrator.constraints.append(self._distance_constraint)
             self.integrator.forces = self._forcefield
             self.operations.add(self.integrator)
             new_method = integrator_method(**method_kwargs)

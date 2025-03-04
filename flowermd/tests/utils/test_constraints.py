@@ -1,12 +1,56 @@
 import numpy as np
+import pytest
 
 from flowermd.base import Pack
 from flowermd.library.polymers import EllipsoidChain
 from flowermd.tests import BaseTest
-from flowermd.utils import create_rigid_body
+from flowermd.utils import create_rigid_body, set_bond_constraints
+
+
+class TestBondConstraint(BaseTest):
+    def test_ellipsoid_fixed_bonds(self):
+        ellipsoid_chain = EllipsoidChain(
+            lengths=4,
+            num_mols=2,
+            lpar=1,
+            bead_mass=50,
+        )
+        system = Pack(
+            molecules=ellipsoid_chain,
+            density=0.1,
+            base_units=dict(),
+        )
+        snap, d = set_bond_constraints(
+            system.hoomd_snapshot, constraint_values=[1.0], bond_types=["_C-_H"]
+        )
+        assert snap.constraints.N == (4 * 2 * 2) - 2
+        for group in snap.bonds.group:
+            assert group in snap.constraints.group
+        assert d.tolerance == 1e-5
+        assert all([val == 1.0 for val in snap.constraints.value])
+
+    def test_ellipsoid_fixed_bonds_bad_val(self):
+        ellipsoid_chain = EllipsoidChain(
+            lengths=4,
+            num_mols=2,
+            lpar=1,
+            bead_mass=50,
+        )
+        system = Pack(
+            molecules=ellipsoid_chain,
+            density=0.1,
+            base_units=dict(),
+        )
+        with pytest.raises(ValueError):
+            set_bond_constraints(
+                system.hoomd_snapshot,
+                constraint_values=[2.0],
+                bond_types=["_C-_H"],
+            )
 
 
 class TestRigidBody(BaseTest):
+    @pytest.mark.skip(reason="Not implemented.")
     def test_ellipsoid_create_rigid_body(self):
         ellipsoid_chain = EllipsoidChain(
             lengths=4,

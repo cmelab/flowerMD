@@ -114,9 +114,8 @@ class TestPolymers:
             num_mols=2,
             lpar=0.5,
             bead_mass=100,
-            bond_length=0.01,
         )
-        assert ellipsoid_chain.n_particles == 32
+        assert ellipsoid_chain.n_particles == 16
         assert ellipsoid_chain.molecules[0].mass == 400
-        assert ellipsoid_chain.molecules[0].n_particles == 16
-        assert ellipsoid_chain.molecules[0].n_bonds == 10
+        assert ellipsoid_chain.molecules[0].n_particles == 8
+        assert ellipsoid_chain.molecules[0].n_bonds == 7
