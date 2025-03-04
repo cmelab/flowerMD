@@ -130,19 +130,20 @@ def create_rigid_body(
     constituent_type_ids = np.where(
         p_types[:, None] == bead_constituents_types
     )[0]
-
     # find indices that matches the constituent particle types
-    typeids = snapshot.particles.typeid
     bead_len = len(bead_constituents_types)
-    matches = np.where((typeids.reshape(-1, bead_len) == constituent_type_ids))
+    typeids = snapshot.particles.typeid.reshape(-1, bead_len)
+    typeids.sort()
+    matches = np.where((typeids == constituent_type_ids))
     if len(matches[0]) == 0:
         raise ValueError(
             "No matches found between particle types in the system"
             " and bead constituents particles"
         )
     rigid_const_idx = (matches[0] * bead_len + matches[1]).reshape(-1, bead_len)
-
+    print("rigid_const_idx", rigid_const_idx)
     n_rigid = rigid_const_idx.shape[0]  # number of rigid bodies
+    print("n_rigid", n_rigid)
 
     # calculate center of mass and its position for each rigid body
     com_mass, com_position, com_moi = _get_com_mass_pos_moi(
@@ -199,6 +200,14 @@ def create_rigid_body(
         rigid_frame.dihedrals.typeid = snapshot.dihedrals.typeid
         rigid_frame.dihedrals.group = [
             list(np.add(g, n_rigid)) for g in snapshot.dihedrals.group
+        ]
+
+    # set up constraints
+    if snapshot.constraints.N > 0:
+        rigid_frame.constraints.N = snapshot.constraints.N
+        rigid_frame.constraints.value = snapshot.constraints.value
+        rigid_frame.constraints.group = [
+            list(np.add(g, n_rigid)) for g in snapshot.constraints.group
         ]
 
     # find local coordinates of the particles in the first rigid body
