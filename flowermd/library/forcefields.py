@@ -588,6 +588,10 @@ class EllipsoidForcefield(BaseHOOMDForcefield):
         Spring constant in harmonic angle.
     angle_theta0: float, required
         Equilibrium angle between 2 consecutive beads.
+    bond_k : float, required
+        Spring constant in harmonic bond.
+    bond_r0: float, required
+        Equilibrium distance between 2 ellipsoid tips.
 
     """
 
@@ -599,6 +603,8 @@ class EllipsoidForcefield(BaseHOOMDForcefield):
         r_cut,
         angle_k=None,
         angle_theta0=None,
+        bond_k=100,
+        bond_r0=0.1,
     ):
         self.epsilon = epsilon
         self.lperp = lperp
@@ -606,6 +612,8 @@ class EllipsoidForcefield(BaseHOOMDForcefield):
         self.r_cut = r_cut
         self.angle_k = angle_k
         self.angle_theta0 = angle_theta0
+        self.bond_k = bond_k
+        self.bond_r0 = bond_r0
         hoomd_forces = self._create_forcefield()
         super(EllipsoidForcefield, self).__init__(hoomd_forces)
 
@@ -613,7 +621,7 @@ class EllipsoidForcefield(BaseHOOMDForcefield):
         forces = []
         # Bonds
         bond = hoomd.md.bond.Harmonic()
-        bond.params["T-T"] = dict(k=50, r0=0.01)
+        bond.params["T-T"] = dict(k=self.bond_k, r0=self.bond_r0)
         bond.params["A-X"] = dict(k=0, r0=0)
         forces.append(bond)
         # Angles

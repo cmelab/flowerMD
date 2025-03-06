@@ -32,17 +32,13 @@ def set_bond_constraints(
 
     Notes
     -----
-    This method was added as a helper function to be used with the
-    ellipsoid chain module. See flowermd.library.polymer.EllipsoidChain
-    and flowermd.library.forcefields.EllipsoidForcefield.
-
     Pass the snapshot and constraint object into flowermd.base.Simulation
     in order for the fixed bond lengths to take effect.
 
     Examples
         --------
         This example demonstrates how to create a snapshot with fixed bonds
-        from a snapshot of a system of ellipsoids.
+        from a snapshot of a bead-spring system.
         The ellipsoids are created using the EllipsoidChain class from
         the `flowermd.library.polymers`.
         The snapshot, and the constraint object are passed into flowermd.Simulation
@@ -73,7 +69,6 @@ def set_bond_constraints(
             sim.flush_writers()
 
     """
-    print(snapshot.particles.types)
     constraint_values_list = []
     constraint_groups_list = []
     for b_type, val in zip(bond_types, constraint_values):
@@ -103,17 +98,22 @@ def set_bond_constraints(
     return snapshot, d
 
 
-def create_rigid_ellipsoid_chain(
-    snapshot,
-    rigid_bead_name="R",
-    initial_orientation=[1, 0, 0, 0],
-):
+def create_rigid_ellipsoid_chain(snapshot):
     """Create rigid bodies from a snapshot.
+
+    This is designed to be used with flowerMD's built in library
+    for simulating ellipsoidal chains.
+    As a result, this will not work for setting up rigid bodies
+    for other kinds of systems.
+
+    See `flowermd.library.polymer.EllipsoidChain` and
+    `flowermd.library.forcefields.EllipsoidForcefield`.
 
     Parameters
     ----------
     snapshot : gsd.hoomd.Snapshot; required
         The snapshot of the system.
+        Pass in `flowermd.base.System.hoomd_snapshot()`.
 
     Returns
     -------
@@ -123,14 +123,11 @@ def create_rigid_ellipsoid_chain(
         The rigid body constrain object.
 
     """
-    # find typeid sequence of the constituent particles types in a rigid bead
-    # X and A
     bead_len = 4
-    # find indices that matches the constituent particle types
     typeids = snapshot.particles.typeid.reshape(-1, bead_len)
     matches = np.where((typeids == typeids))
     rigid_const_idx = (matches[0] * bead_len + matches[1]).reshape(-1, bead_len)
-    n_rigid = rigid_const_idx.shape[0]  # number of rigid bodies
+    n_rigid = rigid_const_idx.shape[0]  # number of ellipsoid monomers
 
     rigid_masses = []
     rigid_pos = []
@@ -159,7 +156,7 @@ def create_rigid_ellipsoid_chain(
     rigid_frame.particles.moment_inertia = np.concatenate(
         (rigid_moi, np.zeros((snapshot.particles.N, 3)))
     )
-    rigid_frame.particles.orientation = [initial_orientation] * (
+    rigid_frame.particles.orientation = [[1, 0, 0, 0]] * (
         n_rigid + snapshot.particles.N
     )
     rigid_frame.particles.body = np.concatenate(
@@ -186,16 +183,6 @@ def create_rigid_ellipsoid_chain(
         rigid_frame.angles.group = [
             list(np.add(g, n_rigid)) for g in snapshot.angles.group
         ]
-
-    # set up dihedrals
-    if snapshot.dihedrals.N > 0:
-        rigid_frame.dihedrals.N = snapshot.dihedrals.N
-        rigid_frame.dihedrals.types = snapshot.dihedrals.types
-        rigid_frame.dihedrals.typeid = snapshot.dihedrals.typeid
-        rigid_frame.dihedrals.group = [
-            list(np.add(g, n_rigid)) for g in snapshot.dihedrals.group
-        ]
-
     # set up constraints
     if snapshot.constraints.N > 0:
         rigid_frame.constraints.N = snapshot.constraints.N
@@ -214,7 +201,7 @@ def create_rigid_ellipsoid_chain(
     rigid_constrain.body["R"] = {
         "constituent_types": ["X", "A", "T", "T"],
         "positions": local_coords,
-        "orientations": [initial_orientation] * len(local_coords),
+        "orientations": [[1, 0, 0, 0]] * len(local_coords),
     }
     return rigid_frame, rigid_constrain
 
@@ -224,7 +211,6 @@ def _get_com_mass_pos_moi(snapshot, rigid_const_idx):
     com_position = []
     com_moi = []
     for idx in rigid_const_idx:
-        print(idx)
         constituents_mass = np.array(snapshot.particles.mass)[idx][0]
         constituents_pos = np.array(snapshot.particles.position)[idx]
         total_mass = np.sum(constituents_mass)
