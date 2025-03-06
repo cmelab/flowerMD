@@ -611,32 +611,29 @@ class EllipsoidForcefield(BaseHOOMDForcefield):
 
     def _create_forcefield(self):
         forces = []
+        # Bonds
+        bond = hoomd.md.bond.Harmonic()
+        bond.params["A-X"] = dict(k=50, r0=1.0)
+        forces.append(bond)
         # Angles
         if all([self.angle_k, self.angle_theta0]):
             angle = hoomd.md.angle.Harmonic()
-            angle.params["_C-_H-_C"] = dict(
-                k=self.angle_k, t0=self.angle_theta0
-            )
-            angle.params["_H-_C-_H"] = dict(k=0, t0=0)
-            # angle.params["_H-_C-_T"] = dict(k=0, t0=0)
+            angle.params["X-A-X"] = dict(k=self.angle_k, t0=self.angle_theta0)
+            angle.params["A-X-A"] = dict(k=0, t0=0)
             forces.append(angle)
         # Gay-Berne Pairs
-        nlist = hoomd.md.nlist.Cell(buffer=0.40)
+        nlist = hoomd.md.nlist.Cell(buffer=0.40, exclusions=["body"])
         gb = hoomd.md.pair.aniso.GayBerne(nlist=nlist, default_r_cut=self.r_cut)
-        gb.params[("_C", "_C")] = dict(
+        gb.params[("X", "X")] = dict(
             epsilon=self.epsilon, lperp=self.lperp, lpar=self.lpar
         )
         # Add zero pairs
         for pair in [
-            ("_H", "_H"),
-            ("_T", "_T"),
             ("R", "R"),
-            ("_C", "_H"),
-            ("_C", "_T"),
-            ("_C", "R"),
-            ("_T", "_H"),
-            ("_T", "R"),
-            ("_H", "R"),
+            ("A", "A"),
+            ("A", "X"),
+            ("A", "R"),
+            ("X", "R"),
         ]:
             gb.params[pair] = dict(epsilon=0.0, lperp=0.0, lpar=0.0)
             gb.params[pair].r_cut = 0.0
