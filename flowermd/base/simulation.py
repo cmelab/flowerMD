@@ -13,7 +13,7 @@ import hoomd.md
 import numpy as np
 import unyt as u
 
-from flowermd.internal import validate_ref_value
+from flowermd.internal import check_return_iterable, validate_ref_value
 from flowermd.utils.actions import StdOutLogger, UpdateWalls
 from flowermd.utils.base_types import HOOMDThermostats
 
@@ -52,7 +52,7 @@ class Simulation(hoomd.simulation.Simulation):
     thermostat : flowermd.utils.HOOMDThermostats, default
         HOOMDThermostats.MTTK
         The thermostat to use for the simulation.
-    constraint : hoomd.md.constrain object
+    constraint : list of hoomd.md.constrain objects
         Sets constraints for the simulation.
         See flowermd.utils.constraints for built-in helpers
         or see https://hoomd-blue.readthedocs.io/en/stable/hoomd/md/module-constrain.html
@@ -108,17 +108,18 @@ class Simulation(hoomd.simulation.Simulation):
         self._dt = dt
         self._reference_values = dict()
         self._reference_values = reference_values
-        self.constraint = constraint
+        self.constraint = check_return_iterable(constraint)
         self._rigid_constraint = None
         self._distance_constraint = None
-        if constraint and isinstance(constraint, hoomd.md.constrain.Rigid):
-            self._rigid_constraint = constraint
-        elif constraint and isinstance(constraint, hoomd.md.constrain.Distance):
-            self._distance_constraint = constraint
-        elif constraint:
-            raise ValueError(
-                "`constaint` must be an instance of hoomd.md.constrain."
-            )
+        for obj in self.constraint:
+            if isinstance(obj, hoomd.md.constrain.Rigid):
+                self._rigid_constraint = obj
+            elif isinstance(obj, hoomd.md.constrain.Distance):
+                self._distance_constraint = obj
+            else:
+                raise ValueError(
+                    "`constaint` must be an instance of hoomd.md.constrain."
+                )
         self._integrate_group = self._create_integrate_group(
             rigid=True if self._rigid_constraint else False
         )

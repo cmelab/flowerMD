@@ -618,6 +618,7 @@ class EllipsoidForcefield(BaseHOOMDForcefield):
                 k=self.angle_k, t0=self.angle_theta0
             )
             angle.params["_H-_C-_H"] = dict(k=0, t0=0)
+            # angle.params["_H-_C-_T"] = dict(k=0, t0=0)
             forces.append(angle)
         # Gay-Berne Pairs
         nlist = hoomd.md.nlist.Cell(buffer=0.40)
@@ -626,7 +627,17 @@ class EllipsoidForcefield(BaseHOOMDForcefield):
             epsilon=self.epsilon, lperp=self.lperp, lpar=self.lpar
         )
         # Add zero pairs
-        for pair in [("_H", "_H"), ("_C", "_H")]:
+        for pair in [
+            ("_H", "_H"),
+            ("_T", "_T"),
+            ("R", "R"),
+            ("_C", "_H"),
+            ("_C", "_T"),
+            ("_C", "R"),
+            ("_T", "_H"),
+            ("_T", "R"),
+            ("_H", "R"),
+        ]:
             gb.params[pair] = dict(epsilon=0.0, lperp=0.0, lpar=0.0)
             gb.params[pair].r_cut = 0.0
         forces.append(gb)
