@@ -73,6 +73,7 @@ def set_bond_constraints(
             sim.flush_writers()
 
     """
+    print(snapshot.particles.types)
     constraint_values_list = []
     constraint_groups_list = []
     for b_type, val in zip(bond_types, constraint_values):
@@ -102,10 +103,9 @@ def set_bond_constraints(
     return snapshot, d
 
 
-def create_rigid_body(
+def create_rigid_ellipsoid_chain(
     snapshot,
-    bead_constituents_types,
-    bead_name="R",
+    rigid_bead_name="R",
     initial_orientation=[1, 0, 0, 0],
 ):
     """Create rigid bodies from a snapshot.
@@ -114,8 +114,6 @@ def create_rigid_body(
     ----------
     snapshot : gsd.hoomd.Snapshot; required
         The snapshot of the system.
-    bead_constituents_types : list of particle types; required
-        The list of particle types that make up a rigid body.
 
     Returns
     -------
@@ -126,44 +124,40 @@ def create_rigid_body(
 
     """
     # find typeid sequence of the constituent particles types in a rigid bead
-    p_types = np.array(snapshot.particles.types)
-    constituent_type_ids = np.where(
-        p_types[:, None] == bead_constituents_types
-    )[0]
+    # X and A
+    bead_len = 2
     # find indices that matches the constituent particle types
-    bead_len = len(bead_constituents_types)
     typeids = snapshot.particles.typeid.reshape(-1, bead_len)
-    typeids.sort()
-    matches = np.where((typeids == constituent_type_ids))
-    if len(matches[0]) == 0:
-        raise ValueError(
-            "No matches found between particle types in the system"
-            " and bead constituents particles"
-        )
+    matches = np.where((typeids == typeids))
     rigid_const_idx = (matches[0] * bead_len + matches[1]).reshape(-1, bead_len)
-    print("rigid_const_idx", rigid_const_idx)
     n_rigid = rigid_const_idx.shape[0]  # number of rigid bodies
-    print("n_rigid", n_rigid)
 
-    # calculate center of mass and its position for each rigid body
-    com_mass, com_position, com_moi = _get_com_mass_pos_moi(
-        snapshot, rigid_const_idx
-    )
+    rigid_masses = []
+    rigid_pos = []
+    rigid_moi = []
+    # Find the mass, position and MOI for reach rigid center
+    for idx in rigid_const_idx:
+        mass = np.sum(np.array(snapshot.particles.mass)[idx])
+        pos = snapshot.particles.position[idx][0]
+        moi = [0, 2, 2]
+        rigid_masses.append(mass)
+        rigid_pos.append(pos)
+        rigid_moi.append(moi)
 
     rigid_frame = gsd.hoomd.Frame()
-    rigid_frame.particles.types = [bead_name] + snapshot.particles.types
+    rigid_frame.particles.types = ["R"] + snapshot.particles.types
     rigid_frame.particles.N = n_rigid + snapshot.particles.N
     rigid_frame.particles.typeid = np.concatenate(
         (([0] * n_rigid), snapshot.particles.typeid + 1)
     )
     rigid_frame.particles.mass = np.concatenate(
-        (com_mass, snapshot.particles.mass)
+        (rigid_masses, snapshot.particles.mass)
     )
     rigid_frame.particles.position = np.concatenate(
-        (com_position, snapshot.particles.position)
+        (rigid_pos, snapshot.particles.position)
     )
     rigid_frame.particles.moment_inertia = np.concatenate(
-        (com_moi, np.zeros((snapshot.particles.N, 3)))
+        (rigid_moi, np.zeros((snapshot.particles.N, 3)))
     )
     rigid_frame.particles.orientation = [initial_orientation] * (
         n_rigid + snapshot.particles.N
@@ -213,12 +207,12 @@ def create_rigid_body(
     # find local coordinates of the particles in the first rigid body
     # only need to find the local coordinates for the first rigid body
     local_coords = (
-        snapshot.particles.position[rigid_const_idx[0]] - com_position[0]
+        snapshot.particles.position[rigid_const_idx[0]] - rigid_pos[0]
     )
 
     rigid_constrain = hoomd.md.constrain.Rigid()
     rigid_constrain.body["R"] = {
-        "constituent_types": bead_constituents_types,
+        "constituent_types": ["X", "A"],
         "positions": local_coords,
         "orientations": [initial_orientation] * len(local_coords),
     }
@@ -230,23 +224,23 @@ def _get_com_mass_pos_moi(snapshot, rigid_const_idx):
     com_position = []
     com_moi = []
     for idx in rigid_const_idx:
-        constituents_mass = np.array(snapshot.particles.mass)
-        constituents_pos = np.array(snapshot.particles.position)
-        total_mass = np.sum(constituents_mass[idx])
+        print(idx)
+        constituents_mass = np.array(snapshot.particles.mass)[idx][0]
+        constituents_pos = np.array(snapshot.particles.position)[idx]
+        total_mass = np.sum(constituents_mass)
         com_mass.append(total_mass)
         com = (
             np.sum(
-                constituents_pos[idx] * constituents_mass[idx, np.newaxis],
+                constituents_pos * constituents_mass,
                 axis=0,
             )
             / total_mass
         )
         com_position.append(com)
-        com_moi.append(
-            moit(
-                points=constituents_pos[idx],
-                masses=constituents_mass[idx],
-                center=com,
-            )
+        moi = moit(
+            points=constituents_pos,
+            masses=constituents_mass,
+            center=com,
         )
+        com_moi.append(moi)
     return com_mass, com_position, com_moi
