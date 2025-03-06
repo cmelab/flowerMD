@@ -125,7 +125,7 @@ def create_rigid_ellipsoid_chain(
     """
     # find typeid sequence of the constituent particles types in a rigid bead
     # X and A
-    bead_len = 2
+    bead_len = 4
     # find indices that matches the constituent particle types
     typeids = snapshot.particles.typeid.reshape(-1, bead_len)
     matches = np.where((typeids == typeids))
@@ -212,7 +212,7 @@ def create_rigid_ellipsoid_chain(
 
     rigid_constrain = hoomd.md.constrain.Rigid()
     rigid_constrain.body["R"] = {
-        "constituent_types": ["X", "A"],
+        "constituent_types": ["X", "A", "T", "T"],
         "positions": local_coords,
         "orientations": [initial_orientation] * len(local_coords),
     }
