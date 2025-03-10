@@ -4,7 +4,7 @@ import pytest
 from flowermd.base import Pack
 from flowermd.library.polymers import EllipsoidChain
 from flowermd.tests import BaseTest
-from flowermd.utils import create_rigid_body, set_bond_constraints
+from flowermd.utils import create_rigid_ellipsoid_chain, set_bond_constraints
 
 
 class TestBondConstraint(BaseTest):
@@ -50,55 +50,40 @@ class TestBondConstraint(BaseTest):
 
 
 class TestRigidBody(BaseTest):
-    @pytest.mark.skip(reason="Not implemented.")
     def test_ellipsoid_create_rigid_body(self):
-        ellipsoid_chain = EllipsoidChain(
+        chains = EllipsoidChain(
             lengths=4,
             num_mols=2,
-            lpar=0.5,
-            bead_mass=100,
-            bond_length=0.01,
+            lpar=1.0,
+            bead_mass=1,
+            bond_L=0.0,
         )
         system = Pack(
-            molecules=ellipsoid_chain,
-            density=0.1,
-            base_units=dict(),
+            molecules=chains,
+            density=0.0001,
+            edge=5,
+            overlap=1,
             fix_orientation=True,
         )
+        snap = system.hoomd_snapshot
+        rigid_frame, rigid = create_rigid_ellipsoid_chain(snap)
+        assert rigid_frame.particles.N == 8 + chains.n_particles
+        assert rigid_frame.particles.types == ["R"] + snap.particles.types
+        assert rigid_frame.particles.mass[0] == 1
 
-        rigid_frame, rigid = create_rigid_body(
-            system.hoomd_snapshot,
-            ellipsoid_chain.bead_constituents_types,
-            bead_name="R",
-        )
-        assert rigid_frame.particles.N == 8 + ellipsoid_chain.n_particles
-        assert (
-            rigid_frame.particles.types
-            == ["R"] + system.hoomd_snapshot.particles.types
-        )
-        assert rigid_frame.particles.mass[0] == 100
-        assert np.all(
-            np.isclose(
-                rigid_frame.particles.position[0],
-                np.mean(system.hoomd_snapshot.particles.position[:4], axis=0),
-            )
-        )
+        center_idx = snap.particles.types.index("X")
+        rigid_idx = rigid_frame.particles.types.index("R")
+        center_indices = np.where(snap.particles.typeid == center_idx)[0]
+        rigid_indices = np.where(rigid_frame.particles.typeid == rigid_idx)[0]
+        center_pos = snap.particles.position[center_indices]
+        rigid_pos = rigid_frame.particles.position[rigid_indices]
+        for pos1, pos2 in zip(center_pos, rigid_pos):
+            assert np.all(np.isclose(pos1, pos2))
 
-        points = (
-            rigid_frame.particles.position[0]
-            - system.hoomd_snapshot.particles.position[:4]
-        )
-
-        x = points[:, 0]
-        y = points[:, 1]
-        z = points[:, 2]
-        I_xx = np.sum((y**2 + z**2) * system.hoomd_snapshot.particles.mass[:4])
-        I_yy = np.sum((x**2 + z**2) * system.hoomd_snapshot.particles.mass[:4])
-        I_zz = np.sum((x**2 + y**2) * system.hoomd_snapshot.particles.mass[:4])
         assert np.all(
             np.isclose(
                 rigid_frame.particles.moment_inertia[0],
-                np.array((I_xx, I_yy, I_zz)),
+                np.array((0, 2, 2)),
             )
         )
 
@@ -111,4 +96,4 @@ class TestRigidBody(BaseTest):
         assert rigid_frame.angles.types == system.hoomd_snapshot.angles.types
 
         assert "R" in list(rigid.body.keys())
-        assert rigid.body["R"]["constituent_types"] == ["A", "A", "B", "B"]
+        assert rigid.body["R"]["constituent_types"] == ["X", "A", "T", "T"]
