@@ -11,10 +11,14 @@ import unyt as u
 from flowermd import Simulation
 from flowermd.base import Pack
 from flowermd.library import OPLS_AA_PPS
-from flowermd.library.forcefields import BeadSpring
-from flowermd.library.polymers import LJChain
+from flowermd.library.forcefields import BeadSpring, EllipsoidForcefield
+from flowermd.library.polymers import EllipsoidChain, LJChain
 from flowermd.tests import BaseTest
-from flowermd.utils import get_target_box_mass_density, set_bond_constraints
+from flowermd.utils import (
+    create_rigid_ellipsoid_chain,
+    get_target_box_mass_density,
+    set_bond_constraints,
+)
 
 
 class TestSimulate(BaseTest):
@@ -400,6 +404,39 @@ class TestSimulate(BaseTest):
         )
         assert isinstance(sim._distance_constraint, hoomd.md.constrain.Distance)
         assert sim._rigid_constraint is None
+        sim.run_NVT(n_steps=10, kT=1.0, tau_kt=sim.dt * 100)
+        assert sim.integrator.integrate_rotational_dof is True
+
+    def test_ellipsoid_chain_sim(self):
+        chain = EllipsoidChain(
+            lengths=15, num_mols=15, bead_mass=1, lpar=1, bond_L=0.0
+        )
+        system = Pack(
+            molecules=chain,
+            density=0.0005,
+            edge=5,
+            overlap=1,
+            fix_orientation=True,
+        )
+        rigid_snap, rigid = create_rigid_ellipsoid_chain(system.hoomd_snapshot)
+        forces = EllipsoidForcefield(
+            angle_k=25,
+            angle_theta0=2.2,
+            bond_r0=0.0,
+            lpar=1,
+            lperp=0.5,
+            epsilon=1,
+            r_cut=3.0,
+        )
+        sim = Simulation(
+            initial_state=rigid_snap,
+            constraint=rigid,
+            gsd_file_name="traj.gsd",
+            gsd_write_freq=100,
+            forcefield=forces.hoomd_forces,
+        )
+        assert isinstance(sim._rigid_constraint, hoomd.md.constrain.Rigid)
+        assert sim._distance_constraint is None
         sim.run_NVT(n_steps=10, kT=1.0, tau_kt=sim.dt * 100)
         assert sim.integrator.integrate_rotational_dof is True
 
