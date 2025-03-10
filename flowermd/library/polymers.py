@@ -308,7 +308,7 @@ class EllipsoidChain(Polymer):
         self.lpar = lpar
         self.bond_L = bond_L
         # get the indices of the particles in a rigid body
-        self.bead_constituents_types = ["X", "A"]
+        self.bead_constituents_types = ["X", "A", "T", "T"]
         super(EllipsoidChain, self).__init__(lengths=lengths, num_mols=num_mols)
 
     def _build(self, length):
@@ -316,7 +316,9 @@ class EllipsoidChain(Polymer):
         bead = mb.Compound(name="ellipsoid")
         center = mb.Compound(pos=(0, 0, 0), name="X", mass=self.bead_mass / 4)
         head = mb.Compound(
-            pos=(self.lpar, 0, 0), name="A", mass=self.bead_mass / 4
+            pos=(self.lpar + (self.bond_L / 2), 0, 0),
+            name="A",
+            mass=self.bead_mass / 4,
         )
         tether_head = mb.Compound(
             pos=(self.lpar, 0, 0), name="T", mass=self.bead_mass / 4

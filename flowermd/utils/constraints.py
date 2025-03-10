@@ -2,7 +2,8 @@ import gsd
 import gsd.hoomd
 import hoomd
 import numpy as np
-from cmeutils.geometry import moit
+
+from flowermd.internal import check_return_iterable
 
 
 def set_bond_constraints(
@@ -14,9 +15,9 @@ def set_bond_constraints(
     ----------
     snapshot : gsd.hoomd.Frame, required
         Snapshot of complete topology that will have constraints added.
-    bond_type : list of str, required
+    bond_type : str or list of str, required
         The bond type to add constraints for. Must match snapshot.bonds.types.
-    constrain_value : list of float, required
+    constrain_value : float or list of float, required
         The value to use for the constrained bond length.
         Must be close to the exisitng bond lenghts in snapshot.bonds
     tolerance : float, default 1e-5
@@ -69,6 +70,8 @@ def set_bond_constraints(
             sim.flush_writers()
 
     """
+    bond_types = check_return_iterable(bond_types)
+    constraint_values = check_return_iterable(constraint_values)
     constraint_values_list = []
     constraint_groups_list = []
     for b_type, val in zip(bond_types, constraint_values):
@@ -123,7 +126,7 @@ def create_rigid_ellipsoid_chain(snapshot):
         The rigid body constrain object.
 
     """
-    bead_len = 4
+    bead_len = 4  # Number of particles belonging to 1 rigid body
     typeids = snapshot.particles.typeid.reshape(-1, bead_len)
     matches = np.where((typeids == typeids))
     rigid_const_idx = (matches[0] * bead_len + matches[1]).reshape(-1, bead_len)
@@ -136,10 +139,9 @@ def create_rigid_ellipsoid_chain(snapshot):
     for idx in rigid_const_idx:
         mass = np.sum(np.array(snapshot.particles.mass)[idx])
         pos = snapshot.particles.position[idx][0]
-        moi = [0, 2, 2]
         rigid_masses.append(mass)
         rigid_pos.append(pos)
-        rigid_moi.append(moi)
+        rigid_moi.append([0, 2, 2])
 
     rigid_frame = gsd.hoomd.Frame()
     rigid_frame.particles.types = ["R"] + snapshot.particles.types
@@ -183,13 +185,6 @@ def create_rigid_ellipsoid_chain(snapshot):
         rigid_frame.angles.group = [
             list(np.add(g, n_rigid)) for g in snapshot.angles.group
         ]
-    # set up constraints
-    if snapshot.constraints.N > 0:
-        rigid_frame.constraints.N = snapshot.constraints.N
-        rigid_frame.constraints.value = snapshot.constraints.value
-        rigid_frame.constraints.group = [
-            list(np.add(g, n_rigid)) for g in snapshot.constraints.group
-        ]
 
     # find local coordinates of the particles in the first rigid body
     # only need to find the local coordinates for the first rigid body
@@ -204,29 +199,3 @@ def create_rigid_ellipsoid_chain(snapshot):
         "orientations": [[1, 0, 0, 0]] * len(local_coords),
     }
     return rigid_frame, rigid_constrain
-
-
-def _get_com_mass_pos_moi(snapshot, rigid_const_idx):
-    com_mass = []
-    com_position = []
-    com_moi = []
-    for idx in rigid_const_idx:
-        constituents_mass = np.array(snapshot.particles.mass)[idx][0]
-        constituents_pos = np.array(snapshot.particles.position)[idx]
-        total_mass = np.sum(constituents_mass)
-        com_mass.append(total_mass)
-        com = (
-            np.sum(
-                constituents_pos * constituents_mass,
-                axis=0,
-            )
-            / total_mass
-        )
-        com_position.append(com)
-        moi = moit(
-            points=constituents_pos,
-            masses=constituents_mass,
-            center=com,
-        )
-        com_moi.append(moi)
-    return com_mass, com_position, com_moi

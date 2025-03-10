@@ -2,50 +2,63 @@ import numpy as np
 import pytest
 
 from flowermd.base import Pack
+from flowermd.library import LJChain
 from flowermd.library.polymers import EllipsoidChain
 from flowermd.tests import BaseTest
 from flowermd.utils import create_rigid_ellipsoid_chain, set_bond_constraints
 
 
 class TestBondConstraint(BaseTest):
-    def test_ellipsoid_fixed_bonds(self):
-        ellipsoid_chain = EllipsoidChain(
-            lengths=4,
-            num_mols=2,
-            lpar=1,
-            bead_mass=50,
-        )
-        system = Pack(
-            molecules=ellipsoid_chain,
-            density=0.1,
-            base_units=dict(),
-        )
+    def test_single_fixed_bonds(self):
+        chains = LJChain(lengths=10, num_mols=1)
+        system = Pack(molecules=chains, density=0.001)
         snap, d = set_bond_constraints(
-            system.hoomd_snapshot, constraint_values=[1.0], bond_types=["_C-_H"]
+            snapshot=system.hoomd_snapshot,
+            bond_types=["A-A"],
+            constraint_values=[1.0],
         )
-        assert snap.constraints.N == (4 * 2 * 2) - 2
+        assert snap.constraints.N == 9
         for group in snap.bonds.group:
             assert group in snap.constraints.group
         assert d.tolerance == 1e-5
         assert all([val == 1.0 for val in snap.constraints.value])
 
+    def test_multiple_fixed_bonds(self):
+        chains = LJChain(
+            lengths=15,
+            num_mols=1,
+            bead_sequence=["A", "B", "B"],
+            bead_mass={"A": 1.0, "B": 0.7},
+            bond_lengths={"A-B": 1.0, "B-B": 0.80},
+        )
+        system = Pack(molecules=chains, density=0.0001)
+        snap, d = set_bond_constraints(
+            snapshot=system.hoomd_snapshot,
+            bond_types=["A-B", "B-B"],
+            constraint_values=[1.0, 0.8],
+        )
+        assert snap.constraints.N == 44
+        for group in snap.bonds.group:
+            assert group in snap.constraints.group
+
+        ab_index = snap.bonds.types.index("A-B")
+        bb_index = snap.bonds.types.index("B-B")
+        for group, val in zip(snap.constraints.group, snap.constraints.value):
+            group_index = snap.bonds.group.index(group)
+            bond_id = snap.bonds.typeid[group_index]
+            if bond_id == bb_index:
+                assert np.allclose(val, 0.80)
+            elif bond_id == ab_index:
+                assert np.allclose(val, 1.0)
+
     def test_ellipsoid_fixed_bonds_bad_val(self):
-        ellipsoid_chain = EllipsoidChain(
-            lengths=4,
-            num_mols=2,
-            lpar=1,
-            bead_mass=50,
-        )
-        system = Pack(
-            molecules=ellipsoid_chain,
-            density=0.1,
-            base_units=dict(),
-        )
+        chains = LJChain(lengths=10, num_mols=1)
+        system = Pack(molecules=chains, density=0.001)
         with pytest.raises(ValueError):
             set_bond_constraints(
                 system.hoomd_snapshot,
                 constraint_values=[2.0],
-                bond_types=["_C-_H"],
+                bond_types=["A-A"],
             )
 
 
