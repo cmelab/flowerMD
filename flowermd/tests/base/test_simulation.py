@@ -11,8 +11,8 @@ import unyt as u
 from flowermd import Simulation
 from flowermd.base import Pack
 from flowermd.library import OPLS_AA_PPS
-from flowermd.library.forcefields import EllipsoidForcefield
-from flowermd.library.polymers import EllipsoidChain
+from flowermd.library.forcefields import BeadSpring
+from flowermd.library.polymers import LJChain
 from flowermd.tests import BaseTest
 from flowermd.utils import get_target_box_mass_density, set_bond_constraints
 
@@ -383,33 +383,20 @@ class TestSimulate(BaseTest):
             Simulation.from_system(benzene_system, constraint="A")
 
     def test_d_constrain_sim(self):
-        ellipsoid_chain = EllipsoidChain(
-            lengths=4,
-            num_mols=2,
-            lpar=1.0,
-            bead_mass=100,
+        chains = LJChain(lengths=10, num_mols=1)
+        system = Pack(molecules=chains, density=0.001, base_units=dict())
+        snap, d = set_bond_constraints(
+            snapshot=system.hoomd_snapshot,
+            bond_types=["A-A"],
+            constraint_values=[1.0],
         )
-        system = Pack(
-            molecules=ellipsoid_chain,
-            density=0.1,
-            base_units=dict(),
-            fix_orientation=True,
-        )
-        ellipsoid_ff = EllipsoidForcefield(
-            lpar=1,
-            lperp=0.5,
-            epsilon=1.0,
+        ff = BeadSpring(
+            beads={"A": dict(epsilon=1.0, sigma=1.0)},
+            angles={"A-A-A": dict(t0=2.2, k=100)},
             r_cut=2.5,
-            angle_k=50,
-            angle_theta0=2.2,
-        )
-        constrain_snap, d_constraint = set_bond_constraints(
-            system.hoomd_snapshot, constrain_value=1.0, bond_type="_C-_H"
         )
         sim = Simulation(
-            initial_state=constrain_snap,
-            forcefield=ellipsoid_ff.hoomd_forces,
-            constraint=d_constraint,
+            initial_state=snap, forcefield=ff.hoomd_forces, constraint=d
         )
         assert isinstance(sim._distance_constraint, hoomd.md.constrain.Distance)
         assert sim._rigid_constraint is None
