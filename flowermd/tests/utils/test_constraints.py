@@ -11,7 +11,7 @@ from flowermd.utils import create_rigid_ellipsoid_chain, set_bond_constraints
 class TestBondConstraint(BaseTest):
     def test_single_fixed_bonds(self):
         chains = LJChain(lengths=10, num_mols=1)
-        system = Pack(molecules=chains, density=0.001)
+        system = Pack(molecules=chains, density=0.001, base_units=dict())
         snap, d = set_bond_constraints(
             snapshot=system.hoomd_snapshot,
             bond_types=["A-A"],
@@ -31,7 +31,7 @@ class TestBondConstraint(BaseTest):
             bead_mass={"A": 1.0, "B": 0.7},
             bond_lengths={"A-B": 1.0, "B-B": 0.80},
         )
-        system = Pack(molecules=chains, density=0.0001)
+        system = Pack(molecules=chains, density=0.0001, base_units=dict())
         snap, d = set_bond_constraints(
             snapshot=system.hoomd_snapshot,
             bond_types=["A-B", "B-B"],
@@ -53,7 +53,7 @@ class TestBondConstraint(BaseTest):
 
     def test_ellipsoid_fixed_bonds_bad_val(self):
         chains = LJChain(lengths=10, num_mols=1)
-        system = Pack(molecules=chains, density=0.001)
+        system = Pack(molecules=chains, density=0.001, base_units=dict())
         with pytest.raises(ValueError):
             set_bond_constraints(
                 system.hoomd_snapshot,
@@ -77,6 +77,7 @@ class TestRigidBody(BaseTest):
             edge=5,
             overlap=1,
             fix_orientation=True,
+            base_units=dict(),
         )
         snap = system.hoomd_snapshot
         rigid_frame, rigid = create_rigid_ellipsoid_chain(snap)
