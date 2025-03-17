@@ -111,8 +111,6 @@ class TestForceFields:
             lperp=0.5,
             lpar=1.0,
             r_cut=3,
-            bond_k=500,
-            bond_r0=0.1,
             angle_k=100,
             angle_theta0=1.57,
         )
@@ -120,15 +118,21 @@ class TestForceFields:
         assert isinstance(
             ellipsoid_ff.hoomd_forces[-1], hoomd.md.pair.aniso.GayBerne
         )
-        assert ("R", "R") in list(
+        assert ("X", "X") in list(
             dict(ellipsoid_ff.hoomd_forces[-1].params).keys()
         )
-        assert ("B", "R") in list(
+        assert ("R", "X") in list(
             dict(ellipsoid_ff.hoomd_forces[-1].params).keys()
         )
-        assert ellipsoid_ff.hoomd_forces[-1].params["A", "A"]["epsilon"] == 0.0
-        assert ellipsoid_ff.hoomd_forces[-1].params["A", "A"]["lperp"] == 0.0
-        assert ellipsoid_ff.hoomd_forces[-1].params["A", "A"]["lpar"] == 0.0
+        assert ellipsoid_ff.hoomd_forces[-1].params["R", "X"]["epsilon"] == 0.0
+        assert ellipsoid_ff.hoomd_forces[-1].params["A", "X"]["epsilon"] == 0.0
+        assert ellipsoid_ff.hoomd_forces[-1].params["A", "T"]["epsilon"] == 0.0
+        assert ellipsoid_ff.hoomd_forces[-1].params["A", "X"]["epsilon"] == 0.0
+        assert ellipsoid_ff.hoomd_forces[-1].params["A", "T"]["lperp"] == 0.0
+        assert ellipsoid_ff.hoomd_forces[-1].params["T", "X"]["lpar"] == 0.0
+        assert ellipsoid_ff.hoomd_forces[-1].params["R", "X"]["lpar"] == 0.0
+        assert ellipsoid_ff.hoomd_forces[-1].params["R", "A"]["lpar"] == 0.0
+        assert ellipsoid_ff.hoomd_forces[-1].params["R", "T"]["lpar"] == 0.0
 
 
 class TestTableForcefield:

@@ -11,10 +11,14 @@ import unyt as u
 from flowermd import Simulation
 from flowermd.base import Pack
 from flowermd.library import OPLS_AA_PPS
-from flowermd.library.forcefields import EllipsoidForcefield
-from flowermd.library.polymers import EllipsoidChain
+from flowermd.library.forcefields import BeadSpring, EllipsoidForcefield
+from flowermd.library.polymers import EllipsoidChain, LJChain
 from flowermd.tests import BaseTest
-from flowermd.utils import create_rigid_body, get_target_box_mass_density
+from flowermd.utils import (
+    create_rigid_ellipsoid_chain,
+    get_target_box_mass_density,
+    set_bond_constraints,
+)
 
 
 class TestSimulate(BaseTest):
@@ -378,47 +382,63 @@ class TestSimulate(BaseTest):
             assert type(i) is type(j)
         os.remove("forcefield.pickle")
 
-    def test_bad_rigid(self, benzene_system):
+    def test_bad_constraint(self, benzene_system):
         with pytest.raises(ValueError):
-            Simulation.from_system(benzene_system, rigid_constraint="A")
+            Simulation.from_system(benzene_system, constraint="A")
 
-    def test_rigid_sim(self):
-        ellipsoid_chain = EllipsoidChain(
-            lengths=4,
-            num_mols=2,
-            lpar=0.5,
-            bead_mass=100,
-            bond_length=0.01,
+    def test_d_constrain_sim(self):
+        chains = LJChain(lengths=10, num_mols=1)
+        system = Pack(molecules=chains, density=0.001, base_units=dict())
+        snap, d = set_bond_constraints(
+            snapshot=system.hoomd_snapshot,
+            bond_types=["A-A"],
+            constraint_values=[1.0],
         )
-        system = Pack(
-            molecules=ellipsoid_chain,
-            density=0.1,
-            base_units=dict(),
-            fix_orientation=True,
-        )
-        ellipsoid_ff = EllipsoidForcefield(
-            lpar=0.5,
-            lperp=0.25,
-            epsilon=1.0,
-            r_cut=2.0,
-            bond_k=500,
-            bond_r0=0.01,
-            angle_k=250,
-            angle_theta0=2.2,
-        )
-        rigid_frame, rigid = create_rigid_body(
-            system.hoomd_snapshot,
-            ellipsoid_chain.bead_constituents_types,
-            bead_name="R",
+        ff = BeadSpring(
+            beads={"A": dict(epsilon=1.0, sigma=1.0)},
+            angles={"A-A-A": dict(t0=2.2, k=100)},
+            r_cut=2.5,
         )
         sim = Simulation(
-            initial_state=rigid_frame,
-            forcefield=ellipsoid_ff.hoomd_forces,
-            rigid_constraint=rigid,
+            initial_state=snap, forcefield=ff.hoomd_forces, constraint=d
         )
-        sim.run_NVT(n_steps=0, kT=1.0, tau_kt=sim.dt * 100)
+        assert isinstance(sim._distance_constraint, hoomd.md.constrain.Distance)
+        assert sim._rigid_constraint is None
+        sim.run_NVT(n_steps=10, kT=1.0, tau_kt=sim.dt * 100)
         assert sim.integrator.integrate_rotational_dof is True
-        assert sim.mass_reduced == 800.0
+
+    def test_ellipsoid_chain_sim(self):
+        chain = EllipsoidChain(
+            lengths=15, num_mols=15, bead_mass=1, lpar=1, bond_L=0.0
+        )
+        system = Pack(
+            molecules=chain,
+            density=0.0005,
+            edge=5,
+            overlap=1,
+            fix_orientation=True,
+        )
+        rigid_snap, rigid = create_rigid_ellipsoid_chain(system.hoomd_snapshot)
+        forces = EllipsoidForcefield(
+            angle_k=25,
+            angle_theta0=2.2,
+            bond_r0=0.0,
+            lpar=1,
+            lperp=0.5,
+            epsilon=1,
+            r_cut=3.0,
+        )
+        sim = Simulation(
+            initial_state=rigid_snap,
+            constraint=rigid,
+            gsd_file_name="traj.gsd",
+            gsd_write_freq=100,
+            forcefield=forces.hoomd_forces,
+        )
+        assert isinstance(sim._rigid_constraint, hoomd.md.constrain.Rigid)
+        assert sim._distance_constraint is None
+        sim.run_NVT(n_steps=10, kT=1.0, tau_kt=sim.dt * 100)
+        assert sim.integrator.integrate_rotational_dof is True
 
     def test_save_restart_gsd(self, benzene_system):
         sim = Simulation.from_system(benzene_system)

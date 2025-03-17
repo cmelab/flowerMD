@@ -11,4 +11,3 @@ ignore:
     - "flowermd/assets"
     - "flowermd/__version__.py"
     - "tutorials"
-    - "setup.py"
