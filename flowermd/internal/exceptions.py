@@ -53,7 +53,7 @@ class MoleculeLoadError(Exception):
         super().__init__(msg)
 
 
-class ReferenceUnitError(Exception):
+class UnitError(Exception):
     def __init__(self, msg):
         super().__init__(msg)
 

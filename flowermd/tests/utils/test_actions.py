@@ -16,7 +16,7 @@ class TestActions(BaseTest):
         )
         sim.operations.updaters.append(energy_operation)
         old_lj_force = copy.deepcopy(sim._lj_force().params)
-        sim.run_NVT(n_steps=10, kT=1.0, tau_kt=1.0)
+        sim.run_NVT(duration=10, temperature=1.0, tau_kt=1.0)
         new_lj_force = sim._lj_force().params
         for k in old_lj_force.keys():
             assert (
@@ -31,7 +31,7 @@ class TestActions(BaseTest):
         )
         sim.operations.updaters.append(energy_operation)
         old_lj_force = copy.deepcopy(sim._lj_force().params)
-        sim.run_NVT(n_steps=10, kT=1.0, tau_kt=1.0)
+        sim.run_NVT(duration=10, temperature=1.0, tau_kt=1.0)
         new_lj_force = sim._lj_force().params
         for k in old_lj_force.keys():
             assert np.isclose(

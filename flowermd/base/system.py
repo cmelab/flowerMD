@@ -3,7 +3,7 @@
 import pickle
 import warnings
 from abc import ABC, abstractmethod
-from typing import List
+from typing import List, Union
 
 import gsd
 import mbuild as mb
@@ -14,7 +14,7 @@ from gmso.parameterization import apply
 
 from flowermd.base.forcefield import BaseHOOMDForcefield, BaseXMLForcefield
 from flowermd.base.molecule import Molecule
-from flowermd.internal import check_return_iterable, validate_ref_value
+from flowermd.internal import Units, check_return_iterable, validate_unit
 from flowermd.internal.exceptions import ForceFieldError, MoleculeLoadError
 from flowermd.utils import (
     get_target_box_mass_density,
@@ -211,12 +211,10 @@ class System(ABC):
 
         Parameters
         ----------
-        length : string or unyt.unyt_quantity, required
+        length : reference length * `flowermd.Units`, required
             The reference length of the system.
-            It can be provided in the following forms:
-            1) A string with the format of "value unit", for example "1 nm".
-            2) A unyt.unyt_quantity object with the correct dimension. For
-            example, unyt.unyt_quantity(1, "nm").
+            It can be provided in the following form of:
+            value * `flowermd.Units`, for example 1 * `flowermd.Units.angstrom`.
 
         """
         if self.auto_scale:
@@ -225,7 +223,7 @@ class System(ABC):
                 "Setting reference length manually disables auto "
                 "scaling."
             )
-        validated_length = validate_ref_value(length, u.dimensions.length)
+        validated_length = validate_unit(length, u.dimensions.length)
         self._reference_values["length"] = validated_length
 
     @reference_energy.setter
@@ -234,12 +232,10 @@ class System(ABC):
 
         Parameters
         ----------
-        energy : string or unyt.unyt_quantity, required
+        energy : reference energy * `flowermd.Units`, required
             The reference energy of the system.
-            It can be provided in the following forms:
-            1) A string with the format of "value unit", for example "1 kJ/mol".
-            2) A unyt.unyt_quantity object with the correct dimension. For
-            example, unyt.unyt_quantity(1, "kJ/mol").
+            It can be provided in the following form of:
+            value * `flowermd.Units`, for example 1 * `flowermd.Units.kcal/mol`.
 
         """
         if self.auto_scale:
@@ -248,7 +244,7 @@ class System(ABC):
                 "Setting reference energy manually disables auto "
                 "scaling."
             )
-        validated_energy = validate_ref_value(energy, u.dimensions.energy)
+        validated_energy = validate_unit(energy, u.dimensions.energy)
         self._reference_values["energy"] = validated_energy
 
     @reference_mass.setter
@@ -257,13 +253,10 @@ class System(ABC):
 
         Parameters
         ----------
-        mass : string or unyt.unyt_quantity, required
+        mass : reference mass * `flowermd.Units`, required
             The reference mass of the system.
-            It can be provided in the following forms:
-            1) A string with the format of "value unit", for example "1 amu".
-            2) A unyt.unyt_quantity object with the correct dimension. For
-            example, unyt.unyt_quantity(1, "amu").
-
+            It can be provided in the following form of:
+            value * `flowermd.Units`, for example 1 * `flowermd.Units.amu`.
         """
         if self.auto_scale:
             warnings.warn(
@@ -271,7 +264,7 @@ class System(ABC):
                 "Setting reference mass manually disables auto "
                 "scaling."
             )
-        validated_mass = validate_ref_value(mass, u.dimensions.mass)
+        validated_mass = validate_unit(mass, u.dimensions.mass)
         self._reference_values["mass"] = validated_mass
 
     @reference_values.setter
@@ -406,6 +399,23 @@ class System(ABC):
         """Write the system's `hoomd_snapshot` to a GSD file."""
         with gsd.hoomd.open(file_name, "w") as traj:
             traj.append(self.hoomd_snapshot)
+
+    def save_reference_values(self, file_path="reference_values.pickle"):
+        """Save the reference values of the system to a pickle file.
+
+        Parameters
+        ----------
+        file_path : str, default "reference_values.pickle"
+            The path to save the pickle file to.
+
+        """
+        if not self.reference_values:
+            raise ValueError(
+                "Reference values have not been set. "
+                "See System.reference_values"
+            )
+        f = open(file_path, "wb")
+        pickle.dump(self.reference_values, f)
 
     def _convert_to_gmso(self):
         """Convert the mbuild system to a gmso system."""
@@ -618,11 +628,12 @@ class Pack(System):
 
     Parameters
     ----------
-    density : float, required
-        The desired density of the system (g/cm^3). Used to set the
+    density : float or unyt_quantity or flowermd.internal.Units, required
+        The desired density of the system. Used to set the
         target_box attribute. Can be useful when initializing
         systems at low density and running a shrink simulation
-        to achieve a target density.
+        to achieve a target density. If no unit is provided, assuming the
+        density is in g/cm**3.
     packing_expand_factor : int, default 5
         The factor by which to expand the box for packing.
     edge : float, default 0.2
@@ -657,7 +668,7 @@ class Pack(System):
     def __init__(
         self,
         molecules,
-        density: float,
+        density: Union[int, float, u.unyt_quantity, u.unyt_array, Units],
         base_units=dict(),
         packing_expand_factor=5,
         edge=0.2,
@@ -666,11 +677,11 @@ class Pack(System):
         fix_orientation=False,
         **kwargs,
     ):
-        if not isinstance(density, u.array.unyt_quantity):
-            self.density = density * u.Unit("g") / u.Unit("cm**3")
+        if isinstance(density, (int, float)):
             warnings.warn(
                 "Units for density were not given, assuming units of g/cm**3."
             )
+            self.density = density * Units.g_cm3
         else:
             self.density = density
         self.packing_expand_factor = packing_expand_factor
@@ -683,8 +694,8 @@ class Pack(System):
         )
 
     def _build_system(self, **kwargs):
-        mass_density = u.Unit("kg") / u.Unit("m**3")
-        number_density = u.Unit("m**-3")
+        mass_density = Units.kg_m3
+        number_density = Units.n_m3
         if self.density.units.dimensions == mass_density.dimensions:
             target_box = get_target_box_mass_density(
                 density=self.density, mass=self.mass

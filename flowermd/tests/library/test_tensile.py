@@ -26,6 +26,6 @@ class TestTensileSimulation(BaseTest):
             gsd_write_freq=1e6,
         )
         tensile_sim.run_tensile(
-            strain=0.05, kT=2.0, n_steps=1e3, period=10, tau_kt=0.001
+            strain=0.05, temperature=2.0, duration=1e3, period=10, tau_kt=0.001
         )
         assert np.allclose(tensile_sim.strain, 0.05, 1e-4)

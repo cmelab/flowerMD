@@ -8,6 +8,7 @@ import numpy as np
 import unyt as u
 
 from flowermd.base import Simulation
+from flowermd.internal import Units
 from flowermd.modules.surface_wetting.utils import combine_forces
 from flowermd.utils import HOOMDThermostats, get_target_box_mass_density
 
@@ -45,15 +46,15 @@ class DropletSimulation(Simulation):
 
     def run_droplet(
         self,
-        shrink_kT,
-        shrink_steps,
+        shrink_temperature,
+        shrink_duration,
         shrink_period,
         shrink_density,
-        expand_kT,
-        expand_steps,
+        expand_temperature,
+        expand_duration,
         expand_period,
-        hold_kT,
-        hold_steps,
+        hold_temperature,
+        hold_duration,
         final_density,
         tau_kt,
     ):
@@ -61,60 +62,62 @@ class DropletSimulation(Simulation):
 
         The steps for creating a droplet are:
         1. Shrink the box to a high density (i.e. `shrink_density`) at a high
-        temperature (i.e. `shrink_kT`) to get the droplet to form.
+        temperature (i.e. `shrink_temperature`) to get the droplet to form.
         2. Expand the box back to a low density (i.e. 'final_density') at a low
-        temperature (i.e. `expand_kT`). Keeping the temperature low will keep
+        temperature (i.e. `expand_temperature`). Keeping the temperature low will keep
         the droplet from falling apart.
         3. Run the simulation at the `final_density` and low temperature
-        (i.e. `hold_kT`) to equilibrate the droplet.
+        (i.e. `hold_temperature`) to equilibrate the droplet.
 
 
         Parameters
         ----------
-        shrink_kT : float or hoomd.variant.Ramp, required
+        shrink_temperature : float or flowermd.internal.Units or hoomd.variant.Ramp, required
             The temperature to run the simulation at while shrinking.
-        shrink_steps : int, required
-            The number of steps to run the simulation while shrinking.
-        shrink_period : int, required
-            The number of steps between updates to the box size while shrinking.
-        shrink_density : float, required
+        shrink_duration : int or flowermd.internal.Units, required
+            The number of steps (unitless) or time length (with units) to run the simulation while shrinking.
+        shrink_period : int or flowermd.internal.Units, required
+            The number of steps (unitless) or time length (with units) between updates to the box size while shrinking.
+        shrink_density : float or flowermd.internal.Units, required
             The high density to shrink the box to.
-            Note: the units of the density are in g/cm^3.
-        expand_kT : float or hoomd.variant.Ramp, required
+            Note: If unitless, the units of the density are in g/cm^3.
+        expand_temperature : float or flowermd.internal.Units or hoomd.variant.Ramp, required
             The temperature to run the simulation at while expanding.
-        expand_steps : int, required
-            The number of steps to run the simulation while expanding.
-        expand_period : int, required
-            The number of steps between updates to the box size while expanding.
-        hold_kT : float or hoomd.variant.Ramp, required
+        expand_duration : int or flowermd.internal.Units, required
+            The number of steps (unitless) or time length (with units) to run the simulation while expanding.
+        expand_period : int or flowermd.internal.Units, required
+            The number of steps (unitless) or time length (with units) between updates to the box size while expanding.
+        hold_temperature : float or flowermd.internal.Units or hoomd.variant.Ramp, required
             The temperature to run the simulation at while equilibrating.
-        hold_steps : int, required
-            The number of steps to run the simulation while equilibrating.
-        final_density : float, required
+        hold_duration : int or flowermd.internal.Units, required
+            The number of steps (unitless) or time length (with units) to run the simulation while equilibrating.
+        final_density : float or flowermd.internal.Units, required
             The low density to equilibrate the box to.
-            Note: the units of the density are in g/cm^3.
+            Note: If unitless, the units of the density are in g/cm^3.
         tau_kt : float, required
             The time constant for the thermostat.
 
         """
         # Shrink down to high density
         if not isinstance(
-            shrink_density, u.array.unyt_quantity
-        ) and not isinstance(final_density, u.array.unyt_quantity):
+            shrink_density, (u.array.unyt_quantity, u.unyt_quantity, Units)
+        ) and not isinstance(
+            final_density, (u.array.unyt_quantity, u.unyt_quantity, Units)
+        ):
             warnings.warn(
                 "Units for density were not given, assuming units of g/cm**3."
             )
             target_box_shrink = get_target_box_mass_density(
-                density=shrink_density * (u.g / (u.cm**3)),
+                density=shrink_density * Units.g_cm3,
                 mass=self.mass.to("g"),
             )
             target_box_final = get_target_box_mass_density(
-                density=final_density * (u.g / (u.cm**3)),
+                density=final_density * Units.g_cm3,
                 mass=self.mass.to("g"),
             )
         else:
-            mass_density = u.Unit("kg") / u.Unit("m**3")
-            number_density = u.Unit("m**-3")
+            mass_density = Units.kg_m3
+            number_density = Units.n_m3
             if shrink_density.units.dimensions == mass_density.units.dimensions:
                 target_box_shrink = get_target_box_mass_density(
                     density=shrink_density, mass=self.mass.to("g")
@@ -132,23 +135,25 @@ class DropletSimulation(Simulation):
                 )
         # Shrink down to higher density
         self.run_update_volume(
-            n_steps=shrink_steps,
+            duration=shrink_duration,
             period=shrink_period,
-            kT=shrink_kT,
+            temperature=shrink_temperature,
             tau_kt=tau_kt,
             final_box_lengths=target_box_shrink,
             write_at_start=True,
         )
         # Expand back up to low density
         self.run_update_volume(
-            n_steps=expand_steps,
+            duration=expand_duration,
             period=expand_period,
-            kT=expand_kT,
+            temperature=expand_temperature,
             tau_kt=tau_kt,
             final_box_lengths=target_box_final,
         )
         # Run at low density
-        self.run_NVT(n_steps=hold_steps, kT=hold_kT, tau_kt=tau_kt)
+        self.run_NVT(
+            duration=hold_duration, temperature=hold_temperature, tau_kt=tau_kt
+        )
 
 
 class InterfaceBuilder:
