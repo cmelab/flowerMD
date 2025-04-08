@@ -12,6 +12,7 @@ dependencies:
   - mbuild >=0.17.0
   - numpy <2.0
   - openbabel >=3
+  - pytorch
   - pip
   - pre-commit
   - py3Dmol

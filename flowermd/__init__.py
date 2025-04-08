@@ -10,5 +10,4 @@ from .base import (
     Simulation,
     System,
 )
-
-__version__ = "1.3.1"
+from .internal.units import Units
