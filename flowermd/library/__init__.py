@@ -27,3 +27,4 @@ from .polymers import (
 )
 from .simulations.tensile import Tensile
 from .surfaces import Graphene
+from .systems import SingleChainSystem
