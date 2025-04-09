@@ -748,12 +748,11 @@ class Simulation(hoomd.simulation.Simulation):
         box_ramp = hoomd.variant.Ramp(
             A=0, B=1, t_start=self.timestep, t_ramp=int(n_steps)
         )
-        initial_box = self.state.box
-
+        box_variant = hoomd.variant.box.Interpolate(
+            initial_box=self.state.box, final_box=final_box, variant=box_ramp
+        )
         box_resizer = hoomd.update.BoxResize(
-            box1=initial_box,
-            box2=final_box,
-            variant=box_ramp,
+            box=box_variant,
             trigger=resize_trigger,
         )
         self.operations.updaters.append(box_resizer)
