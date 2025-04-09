@@ -11,7 +11,7 @@ class SingleChainSystem(System):
     """Builds a vacuum box around a single chain.
 
     The box lengths are chosen so they are at least as long as the largest particle distance.
-        The maximum distance of the chain is calculated using scipy.spatial.distance.pdist().
+    The maximum distance of the chain is calculated using scipy.spatial.distance.pdist().
     This distance multiplied by a buffer defines the box dimensions. The chain is centered in the box.
 
     Parameters
