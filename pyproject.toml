@@ -26,17 +26,19 @@ zip-safe = false
 include-package-data = true
 license-files = ["LICENSE"]
 
-[tool.setuptools.packages]
-find = {namespaces = false}
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["flowermd*"]
+exclude = ["tests*"]
 
 [tool.setuptools.package-data]
 flowermd = [
-  '"modules/**"',
-  '"library/**"',
-  '"assets/forcefields/**"',
-  '"assets/molecule_files/**"',
-  '"utils/**"',
-  '"internal/**"',
+  "modules/**",
+  "library/**",
+  "assets/forcefields/**",
+  "assets/molecule_files/**",
+  "utils/**",
+  "internal/**",
 ]
 
 [tool.setuptools.dynamic]
