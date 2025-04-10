@@ -47,7 +47,7 @@ jobs:
 
     - name: Install package
       shell: bash -l {0}
-      run: pip install .
+      run: python -m build && pip install dist/*.whl
 
     - name: Run pytest with coverage report
       shell: bash -l {0}
@@ -105,7 +105,7 @@ jobs:
 
     - name: Install package
       shell: bash -l {0}
-      run: pip install .
+      run: python -m build && pip install dist/*.whl
 
     - name: Run pytest on tutorials
       shell: bash -l {0}
