@@ -1184,7 +1184,6 @@ class Simulation(hoomd.simulation.Simulation):
             "log_write_freq": self.log_write_freq,
             "gsd_max_buffer_size": self.maximum_write_buffer_size,
             "seed": self.seed,
-            "constraint": self.constraint,
         }
         # Create the final dict that holds everything.
         sim_dict = {
@@ -1192,6 +1191,7 @@ class Simulation(hoomd.simulation.Simulation):
             "forcefield": self._forcefield,
             "state": snap,
             "sim_kwargs": sim_kwargs,
+            "constraint": self.constraint,
         }
         # Add a header to the pickle file.
         # This will be checked in Simulation.from_simulation_pickle.
