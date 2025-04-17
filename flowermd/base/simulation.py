@@ -188,11 +188,13 @@ class Simulation(hoomd.simulation.Simulation):
                 forces.append(new_wall)
         ref_values = data["reference_values"]
         sim_kwargs = data["sim_kwargs"]
+        constraint = data["constraint"]
         return cls(
             initial_state=state,
             forcefield=list(forces),
             reference_values=ref_values,
             **sim_kwargs,
+            constraint=constraint,
         )
 
     @classmethod
