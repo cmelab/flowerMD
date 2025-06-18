@@ -632,8 +632,8 @@ class Pack(System, UniqueMolecules=True):
     seed : int, default 12345
         Change seed to be passed to PACKMOL for different starting positions
     UniqueMolecules : bool, default True
-	Change to False to assume each compound to be initialized has a
-	unique configuration, even if chemically identical.
+        Change to False to assume each compound to be initialized has a
+        unique configuration, even if chemically identical.
     kwargs
         Arguments to be passed into mbuild.packing.fill_box
 
@@ -704,12 +704,12 @@ class Pack(System, UniqueMolecules=True):
                 f"number density ({number_density.dimensions}) are supported."
             )
 
-        compound=self.all_molecules
-        n_compounds=[1 for i in self.all_molecules]
+        compound = self.all_molecules
+        n_compounds = [1 for i in self.all_molecules]
         if not UniqueMolecules:
             compound = self.all_molecules[0]
-            n_compounds= len(self.all_molecules)
-		
+            n_compounds = len(self.all_molecules)
+
         system = mb.packing.fill_box(
             compound=compound,
             n_compounds=n_compounds,
