@@ -610,7 +610,7 @@ class System(ABC):
             )
 
 
-class Pack(System):
+class Pack(System, UniqueMolecules=True):
     """Uses PACKMOL via mbuild.packing.fill_box.
 
     The box used for packing is expanded to allow PACKMOL
@@ -631,6 +631,9 @@ class Pack(System):
         Minimum separation (nm) between particles of different molecules.
     seed : int, default 12345
         Change seed to be passed to PACKMOL for different starting positions
+    UniqueMolecules : bool, default True
+	Change to False to assume each compound to be initialized has a
+	unique configuration, even if chemically identical.
     kwargs
         Arguments to be passed into mbuild.packing.fill_box
 
@@ -701,9 +704,15 @@ class Pack(System):
                 f"number density ({number_density.dimensions}) are supported."
             )
 
+        compound=self.all_molecules,
+        n_compounds=[1 for i in self.all_molecules],
+        if not UniqueMolecules:
+            compound = self.all_molecules[0]
+            n_compounds= len(self.all_molecules)
+		
         system = mb.packing.fill_box(
-            compound=self.all_molecules,
-            n_compounds=[1 for i in self.all_molecules],
+            compound=compound,
+            n_compounds=n_compounds,
             box=list(target_box * self.packing_expand_factor),
             overlap=self.overlap,
             seed=self.seed,
