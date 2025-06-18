@@ -706,7 +706,7 @@ class Pack(System, UniqueMolecules=True):
 
         compound = self.all_molecules
         n_compounds = [1 for i in self.all_molecules]
-        if not UniqueMolecules:
+        if not self.UniqueMolecules:
             compound = self.all_molecules[0]
             n_compounds = len(self.all_molecules)
 
