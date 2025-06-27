@@ -705,7 +705,12 @@ class Pack(System):
                 f"({mass_density.dimensions}) and "
                 f"number density ({number_density.dimensions}) are supported."
             )
-
+        if not self.unique_molecules and len(self._molecules) > 1:
+            raise ValueError(
+                f"unique_molecules was set to {self.unique_molecules} "
+                "were given, which doesn't match the length of molecules given "
+                f"{self._molecules}"
+            )
         compound = self.all_molecules
         n_compounds = [1 for i in self.all_molecules]
         if not self.unique_molecules:

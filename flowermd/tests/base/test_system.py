@@ -236,7 +236,17 @@ class TestSystem(BaseTest):
             overlap=0.2,
             unique_molecules=False,
         )
-        assert system.system.n_compounds == 5
+        assert len(system.system.children) == 5
+
+    def test_unique_molecules_error(self, benzene_molecule, polyethylene):
+        polyethylene = polyethylene(lengths=5, num_mols=1)
+        benzene = benzene_molecule(n_mols=5)
+        with pytest.raises(ValueError):
+            system = Pack(
+                molecules=[polyethylene, benzene],
+                density=1.0,
+                unique_molecules=False,
+            )
 
     def test_mass(self, pps_molecule):
         pps_mol = pps_molecule(n_mols=20)
