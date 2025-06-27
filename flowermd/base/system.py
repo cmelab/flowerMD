@@ -610,7 +610,7 @@ class System(ABC):
             )
 
 
-class Pack(System, UniqueMolecules=True):
+class Pack(System):
     """Uses PACKMOL via mbuild.packing.fill_box.
 
     The box used for packing is expanded to allow PACKMOL
@@ -631,7 +631,7 @@ class Pack(System, UniqueMolecules=True):
         Minimum separation (nm) between particles of different molecules.
     seed : int, default 12345
         Change seed to be passed to PACKMOL for different starting positions
-    UniqueMolecules : bool, default True
+    unique_molecules : bool, default True
         Change to False to assume each compound to be initialized has a
         unique configuration, even if chemically identical.
     kwargs
@@ -666,6 +666,7 @@ class Pack(System, UniqueMolecules=True):
         edge=0.2,
         overlap=0.2,
         seed=12345,
+	unique_molecules=True,
         fix_orientation=False,
         **kwargs,
     ):
@@ -680,6 +681,7 @@ class Pack(System, UniqueMolecules=True):
         self.edge = edge
         self.overlap = overlap
         self.seed = seed
+	self.unique_molecules = unique_molecules
         self.fix_orientation = fix_orientation
         super(Pack, self).__init__(
             molecules=molecules, base_units=base_units, **kwargs
@@ -706,7 +708,7 @@ class Pack(System, UniqueMolecules=True):
 
         compound = self.all_molecules
         n_compounds = [1 for i in self.all_molecules]
-        if not self.UniqueMolecules:
+        if not self.unique_molecules:
             compound = self.all_molecules[0]
             n_compounds = len(self.all_molecules)
 
