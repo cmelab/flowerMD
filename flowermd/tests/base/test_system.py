@@ -236,7 +236,7 @@ class TestSystem(BaseTest):
             overlap=0.2,
             unique_molecules=False,
         )
-        assert system.n_compounds == 5
+        assert system.system.n_compounds == 5
 
     def test_mass(self, pps_molecule):
         pps_mol = pps_molecule(n_mols=20)
