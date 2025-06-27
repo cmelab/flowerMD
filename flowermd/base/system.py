@@ -666,7 +666,7 @@ class Pack(System):
         edge=0.2,
         overlap=0.2,
         seed=12345,
-	unique_molecules=True,
+        unique_molecules=True,
         fix_orientation=False,
         **kwargs,
     ):
@@ -681,7 +681,7 @@ class Pack(System):
         self.edge = edge
         self.overlap = overlap
         self.seed = seed
-	self.unique_molecules = unique_molecules
+        self.unique_molecules = unique_molecules
         self.fix_orientation = fix_orientation
         super(Pack, self).__init__(
             molecules=molecules, base_units=base_units, **kwargs
