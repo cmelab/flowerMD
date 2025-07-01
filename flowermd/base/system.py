@@ -630,10 +630,10 @@ class Pack(System):
     overlap : float, default 0.2
         Minimum separation (nm) between particles of different molecules.
     seed : int, default 12345
-        Change seed to be passed to PACKMOL for different starting positions
+        Change seed to be passed to PACKMOL for different starting positions.
     unique_molecules : bool, default True
-        Change to False to assume each compound to be initialized has a
-        unique configuration, even if chemically identical.
+        Change to False if each compound to be initialized has identical configuration and chemical identity.
+        Setting this to False can help improve packing performance for large systems without unique starting molecules.
     kwargs
         Arguments to be passed into mbuild.packing.fill_box
 
