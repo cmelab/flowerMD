@@ -711,6 +711,13 @@ class Pack(System):
                 ", which doesn't match the length of molecules given: "
                 f"{len(self._molecules)} molecules"
             )
+        if len(self._molecules)==1:
+            if not self.unique_molecules and len(self._molecules[0].n_mols) > 1:
+                raise ValueError(
+                    f"unique_molecules kwarg was set to {self.unique_molecules}"
+                    ", which doesn't match the polydisperse system given: "
+                    f"{self._molecules[0].n_mols}"
+                )
         compound = self.all_molecules
         n_compounds = [1 for i in self.all_molecules]
         if not self.unique_molecules:
