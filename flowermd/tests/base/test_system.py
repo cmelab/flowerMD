@@ -242,7 +242,7 @@ class TestSystem(BaseTest):
         polyethylene = polyethylene(lengths=5, num_mols=1)
         benzene = benzene_molecule(n_mols=5)
         with pytest.raises(ValueError):
-            system = Pack(
+            Pack(
                 molecules=[polyethylene, benzene],
                 density=1.0,
                 unique_molecules=False,
