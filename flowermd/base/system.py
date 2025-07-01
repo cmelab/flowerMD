@@ -711,7 +711,7 @@ class Pack(System):
                 ", which doesn't match the length of molecules given: "
                 f"{len(self._molecules)} molecules"
             )
-        if len(self._molecules)==1:
+        if len(self._molecules) == 1:
             if not self.unique_molecules and len(self._molecules[0].n_mols) > 1:
                 raise ValueError(
                     f"unique_molecules kwarg was set to {self.unique_molecules}"

@@ -239,7 +239,7 @@ class TestSystem(BaseTest):
         assert len(system.system.children) == 5
 
     def test_unique_molecules_error(self, benzene_molecule, polyethylene):
-        polyethylene = polyethylene(lengths=[5,10], num_mols=[1,6])
+        polyethylene = polyethylene(lengths=[5, 10], num_mols=[1, 6])
         benzene = benzene_molecule(n_mols=5)
         with pytest.raises(ValueError):
             Pack(
