@@ -42,7 +42,8 @@ def add_void_particles(
         (init_pos, void_pos.reshape(1, 3)), axis=0
     )
     # Set updated types and type IDs
-    snapshot.particles.types.append("VOID")
+    if "VOID" not in snapshot.particles.types:
+        snapshot.particles.types.append("VOID")
     void_id = len(snapshot.particles.types) - 1
     init_ids = snapshot.particles.typeid
     snapshot.particles.typeid = np.concatenate(
@@ -56,6 +57,10 @@ def add_void_particles(
     init_charges = snapshot.particles.charge
     snapshot.particles.charge = np.concatenate(
         (init_charges, np.array([0])), axis=None
+    )
+    init_orientation = snapshot.particles.orientation
+    snapshot.particles.orientation = np.concatenate(
+        (init_orientation, np.array([1, 0, 0, 0])), axis=None
     )
     # Updated LJ params
     lj = [i for i in forcefield if isinstance(i, hoomd.md.pair.LJ)][0]
