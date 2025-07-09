@@ -630,7 +630,10 @@ class Pack(System):
     overlap : float, default 0.2
         Minimum separation (nm) between particles of different molecules.
     seed : int, default 12345
-        Change seed to be passed to PACKMOL for different starting positions
+        Change seed to be passed to PACKMOL for different starting positions.
+    unique_molecules : bool, default True
+        Change to False if each compound to be initialized has identical configuration and chemical identity.
+        Setting this to False can help improve packing performance for large systems without unique starting molecules.
     kwargs
         Arguments to be passed into mbuild.packing.fill_box
 
@@ -663,6 +666,7 @@ class Pack(System):
         edge=0.2,
         overlap=0.2,
         seed=12345,
+        unique_molecules=True,
         fix_orientation=False,
         **kwargs,
     ):
@@ -677,6 +681,7 @@ class Pack(System):
         self.edge = edge
         self.overlap = overlap
         self.seed = seed
+        self.unique_molecules = unique_molecules
         self.fix_orientation = fix_orientation
         super(Pack, self).__init__(
             molecules=molecules, base_units=base_units, **kwargs
@@ -700,10 +705,28 @@ class Pack(System):
                 f"({mass_density.dimensions}) and "
                 f"number density ({number_density.dimensions}) are supported."
             )
+        if not self.unique_molecules and len(self._molecules) > 1:
+            raise ValueError(
+                f"unique_molecules kwarg was set to {self.unique_molecules}"
+                ", which doesn't match the length of molecules given: "
+                f"{len(self._molecules)} molecules"
+            )
+        if len(self._molecules) == 1:
+            if not self.unique_molecules and len(self._molecules[0].n_mols) > 1:
+                raise ValueError(
+                    f"unique_molecules kwarg was set to {self.unique_molecules}"
+                    ", which doesn't match the polydisperse system given: "
+                    f"{self._molecules[0].n_mols}"
+                )
+        compound = self.all_molecules
+        n_compounds = [1 for i in self.all_molecules]
+        if not self.unique_molecules:
+            compound = self.all_molecules[0]
+            n_compounds = len(self.all_molecules)
 
         system = mb.packing.fill_box(
-            compound=self.all_molecules,
-            n_compounds=[1 for i in self.all_molecules],
+            compound=compound,
+            n_compounds=n_compounds,
             box=list(target_box * self.packing_expand_factor),
             overlap=self.overlap,
             seed=self.seed,
