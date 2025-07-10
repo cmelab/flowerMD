@@ -14,6 +14,7 @@ from flowermd.library import (
     OPLS_AA,
     OPLS_AA_DIMETHYLETHER,
     OPLS_AA_PPS,
+    PPS,
     LJChain,
 )
 from flowermd.tests import BaseTest
@@ -237,6 +238,15 @@ class TestSystem(BaseTest):
             unique_molecules=False,
         )
         assert len(system.system.children) == 5
+
+    def test_apply_ff_polydisperse(self):
+        pps_chains = PPS(lengths=[5, 10], num_mols=[3, 3])
+        system = Pack(molecules=[pps_chains], density=0.05)
+        system.apply_forcefield(
+            r_cut=2.5,
+            force_field=OPLS_AA_PPS(),
+            auto_scale=True,
+        )
 
     def test_unique_molecules_error(self, benzene_molecule, polyethylene):
         polyethylene = polyethylene(lengths=[5, 10], num_mols=[1, 6])

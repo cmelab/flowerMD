@@ -505,15 +505,16 @@ class System(ABC):
         pppm_resolution=(8, 8, 8),
         pppm_order=4,
         nlist_buffer=0.4,
+        speedup_by_moltag=True,
+        speedup_by_molgraph=False,
     ):
         """Apply the forcefield to the system.
 
         Parameters
         ----------
-        r_cut : float
+        r_cut : float, required
             The cutoff radius for the Lennard-Jones interactions.
-        force_field : flowermd.ForceField or a list of ForceField objects,
-                default=None
+        force_field : flowermd.ForceField or a list of ForceField objects, default=None
             The force field to be applied to the system for parameterization.
             If a list of force fields is provided, the length of the list must
             be equal to the number of molecule types in the system.
@@ -539,6 +540,16 @@ class System(ABC):
             number of grid points in each direction to assign charges to.
         nlist_buffer : float, default=0.4
             Neighborlist buffer for simulation cell.
+        speedup_by_molgraph: bool, optional, default=False
+            A flag to determine whether or not to search the system for repeated disconnected
+            structures, otherwise known as molecules and type each molecule only once.
+            This option will be usefult to handle systems with many repeated small molecules,
+            but may slow down system with large molecule, e.g., monolayer.
+        speedup_by_moltag : bool, optional, default=False
+            A flag to determine whether or not to look at the compound name to try to parameterize
+            each molecule only once. This option requires that the names are correctly set for
+            each kind of 'unique' molecule in the system. For example, a polydisperse system
+            should have different molecule names for each polymer + length combination.
 
         """
         self.auto_scale = auto_scale
@@ -553,8 +564,8 @@ class System(ABC):
             self._gmso_forcefields_dict,
             match_ff_by="group",
             identify_connections=True,
-            speedup_by_moltag=True,
-            speedup_by_molgraph=False,
+            speedup_by_moltag=speedup_by_moltag,
+            speedup_by_molgraph=speedup_by_molgraph,
         )
 
         if remove_charges:
