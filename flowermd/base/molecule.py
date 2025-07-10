@@ -55,13 +55,20 @@ class Molecule:
     """
 
     def __init__(
-        self, num_mols, force_field=None, smiles=None, file=None, compound=None
+        self,
+        num_mols,
+        force_field=None,
+        smiles=None,
+        file=None,
+        compound=None,
+        name="Compound"
     ):
         self.n_mols = num_mols
         self.force_field = force_field
         self.smiles = smiles
         self.file = file
         self.compound = compound
+        self.name = name
         self._mapping = None
         self._mb_molecule = self._load()
         self._molecules = []
@@ -183,9 +190,13 @@ class Molecule:
         """Load the molecule from the provided input."""
         if self.compound:
             if isinstance(self.compound, mb.Compound):
-                return mb.clone(mb.clone(self.compound))
+                comp = mb.clone(mb.clone(self.compound))
+                comp.name = self.name
+                return comp
             if isinstance(self.compound, Topology):
-                return to_mbuild(self.compound)
+                comp = to_mbuild(self.compound)
+                comp.name = self.name
+                return comp
             else:
                 raise MoleculeLoadError(
                     msg=f"Unsupported compound type {type(self.compound)}. "
@@ -193,7 +204,9 @@ class Molecule:
                 )
         if self.file:
             if isinstance(self.file, str) and os.path.isfile(self.file):
-                return mb.load(self.file)
+                comp = mb.load(self.file)
+                comp.name = self.name
+                return comp 
             else:
                 raise MoleculeLoadError(
                     msg=f"Unable to load the molecule from file {self.file}."
@@ -201,7 +214,9 @@ class Molecule:
 
         if self.smiles:
             if isinstance(self.smiles, str):
-                return mb.load(self.smiles, smiles=True)
+                comp = mb.load(self.smiles, smiles=True)
+                comp.name = self.name
+                return comp
             else:
                 raise MoleculeLoadError(
                     msg=f"Unable to load the molecule from smiles "
@@ -482,7 +497,12 @@ class Polymer(Molecule):
         Once the chain is aligned, a periodic bond between
         head and tail atoms is formed.
         Options are "x", "y", or "z"
-
+    name : str, default 'Compound' 
+        The name of the polymer. Setting the name is
+        important for using the `speedup_by_moltag=True`
+        parameter with polydisperse systems, or other 
+        mixtures. This helps improve performance
+        for large systems.
     """
 
     def __init__(
@@ -496,6 +516,7 @@ class Polymer(Molecule):
         bond_length=None,
         bond_orientation=None,
         periodic_bond_axis=None,
+        name="Compound",
         **kwargs,
     ):
         self.lengths = check_return_iterable(lengths)
@@ -503,6 +524,7 @@ class Polymer(Molecule):
         self.bond_length = bond_length
         self.bond_orientation = bond_orientation
         self.periodic_bond_axis = periodic_bond_axis
+        self.name = name
         num_mols = check_return_iterable(num_mols)
         if len(num_mols) != len(self.lengths):
             raise ValueError("Number of molecules and lengths must be equal.")
@@ -510,6 +532,7 @@ class Polymer(Molecule):
             num_mols=num_mols,
             smiles=smiles,
             file=file,
+            name=name,
             force_field=force_field,
             **kwargs,
         )
@@ -540,6 +563,7 @@ class Polymer(Molecule):
         chain.build(n=length, sequence="A", add_hydrogens=add_hydrogens)
         if self.periodic_bond_axis:
             chain.create_periodic_bond(axis=self.periodic_bond_axis)
+        chain.name = f"{self.name}_{length}mer"
         return chain
 
     def _generate(self):
@@ -562,6 +586,12 @@ class CoPolymer(Molecule):
         The total number of monomers in the molecule
     num_mols : int, required
         Number of chains to generate.
+    name : str, default 'Compound' 
+        The name of the polymer. Setting the name is
+        important for using the `speedup_by_moltag=True`
+        parameter with polydisperse systems, or other 
+        mixtures. This helps improve performance
+        for large systems.
     sequence : str, default None
         Manually define the sequence of 'A' and 'B' monomers.
         Leave as None if generating random sequences.
@@ -586,6 +616,7 @@ class CoPolymer(Molecule):
         monomer_B,
         lengths,
         num_mols,
+        name="Compound",
         force_field=None,
         sequence=None,
         AB_ratio=0.50,
@@ -612,6 +643,7 @@ class CoPolymer(Molecule):
         super(CoPolymer, self).__init__(
             num_mols=num_mols,
             smiles=self.smiles,
+            name=name,
             file=self.file,
             force_field=force_field,
         )
@@ -660,4 +692,5 @@ class CoPolymer(Molecule):
                     sequence = self.sequence
                     _length = length
                 mol = self._build(length=_length, sequence=sequence)
+                mol.name = f"{self.name}_{length}mer_{sequence}"
                 self._molecules.append(mol)
