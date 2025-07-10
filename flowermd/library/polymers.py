@@ -19,16 +19,16 @@ class PolyEthylene(Polymer):
         The number of monomer repeat units in the chain.
     num_mols : int, required
         The number of chains to create.
-    name : str, default 'polyethylene' 
+    name : str, default 'polyethylene'
         The name of the polymer. Setting the name is
         important for using the `speedup_by_moltag=True`
-        parameter with polydisperse systems, or other 
+        parameter with polydisperse systems, or other
         mixtures. This helps improve performance
         for large systems.
 
     """
 
-    def __init__(self, lengths, num_mols, name="polyethylene",**kwargs):
+    def __init__(self, lengths, num_mols, name="polyethylene", **kwargs):
         smiles = "CC"
         bond_indices = [2, 6]
         bond_length = 0.145
@@ -54,10 +54,10 @@ class PPS(Polymer):
         The number of monomer repeat units in the chain.
     num_mols : int, required
         The number of chains to create.
-    name : str, default 'pps' 
+    name : str, default 'pps'
         The name of the polymer. Setting the name is
         important for using the `speedup_by_moltag=True`
-        parameter with polydisperse systems, or other 
+        parameter with polydisperse systems, or other
         mixtures. This helps improve performance
         for large systems.
 
@@ -99,10 +99,10 @@ class PEEK(Polymer):
         The number of monomer repeat units in the chain.
     num_mols : int, required
         The number of chains to create.
-    name : str, default 'peek' 
+    name : str, default 'peek'
         The name of the polymer. Setting the name is
         important for using the `speedup_by_moltag=True`
-        parameter with polydisperse systems, or other 
+        parameter with polydisperse systems, or other
         mixtures. This helps improve performance
         for large systems.
 
@@ -183,10 +183,10 @@ class PEKK_para(Polymer):
         The number of monomer repeat units in the chain.
     num_mols : int, required
         The number of chains to create.
-    name : str, default 'pekk_para' 
+    name : str, default 'pekk_para'
         The name of the polymer. Setting the name is
         important for using the `speedup_by_moltag=True`
-        parameter with polydisperse systems, or other 
+        parameter with polydisperse systems, or other
         mixtures. This helps improve performance
         for large systems.
 
@@ -222,10 +222,10 @@ class PEKK_meta(Polymer):
         The number of monomer repeat units in the chain.
     num_mols : int, required
         The number of chains to create.
-    name : str, default 'pekk_meta' 
+    name : str, default 'pekk_meta'
         The name of the polymer. Setting the name is
         important for using the `speedup_by_moltag=True`
-        parameter with polydisperse systems, or other 
+        parameter with polydisperse systems, or other
         mixtures. This helps improve performance
         for large systems.
 
@@ -262,10 +262,10 @@ class LJChain(Polymer):
         The bond length between connected beads (units: nm).
     bead_mass : dict; default {"A": 1.0}
         The mass of the bead types.
-    name : str, default 'lj_chain' 
+    name : str, default 'lj_chain'
         The name of the polymer. Setting the name is
         important for using the `speedup_by_moltag=True`
-        parameter with polydisperse systems, or other 
+        parameter with polydisperse systems, or other
         mixtures. This helps improve performance
         for large systems.
 
@@ -278,12 +278,14 @@ class LJChain(Polymer):
         bead_sequence=["A"],
         bead_mass={"A": 1.0},
         bond_lengths={"A-A": 1.0},
-        name="lj_chain"
+        name="lj_chain",
     ):
         self.bead_sequence = bead_sequence
         self.bead_mass = bead_mass
         self.bond_lengths = bond_lengths
-        super(LJChain, self).__init__(lengths=lengths, num_mols=num_mols, name=name)
+        super(LJChain, self).__init__(
+            lengths=lengths, num_mols=num_mols, name=name
+        )
 
     def _build(self, length):
         chain = mb.Compound()
@@ -346,21 +348,31 @@ class EllipsoidChain(Polymer):
         The semi-axis length of the ellipsoid bead along its major axis.
     bead_mass : float, required
         The mass of the ellipsoid bead.
-    name : str, default 'ellipsoid_chain' 
+    name : str, default 'ellipsoid_chain'
         The name of the polymer. Setting the name is
         important for using the `speedup_by_moltag=True`
-        parameter with polydisperse systems, or other 
+        parameter with polydisperse systems, or other
         mixtures. This helps improve performance
         for large systems.
     """
 
-    def __init__(self, lengths, num_mols, lpar, bead_mass, bond_L=0.1, name="ellipsoid_chain"):
+    def __init__(
+        self,
+        lengths,
+        num_mols,
+        lpar,
+        bead_mass,
+        bond_L=0.1,
+        name="ellipsoid_chain",
+    ):
         self.bead_mass = bead_mass
         self.lpar = lpar
         self.bond_L = bond_L
         # get the indices of the particles in a rigid body
         self.bead_constituents_types = ["X", "A", "T", "T"]
-        super(EllipsoidChain, self).__init__(lengths=lengths, num_mols=num_mols, name=name)
+        super(EllipsoidChain, self).__init__(
+            lengths=lengths, num_mols=num_mols, name=name
+        )
 
     def _build(self, length):
         # Build up ellipsoid bead

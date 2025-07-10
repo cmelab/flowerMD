@@ -61,7 +61,7 @@ class Molecule:
         smiles=None,
         file=None,
         compound=None,
-        name="Compound"
+        name="Compound",
     ):
         self.n_mols = num_mols
         self.force_field = force_field
@@ -206,7 +206,7 @@ class Molecule:
             if isinstance(self.file, str) and os.path.isfile(self.file):
                 comp = mb.load(self.file)
                 comp.name = self.name
-                return comp 
+                return comp
             else:
                 raise MoleculeLoadError(
                     msg=f"Unable to load the molecule from file {self.file}."
@@ -497,10 +497,10 @@ class Polymer(Molecule):
         Once the chain is aligned, a periodic bond between
         head and tail atoms is formed.
         Options are "x", "y", or "z"
-    name : str, default 'Compound' 
+    name : str, default 'Compound'
         The name of the polymer. Setting the name is
         important for using the `speedup_by_moltag=True`
-        parameter with polydisperse systems, or other 
+        parameter with polydisperse systems, or other
         mixtures. This helps improve performance
         for large systems.
     """
@@ -586,10 +586,10 @@ class CoPolymer(Molecule):
         The total number of monomers in the molecule
     num_mols : int, required
         Number of chains to generate.
-    name : str, default 'Compound' 
+    name : str, default 'Compound'
         The name of the polymer. Setting the name is
         important for using the `speedup_by_moltag=True`
-        parameter with polydisperse systems, or other 
+        parameter with polydisperse systems, or other
         mixtures. This helps improve performance
         for large systems.
     sequence : str, default None

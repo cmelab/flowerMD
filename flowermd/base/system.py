@@ -547,8 +547,8 @@ class System(ABC):
             but may slow down system with large molecule, e.g., monolayer.
         speedup_by_moltag : bool, optional, default=False
             A flag to determine whether or not to look at the compound name to try to parameterize
-            each molecule only once. This option requires that the names are correctly set for 
-            each kind of 'unique' molecule in the system. For example, a polydisperse system 
+            each molecule only once. This option requires that the names are correctly set for
+            each kind of 'unique' molecule in the system. For example, a polydisperse system
             should have different molecule names for each polymer + length combination.
 
         """
