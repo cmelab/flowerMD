@@ -1,9 +1,11 @@
 import copy
+from enum import Enum
 import os
 import pickle
 
 import gsd.hoomd
 import hoomd
+import mbuild
 import numpy as np
 import pytest
 import unyt as u
@@ -19,6 +21,9 @@ from flowermd.utils import (
     get_target_box_mass_density,
     set_bond_constraints,
 )
+
+from typing import Tuple
+from numpy.typing import NDArray
 
 
 class TestSimulate(BaseTest):
@@ -439,6 +444,235 @@ class TestSimulate(BaseTest):
         assert sim._distance_constraint is None
         sim.run_NVT(n_steps=10, kT=1.0, tau_kt=sim.dt * 100)
         assert sim.integrator.integrate_rotational_dof is True
+
+    # verify that different orientations have different PE values for the same
+    # center-to-center distance.
+    # e.g. two ellipsoids that look like ()() should not have the same PE as two
+    # ellipsoids that look like ()<> given the same center-to-center distance
+    def test_ellipsoid_chain_orientations(self):
+        class Axis(Enum):
+            X = 0
+            Y = 1
+            Z = 2
+
+        def translate_ellipsoid_by(
+                ellipsoid: mbuild.compound.Compound,
+                translation: [float, float, float]
+        ) -> mbuild.compound.Compound:
+            '''
+            Translate an ellipsoid by the given translation
+
+            Parameters
+            ----------
+            ellipsoid: mbuild.compound.Compound, The compound representing the
+            ellipsoid body. See how this parameter is passed in in the example
+
+            translation: [float, float, float], How the ellipsoid should be
+            translated, where the array is formatted as [dx, dy, dz]
+
+            Example
+            -------
+            ellipsoids = EllipsoidChain(num_mols=2, lpar=1.0, bead_mass=1.0, lengths=1)
+            system = Pack(density=0.01*u.Unit("nm**-3"), molecules=ellipsoids)
+            translate_ellipsoid_by(system.system.children[0].children[0], [1.0, 0.2, 0])
+
+            '''
+
+            for child in ellipsoid.children:
+                child.pos += translation
+            return ellipsoid
+
+        def rotation_matrix_x(val):
+            return np.array([[1, 0,           0           ],
+                             [0, np.cos(val), -np.sin(val)],
+                             [0, np.sin(val), np.cos(val) ]])
+
+        def rotation_matrix_y(val):
+            return np.array([[np.cos(val),  0, np.sin(val)],
+                             [0,            1, 0          ],
+                             [-np.sin(val), 0, np.cos(val)]])
+
+        def rotation_matrix_z(val):
+            return np.array([[np.cos(val), -np.sin(val), 0],
+                             [np.sin(val), np.cos(val),  0],
+                             [0,           0,            1]])
+
+        def rotate_ellipsoid_by(
+                ellipsoid: mbuild.compound.Compound,
+                rotation: NDArray[np.float64]
+        ) -> mbuild.compound.Compound:
+            '''
+            Rotate an ellipsoid by the given rotation about its center, where
+            the rotation is in quaternion form
+
+            Parameters
+            ----------
+            ellipsoid: mbuild.compound.Compound, The compound representing the
+            ellipsoid body. See how this parameter is passed in in the example
+
+            rotation: NDArray[np.float64], shape: (4,), The quaternion used to
+            rotate the ellipsoid about its center
+
+            Example
+            -------
+            ellipsoids = EllipsoidChain(num_mols=2, lpar=1.0, bead_mass=1.0, lengths=1)
+            system = Pack(density=0.01*u.Unit("nm**-3"), molecules=ellipsoids)
+            rotate_ellipsoid_by(
+                system.system.children[0].children[0],
+                euler_to_quaternion(np.pi/2, 0, 0)
+            )
+            '''
+
+            center_particle = ellipsoid.children[0]
+            for child in ellipsoid.children:
+                child_rel_to_center = child.pos - center_particle.pos
+
+                child_rel_to_center = rotation_matrix_x(rotation[0]).dot(child_rel_to_center)
+                child_rel_to_center = rotation_matrix_y(rotation[1]).dot(child_rel_to_center)
+                child_rel_to_center = rotation_matrix_z(rotation[2]).dot(child_rel_to_center)
+
+                child.pos = center_particle.pos + child_rel_to_center
+            return ellipsoid
+
+        def ellipsoid_to_origin(ellipsoid):
+            '''
+            Move an ellipsoid such that it's center (X particle)
+            is at (0, 0, 0), and is parallel with the Z-axis
+
+            Parameters
+            ----------
+            ellipsoid: mbuild.compound.Compound, The compound representing the
+            ellipsoid body. See how this parameter is passed in in the example
+
+            Example
+            -------
+            ellipsoids = EllipsoidChain(num_mols=2, lpar=1.0, bead_mass=1.0, lengths=1)
+            system = Pack(density=0.01*u.Unit("nm**-3"), molecules=ellipsoids)
+            ellipsoid_to_origin(system.system.children[0].children[0])
+            '''
+            center = ellipsoid.children[0].pos
+            bond = ellipsoid.children[1].pos
+            head = ellipsoid.children[2].pos
+
+            lpar = np.linalg.norm(head - center)
+            bond_from_center = np.linalg.norm(bond - center)
+
+            ellipsoid.children[0].pos = np.array([0.0, 0.0, 0.0])
+            ellipsoid.children[1].pos = np.array([0.0, 0.0, bond_from_center])
+            ellipsoid.children[2].pos = np.array([0.0, 0.0, -lpar])
+            ellipsoid.children[3].pos = np.array([0.0, 0.0, lpar])
+
+            return ellipsoid
+
+        # https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles#Source_code
+        def euler_to_quaternion(roll: float, pitch: float, yaw: float) -> NDArray[np.float64]:
+            '''
+            Convert the euler angle represented by the given roll, pitch, and
+            yaw to a unit quaternion that represents the same rotation in 3D
+            space
+            '''
+            cr = np.cos(roll * 0.5);
+            sr = np.sin(roll * 0.5);
+            cp = np.cos(pitch * 0.5);
+            sp = np.sin(pitch * 0.5);
+            cy = np.cos(yaw * 0.5);
+            sy = np.sin(yaw * 0.5);
+
+            q = np.zeros(4)
+            q[0] = cr * cp * cy + sr * sp * sy;
+            q[1] = sr * cp * cy - cr * sp * sy;
+            q[2] = cr * sp * cy + sr * cp * sy;
+            q[3] = cr * cp * sy - sr * sp * cy;
+
+            return q;
+
+        def run_sim(
+                axis: Axis,
+                dist: float,
+                rotation: np.ndarray[np.float64] = None, # quaternion representing rotation of the second ellipsoid
+        ) -> float:
+            '''
+            Do a simulation of two ellipsoids, where the first is located at (0,
+            0, 0) and parallel to the x-axis, and the other is placed dist away
+            from the first along the specified axis, and rotated around its
+            center according to the supplied quaternion
+
+            Parameters
+            ----------
+            axis: Axis, The axis for the second ellipsoid to be translated along
+
+            dist: float, Center-to-center distance between both ellipsoids
+
+            rotation: NDArray[np.float64], An array of rotation values in
+            radians, formatted like [w, x, y, z]
+
+            Return Value
+            ------------
+            The potential energy for the input configuration
+            '''
+
+            ellipsoid = EllipsoidChain(num_mols=2, lpar=1.0, bead_mass=1.0, lengths=1)
+            system = Pack(density=0.1*u.Unit("nm**-3"), molecules=ellipsoid)
+
+            ellipsoid_to_origin(system.system.children[0].children[0])
+            ellipsoid_to_origin(system.system.children[1].children[0])
+            translation = [0.0, 0.0, 0.0]
+            translation[axis.value] = dist
+            translate_ellipsoid_by(system.system.children[1].children[0], translation)
+            if rotation is not None:
+                rotate_ellipsoid_by(system.system.children[1].children[0], rotation)
+            system.gmso_system = system._convert_to_gmso()
+            system._hoomd_snapshot = system._create_hoomd_snapshot()
+
+            ff = EllipsoidForcefield(
+                epsilon=1.0,
+                lpar=1.0,
+                lperp=0.5,
+                r_cut=10.0,
+            )
+            rigid_frame, rigid_constraint = create_rigid_ellipsoid_chain(
+                system.hoomd_snapshot,
+            )
+
+            # apply quaternion to particle orientations
+            if rotation is not None:
+                rigid_frame.particles.orientation = [
+                    # rigid body orientations
+                    [1, 0, 0, 0],
+                    rotation,
+                    # constituent particle orientations
+                    [1, 0, 0, 0],
+                    [1, 0, 0, 0],
+                    [1, 0, 0, 0],
+                    [1, 0, 0, 0],
+                    rotation,
+                    rotation,
+                    rotation,
+                    rotation,
+                ]
+
+            ellipsoid_sim = Simulation(
+                initial_state=rigid_frame,
+                forcefield=ff.hoomd_forces,
+                constraint=rigid_constraint,
+                gsd_write_freq=1,
+                gsd_file_name='traj.gsd',
+                log_write_freq=1,
+                log_file_name='log.txt',
+                dt=0.001
+            )
+
+            ellipsoid_sim.run_NVT(n_steps=0, kT=1.0, tau_kt=1.0, thermalize_particles=False)
+            return ellipsoid_sim.operations.computes[:][0].potential_energy
+
+        dist = 2**(1/6)
+        parallel_pe = run_sim(Axis.Y, dist) # ()()
+        parallel_long_pe = run_sim(Axis.Z, dist) # <><>
+        perpendicular_pe = run_sim(Axis.Y, dist, euler_to_quaternion(np.pi/2, 0, 0)) # ()<>
+
+        assert parallel_pe != perpendicular_pe
+        assert parallel_pe != parallel_long_pe
+        assert perpendicular_pe != parallel_long_pe
 
     def test_save_restart_gsd(self, benzene_system):
         sim = Simulation.from_system(benzene_system)
