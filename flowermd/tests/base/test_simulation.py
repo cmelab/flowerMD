@@ -1,7 +1,7 @@
 import copy
-from enum import Enum
 import os
 import pickle
+from enum import Enum
 
 import gsd.hoomd
 import hoomd
@@ -9,6 +9,7 @@ import mbuild
 import numpy as np
 import pytest
 import unyt as u
+from numpy.typing import NDArray
 
 from flowermd import Simulation
 from flowermd.base import Pack
@@ -21,9 +22,6 @@ from flowermd.utils import (
     get_target_box_mass_density,
     set_bond_constraints,
 )
-
-from typing import Tuple
-from numpy.typing import NDArray
 
 
 class TestSimulate(BaseTest):
@@ -456,10 +454,10 @@ class TestSimulate(BaseTest):
             Z = 2
 
         def translate_ellipsoid_by(
-                ellipsoid: mbuild.compound.Compound,
-                translation: [float, float, float]
+            ellipsoid: mbuild.compound.Compound,
+            translation: [float, float, float],
         ) -> mbuild.compound.Compound:
-            '''
+            """
             Translate an ellipsoid by the given translation
 
             Parameters
@@ -476,32 +474,43 @@ class TestSimulate(BaseTest):
             system = Pack(density=0.01*u.Unit("nm**-3"), molecules=ellipsoids)
             translate_ellipsoid_by(system.system.children[0].children[0], [1.0, 0.2, 0])
 
-            '''
+            """
 
             for child in ellipsoid.children:
                 child.pos += translation
             return ellipsoid
 
         def rotation_matrix_x(val):
-            return np.array([[1, 0,           0           ],
-                             [0, np.cos(val), -np.sin(val)],
-                             [0, np.sin(val), np.cos(val) ]])
+            return np.array(
+                [
+                    [1, 0, 0],
+                    [0, np.cos(val), -np.sin(val)],
+                    [0, np.sin(val), np.cos(val)],
+                ]
+            )
 
         def rotation_matrix_y(val):
-            return np.array([[np.cos(val),  0, np.sin(val)],
-                             [0,            1, 0          ],
-                             [-np.sin(val), 0, np.cos(val)]])
+            return np.array(
+                [
+                    [np.cos(val), 0, np.sin(val)],
+                    [0, 1, 0],
+                    [-np.sin(val), 0, np.cos(val)],
+                ]
+            )
 
         def rotation_matrix_z(val):
-            return np.array([[np.cos(val), -np.sin(val), 0],
-                             [np.sin(val), np.cos(val),  0],
-                             [0,           0,            1]])
+            return np.array(
+                [
+                    [np.cos(val), -np.sin(val), 0],
+                    [np.sin(val), np.cos(val), 0],
+                    [0, 0, 1],
+                ]
+            )
 
         def rotate_ellipsoid_by(
-                ellipsoid: mbuild.compound.Compound,
-                rotation: NDArray[np.float64]
+            ellipsoid: mbuild.compound.Compound, rotation: NDArray[np.float64]
         ) -> mbuild.compound.Compound:
-            '''
+            """
             Rotate an ellipsoid by the given rotation about its center, where
             the rotation is in quaternion form
 
@@ -521,21 +530,27 @@ class TestSimulate(BaseTest):
                 system.system.children[0].children[0],
                 euler_to_quaternion(np.pi/2, 0, 0)
             )
-            '''
+            """
 
             center_particle = ellipsoid.children[0]
             for child in ellipsoid.children:
                 child_rel_to_center = child.pos - center_particle.pos
 
-                child_rel_to_center = rotation_matrix_x(rotation[0]).dot(child_rel_to_center)
-                child_rel_to_center = rotation_matrix_y(rotation[1]).dot(child_rel_to_center)
-                child_rel_to_center = rotation_matrix_z(rotation[2]).dot(child_rel_to_center)
+                child_rel_to_center = rotation_matrix_x(rotation[0]).dot(
+                    child_rel_to_center
+                )
+                child_rel_to_center = rotation_matrix_y(rotation[1]).dot(
+                    child_rel_to_center
+                )
+                child_rel_to_center = rotation_matrix_z(rotation[2]).dot(
+                    child_rel_to_center
+                )
 
                 child.pos = center_particle.pos + child_rel_to_center
             return ellipsoid
 
         def ellipsoid_to_origin(ellipsoid):
-            '''
+            """
             Move an ellipsoid such that it's center (X particle)
             is at (0, 0, 0), and is parallel with the Z-axis
 
@@ -549,7 +564,7 @@ class TestSimulate(BaseTest):
             ellipsoids = EllipsoidChain(num_mols=2, lpar=1.0, bead_mass=1.0, lengths=1)
             system = Pack(density=0.01*u.Unit("nm**-3"), molecules=ellipsoids)
             ellipsoid_to_origin(system.system.children[0].children[0])
-            '''
+            """
             center = ellipsoid.children[0].pos
             bond = ellipsoid.children[1].pos
             head = ellipsoid.children[2].pos
@@ -565,33 +580,37 @@ class TestSimulate(BaseTest):
             return ellipsoid
 
         # https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles#Source_code
-        def euler_to_quaternion(roll: float, pitch: float, yaw: float) -> NDArray[np.float64]:
-            '''
+        def euler_to_quaternion(
+            roll: float, pitch: float, yaw: float
+        ) -> NDArray[np.float64]:
+            """
             Convert the euler angle represented by the given roll, pitch, and
             yaw to a unit quaternion that represents the same rotation in 3D
             space
-            '''
-            cr = np.cos(roll * 0.5);
-            sr = np.sin(roll * 0.5);
-            cp = np.cos(pitch * 0.5);
-            sp = np.sin(pitch * 0.5);
-            cy = np.cos(yaw * 0.5);
-            sy = np.sin(yaw * 0.5);
+            """
+            cr = np.cos(roll * 0.5)
+            sr = np.sin(roll * 0.5)
+            cp = np.cos(pitch * 0.5)
+            sp = np.sin(pitch * 0.5)
+            cy = np.cos(yaw * 0.5)
+            sy = np.sin(yaw * 0.5)
 
             q = np.zeros(4)
-            q[0] = cr * cp * cy + sr * sp * sy;
-            q[1] = sr * cp * cy - cr * sp * sy;
-            q[2] = cr * sp * cy + sr * cp * sy;
-            q[3] = cr * cp * sy - sr * sp * cy;
+            q[0] = cr * cp * cy + sr * sp * sy
+            q[1] = sr * cp * cy - cr * sp * sy
+            q[2] = cr * sp * cy + sr * cp * sy
+            q[3] = cr * cp * sy - sr * sp * cy
 
-            return q;
+            return q
 
         def run_sim(
-                axis: Axis,
-                dist: float,
-                rotation: np.ndarray[np.float64] = None, # quaternion representing rotation of the second ellipsoid
+            axis: Axis,
+            dist: float,
+            rotation: np.ndarray[
+                np.float64
+            ] = None,  # quaternion representing rotation of the second ellipsoid
         ) -> float:
-            '''
+            """
             Do a simulation of two ellipsoids, where the first is located at (0,
             0, 0) and parallel to the x-axis, and the other is placed dist away
             from the first along the specified axis, and rotated around its
@@ -609,18 +628,24 @@ class TestSimulate(BaseTest):
             Return Value
             ------------
             The potential energy for the input configuration
-            '''
+            """
 
-            ellipsoid = EllipsoidChain(num_mols=2, lpar=1.0, bead_mass=1.0, lengths=1)
-            system = Pack(density=0.1*u.Unit("nm**-3"), molecules=ellipsoid)
+            ellipsoid = EllipsoidChain(
+                num_mols=2, lpar=1.0, bead_mass=1.0, lengths=1
+            )
+            system = Pack(density=0.1 * u.Unit("nm**-3"), molecules=ellipsoid)
 
             ellipsoid_to_origin(system.system.children[0].children[0])
             ellipsoid_to_origin(system.system.children[1].children[0])
             translation = [0.0, 0.0, 0.0]
             translation[axis.value] = dist
-            translate_ellipsoid_by(system.system.children[1].children[0], translation)
+            translate_ellipsoid_by(
+                system.system.children[1].children[0], translation
+            )
             if rotation is not None:
-                rotate_ellipsoid_by(system.system.children[1].children[0], rotation)
+                rotate_ellipsoid_by(
+                    system.system.children[1].children[0], rotation
+                )
             system.gmso_system = system._convert_to_gmso()
             system._hoomd_snapshot = system._create_hoomd_snapshot()
 
@@ -656,19 +681,23 @@ class TestSimulate(BaseTest):
                 forcefield=ff.hoomd_forces,
                 constraint=rigid_constraint,
                 gsd_write_freq=1,
-                gsd_file_name='traj.gsd',
+                gsd_file_name="traj.gsd",
                 log_write_freq=1,
-                log_file_name='log.txt',
-                dt=0.001
+                log_file_name="log.txt",
+                dt=0.001,
             )
 
-            ellipsoid_sim.run_NVT(n_steps=0, kT=1.0, tau_kt=1.0, thermalize_particles=False)
+            ellipsoid_sim.run_NVT(
+                n_steps=0, kT=1.0, tau_kt=1.0, thermalize_particles=False
+            )
             return ellipsoid_sim.operations.computes[:][0].potential_energy
 
-        dist = 2**(1/6)
-        parallel_pe = run_sim(Axis.Y, dist) # ()()
-        parallel_long_pe = run_sim(Axis.Z, dist) # <><>
-        perpendicular_pe = run_sim(Axis.Y, dist, euler_to_quaternion(np.pi/2, 0, 0)) # ()<>
+        dist = 2 ** (1 / 6)
+        parallel_pe = run_sim(Axis.Y, dist)  # ()()
+        parallel_long_pe = run_sim(Axis.Z, dist)  # <><>
+        perpendicular_pe = run_sim(
+            Axis.Y, dist, euler_to_quaternion(np.pi / 2, 0, 0)
+        )  # ()<>
 
         assert parallel_pe != perpendicular_pe
         assert parallel_pe != parallel_long_pe
