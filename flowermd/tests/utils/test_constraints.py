@@ -97,7 +97,7 @@ class TestRigidBody(BaseTest):
         assert np.all(
             np.isclose(
                 rigid_frame.particles.moment_inertia[0],
-                np.array((0, 2, 2)),
+                np.array((2, 2, 0)),
             )
         )
 

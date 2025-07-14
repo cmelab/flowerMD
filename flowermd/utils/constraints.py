@@ -141,7 +141,7 @@ def create_rigid_ellipsoid_chain(snapshot):
         pos = snapshot.particles.position[idx][0]
         rigid_masses.append(mass)
         rigid_pos.append(pos)
-        rigid_moi.append([0, 2, 2])
+        rigid_moi.append([2, 2, 0])
 
     rigid_frame = gsd.hoomd.Frame()
     rigid_frame.particles.types = ["R"] + snapshot.particles.types
