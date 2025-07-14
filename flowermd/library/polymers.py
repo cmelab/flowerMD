@@ -6,7 +6,7 @@ import mbuild as mb
 import numpy as np
 from mbuild.coordinate_transform import z_axis_transform
 
-from flowermd import CoPolymer, Polymer, Molecule
+from flowermd import CoPolymer, Polymer
 from flowermd.assets import MON_DIR
 
 
@@ -342,4 +342,3 @@ class EllipsoidChain(Polymer):
             last_bead = this_bead
 
         return chain
-
