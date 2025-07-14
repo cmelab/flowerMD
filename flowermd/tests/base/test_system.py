@@ -228,6 +228,32 @@ class TestSystem(BaseTest):
         )
         assert not np.array_equal(system1.system.xyz, system2.system.xyz)
 
+    def test_pack_unique_molecules(self, polyethylene):
+        polyethylene = polyethylene(lengths=2, num_mols=5)
+        system = Pack(
+            molecules=[polyethylene],
+            density=1.0,
+            overlap=0.2,
+            unique_molecules=False,
+        )
+        assert len(system.system.children) == 5
+
+    def test_unique_molecules_error(self, benzene_molecule, polyethylene):
+        polyethylene = polyethylene(lengths=[5, 10], num_mols=[1, 6])
+        benzene = benzene_molecule(n_mols=5)
+        with pytest.raises(ValueError):
+            Pack(
+                molecules=[polyethylene, benzene],
+                density=1.0,
+                unique_molecules=False,
+            )
+        with pytest.raises(ValueError):
+            Pack(
+                molecules=[polyethylene],
+                density=1.0,
+                unique_molecules=False,
+            )
+
     def test_mass(self, pps_molecule):
         pps_mol = pps_molecule(n_mols=20)
         system = Pack(molecules=[pps_mol], density=1.0)
