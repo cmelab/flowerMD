@@ -66,7 +66,7 @@ class TestRigidBody(BaseTest):
     def test_ellipsoid_create_rigid_body(self):
         LPAR = 1.0
         LPERP = 0.5
-        BEAD_MASS=1.0
+        BEAD_MASS = 1.0
 
         chains = EllipsoidChain(
             lengths=4,
@@ -98,8 +98,8 @@ class TestRigidBody(BaseTest):
         for pos1, pos2 in zip(center_pos, rigid_pos):
             assert np.all(np.isclose(pos1, pos2))
 
-        Ixx = BEAD_MASS / 5 * (LPAR*LPAR + LPERP*LPERP)
-        Iyy = Ixx # both a and b axes are the same
+        Ixx = BEAD_MASS / 5 * (LPAR * LPAR + LPERP * LPERP)
+        Iyy = Ixx  # both a and b axes are the same
 
         assert np.all(
             np.isclose(
