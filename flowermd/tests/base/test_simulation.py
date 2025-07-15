@@ -424,7 +424,9 @@ class TestSimulate(BaseTest):
             overlap=1,
             fix_orientation=True,
         )
-        rigid_snap, rigid = create_rigid_ellipsoid_chain(system.hoomd_snapshot, LPERP)
+        rigid_snap, rigid = create_rigid_ellipsoid_chain(
+            system.hoomd_snapshot, LPERP
+        )
         forces = EllipsoidForcefield(
             angle_k=25,
             angle_theta0=2.2,
@@ -662,8 +664,7 @@ class TestSimulate(BaseTest):
                 r_cut=10.0,
             )
             rigid_frame, rigid_constraint = create_rigid_ellipsoid_chain(
-                system.hoomd_snapshot,
-                LPERP
+                system.hoomd_snapshot, LPERP
             )
 
             # apply quaternion to particle orientations
