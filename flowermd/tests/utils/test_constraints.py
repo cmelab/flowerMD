@@ -84,7 +84,7 @@ class TestRigidBody(BaseTest):
             base_units=dict(),
         )
         snap = system.hoomd_snapshot
-        rigid_frame, rigid = create_rigid_ellipsoid_chain(snap, LPERP)
+        rigid_frame, rigid = create_rigid_ellipsoid_chain(snap, LPAR, LPERP)
         assert rigid_frame.particles.N == 8 + chains.n_particles
         assert rigid_frame.particles.types == ["R"] + snap.particles.types
         assert rigid_frame.particles.mass[0] == 1
@@ -98,8 +98,8 @@ class TestRigidBody(BaseTest):
         for pos1, pos2 in zip(center_pos, rigid_pos):
             assert np.all(np.isclose(pos1, pos2))
 
-        Ixx = BEAD_MASS / 5 * (LPAR * LPAR + LPERP * LPERP)
-        Iyy = Ixx  # both a and b axes are the same
+        # both a and b axes are the same, so Ixx = Iyy
+        Ixx = Iyy = BEAD_MASS / 5 * (LPAR**2 + LPERP**2)
 
         assert np.all(
             np.isclose(
