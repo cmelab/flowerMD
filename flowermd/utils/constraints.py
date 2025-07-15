@@ -145,8 +145,8 @@ def create_rigid_ellipsoid_chain(snapshot, lperp):
         rigid_pos.append(pos)
 
         lpar = np.linalg.norm(pos - snapshot.particles.position[idx][2])
-        Ixx = mass / 5 * (lpar*lpar + lperp*lperp)
-        Iyy = Ixx # both a and b axes are the same
+        Ixx = mass / 5 * (lpar * lpar + lperp * lperp)
+        Iyy = Ixx  # both a and b axes are the same
         rigid_moi.append([Ixx, Iyy, 0])
 
     rigid_frame = gsd.hoomd.Frame()
