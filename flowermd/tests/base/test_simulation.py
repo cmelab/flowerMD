@@ -411,8 +411,11 @@ class TestSimulate(BaseTest):
         assert sim.integrator.integrate_rotational_dof is True
 
     def test_ellipsoid_chain_sim(self):
+        LPAR = 1.0
+        LPERP = 0.5
+
         chain = EllipsoidChain(
-            lengths=15, num_mols=15, bead_mass=1, lpar=1, bond_L=0.0
+            lengths=15, num_mols=15, bead_mass=1, lpar=LPAR, bond_L=0.0
         )
         system = Pack(
             molecules=chain,
@@ -421,13 +424,13 @@ class TestSimulate(BaseTest):
             overlap=1,
             fix_orientation=True,
         )
-        rigid_snap, rigid = create_rigid_ellipsoid_chain(system.hoomd_snapshot)
+        rigid_snap, rigid = create_rigid_ellipsoid_chain(system.hoomd_snapshot, LPERP)
         forces = EllipsoidForcefield(
             angle_k=25,
             angle_theta0=2.2,
             bond_r0=0.0,
-            lpar=1,
-            lperp=0.5,
+            lpar=LPAR,
+            lperp=LPERP,
             epsilon=1,
             r_cut=3.0,
         )
@@ -630,8 +633,11 @@ class TestSimulate(BaseTest):
             The potential energy for the input configuration
             """
 
+            LPAR = 1.0
+            LPERP = 0.5
+
             ellipsoid = EllipsoidChain(
-                num_mols=2, lpar=1.0, bead_mass=1.0, lengths=1
+                num_mols=2, lpar=LPAR, bead_mass=1.0, lengths=1
             )
             system = Pack(density=0.1 * u.Unit("nm**-3"), molecules=ellipsoid)
 
@@ -651,12 +657,13 @@ class TestSimulate(BaseTest):
 
             ff = EllipsoidForcefield(
                 epsilon=1.0,
-                lpar=1.0,
-                lperp=0.5,
+                lpar=LPAR,
+                lperp=LPERP,
                 r_cut=10.0,
             )
             rigid_frame, rigid_constraint = create_rigid_ellipsoid_chain(
                 system.hoomd_snapshot,
+                LPERP
             )
 
             # apply quaternion to particle orientations
