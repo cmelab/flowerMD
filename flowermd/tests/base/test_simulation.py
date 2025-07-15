@@ -579,8 +579,8 @@ class TestSimulate(BaseTest):
 
             ellipsoid.children[0].pos = np.array([0.0, 0.0, 0.0])
             ellipsoid.children[1].pos = np.array([0.0, 0.0, bond_from_center])
-            ellipsoid.children[2].pos = np.array([0.0, 0.0, -lpar])
-            ellipsoid.children[3].pos = np.array([0.0, 0.0, lpar])
+            ellipsoid.children[2].pos = np.array([0.0, 0.0, lpar])
+            ellipsoid.children[3].pos = np.array([0.0, 0.0, -lpar])
 
             return ellipsoid
 
