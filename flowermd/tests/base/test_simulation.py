@@ -646,7 +646,7 @@ class TestSimulate(BaseTest):
             ellipsoid_to_origin(system.system.children[0].children[0])
             ellipsoid_to_origin(system.system.children[1].children[0])
             translation = [0.0, 0.0, 0.0]
-            translation[axis.value] = dist
+            translation[axis.value] = dist + 2 * LPAR
             translate_ellipsoid_by(
                 system.system.children[1].children[0], translation
             )
