@@ -101,7 +101,7 @@ def set_bond_constraints(
     return snapshot, d
 
 
-def create_rigid_ellipsoid_chain(snapshot):
+def create_rigid_ellipsoid_chain(snapshot, lperp):
     """Create rigid bodies from a snapshot.
 
     This is designed to be used with flowerMD's built in library
@@ -117,6 +117,8 @@ def create_rigid_ellipsoid_chain(snapshot):
     snapshot : gsd.hoomd.Snapshot; required
         The snapshot of the system.
         Pass in `flowermd.base.System.hoomd_snapshot()`.
+    lperp : float; required
+        The radius of the minor axis of the elipsoid
 
     Returns
     -------
@@ -141,7 +143,11 @@ def create_rigid_ellipsoid_chain(snapshot):
         pos = snapshot.particles.position[idx][0]
         rigid_masses.append(mass)
         rigid_pos.append(pos)
-        rigid_moi.append([2, 2, 0])
+
+        lpar = np.linalg.norm(pos - snapshot.particles.position[idx][2])
+        Ixx = mass / 5 * (lpar*lpar + lperp*lperp)
+        Iyy = Ixx # both a and b axes are the same
+        rigid_moi.append([Ixx, Iyy, 0])
 
     rigid_frame = gsd.hoomd.Frame()
     rigid_frame.particles.types = ["R"] + snapshot.particles.types
