@@ -64,11 +64,15 @@ class TestBondConstraint(BaseTest):
 
 class TestRigidBody(BaseTest):
     def test_ellipsoid_create_rigid_body(self):
+        LPAR = 1.0
+        LPERP = 0.5
+        BEAD_MASS = 1.0
+
         chains = EllipsoidChain(
             lengths=4,
             num_mols=2,
-            lpar=1.0,
-            bead_mass=1,
+            lpar=LPAR,
+            bead_mass=BEAD_MASS,
             bond_L=0.0,
         )
         system = Pack(
@@ -80,7 +84,7 @@ class TestRigidBody(BaseTest):
             base_units=dict(),
         )
         snap = system.hoomd_snapshot
-        rigid_frame, rigid = create_rigid_ellipsoid_chain(snap)
+        rigid_frame, rigid = create_rigid_ellipsoid_chain(snap, LPERP)
         assert rigid_frame.particles.N == 8 + chains.n_particles
         assert rigid_frame.particles.types == ["R"] + snap.particles.types
         assert rigid_frame.particles.mass[0] == 1
@@ -94,10 +98,13 @@ class TestRigidBody(BaseTest):
         for pos1, pos2 in zip(center_pos, rigid_pos):
             assert np.all(np.isclose(pos1, pos2))
 
+        Ixx = BEAD_MASS / 5 * (LPAR * LPAR + LPERP * LPERP)
+        Iyy = Ixx  # both a and b axes are the same
+
         assert np.all(
             np.isclose(
                 rigid_frame.particles.moment_inertia[0],
-                np.array((0, 2, 2)),
+                np.array((Ixx, Iyy, 0)),
             )
         )
 
