@@ -617,7 +617,7 @@ class TestSimulate(BaseTest):
         ) -> float:
             """
             Do a simulation of two ellipsoids, where the first is located at (0,
-            0, 0) and parallel to the x-axis, and the other is placed dist away
+            0, 0) and parallel to the z-axis, and the other is placed dist away
             from the first along the specified axis, and rotated around its
             center according to the supplied quaternion
 
