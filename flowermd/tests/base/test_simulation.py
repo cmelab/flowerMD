@@ -661,7 +661,7 @@ class TestSimulate(BaseTest):
                 epsilon=1.0,
                 lpar=LPAR,
                 lperp=LPERP,
-                r_cut=10.0,
+                r_cut=dist,
             )
             rigid_frame, rigid_constraint = create_rigid_ellipsoid_chain(
                 system.hoomd_snapshot, LPERP
