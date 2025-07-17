@@ -627,8 +627,8 @@ class TestSimulate(BaseTest):
 
             dist: float, Center-to-center distance between both ellipsoids
 
-            rotation: NDArray[np.float64], An array of rotation values in
-            radians, formatted like [w, x, y, z]
+            rotation: NDArray[np.float64], An array representing a quaternion in
+            the format [w, x, y, z]
 
             Return Value
             ------------
