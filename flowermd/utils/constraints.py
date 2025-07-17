@@ -118,7 +118,7 @@ def create_rigid_ellipsoid_chain(snapshot, lpar, lperp):
         The snapshot of the system.
         Pass in `flowermd.base.System.hoomd_snapshot()`.
     lpar : float; required
-        The readius of the major axis of the ellipsoid
+        The radius of the major axis of the ellipsoid
     lperp : float; required
         The radius of the minor axis of the ellipsoid
 
