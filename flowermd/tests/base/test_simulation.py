@@ -646,7 +646,7 @@ class TestSimulate(BaseTest):
             ellipsoid_to_origin(system.system.children[0].children[0])
             ellipsoid_to_origin(system.system.children[1].children[0])
             translation = [0.0, 0.0, 0.0]
-            translation[axis.value] = dist + 2 * LPAR
+            translation[axis.value] = dist
             translate_ellipsoid_by(
                 system.system.children[1].children[0], translation
             )
@@ -661,8 +661,9 @@ class TestSimulate(BaseTest):
                 epsilon=1.0,
                 lpar=LPAR,
                 lperp=LPERP,
-                r_cut=dist,
+                r_cut=10,
             )
+
             rigid_frame, rigid_constraint = create_rigid_ellipsoid_chain(
                 system.hoomd_snapshot, LPAR, LPERP
             )
