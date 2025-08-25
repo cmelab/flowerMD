@@ -14,6 +14,7 @@ from flowermd.library import (
     OPLS_AA,
     OPLS_AA_DIMETHYLETHER,
     OPLS_AA_PPS,
+    PPS,
     LJChain,
 )
 from flowermd.tests import BaseTest
@@ -200,6 +201,68 @@ class TestSystem(BaseTest):
         assert np.prod(low_density_system.box.lengths) > np.prod(
             high_density_system.box.lengths
         )
+
+    def test_pack_seed(self, benzene_molecule):
+        benzene_mol = benzene_molecule(n_mols=3)
+        default_seed = Pack(molecules=[benzene_mol], density=0.1)
+        change_seed = Pack(molecules=[benzene_mol], density=0.1, seed=12340)
+        assert not np.array_equal(
+            default_seed.system.xyz, change_seed.system.xyz
+        )
+
+    # adding test for kwargs argument in system.py Pack class
+    def test_pack_kwargs_attr(self, polyethylene):
+        polyethylene = polyethylene(lengths=5, num_mols=1)
+        system1 = Pack(
+            molecules=[polyethylene],
+            density=1.0,
+            overlap=0.2,
+            seed=12345,
+            fix_orientation=True,
+        )
+        system2 = Pack(
+            molecules=[polyethylene],
+            density=1.0,
+            overlap=0.2,
+            seed=12345,
+            fix_orientation=False,
+        )
+        assert not np.array_equal(system1.system.xyz, system2.system.xyz)
+
+    def test_pack_unique_molecules(self, polyethylene):
+        polyethylene = polyethylene(lengths=2, num_mols=5)
+        system = Pack(
+            molecules=[polyethylene],
+            density=1.0,
+            overlap=0.2,
+            unique_molecules=False,
+        )
+        assert len(system.system.children) == 5
+
+    def test_apply_ff_polydisperse(self):
+        pps_chains = PPS(lengths=[5, 10], num_mols=[3, 3])
+        system = Pack(molecules=[pps_chains], density=0.05)
+        system.apply_forcefield(
+            r_cut=2.5,
+            force_field=OPLS_AA_PPS(),
+            auto_scale=True,
+        )
+
+    def test_unique_molecules_error(self, benzene_molecule, polyethylene):
+        polyethylene = polyethylene(lengths=[5, 10], num_mols=[1, 6])
+        benzene = benzene_molecule(n_mols=5)
+        with pytest.raises(ValueError):
+            Pack(
+                molecules=[polyethylene, benzene],
+                density=1.0,
+                unique_molecules=False,
+            )
+        with pytest.raises(ValueError):
+            Pack(
+                molecules=[polyethylene],
+                density=1.0,
+                unique_molecules=False,
+            )
 
     def test_mass(self, pps_molecule):
         pps_mol = pps_molecule(n_mols=20)

@@ -3,8 +3,8 @@
 import os
 
 import mbuild as mb
+import numpy as np
 from mbuild.coordinate_transform import z_axis_transform
-from mbuild.lib.recipes import Polymer as mbPolymer
 
 from flowermd import CoPolymer, Polymer
 from flowermd.assets import MON_DIR
@@ -19,10 +19,16 @@ class PolyEthylene(Polymer):
         The number of monomer repeat units in the chain.
     num_mols : int, required
         The number of chains to create.
+    name : str, default 'polyethylene'
+        The name of the polymer. Setting the name is
+        important for using the `speedup_by_moltag=True`
+        parameter with polydisperse systems, or other
+        mixtures. This helps improve performance
+        for large systems.
 
     """
 
-    def __init__(self, lengths, num_mols, **kwargs):
+    def __init__(self, lengths, num_mols, name="polyethylene", **kwargs):
         smiles = "CC"
         bond_indices = [2, 6]
         bond_length = 0.145
@@ -31,6 +37,7 @@ class PolyEthylene(Polymer):
             lengths=lengths,
             num_mols=num_mols,
             smiles=smiles,
+            name=name,
             bond_indices=bond_indices,
             bond_length=bond_length,
             bond_orientation=bond_orientation,
@@ -47,10 +54,16 @@ class PPS(Polymer):
         The number of monomer repeat units in the chain.
     num_mols : int, required
         The number of chains to create.
+    name : str, default 'pps'
+        The name of the polymer. Setting the name is
+        important for using the `speedup_by_moltag=True`
+        parameter with polydisperse systems, or other
+        mixtures. This helps improve performance
+        for large systems.
 
     """
 
-    def __init__(self, lengths, num_mols, **kwargs):
+    def __init__(self, lengths, num_mols, name="pps", **kwargs):
         smiles = "c1ccc(S)cc1"
         file = None
         bond_indices = [7, 10]
@@ -60,6 +73,7 @@ class PPS(Polymer):
             lengths=lengths,
             num_mols=num_mols,
             smiles=smiles,
+            name=name,
             file=file,
             bond_indices=bond_indices,
             bond_length=bond_length,
@@ -85,10 +99,16 @@ class PEEK(Polymer):
         The number of monomer repeat units in the chain.
     num_mols : int, required
         The number of chains to create.
+    name : str, default 'peek'
+        The name of the polymer. Setting the name is
+        important for using the `speedup_by_moltag=True`
+        parameter with polydisperse systems, or other
+        mixtures. This helps improve performance
+        for large systems.
 
     """
 
-    def __init__(self, lengths, num_mols, **kwargs):
+    def __init__(self, lengths, num_mols, name="peek", **kwargs):
         smiles = "Oc1ccc(Oc2ccc(C(=O)c3ccccc3)cc2)cc1"
         file = os.path.join(MON_DIR, "peek.mol2")
         bond_indices = [35, 34]
@@ -98,6 +118,7 @@ class PEEK(Polymer):
             lengths=lengths,
             num_mols=num_mols,
             smiles=smiles,
+            name=name,
             file=file,
             bond_indices=bond_indices,
             bond_length=bond_length,
@@ -133,6 +154,7 @@ class PEKK(CoPolymer):
         num_mols,
         force_field=None,
         sequence=None,
+        name="pekk",
         TI_ratio=0.50,
         seed=24,
     ):
@@ -140,6 +162,7 @@ class PEKK(CoPolymer):
             monomer_A=PEKK_meta,
             monomer_B=PEKK_para,
             lengths=lengths,
+            name=name,
             num_mols=num_mols,
             force_field=force_field,
             sequence=sequence,
@@ -160,10 +183,16 @@ class PEKK_para(Polymer):
         The number of monomer repeat units in the chain.
     num_mols : int, required
         The number of chains to create.
+    name : str, default 'pekk_para'
+        The name of the polymer. Setting the name is
+        important for using the `speedup_by_moltag=True`
+        parameter with polydisperse systems, or other
+        mixtures. This helps improve performance
+        for large systems.
 
     """
 
-    def __init__(self, lengths, num_mols):
+    def __init__(self, lengths, num_mols, name="pekk_para"):
         smiles = "c1ccc(Oc2ccc(C(=O)c3ccc(C(=O))cc3)cc2)cc1"
         file = os.path.join(MON_DIR, "pekk_para.mol2")
         bond_indices = [35, 36]
@@ -173,6 +202,7 @@ class PEKK_para(Polymer):
             lengths=lengths,
             num_mols=num_mols,
             smiles=smiles,
+            name=name,
             file=file,
             bond_indices=bond_indices,
             bond_length=bond_length,
@@ -192,10 +222,16 @@ class PEKK_meta(Polymer):
         The number of monomer repeat units in the chain.
     num_mols : int, required
         The number of chains to create.
+    name : str, default 'pekk_meta'
+        The name of the polymer. Setting the name is
+        important for using the `speedup_by_moltag=True`
+        parameter with polydisperse systems, or other
+        mixtures. This helps improve performance
+        for large systems.
 
     """
 
-    def __init__(self, lengths, num_mols):
+    def __init__(self, lengths, num_mols, name="pekk_meta"):
         smiles = "c1cc(Oc2ccc(C(=O)c3cc(C(=O))ccc3)cc2)ccc1"
         file = os.path.join(MON_DIR, "pekk_meta.mol2")
         bond_indices = [35, 36]
@@ -205,6 +241,7 @@ class PEKK_meta(Polymer):
             lengths=lengths,
             num_mols=num_mols,
             smiles=smiles,
+            name=name,
             file=file,
             bond_indices=bond_indices,
             bond_length=bond_length,
@@ -225,6 +262,12 @@ class LJChain(Polymer):
         The bond length between connected beads (units: nm).
     bead_mass : dict; default {"A": 1.0}
         The mass of the bead types.
+    name : str, default 'lj_chain'
+        The name of the polymer. Setting the name is
+        important for using the `speedup_by_moltag=True`
+        parameter with polydisperse systems, or other
+        mixtures. This helps improve performance
+        for large systems.
 
     """
 
@@ -235,11 +278,14 @@ class LJChain(Polymer):
         bead_sequence=["A"],
         bead_mass={"A": 1.0},
         bond_lengths={"A-A": 1.0},
+        name="lj_chain",
     ):
         self.bead_sequence = bead_sequence
         self.bead_mass = bead_mass
         self.bond_lengths = bond_lengths
-        super(LJChain, self).__init__(lengths=lengths, num_mols=num_mols)
+        super(LJChain, self).__init__(
+            lengths=lengths, num_mols=num_mols, name=name
+        )
 
     def _build(self, length):
         chain = mb.Compound()
@@ -272,6 +318,7 @@ class LJChain(Polymer):
                     next_bead.translate_to(new_pos)
                     chain.add_bond([next_bead, last_bead])
                 last_bead = next_bead
+            chain.name = f"{self.name}_{length}mer"
         return chain
 
 
@@ -288,8 +335,8 @@ class EllipsoidChain(Polymer):
 
     This is meant to be used with
     `flowermd.library.forcefields.EllipsoidForcefield`
-    and requires using `flowermd.utils.rigid_body` to set up
-    the rigid bodies correctly in HOOMD-Blue.
+    and requires using `flowermd.utils.constraints.set_bond_constraints` to set up
+    the fixed bonds correctly in HOOMD-Blue.
 
     Parameters
     ----------
@@ -301,53 +348,61 @@ class EllipsoidChain(Polymer):
         The semi-axis length of the ellipsoid bead along its major axis.
     bead_mass : float, required
         The mass of the ellipsoid bead.
-    bond_length : float, required
-        The bond length between connected beads.
-        This is used as the bond length between ellipsoid tips
-        rather than between ellipsoid centers.
-
+    name : str, default 'ellipsoid_chain'
+        The name of the polymer. Setting the name is
+        important for using the `speedup_by_moltag=True`
+        parameter with polydisperse systems, or other
+        mixtures. This helps improve performance
+        for large systems.
     """
 
-    def __init__(self, lengths, num_mols, lpar, bead_mass, bond_length):
+    def __init__(
+        self,
+        lengths,
+        num_mols,
+        lpar,
+        bead_mass,
+        bond_L=0.1,
+        name="ellipsoid_chain",
+    ):
         self.bead_mass = bead_mass
-        self.bead_bond_length = bond_length
         self.lpar = lpar
+        self.bond_L = bond_L
         # get the indices of the particles in a rigid body
-        self.bead_constituents_types = ["A", "A", "B", "B"]
-        super(EllipsoidChain, self).__init__(lengths=lengths, num_mols=num_mols)
+        self.bead_constituents_types = ["X", "A", "T", "T"]
+        super(EllipsoidChain, self).__init__(
+            lengths=lengths, num_mols=num_mols, name=name
+        )
 
     def _build(self, length):
         # Build up ellipsoid bead
         bead = mb.Compound(name="ellipsoid")
+        center = mb.Compound(pos=(0, 0, 0), name="X", mass=self.bead_mass / 4)
         head = mb.Compound(
-            pos=(0, 0, self.lpar), name="A", mass=self.bead_mass / 4
+            pos=(0, 0, self.lpar + (self.bond_L / 2)),
+            name="A",
+            mass=self.bead_mass / 4,
         )
-        tail = mb.Compound(
-            pos=(0, 0, -self.lpar), name="A", mass=self.bead_mass / 4
+        tether_head = mb.Compound(
+            pos=(0, 0, self.lpar), name="T", mass=self.bead_mass / 4
         )
-        head_mid = mb.Compound(
-            pos=(0, 0, self.lpar / 2), name="B", mass=self.bead_mass / 4
+        tether_tail = mb.Compound(
+            pos=(0, 0, -self.lpar), name="T", mass=self.bead_mass / 4
         )
-        tail_mid = mb.Compound(
-            pos=(0, 0, -self.lpar / 2), name="B", mass=self.bead_mass / 4
-        )
-        bead.add([head, tail, head_mid, tail_mid])
-        # Build the bead chain
-        chain = mbPolymer()
-        chain.add_monomer(
-            bead,
-            indices=[0, 1],
-            orientation=[[0, 0, 1], [0, 0, -1]],
-            replace=False,
-            separation=self.bead_bond_length,
-        )
-        chain.build(n=length, add_hydrogens=False)
-        # Generate bonds between the mid-particles.
-        # This is needed to use an angle potential between 2 beads.
-        chain.freud_generate_bonds(
-            name_a="B",
-            name_b="B",
-            dmin=self.lpar - 0.1,
-            dmax=self.lpar + self.bead_bond_length + 0.1,
-        )
+        bead.add([center, head, tether_head, tether_tail])
+        bead.add_bond([center, head])
+
+        chain = mb.Compound()
+        last_bead = None
+        for i in range(length):
+            translate_by = np.array([0, 0, (i * self.lpar * 2) + self.bond_L])
+            this_bead = mb.clone(bead)
+            this_bead.translate(by=translate_by)
+            chain.add(this_bead)
+            if last_bead:
+                chain.add_bond([this_bead.children[0], last_bead.children[1]])
+                chain.add_bond([this_bead.children[3], last_bead.children[2]])
+            last_bead = this_bead
+        chain.name = f"{self.name}_{length}mer"
+
         return chain

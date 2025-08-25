@@ -10,3 +10,5 @@ from .base import (
     Simulation,
     System,
 )
+
+__version__ = "1.4.1"

@@ -102,10 +102,13 @@ class Tensile(Simulation):
         box_ramp = hoomd.variant.Ramp(
             A=0, B=1, t_start=self.timestep, t_ramp=int(n_steps)
         )
-        box_resizer = hoomd.update.BoxResize(
-            box1=self.box_lengths_reduced,
-            box2=final_box,
+        box_variant = hoomd.variant.box.Interpolate(
+            initial_box=self.box_lengths_reduced,
+            final_box=final_box,
             variant=box_ramp,
+        )
+        box_resizer = hoomd.update.BoxResize(
+            box=box_variant,
             trigger=resize_trigger,
             filter=hoomd.filter.Null(),
         )

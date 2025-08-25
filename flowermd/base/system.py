@@ -48,6 +48,8 @@ class System(ABC):
         Dictionary of base units to use for scaling.
         Dictionary keys are "length", "mass", and "energy". Values should be an
         unyt array of the desired base unit.
+    kwargs
+        See classes that inherit from System for kwargs
 
     Warnings
     --------
@@ -68,6 +70,7 @@ class System(ABC):
         self,
         molecules,
         base_units=dict(),
+        **kwargs,
     ):
         self._molecules = check_return_iterable(molecules)
         self.all_molecules = []
@@ -123,7 +126,7 @@ class System(ABC):
                 self.n_mol_types += 1
 
         # Create mBuild system
-        self.system = self._build_system()
+        self.system = self._build_system(**kwargs)
         # Create GMSO topology
         self.gmso_system = self._convert_to_gmso()
 
@@ -502,15 +505,16 @@ class System(ABC):
         pppm_resolution=(8, 8, 8),
         pppm_order=4,
         nlist_buffer=0.4,
+        speedup_by_moltag=True,
+        speedup_by_molgraph=False,
     ):
         """Apply the forcefield to the system.
 
         Parameters
         ----------
-        r_cut : float
+        r_cut : float, required
             The cutoff radius for the Lennard-Jones interactions.
-        force_field : flowermd.ForceField or a list of ForceField objects,
-                default=None
+        force_field : flowermd.ForceField or a list of ForceField objects, default=None
             The force field to be applied to the system for parameterization.
             If a list of force fields is provided, the length of the list must
             be equal to the number of molecule types in the system.
@@ -536,6 +540,16 @@ class System(ABC):
             number of grid points in each direction to assign charges to.
         nlist_buffer : float, default=0.4
             Neighborlist buffer for simulation cell.
+        speedup_by_molgraph: bool, optional, default=False
+            A flag to determine whether or not to search the system for repeated disconnected
+            structures, otherwise known as molecules and type each molecule only once.
+            This option will be usefult to handle systems with many repeated small molecules,
+            but may slow down system with large molecule, e.g., monolayer.
+        speedup_by_moltag : bool, optional, default=False
+            A flag to determine whether or not to look at the compound name to try to parameterize
+            each molecule only once. This option requires that the names are correctly set for
+            each kind of 'unique' molecule in the system. For example, a polydisperse system
+            should have different molecule names for each polymer + length combination.
 
         """
         self.auto_scale = auto_scale
@@ -550,8 +564,8 @@ class System(ABC):
             self._gmso_forcefields_dict,
             match_ff_by="group",
             identify_connections=True,
-            speedup_by_moltag=True,
-            speedup_by_molgraph=False,
+            speedup_by_moltag=speedup_by_moltag,
+            speedup_by_molgraph=speedup_by_molgraph,
         )
 
         if remove_charges:
@@ -626,6 +640,13 @@ class Pack(System):
         The space (nm) between the edge of the box and the molecules.
     overlap : float, default 0.2
         Minimum separation (nm) between particles of different molecules.
+    seed : int, default 12345
+        Change seed to be passed to PACKMOL for different starting positions.
+    unique_molecules : bool, default True
+        Change to False if each compound to be initialized has identical configuration and chemical identity.
+        Setting this to False can help improve packing performance for large systems without unique starting molecules.
+    kwargs
+        Arguments to be passed into mbuild.packing.fill_box
 
 
     .. warning::
@@ -655,23 +676,29 @@ class Pack(System):
         packing_expand_factor=5,
         edge=0.2,
         overlap=0.2,
+        seed=12345,
+        unique_molecules=True,
         fix_orientation=False,
+        **kwargs,
     ):
         if not isinstance(density, u.array.unyt_quantity):
             self.density = density * u.Unit("g") / u.Unit("cm**3")
             warnings.warn(
-                "Units for density were not given, assuming "
-                "units of g/cm**3."
+                "Units for density were not given, assuming units of g/cm**3."
             )
         else:
             self.density = density
         self.packing_expand_factor = packing_expand_factor
         self.edge = edge
         self.overlap = overlap
+        self.seed = seed
+        self.unique_molecules = unique_molecules
         self.fix_orientation = fix_orientation
-        super(Pack, self).__init__(molecules=molecules, base_units=base_units)
+        super(Pack, self).__init__(
+            molecules=molecules, base_units=base_units, **kwargs
+        )
 
-    def _build_system(self):
+    def _build_system(self, **kwargs):
         mass_density = u.Unit("kg") / u.Unit("m**3")
         number_density = u.Unit("m**-3")
         if self.density.units.dimensions == mass_density.dimensions:
@@ -689,14 +716,34 @@ class Pack(System):
                 f"({mass_density.dimensions}) and "
                 f"number density ({number_density.dimensions}) are supported."
             )
+        if not self.unique_molecules and len(self._molecules) > 1:
+            raise ValueError(
+                f"unique_molecules kwarg was set to {self.unique_molecules}"
+                ", which doesn't match the length of molecules given: "
+                f"{len(self._molecules)} molecules"
+            )
+        if len(self._molecules) == 1:
+            if not self.unique_molecules and len(self._molecules[0].n_mols) > 1:
+                raise ValueError(
+                    f"unique_molecules kwarg was set to {self.unique_molecules}"
+                    ", which doesn't match the polydisperse system given: "
+                    f"{self._molecules[0].n_mols}"
+                )
+        compound = self.all_molecules
+        n_compounds = [1 for i in self.all_molecules]
+        if not self.unique_molecules:
+            compound = self.all_molecules[0]
+            n_compounds = len(self.all_molecules)
 
         system = mb.packing.fill_box(
-            compound=self.all_molecules,
-            n_compounds=[1 for i in self.all_molecules],
+            compound=compound,
+            n_compounds=n_compounds,
             box=list(target_box * self.packing_expand_factor),
             overlap=self.overlap,
+            seed=self.seed,
             edge=self.edge,
             fix_orientation=self.fix_orientation,
+            **kwargs,
         )
         return system
 
