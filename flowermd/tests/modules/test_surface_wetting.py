@@ -1,4 +1,5 @@
 import gsd.hoomd
+import hoomd
 import numpy as np
 import pytest
 import unyt as u
@@ -12,6 +13,13 @@ from flowermd.modules.surface_wetting import (
     WettingSimulation,
 )
 from flowermd.tests.base_test import BaseTest
+
+hoomd_version = hoomd.version.version
+
+if int(hoomd_version[0]) > 4 and int(hoomd_version[2]) > 2:
+    hoomd_greater_than_52 = True
+else:
+    hoomd_greater_than_52 = False
 
 
 class TestDropletSimulation(BaseTest):
@@ -189,6 +197,9 @@ class TestInterfaceBuilder(BaseTest):
 
 
 class TestWettingSimulation(BaseTest):
+    @pytest.mark.skipif(
+        hoomd_greater_than_52, reason="Not compatible with Hoomd >= 5.3"
+    )
     def test_wetting_sim(
         self, surface_wetting_init_snapshot, surface_wetting_init_ff
     ):
