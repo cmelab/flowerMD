@@ -9,7 +9,7 @@ ci:
   submodules: false
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.13.2 # Ruff version
+    rev: v0.13.3 # Ruff version
     hooks:
       - id: ruff
         args: [--fix, --extend-ignore=E203]
@@ -23,7 +23,7 @@ repos:
       - id: trailing-whitespace
         exclude: 'flowermd/tests/assets/.* | flowermd/assets/.*'
   - repo: https://github.com/pycqa/isort
-    rev: 6.0.1
+    rev: 6.1.0
     hooks:
       - id: isort
         name: isort (python)
