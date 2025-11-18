@@ -482,20 +482,14 @@ class EllipsoidChainRand(Polymer):
         )
         bead.add([center, head, tether_head, tether_tail])
         bead.add_bond([center, head])
-
         chain = mb.Compound()
         last_bead = None
-
-
-
-
         rand_range = ((self.L/2) - (self.lpar+(self.bond_L / 2))) #reducing step size for random walk
         print('range',rand_range)
         for i in range(length):
             translate_by = np.random.uniform(low=-1, high=1, size=(3,))
             translate_by /= np.linalg.norm(translate_by)*self.bond_L
             this_bead = mb.clone(bead)
-
 
             if last_bead:
                 chain.add_bond([this_bead.children[0], last_bead.children[1]])
@@ -507,7 +501,6 @@ class EllipsoidChainRand(Polymer):
             chain.add(this_bead)
             last_bead = this_bead
         chain.name = f"{self.name}_{length}mer"
-
         return chain
     
     def pbc(self,d,pos_range):
