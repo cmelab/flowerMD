@@ -652,3 +652,108 @@ class EllipsoidForcefield(BaseHOOMDForcefield):
             gb.params[pair].r_cut = 0.0
         forces.append(gb)
         return forces
+
+class DPD_ellipse_FF(BaseHOOMDForcefield):
+    """A DPD forcefield on anisotropic rigid bodies.
+
+    Notes
+    -----
+    This is designed to be used with `flowermd.library.polymers.EllipsoidChainRand`
+    and uses ghost particles of type "A" for intra-molecular
+    interactions of bonds and two-body angles.
+    Ellipsoid centers (type "R") are used in inter-molecular pair interations.
+    The hoomd DPD forcefield is being used here with spherical rigid bodies of the flowerMD ellipsoid model for anchor points and orientation vectors to build back-mapping tools.
+
+    The set of interactions are:
+    1. `hoomd.md.bond.Harmonic`: Models ellipsoid bonds as tip-to-tip bonds
+    2. `hoomd.md.angle.Harmonic`: Models angles of two neighboring ellipsoids.
+    3. `hoomd.md.pair.DPD`" Model pair interactions between beads. Does not consider anisotropic shapes.
+
+    Parameters
+    ----------
+    epsilon : float, required
+        energy
+    lpar: float, required
+        Semi-axis length of the ellipsoid along the major axis.
+    lperp : float, required
+        Semi-axis length of the ellipsoid along the minor axis.
+    A : int, required
+	DPD pair-wise drag force coefficient
+    gamma : int, required
+        DPD pair-wise random force coefficient
+    kT : float, required
+        Temperature used in pair-wise drag force
+    r_cut : float, required
+        Cut off radius for pair interactions
+    angle_k : float, required
+        Spring constant in harmonic angle.
+    angle_theta0: float, required
+        Equilibrium angle between 2 consecutive beads.
+    bond_k : float, required
+        Spring constant in harmonic bond.
+    bond_r0: float, required
+        Equilibrium distance between 2 ellipsoid tips.
+
+    """
+
+   def __init__(
+        self,
+        epsilon,
+        lpar,
+        lperp,
+        A,
+        gamma,
+        kT,
+        r_cut,
+        angle_k=None,
+        angle_theta0=None,
+        bond_k=100,
+        bond_r0=1.1,
+    ):
+        self.epsilon = epsilon
+        self.lpar=lpar
+        self.lperp=lperp
+        self.gamma = gamma
+        self.A = A
+        self.kT = kT
+        self.r_cut = r_cut
+        self.angle_k = angle_k
+        self.angle_theta0 = angle_theta0
+        self.bond_k = bond_k
+        self.bond_r0 = bond_r0
+        hoomd_forces = self._create_forcefield()
+        super(DPD_FF, self).__init__(hoomd_forces)
+
+    def _create_forcefield(self):
+        forces = []
+        # Bonds
+        bond = hoomd.md.bond.Harmonic()
+        bond.params["T-T"] = dict(k=self.bond_k, r0=self.bond_r0)
+        bond.params["A-X"] = dict(k=0, r0=0)
+        forces.append(bond)
+        # Angles
+        if all([self.angle_k, self.angle_theta0]):
+            angle = hoomd.md.angle.Harmonic()
+            angle.params["X-A-X"] = dict(k=self.angle_k, t0=self.angle_theta0)
+            angle.params["A-X-A"] = dict(k=0, t0=0)
+            forces.append(angle)
+        # DPD Pairs
+        nlist = hoomd.md.nlist.Cell(buffer=0.40, exclusions=["body"])
+        dpd = hoomd.md.pair.DPD(nlist=nlist,kT=self.kT,default_r_cut=self.r_cut)
+        dpd.params[("X", "X")] = dict(A=self.A, gamma=self.gamma)
+        # Add zero pairs
+        for pair in [
+            ("R", "R"),
+            ("T", "T"),
+            ("T", "R"),
+            ("A", "A"),
+            ("A", "X"),
+            ("A", "T"),
+            ("A", "R"),
+            ("X", "R"),
+            ("X", "T"),
+        ]:
+            dpd.params[pair] = dict(A=0,gamma=0.1)
+            dpd.params[pair].r_cut = 0.0
+        forces.append(dpd)
+        return forces
