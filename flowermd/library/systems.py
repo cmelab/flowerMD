@@ -41,7 +41,7 @@ class SingleChainSystem(System):
         comp.box = box
         chain.translate_to((box.Lx / 2, box.Ly / 2, box.Lz / 2))
         return comp
-
+'''
 class RandomWalk(System):
     """Places chain segments in a consecutive random walk. Optional self-avoiding parameter or shape constraint using mbuild.
 
@@ -165,3 +165,4 @@ class DPDBuilder(System):
             #add loop exit based on simulation wall time or number of steps
         
         return snap
+'''
