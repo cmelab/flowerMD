@@ -502,7 +502,7 @@ class EllipsoidChainRand(Polymer):
             last_bead = this_bead
         chain.name = f"{self.name}_{length}mer"
         return chain
-    
+
     def pbc(self,d,pos_range):
         """ Periodic boundary conditions for a reduced box considering position of A beads.
         """
