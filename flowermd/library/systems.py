@@ -53,7 +53,7 @@ class mbuildSystem(System):
 
     def __init__(self, molecules, base_units=dict()):
         self.box_temp = molecules.box
-        super(RandomSystem, self).__init__(
+        super(mbuildSystem, self).__init__(
             molecules=molecules, base_units=base_units
         )
 
