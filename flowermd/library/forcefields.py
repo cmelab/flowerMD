@@ -653,6 +653,7 @@ class EllipsoidForcefield(BaseHOOMDForcefield):
         forces.append(gb)
         return forces
 
+
 class EllipsoidFF_DPD(BaseHOOMDForcefield):
     """A DPD forcefield on anisotropic rigid bodies.
 
@@ -679,7 +680,7 @@ class EllipsoidFF_DPD(BaseHOOMDForcefield):
     lperp : float, required
         Semi-axis length of the ellipsoid along the minor axis.
     A : int, required
-	DPD pair-wise drag force coefficient
+        DPD pair-wise drag force coefficient
     gamma : int, required
         DPD pair-wise random force coefficient
     kT : float, required
@@ -712,8 +713,8 @@ class EllipsoidFF_DPD(BaseHOOMDForcefield):
         bond_r0=1.1,
     ):
         self.epsilon = epsilon
-        self.lpar=lpar
-        self.lperp=lperp
+        self.lpar = lpar
+        self.lperp = lperp
         self.gamma = gamma
         self.A = A
         self.kT = kT
@@ -740,7 +741,9 @@ class EllipsoidFF_DPD(BaseHOOMDForcefield):
             forces.append(angle)
         # DPD Pairs
         nlist = hoomd.md.nlist.Cell(buffer=0.40, exclusions=["body"])
-        dpd = hoomd.md.pair.DPD(nlist=nlist,kT=self.kT,default_r_cut=self.r_cut)
+        dpd = hoomd.md.pair.DPD(
+            nlist=nlist, kT=self.kT, default_r_cut=self.r_cut
+        )
         dpd.params[("X", "X")] = dict(A=self.A, gamma=self.gamma)
         # Add zero pairs
         for pair in [
@@ -754,7 +757,7 @@ class EllipsoidFF_DPD(BaseHOOMDForcefield):
             ("X", "R"),
             ("X", "T"),
         ]:
-            dpd.params[pair] = dict(A=0,gamma=0.1)
+            dpd.params[pair] = dict(A=0, gamma=0.1)
             dpd.params[pair].r_cut = 0.0
         forces.append(dpd)
         return forces

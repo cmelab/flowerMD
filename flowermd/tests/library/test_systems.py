@@ -1,7 +1,13 @@
 import numpy as np
 import pytest
 
-from flowermd.library import LJChain, PolyEthylene, SingleChainSystem, mbuildSystem, EllipsoidChainRand
+from flowermd.library import (
+    EllipsoidChainRand,
+    LJChain,
+    PolyEthylene,
+    SingleChainSystem,
+    mbuildSystem,
+)
 
 
 class Systems:
@@ -30,7 +36,9 @@ class Systems:
             SingleChainSystem(molecules=lj_chain, buffer=1.05)
 
     def test_rand_walk(self):
-        chains = EllipsoidChainRand(lengths=10,num_mols=10,lpar=0.5,bead_mass=1.0,density=0.85)
+        chains = EllipsoidChainRand(
+            lengths=10, num_mols=10, lpar=0.5, bead_mass=1.0, density=0.85
+        )
         system = mbuildSystem(molecules=chains)
         assert system.box
-        assert system.n_particles == 400 # 10 x 10 x 4
+        assert system.n_particles == 400  # 10 x 10 x 4

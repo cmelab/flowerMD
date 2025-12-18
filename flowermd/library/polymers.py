@@ -407,6 +407,7 @@ class EllipsoidChain(Polymer):
 
         return chain
 
+
 class EllipsoidChainRand(Polymer):
     """Create an ellipsoid polymer chain in a random walk configuration, considering density and box size.
 
@@ -449,17 +450,16 @@ class EllipsoidChainRand(Polymer):
         num_mols,
         lpar,
         bead_mass,
-
         density,
-        bond_L=0.1, #T-T bond length
+        bond_L=0.1,  # T-T bond length
         name="ellipsoid_chain",
     ):
         self.bead_mass = bead_mass
         self.lpar = lpar
         self.bond_L = bond_L
         self.density = density
-        N=lengths*num_mols
-        L = np.cbrt(N/ self.density)
+        N = lengths * num_mols
+        L = np.cbrt(N / self.density)
         self.L = L
         self.box = mb.Box(lengths=np.array([L] * 3))
         self.bead_constituents_types = ["X", "A", "T", "T"]
@@ -485,28 +485,38 @@ class EllipsoidChainRand(Polymer):
         bead.add_bond([center, head])
         chain = mb.Compound()
         last_bead = None
-        rand_range = ((self.L/2) - (self.lpar+(self.bond_L / 2))) #reducing step size for random walk
-        print('range',rand_range)
+        rand_range = (self.L / 2) - (
+            self.lpar + (self.bond_L / 2)
+        )  # reducing step size for random walk
+        print("range", rand_range)
         for i in range(length):
             translate_by = np.random.uniform(low=-1, high=1, size=(3,))
-            translate_by /= np.linalg.norm(translate_by)*self.bond_L
+            translate_by /= np.linalg.norm(translate_by) * self.bond_L
             this_bead = mb.clone(bead)
 
             if last_bead:
                 chain.add_bond([this_bead.children[0], last_bead.children[1]])
                 chain.add_bond([this_bead.children[3], last_bead.children[2]])
-                this_bead.translate(by=self.pbc(translate_by+last_bead.pos,pos_range=([rand_range]*3)))
+                this_bead.translate(
+                    by=self.pbc(
+                        translate_by + last_bead.pos,
+                        pos_range=([rand_range] * 3),
+                    )
+                )
             else:
-                translate_by = np.random.uniform(low=-rand_range, high=rand_range, size=(3,))
-                this_bead.translate(by=self.pbc(translate_by,pos_range=([rand_range]*3)))
+                translate_by = np.random.uniform(
+                    low=-rand_range, high=rand_range, size=(3,)
+                )
+                this_bead.translate(
+                    by=self.pbc(translate_by, pos_range=([rand_range] * 3))
+                )
             chain.add(this_bead)
             last_bead = this_bead
         chain.name = f"{self.name}_{length}mer"
         return chain
 
-    def pbc(self,d,pos_range):
-        """ Periodic boundary conditions for a reduced box considering position of A beads.
-        """
+    def pbc(self, d, pos_range):
+        """Periodic boundary conditions for a reduced box considering position of A beads."""
         for i in range(3):
             while d[i] > pos_range[i] or d[i] < -(pos_range[i]):
                 if d[i] < -pos_range[i]:
