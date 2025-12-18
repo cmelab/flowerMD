@@ -443,7 +443,7 @@ class EllipsoidChainRand(Polymer):
         for large systems.
     """
 
-   def __init__(
+    def __init__(
         self,
         lengths,
         num_mols,

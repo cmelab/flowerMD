@@ -697,7 +697,7 @@ class EllipsoidFF_DPD(BaseHOOMDForcefield):
 
     """
 
-   def __init__(
+    def __init__(
         self,
         epsilon,
         lpar,
@@ -723,7 +723,7 @@ class EllipsoidFF_DPD(BaseHOOMDForcefield):
         self.bond_k = bond_k
         self.bond_r0 = bond_r0
         hoomd_forces = self._create_forcefield()
-        super(DPD_FF, self).__init__(hoomd_forces)
+        super(EllipsoidFF_DPD, self).__init__(hoomd_forces)
 
     def _create_forcefield(self):
         forces = []
