@@ -1,11 +1,11 @@
 import numpy as np
 import pytest
 
-from flowermd.library import LJChain, PolyEthylene, SingleChainSystem
+from flowermd.library import LJChain, PolyEthylene, SingleChainSystem, mbuildSystem, EllipsoidChainRand
 
 
-class TestSingleChainSystem:
-    def test_buffer(self):
+class Systems:
+    def test_single_chain_buffer(self):
         chain = PolyEthylene(lengths=10, num_mols=1)
         system = SingleChainSystem(molecules=chain, buffer=1.05)
         chain2 = PolyEthylene(lengths=10, num_mols=1)
@@ -15,7 +15,7 @@ class TestSingleChainSystem:
         assert np.allclose(system.box.Ly * 2, system2.box.Ly, atol=1e-3)
         assert np.allclose(system.box.Lz * 2, system2.box.Lz, atol=1e-3)
 
-    def test_lengths(self):
+    def test_single_chain_lengths(self):
         lj_chain = LJChain(lengths=10, num_mols=1)
         system = SingleChainSystem(molecules=lj_chain, buffer=1.05)
         chain = lj_chain._molecules[0]
@@ -28,3 +28,9 @@ class TestSingleChainSystem:
         lj_chain = LJChain(lengths=10, num_mols=2)
         with pytest.raises(ValueError):
             SingleChainSystem(molecules=lj_chain, buffer=1.05)
+
+    def test_rand_walk(self):
+        chains = EllipsoidChainRand(lengths=10,num_mols=10,lpar=0.5,bead_mass=1.0,density=0.85)
+        system = mbuildSystem(molecules=chains)
+        assert system.box
+        assert system.n_particles == 400 # 10 x 10 x 4
