@@ -41,3 +41,23 @@ class SingleChainSystem(System):
         comp.box = box
         chain.translate_to((box.Lx / 2, box.Ly / 2, box.Lz / 2))
         return comp
+
+class mbuildSystem(System):
+    """ Builds a system using mbuild box and mbuild positions. 
+
+    The box lengths and positions are read from the input mbuild compound. This is intended to be used with mbuild intialization methods,
+    like translating polymer contiuents within the box, or a random walk cuboid constraint in mbuild 2.0.
+
+    """
+  
+    def __init__(self, molecules, base_units=dict()):
+        self.box_temp = molecules.box
+        super(RandomSystem, self).__init__(
+            molecules=molecules, base_units=base_units
+        )
+    def _build_system(self):
+        chain = self.all_molecules
+        comp = mb.Compound()
+        comp.add(chain)
+        comp.box = self.box_temp
+        return comp

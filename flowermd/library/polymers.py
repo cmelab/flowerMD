@@ -419,7 +419,7 @@ class EllipsoidChainRand(Polymer):
     particles of types "A" are used.
 
     This is meant to be used with
-    `flowermd.library.forcefields.DPD_ellipse_FF`
+    `flowermd.library.forcefields.EllipsoidFF_DPD`
     and requires using `flowermd.utils.constraints.set_bond_constraints` to set up
     the fixed bonds correctly in HOOMD-Blue.
 
@@ -461,6 +461,7 @@ class EllipsoidChainRand(Polymer):
         N=lengths*num_mols
         L = np.cbrt(N/ self.density)
         self.L = L
+        self.box = mb.Box(lengths=np.array([L] * 3))
         self.bead_constituents_types = ["X", "A", "T", "T"]
         super(EllipsoidChainRand, self).__init__(
             lengths=lengths, num_mols=num_mols, name=name
