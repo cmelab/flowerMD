@@ -664,7 +664,7 @@ class EllipsoidFF_DPD(BaseHOOMDForcefield):
     Ellipsoid centers (type "R") are used in inter-molecular pair interations.
     The hoomd DPD forcefield is being used here with spherical rigid bodies of the flowerMD ellipsoid model for anchor points and orientation vectors to build back-mapping tools.
     Spherical dimensions of lpar = lperp = 0.5 are recommended, since DPD does not consider anisotropy and for mapping to number density.
- 
+
     The set of interactions are:
     1. `hoomd.md.bond.Harmonic`: Models ellipsoid bonds as tip-to-tip bonds
     2. `hoomd.md.angle.Harmonic`: Models angles of two neighboring ellipsoids.
