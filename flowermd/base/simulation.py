@@ -188,13 +188,11 @@ class Simulation(hoomd.simulation.Simulation):
                 forces.append(new_wall)
         ref_values = data["reference_values"]
         sim_kwargs = data["sim_kwargs"]
-        constraint = data["constraint"]
         return cls(
             initial_state=state,
             forcefield=list(forces),
             reference_values=ref_values,
             **sim_kwargs,
-            constraint=constraint,
         )
 
     @classmethod
@@ -1193,7 +1191,6 @@ class Simulation(hoomd.simulation.Simulation):
             "forcefield": self._forcefield,
             "state": snap,
             "sim_kwargs": sim_kwargs,
-            "constraint": self.constraint,
         }
         # Add a header to the pickle file.
         # This will be checked in Simulation.from_simulation_pickle.
