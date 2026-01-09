@@ -16,7 +16,9 @@ from flowermd.tests.base_test import BaseTest
 
 hoomd_version = hoomd.version.version
 
-if int(hoomd_version[0]) > 4 and int(hoomd_version[2]) > 2:
+if int(hoomd_version[0]) == 5 and int(hoomd_version[2]) > 2:
+    hoomd_greater_than_52 = True
+elif int(hoomd_version[0]) > 5:
     hoomd_greater_than_52 = True
 else:
     hoomd_greater_than_52 = False
@@ -210,13 +212,10 @@ class TestWettingSimulation(BaseTest):
 
         with open(surface_wetting_init_ff, "rb") as handle:
             ff = pickle.load(handle)
+
         wetting_sim = WettingSimulation(
             initial_state=snapshot,
             forcefield=ff,
             fix_surface=True,
         )
-        wetting_sim.run_NVT(
-            kT=1.0,
-            tau_kt=1,
-            n_steps=1e3,
-        )
+        wetting_sim.run_NVT(kT=1.0, tau_kt=1, n_steps=1e3,)
