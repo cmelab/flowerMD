@@ -218,4 +218,8 @@ class TestWettingSimulation(BaseTest):
             forcefield=ff,
             fix_surface=True,
         )
-        wetting_sim.run_NVT(kT=1.0, tau_kt=1, n_steps=1e3,)
+        wetting_sim.run_NVT(
+            kT=1.0,
+            tau_kt=1,
+            n_steps=1e3,
+        )
