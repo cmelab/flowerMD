@@ -6,6 +6,7 @@ from flowermd.library import (
     PEKK,
     PPS,
     EllipsoidChain,
+    EllipsoidChainRand,
     LJChain,
     PEKK_meta,
     PEKK_para,
@@ -137,6 +138,21 @@ class TestPolymers:
             num_mols=2,
             lpar=0.5,
             bead_mass=1,
+        )
+        assert chain.n_particles == 32
+        assert chain.molecules[0].mass == 4
+        assert chain.molecules[0].n_particles == 16
+        assert chain.molecules[0].n_bonds == 10
+        for mol in chain._molecules:
+            assert mol.name == "ellipsoid_chain_4mer"
+
+    def test_ellipsoid_chain_rand(self):
+        chain = EllipsoidChainRand(
+            lengths=4,
+            num_mols=2,
+            lpar=0.5,
+            bead_mass=1,
+            density=0.5,
         )
         assert chain.n_particles == 32
         assert chain.molecules[0].mass == 4
