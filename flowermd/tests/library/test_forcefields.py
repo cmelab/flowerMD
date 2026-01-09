@@ -145,8 +145,10 @@ class TestForceFields:
             gamma=1000,
             kT=1.0,
             bond_k=15000,
+            angle_k=10,
+            angle_theta0=2
         )
-        assert len(ellipsoid_ff.hoomd_forces) == 2
+        assert len(ellipsoid_ff.hoomd_forces) == 3
         assert isinstance(ellipsoid_ff.hoomd_forces[-1], hoomd.md.pair.DPD)
         assert ("X", "X") in list(
             dict(ellipsoid_ff.hoomd_forces[-1].params).keys()

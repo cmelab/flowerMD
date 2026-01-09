@@ -10,7 +10,7 @@ from flowermd.library import (
 )
 
 
-class Systems:
+class TestSystems:
     def test_single_chain_buffer(self):
         chain = PolyEthylene(lengths=10, num_mols=1)
         system = SingleChainSystem(molecules=chain, buffer=1.05)
