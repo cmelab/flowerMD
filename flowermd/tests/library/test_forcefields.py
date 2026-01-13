@@ -11,6 +11,7 @@ from flowermd.library import (
     OPLS_AA_DIMETHYLETHER,
     OPLS_AA_PPS,
     BeadSpring,
+    EllipsoidFF_DPD,
     EllipsoidForcefield,
     FF_from_file,
     KremerGrestBeadSpring,
@@ -133,6 +134,36 @@ class TestForceFields:
         assert ellipsoid_ff.hoomd_forces[-1].params["R", "X"]["lpar"] == 0.0
         assert ellipsoid_ff.hoomd_forces[-1].params["R", "A"]["lpar"] == 0.0
         assert ellipsoid_ff.hoomd_forces[-1].params["R", "T"]["lpar"] == 0.0
+
+    def test_ellipsoid_ff_dpd(self):
+        ellipsoid_ff = EllipsoidFF_DPD(
+            epsilon=1.0,
+            lperp=0.5,
+            lpar=0.5,
+            r_cut=3,
+            A=500,
+            gamma=1000,
+            kT=1.0,
+            bond_k=15000,
+            angle_k=10,
+            angle_theta0=2,
+        )
+        assert len(ellipsoid_ff.hoomd_forces) == 3
+        assert isinstance(ellipsoid_ff.hoomd_forces[-1], hoomd.md.pair.DPD)
+        assert ("X", "X") in list(
+            dict(ellipsoid_ff.hoomd_forces[-1].params).keys()
+        )
+        assert ("R", "X") in list(
+            dict(ellipsoid_ff.hoomd_forces[-1].params).keys()
+        )
+        assert ellipsoid_ff.hoomd_forces[-1].params["R", "X"]["A"] == 0.0
+        assert ellipsoid_ff.hoomd_forces[-1].params["A", "X"]["A"] == 0.0
+        assert ellipsoid_ff.hoomd_forces[-1].params["A", "T"]["A"] == 0.0
+        assert ellipsoid_ff.hoomd_forces[-1].params["A", "X"]["A"] == 0.0
+        assert ellipsoid_ff.hoomd_forces[-1].params["A", "T"]["gamma"] == 0.1
+        assert ellipsoid_ff.hoomd_forces[-1].params["T", "X"]["gamma"] == 0.1
+        assert ellipsoid_ff.hoomd_forces[-1].params["R", "X"]["gamma"] == 0.1
+        assert ellipsoid_ff.hoomd_forces[-1].params["R", "A"]["gamma"] == 0.1
 
 
 class TestTableForcefield:
