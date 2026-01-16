@@ -488,7 +488,6 @@ class EllipsoidChainRand(Polymer):
         rand_range = (self.L / 2) - (
             self.lpar + (self.bond_L / 2)
         )  # reducing step size for random walk
-        print("range", rand_range)
         for i in range(length):
             translate_by = np.random.uniform(low=-1, high=1, size=(3,))
             translate_by /= np.linalg.norm(translate_by) * self.bond_L
