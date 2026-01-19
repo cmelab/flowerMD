@@ -738,7 +738,7 @@ class TestSimulate(BaseTest):
         )
         ff.hoomd_forces
         system = mbuildSystem(molecules=chains)
-        system.to_gsd('test.gsd')
+        system.to_gsd("test.gsd")
         rigid_frame, rigid = create_rigid_ellipsoid_chain(
             system.hoomd_snapshot, lpar=0.5, lperp=0.5
         )
