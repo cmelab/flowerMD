@@ -3,7 +3,6 @@ channels:
   - conda-forge
 dependencies:
   - foyer >=1.0
-  - fresnel
   - freud >=3.0
   - gmso >=0.13.0
   - gsd >=3.0
