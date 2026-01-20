@@ -387,21 +387,25 @@ class Simulation(hoomd.simulation.Simulation):
     @property
     def nlist(self):
         """The neighbor list used by the Lennard-Jones pair force."""
-        return self._pair_force().nlist
+        return list(set(i.nlist for i in self._pair_force() if hasattr(i, 'nlist')))
 
     @nlist.setter
-    def nlist(self, hoomd_nlist, buffer=0.4):
-        """Set the neighbor list used by the Lennard-Jones pair force.
+    def nlist(self, hoomd_nlist):
+        """Set the neighbor list used by the pair forces currently present in the simulation.
+
+        Notes
+        -----
+        The neighbor list cannot be udpated after the simulation has already ran.
 
         Parameters
         ----------
         hoomd_nlist : hoomd.md.nlist.NeighborList, required
-            The neighbor list to use.
-        buffer : float,  default 0.4
-            The buffer width to use for the neighbor list.
-
+            The neighbor list to use. This must be an already
+            created instance of hoomd.md.nlist.NeighborList.
         """
-        self._pair_force().nlist = hoomd_nlist(buffer)
+        for force in self._pair_force():
+            if hasattr(force, 'nlist'):
+                force.nlist = hoomd_nlist
 
     @property
     def dt(self):

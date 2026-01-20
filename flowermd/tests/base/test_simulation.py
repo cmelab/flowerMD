@@ -31,6 +31,13 @@ class TestSimulate(BaseTest):
         assert len(sim.forces) == len(benzene_system.hoomd_forcefield)
         assert sim.reference_values == benzene_system.reference_values
 
+    def test_update_nlist(self, benzene_system):
+        sim = Simulation.from_system(benzene_system)
+        tree = hoomd.md.nlist.Tree(buffer=0.40)
+        sim.nlist = tree
+        sim.run_NVT(kT=1.0, tau_kt=0.01, n_steps=100)
+        assert isinstance(sim.nlist[0], hoomd.md.nlist.Tree)
+
     def test_initialize_from_system_separate_ff(
         self, benzene_cg_system, cg_single_bead_ff
     ):
