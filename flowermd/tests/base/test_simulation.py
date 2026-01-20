@@ -315,54 +315,100 @@ class TestSimulate(BaseTest):
     def test_scale_epsilon(self, benzene_system):
         sim = Simulation.from_system(benzene_system)
         epsilons = []
-        for param in sim._lj_force().params:
-            epsilons.append(sim._lj_force().params[param]["epsilon"])
-        sim.adjust_epsilon(scale_by=0.5)
+        for force in sim._pair_force():
+            try:
+                force.params["epsilon"]
+            except KeyError:
+                continue
+            for param in force.params:
+                epsilons.append(sim._pair_force().params[param]["epsilon"])
+            sim.adjust_epsilon(scale_by=0.5)
+
         epsilons_scaled = []
-        for param in sim._lj_force().params:
-            epsilons_scaled.append(sim._lj_force().params[param]["epsilon"])
+
+        for force in sim._pair_force():
+            try:
+                force.params["epsilon"]
+            except KeyError:
+                continue
+            for param in force.params:
+                epsilons_scaled.append(sim._pair_force().params[param]["epsilon"])
         for i, j in zip(epsilons, epsilons_scaled):
             assert np.allclose(i * 0.5, j, atol=1e-3)
 
     def test_shift_epsilon(self, benzene_system):
         sim = Simulation.from_system(benzene_system)
         epsilons = []
-        for param in sim._lj_force().params:
-            epsilons.append(sim._lj_force().params[param]["epsilon"])
+        for force in sim._pair_force():
+            try:
+                force.params["epsilon"]
+            except KeyError:
+                continue
+            for param in force.params:
+                epsilons.append(force.params[param]["epsilon"])
+
         sim.adjust_epsilon(shift_by=1.0)
         epsilons_scaled = []
-        for param in sim._lj_force().params:
-            epsilons_scaled.append(sim._lj_force().params[param]["epsilon"])
+        for force in sim._pair_force():
+            try:
+                force.params["epsilon"]
+            except KeyError:
+                continue
+            for param in force.params:
+                epsilons_scaled.append(force.params[param]["epsilon"])
         for i, j in zip(epsilons, epsilons_scaled):
             assert np.allclose(i + 1, j, atol=1e-3)
 
     def test_scale_sigma(self, benzene_system):
         sim = Simulation.from_system(benzene_system)
         sigmas = []
-        for param in sim._lj_force().params:
-            sigmas.append(sim._lj_force().params[param]["sigma"])
+        for force in sim._pair_force():
+            try:
+                force.params["sigma"]
+            except KeyError:
+                continue
+            for param in force.params:
+                sigmas.append(force.params[param]["sigma"])
+
         sim.adjust_sigma(scale_by=0.5)
         sigmas_scaled = []
-        for param in sim._lj_force().params:
-            sigmas_scaled.append(sim._lj_force().params[param]["sigma"])
+        for force in sim._pair_force():
+            try:
+                force.params["sigma"]
+            except KeyError:
+                continue
+            for param in force.params:
+                sigmas_scaled.append(force.params[param]["sigma"])
         for i, j in zip(sigmas, sigmas_scaled):
             assert np.allclose(i * 0.5, j, atol=1e-3)
 
     def test_shift_sigma(self, benzene_system):
         sim = Simulation.from_system(benzene_system)
         sigmas = []
-        for param in sim._lj_force().params:
-            sigmas.append(sim._lj_force().params[param]["sigma"])
+        for force in sim._pair_force():
+            try:
+                force.params["sigma"]
+            except KeyError:
+                continue
+            for param in force.params:
+                sigmas.append(force.params[param]["sigma"])
+
         sim.adjust_sigma(shift_by=1.0)
         sigmas_scaled = []
-        for param in sim._lj_force().params:
-            sigmas_scaled.append(sim._lj_force().params[param]["sigma"])
+        for force in sim._pair_force():
+            try:
+                force.params["sigma"]
+            except KeyError:
+                continue
+            for param in force.params:
+                sigmas_scaled.append(force.params[param]["sigma"])
         for i, j in zip(sigmas, sigmas_scaled):
             assert np.allclose(i + 1, j, atol=1e-3)
 
     def test_remove_force(self, benzene_system):
         sim = Simulation.from_system(benzene_system)
-        sim.remove_force(sim._lj_force())
+        lj_force = [i for i in sim._pair_force() if isinstance(i, hoomd.md.pair.LJ)]
+        sim.remove_force(lj_force[0])
         for i in sim.forces:
             assert not isinstance(i, hoomd.md.pair.LJ)
 

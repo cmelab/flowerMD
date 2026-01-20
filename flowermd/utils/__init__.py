@@ -5,6 +5,8 @@ from .actions import (
     PullParticles,
     ScaleEpsilon,
     ScaleSigma,
+    ShiftEpsilon,
+    ShiftSigma,
     StdOutLogger,
     UpdateWalls,
 )
