@@ -10,6 +10,7 @@ from .forcefields import (
     BaseHOOMDForcefield,
     BaseXMLForcefield,
     BeadSpring,
+    EllipsoidFF_DPD,
     EllipsoidForcefield,
     FF_from_file,
     KremerGrestBeadSpring,
@@ -20,6 +21,7 @@ from .polymers import (
     PEKK,
     PPS,
     EllipsoidChain,
+    EllipsoidChainRand,
     LJChain,
     PEKK_meta,
     PEKK_para,
@@ -27,4 +29,4 @@ from .polymers import (
 )
 from .simulations.tensile import Tensile
 from .surfaces import Graphene
-from .systems import SingleChainSystem
+from .systems import SingleChainSystem, mbuildSystem

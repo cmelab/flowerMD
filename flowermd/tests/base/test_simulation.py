@@ -14,8 +14,17 @@ from numpy.typing import NDArray
 from flowermd import Simulation
 from flowermd.base import Pack
 from flowermd.library import OPLS_AA_PPS
-from flowermd.library.forcefields import BeadSpring, EllipsoidForcefield
-from flowermd.library.polymers import EllipsoidChain, LJChain
+from flowermd.library.forcefields import (
+    BeadSpring,
+    EllipsoidFF_DPD,
+    EllipsoidForcefield,
+)
+from flowermd.library.polymers import (
+    EllipsoidChain,
+    EllipsoidChainRand,
+    LJChain,
+)
+from flowermd.library.systems import mbuildSystem
 from flowermd.tests import BaseTest
 from flowermd.utils import (
     create_rigid_ellipsoid_chain,
@@ -711,6 +720,40 @@ class TestSimulate(BaseTest):
         assert parallel_pe != perpendicular_pe
         assert parallel_pe != parallel_long_pe
         assert perpendicular_pe != parallel_long_pe
+
+    def test_ellipsoid_rand_walk_dpd_sim(self):
+        chains = EllipsoidChainRand(
+            lengths=10, num_mols=10, lpar=0.5, bead_mass=1.0, density=0.85
+        )
+        ff = EllipsoidFF_DPD(
+            epsilon=1.0,
+            lpar=0.5,
+            lperp=0.5,
+            A=5000,
+            gamma=800,
+            kT=2.0,
+            r_cut=1.15,
+            bond_k=30000,
+            bond_r0=0.1,
+        )
+        ff.hoomd_forces
+        system = mbuildSystem(molecules=chains)
+        system.to_gsd("test.gsd")
+        rigid_frame, rigid = create_rigid_ellipsoid_chain(
+            system.hoomd_snapshot, lpar=0.5, lperp=0.5
+        )
+
+        sim = Simulation(
+            initial_state=rigid_frame,
+            forcefield=ff.hoomd_forces,
+            constraint=rigid,
+            dt=0.0003,
+        )
+
+        assert isinstance(sim._rigid_constraint, hoomd.md.constrain.Rigid)
+        assert sim._distance_constraint is None
+        sim.run_NVT(n_steps=10, kT=1.0, tau_kt=sim.dt * 100)
+        assert sim.integrator.integrate_rotational_dof is True
 
     def test_save_restart_gsd(self, benzene_system):
         sim = Simulation.from_system(benzene_system)
