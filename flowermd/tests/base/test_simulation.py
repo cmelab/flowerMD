@@ -339,7 +339,9 @@ class TestSimulate(BaseTest):
             except KeyError:
                 continue
             for param in force.params:
-                epsilons_scaled.append(sim._pair_force().params[param]["epsilon"])
+                epsilons_scaled.append(
+                    sim._pair_force().params[param]["epsilon"]
+                )
         for i, j in zip(epsilons, epsilons_scaled):
             assert np.allclose(i * 0.5, j, atol=1e-3)
 
@@ -414,7 +416,9 @@ class TestSimulate(BaseTest):
 
     def test_remove_force(self, benzene_system):
         sim = Simulation.from_system(benzene_system)
-        lj_force = [i for i in sim._pair_force() if isinstance(i, hoomd.md.pair.LJ)]
+        lj_force = [
+            i for i in sim._pair_force() if isinstance(i, hoomd.md.pair.LJ)
+        ]
         sim.remove_force(lj_force[0])
         for i in sim.forces:
             assert not isinstance(i, hoomd.md.pair.LJ)

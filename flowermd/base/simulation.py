@@ -387,7 +387,9 @@ class Simulation(hoomd.simulation.Simulation):
     @property
     def nlist(self):
         """The neighbor list used by the Lennard-Jones pair force."""
-        return list(set(i.nlist for i in self._pair_force() if hasattr(i, 'nlist')))
+        return list(
+            set(i.nlist for i in self._pair_force() if hasattr(i, "nlist"))
+        )
 
     @nlist.setter
     def nlist(self, hoomd_nlist):
@@ -404,7 +406,7 @@ class Simulation(hoomd.simulation.Simulation):
             created instance of hoomd.md.nlist.NeighborList.
         """
         for force in self._pair_force():
-            if hasattr(force, 'nlist'):
+            if hasattr(force, "nlist"):
                 force.nlist = hoomd_nlist
 
     @property
@@ -1242,9 +1244,7 @@ class Simulation(hoomd.simulation.Simulation):
         """
         if not self.integrator:
             forces = [
-                f
-                for f in self._forcefield
-                if isinstance(f, hoomd.md.pair.Pair)
+                f for f in self._forcefield if isinstance(f, hoomd.md.pair.Pair)
             ]
         else:
             forces = [

@@ -77,7 +77,7 @@ class ScaleSigma(hoomd.custom.Action):
 
 class ShiftEpsilon(hoomd.custom.Action):
     def __init__(self, sim, shift_by):
-        self.shift_by = shift_by 
+        self.shift_by = shift_by
         self.sim = sim
 
     def act(self, timestep):
@@ -86,7 +86,7 @@ class ShiftEpsilon(hoomd.custom.Action):
 
 class ShiftSigma(hoomd.custom.Action):
     def __init__(self, sim, shift_by):
-        self.shift_by = shift_by 
+        self.shift_by = shift_by
         self.sim = sim
 
     def act(self, timestep):

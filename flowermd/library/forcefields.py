@@ -477,7 +477,7 @@ class TableForcefield(BaseHOOMDForcefield):
             r_cut=list(pair_r_max)[0],
             exclusions=exclusions,
             nlist=nlist,
-            nlist_buffer=nlist_buffer
+            nlist_buffer=nlist_buffer,
         )
 
     def _create_forcefield(self):
