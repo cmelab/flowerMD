@@ -63,7 +63,7 @@ class ScaleEpsilon(hoomd.custom.Action):
         self.sim = sim
 
     def act(self, timestep):
-        self.sim.adjust_epsilon(shift_by=self.scale_factor)
+        self.sim.adjust_epsilon(scale_by=self.scale_factor)
 
 
 class ScaleSigma(hoomd.custom.Action):
@@ -72,5 +72,22 @@ class ScaleSigma(hoomd.custom.Action):
         self.sim = sim
 
     def act(self, timestep):
-        self.sim.adjust_sigma(shift_by=self.scale_factor)
-        self.sim._lj_force()
+        self.sim.adjust_sigma(scale_by=self.scale_factor)
+
+
+class ShiftEpsilon(hoomd.custom.Action):
+    def __init__(self, sim, shift_by):
+        self.shift_by = shift_by
+        self.sim = sim
+
+    def act(self, timestep):
+        self.sim.adjust_epsilon(shift_by=self.shift_by)
+
+
+class ShiftSigma(hoomd.custom.Action):
+    def __init__(self, sim, shift_by):
+        self.shift_by = shift_by
+        self.sim = sim
+
+    def act(self, timestep):
+        self.sim.adjust_sigma(shift_by=self.shift_by)
