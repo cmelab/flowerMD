@@ -387,21 +387,27 @@ class Simulation(hoomd.simulation.Simulation):
     @property
     def nlist(self):
         """The neighbor list used by the Lennard-Jones pair force."""
-        return self._lj_force().nlist
+        return list(
+            set(i.nlist for i in self._pair_force() if hasattr(i, "nlist"))
+        )
 
     @nlist.setter
-    def nlist(self, hoomd_nlist, buffer=0.4):
-        """Set the neighbor list used by the Lennard-Jones pair force.
+    def nlist(self, hoomd_nlist):
+        """Set the neighbor list used by the pair forces currently present in the simulation.
+
+        Notes
+        -----
+        The neighbor list cannot be udpated after the simulation has already ran.
 
         Parameters
         ----------
         hoomd_nlist : hoomd.md.nlist.NeighborList, required
-            The neighbor list to use.
-        buffer : float,  default 0.4
-            The buffer width to use for the neighbor list.
-
+            The neighbor list to use. This must be an already
+            created instance of hoomd.md.nlist.NeighborList.
         """
-        self._lj_force().nlist = hoomd_nlist(buffer)
+        for force in self._pair_force():
+            if hasattr(force, "nlist"):
+                force.nlist = hoomd_nlist
 
     @property
     def dt(self):
@@ -528,15 +534,19 @@ class Simulation(hoomd.simulation.Simulation):
             A list of particle pair types to apply the adjustment to.
 
         """
-        lj_forces = self._lj_force()
-        for k in lj_forces.params.keys():
-            if type_filter and k not in type_filter:
-                continue
-            epsilon = lj_forces.params[k]["epsilon"]
-            if scale_by:
-                lj_forces.params[k]["epsilon"] = epsilon * scale_by
-            elif shift_by:
-                lj_forces.params[k]["epsilon"] = epsilon + shift_by
+        forces = self._pair_force()
+        for force in forces:
+            for k in force.params.keys():
+                if type_filter and k not in type_filter:
+                    continue
+                try:
+                    epsilon = force.params[k]["epsilon"]
+                except KeyError:
+                    continue
+                if scale_by:
+                    force.params[k]["epsilon"] = epsilon * scale_by
+                elif shift_by:
+                    force.params[k]["epsilon"] = epsilon + shift_by
 
     def adjust_sigma(self, scale_by=None, shift_by=None, type_filter=None):
         """Adjust the sigma parameter of the Lennard-Jones pair force.
@@ -551,15 +561,20 @@ class Simulation(hoomd.simulation.Simulation):
             A list of particle pair types to apply the adjustment to.
 
         """
-        lj_forces = self._lj_force()
-        for k in lj_forces.params.keys():
-            if type_filter and k not in type_filter:
-                continue
-            sigma = lj_forces.params[k]["sigma"]
-            if scale_by:
-                lj_forces.params[k]["sigma"] = sigma * scale_by
-            elif shift_by:
-                lj_forces.params[k]["sigma"] = sigma + shift_by
+        forces = self._pair_force()
+        for force in forces:
+            for k in force.params.keys():
+                if type_filter and k not in type_filter:
+                    continue
+                try:
+                    epsilon = force.params[k]["epsilon"]
+                except KeyError:
+                    continue
+                epsilon = force.params[k]["sigma"]
+                if scale_by:
+                    force.params[k]["sigma"] = epsilon * scale_by
+                elif shift_by:
+                    force.params[k]["sigma"] = epsilon + shift_by
 
     def _initialize_thermostat(self, thermostat_kwargs):
         """Initialize the thermostat used by the simulation.
@@ -1223,21 +1238,21 @@ class Simulation(hoomd.simulation.Simulation):
                 filter=self.integrate_group, kT=kT
             )
 
-    def _lj_force(self):
-        """Return the Lennard-Jones pair force."""
+    def _pair_force(self):
+        """Return the pair force(s) currently in the forcefield.
+        This includes any instance that inherits from `hoomd.md.pair.Pair`.
+        """
         if not self.integrator:
-            lj_force = [
-                f
-                for f in self._forcefield
-                if isinstance(f, hoomd.md.pair.pair.LJ)
-            ][0]
+            forces = [
+                f for f in self._forcefield if isinstance(f, hoomd.md.pair.Pair)
+            ]
         else:
-            lj_force = [
+            forces = [
                 f
                 for f in self.integrator.forces
-                if isinstance(f, hoomd.md.pair.pair.LJ)
-            ][0]
-        return lj_force
+                if isinstance(f, hoomd.md.pair.Pair)
+            ]
+        return forces
 
     def _create_integrate_group(self, rigid):
         if rigid:

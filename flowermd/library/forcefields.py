@@ -95,6 +95,11 @@ class KremerGrestBeadSpring(BaseHOOMDForcefield):
         Energy scale in the 12-6 Lennard-Jones pair force.
     bead_name : str, optional, default "A"
         Particle names in the bead-spring system.
+    nlist : type, default hoomd.md.nlist.Cell
+        A class (not an instance) of the HOOMD neighbor list
+        to use for the pair force.
+    nlist_buffer : float, default 0.40
+        The buffer value (distance) used by the neighbor list.
 
     Notes
     -----
@@ -118,6 +123,8 @@ class KremerGrestBeadSpring(BaseHOOMDForcefield):
         sigma=1.0,
         epsilon=1.0,
         bead_name="A",
+        nlist=hoomd.md.nlist.Cell,
+        nlist_buffer=0.40,
     ):
         self.bond_k = bond_k
         self.bond_max = bond_max
@@ -128,6 +135,8 @@ class KremerGrestBeadSpring(BaseHOOMDForcefield):
         self.r_cut = 2 ** (1 / 6) * self.sigma
         self.bond_type = f"{self.bead_name}-{self.bead_name}"
         self.pair = (self.bead_name, self.bead_name)
+        self.nlist = nlist
+        self.nlist_buffer = nlist_buffer
         hoomd_forces = self._create_forcefield()
         super(KremerGrestBeadSpring, self).__init__(hoomd_forces)
 
@@ -135,7 +144,7 @@ class KremerGrestBeadSpring(BaseHOOMDForcefield):
         """Create the hoomd force objects."""
         forces = []
         # Create pair force:
-        nlist = hoomd.md.nlist.Cell(buffer=0.40, exclusions=["bond"])
+        nlist = self.nlist(buffer=self.nlist_buffer, exclusions=["bond"])
         lj = hoomd.md.pair.LJ(nlist=nlist)
         lj.params[self.pair] = dict(epsilon=self.epsilon, sigma=self.sigma)
         lj.r_cut[self.pair] = self.r_cut
@@ -182,6 +191,11 @@ class BeadSpring(BaseHOOMDForcefield):
         A dictionary of dihedral types separated by a dash. Each dihedral type
         should be a dictionary with the keys "phi0", "k", "d", and "n" that
         correspond to the periodic dihedral parameters.
+    nlist : type, default hoomd.md.nlist.Cell
+        A class (not an instance) of the HOOMD neighbor list
+        to use for the pair force.
+    nlist_buffer : float, default 0.40
+        The buffer value (distance) used by the neighbor list.
     exclusions : list, default ["bond", "1-3"]
         A list of exclusions to use in the neighbor list. The default is to
         exclude bonded and 1-3 interactions.
@@ -210,6 +224,8 @@ class BeadSpring(BaseHOOMDForcefield):
         bonds=None,
         angles=None,
         dihedrals=None,
+        nlist=hoomd.md.nlist.Cell,
+        nlist_buffer=0.40,
         exclusions=["bond", "1-3"],
     ):
         self.beads = beads
@@ -217,6 +233,8 @@ class BeadSpring(BaseHOOMDForcefield):
         self.angles = angles
         self.dihedrals = dihedrals
         self.r_cut = r_cut
+        self.nlist = nlist
+        self.nlist_buffer = nlist_buffer
         self.exclusions = exclusions
         hoomd_forces = self._create_forcefield()
         super(BeadSpring, self).__init__(hoomd_forces)
@@ -225,7 +243,7 @@ class BeadSpring(BaseHOOMDForcefield):
         """Create the hoomd force objects."""
         forces = []
         # Create pair force:
-        nlist = hoomd.md.nlist.Cell(buffer=0.40, exclusions=self.exclusions)
+        nlist = self.nlist(buffer=self.nlist_buffer, exclusions=self.exclusions)
         lj = hoomd.md.pair.LJ(nlist=nlist)
         bead_types = [key for key in self.beads.keys()]
         all_pairs = list(itertools.combinations_with_replacement(bead_types, 2))
@@ -292,6 +310,11 @@ class TableForcefield(BaseHOOMDForcefield):
         Sets the r_min value for hoomd.md.pair.Table parameters.
     r_max : float, optional, default None
         Sets the r cutoff value for hoomd.md.pair.Table parameters.
+    nlist : type, default hoomd.md.nlist.Cell
+        A class (not an instance) of the HOOMD neighbor list
+        to use for the pair force.
+    nlist_buffer : float, default 0.40
+        The buffer value (distance) used by the neighbor list.
     exclusions : list of str, optional, default ["bond", "1-3"]
         Sets exclusions for hoomd.md.pair.Table neighbor list.
 
@@ -307,8 +330,9 @@ class TableForcefield(BaseHOOMDForcefield):
         dihedrals=None,
         r_min=None,
         r_cut=None,
-        exclusions=["bond", "1-3"],
+        nlist=hoomd.md.nlist.Cell,
         nlist_buffer=0.40,
+        exclusions=["bond", "1-3"],
     ):
         self.pairs = pairs
         self.bonds = bonds
@@ -317,6 +341,7 @@ class TableForcefield(BaseHOOMDForcefield):
         self.r_min = r_min
         self.r_cut = r_cut
         self.exclusions = exclusions
+        self.nlist = nlist
         self.nlist_buffer = nlist_buffer
         self.bond_width, self.angle_width, self.dih_width = self._check_widths()
         hoomd_forces = self._create_forcefield()
@@ -330,6 +355,7 @@ class TableForcefield(BaseHOOMDForcefield):
         angles=None,
         dihedrals=None,
         exclusions=["bond", "1-3"],
+        nlist=hoomd.md.nlist.Cell,
         nlist_buffer=0.40,
         **kwargs,
     ):
@@ -465,13 +491,15 @@ class TableForcefield(BaseHOOMDForcefield):
             r_min=list(pair_r_min)[0],
             r_cut=list(pair_r_max)[0],
             exclusions=exclusions,
+            nlist=nlist,
+            nlist_buffer=nlist_buffer,
         )
 
     def _create_forcefield(self):
         forces = []
         # Create pair forces
         if self.pairs:
-            nlist = hoomd.md.nlist.Cell(
+            nlist = self.nlist(
                 buffer=self.nlist_buffer, exclusions=self.exclusions
             )
             pair_table = hoomd.md.pair.Table(
@@ -592,6 +620,11 @@ class EllipsoidForcefield(BaseHOOMDForcefield):
         Spring constant in harmonic bond.
     bond_r0: float, required
         Equilibrium distance between 2 ellipsoid tips.
+    nlist : type, default hoomd.md.nlist.Cell
+        A class (not an instance) of the HOOMD neighbor list
+        to use for the pair force.
+    nlist_buffer : float, default 0.40
+        The buffer value (distance) used by the neighbor list.
 
     """
 
@@ -605,6 +638,8 @@ class EllipsoidForcefield(BaseHOOMDForcefield):
         angle_theta0=None,
         bond_k=100,
         bond_r0=0.1,
+        nlist=hoomd.md.nlist.Cell,
+        nlist_buffer=0.40,
     ):
         self.epsilon = epsilon
         self.lperp = lperp
@@ -614,6 +649,8 @@ class EllipsoidForcefield(BaseHOOMDForcefield):
         self.angle_theta0 = angle_theta0
         self.bond_k = bond_k
         self.bond_r0 = bond_r0
+        self.nlist = nlist
+        self.nlist_buffer = nlist_buffer
         hoomd_forces = self._create_forcefield()
         super(EllipsoidForcefield, self).__init__(hoomd_forces)
 
@@ -631,7 +668,7 @@ class EllipsoidForcefield(BaseHOOMDForcefield):
             angle.params["A-X-A"] = dict(k=0, t0=0)
             forces.append(angle)
         # Gay-Berne Pairs
-        nlist = hoomd.md.nlist.Cell(buffer=0.40, exclusions=["body"])
+        nlist = self.nlist(buffer=self.nlist_buffer, exclusions=["body"])
         gb = hoomd.md.pair.aniso.GayBerne(nlist=nlist, default_r_cut=self.r_cut)
         gb.params[("X", "X")] = dict(
             epsilon=self.epsilon, lperp=self.lperp, lpar=self.lpar
@@ -695,6 +732,11 @@ class EllipsoidFF_DPD(BaseHOOMDForcefield):
         Spring constant in harmonic bond.
     bond_r0: float, required
         Equilibrium distance between 2 ellipsoid tips.
+    nlist : type, default hoomd.md.nlist.Cell
+        A class (not an instance) of the HOOMD neighbor list
+        to use for the pair force.
+    nlist_buffer : float, default 0.40
+        The buffer value (distance) used by the neighbor list.
 
     """
 
@@ -711,6 +753,8 @@ class EllipsoidFF_DPD(BaseHOOMDForcefield):
         angle_theta0=None,
         bond_k=100,
         bond_r0=1.1,
+        nlist=hoomd.md.nlist.Cell,
+        nlist_buffer=0.40,
     ):
         self.epsilon = epsilon
         self.lpar = lpar
@@ -723,6 +767,8 @@ class EllipsoidFF_DPD(BaseHOOMDForcefield):
         self.angle_theta0 = angle_theta0
         self.bond_k = bond_k
         self.bond_r0 = bond_r0
+        self.nlist = nlist
+        self.nlist_buffer = nlist_buffer
         hoomd_forces = self._create_forcefield()
         super(EllipsoidFF_DPD, self).__init__(hoomd_forces)
 
@@ -740,7 +786,7 @@ class EllipsoidFF_DPD(BaseHOOMDForcefield):
             angle.params["A-X-A"] = dict(k=0, t0=0)
             forces.append(angle)
         # DPD Pairs
-        nlist = hoomd.md.nlist.Cell(buffer=0.40, exclusions=["body"])
+        nlist = self.nlist(buffer=self.nlist_buffer, exclusions=["body"])
         dpd = hoomd.md.pair.DPD(
             nlist=nlist, kT=self.kT, default_r_cut=self.r_cut
         )
