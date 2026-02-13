@@ -82,7 +82,7 @@ class Interface:
         interface.dihedrals.M = 4
         interface.pairs.N = snap_L.pairs.N + snap_R.pairs.N
         # Box edge is doubled along the interface axis plus the gap
-        axis_index = np.where(self.interface_axis != 0)[0]
+        axis_index = np.where(np.atleast_1d(self.interface_axis != 0))[0]
         interface.configuration.box = np.copy(snap_L.configuration.box)
         interface.configuration.box[axis_index] *= 2
         interface.configuration.box[axis_index] += self.gap - self.wall_sigma

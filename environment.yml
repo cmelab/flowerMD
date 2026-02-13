@@ -3,13 +3,13 @@ channels:
   - conda-forge
 dependencies:
   - foyer >=1.0
-  - freud >=3.0
-  - gmso >=0.13.0
+  - freud >=3.4
+  - gmso >=0.15.0
   - gsd >=3.0
   - grits >=0.5.1
   - hoomd>=5.0,!=5.3.0
   - mbuild >=1.0
-  - numpy <2.0
+  - numpy >=2.0
   - openbabel >=3
   - pip
   - py3Dmol
