@@ -523,3 +523,121 @@ class EllipsoidChainRand(Polymer):
                 if d[i] > pos_range[i]:
                     d[i] -= pos_range[i]
         return d
+
+
+class TriangleChain(Polymer):
+    """Create an rigid body model of a polymer chain with two anchor points for backmapping.
+    Parameters
+    ----------
+    lengths : int, required
+        The number of monomer repeat units in the chain.
+    num_mols : int, required
+        The number of chains to create.
+    bead_mass : float, required
+        The mass of the ellipsoid bead.
+    com_pos : tuple (3,)
+    anchor_1_pos : tuple (3,)
+    anchor_2_pos : tuple (3,)
+    name : str, default 'triangle_chain'
+        The name of the polymer. Setting the name is
+        important for using the `speedup_by_moltag=True`
+        parameter with polydisperse systems, or other
+        mixtures. This helps improve performance
+        for large systems.
+
+
+    anchor_1            anchor_2
+               com_pos
+    """
+
+    def __init__(
+        self,
+        lengths,
+        num_mols,
+        density,
+        bead_mass,
+        com_pos,
+        anchor_1_pos,
+        anchor_2_pos,
+        bond_L_A,
+        bond_L_C,
+        name="triangle_chain",
+    ):
+        self.bead_mass = bead_mass
+        self.density = density
+        N = lengths * num_mols
+        L = np.cbrt(N / self.density)
+        self.L = L
+        self.box = mb.Box(lengths=np.array([L] * 3))
+        self.com_pos = com_pos
+        self.anchor_1_pos = anchor_1_pos
+        self.anchor_2_pos = anchor_2_pos
+        self.bond_L_A = bond_L_A
+        self.bond_L_C = bond_L_C
+        # get the indices of the particles in a rigid body
+        self.bead_constituents_types = ["A1", "A2", "X"]
+        super(TriangleChain, self).__init__(
+            lengths=lengths, num_mols=num_mols, name=name
+        )
+
+    def _build(self, length):
+        # Build bead
+        bead = mb.Compound(name="anchor_triangle")
+        center = mb.Compound(pos=self.com_pos, name="X", mass=self.bead_mass)
+        anchor_1 = mb.Compound(
+            pos=self.anchor_1_pos, name="A1", mass=self.bead_mass
+        )
+        anchor_2 = mb.Compound(
+            pos=self.anchor_2_pos, name="A2", mass=self.bead_mass
+        )
+        bead.add([anchor_1, anchor_2, center])
+        bead.add_bond([anchor_1, center])
+        bead.add_bond([anchor_2, center])
+
+        chain = mb.Compound()
+        last_bead = None
+        # calculating furthest anchor point for walk step distance
+        r_1 = np.linalg.norm(
+            (np.array(self.com_pos)) - (np.array(self.anchor_1_pos))
+        )
+        r_2 = np.linalg.norm(
+            (np.array(self.com_pos)) - (np.array(self.anchor_2_pos))
+        )
+        radius = max(r_1, r_2)
+        self.radius = radius
+        rand_range = (self.L / 2) - radius
+        for i in range(length):
+            translate_by = np.random.uniform(low=-1, high=1, size=(3,))
+            translate_by /= np.linalg.norm(translate_by) * self.bond_L_C
+            this_bead = mb.clone(bead)
+
+            if last_bead:
+                chain.add_bond([this_bead.children[2], last_bead.children[2]])
+                chain.add_bond([this_bead.children[0], last_bead.children[1]])
+                this_bead.translate(
+                    by=self.pbc(
+                        translate_by + last_bead.pos,
+                        pos_range=([rand_range] * 3),
+                    )
+                )
+            else:
+                translate_by = np.random.uniform(
+                    low=-rand_range, high=rand_range, size=(3,)
+                )
+                this_bead.translate(
+                    by=self.pbc(translate_by, pos_range=([rand_range] * 3))
+                )
+            chain.add(this_bead)
+            last_bead = this_bead
+        chain.name = f"{self.name}_{length}mer"
+        return chain
+
+    def pbc(self, d, pos_range):
+        """Periodic boundary conditions for a reduced box considering position of A beads."""
+        for i in range(3):
+            while d[i] > pos_range[i] or d[i] < -(pos_range[i]):
+                if d[i] < -pos_range[i]:
+                    d[i] += pos_range[i]
+                if d[i] > pos_range[i]:
+                    d[i] -= pos_range[i]
+        return d
