@@ -2,17 +2,9 @@
     <FFMetaData combiningRule="lorentz">
         <Units energy="kJ/mol" distance="nm" mass="amu" time="s" charge="coulomb"/>
     </FFMetaData>
-    <AtomTypes name="HOOMDDPDForce" expression="A*(-r/r_cut + 1) - γ">
-        <ParametersUnitDef parameter="A" unit="N"/>
-        <ParametersUnitDef parameter="r_cut" unit="nm"/>
-        <ParametersUnitDef parameter="γ" unit="amu/s"/>
-        <AtomType name="_A" element="_A" atomclass="_A" mass="1.0" charge="0.0" definition="_A" description="CG Bead">
-            <Parameters>
-                <Parameter name="A" value="40.0"/>
-	            <Parameter name="r_cut" value="1.0"/>
-	            <Parameter name="γ" value="8.0"/>
-            </Parameters>
-        </AtomType>
+    <AtomTypes>
+       <AtomType name="_A" element="_A" atomclass="_A" mass="1.0" charge="0.0" definition="_A" description="CG Bead"/>
+       <AtomType name="_B" element="_B" atomclass="_B" mass="1.0" charge="0.0" definition="_B" description="CG Bead"/>
     </AtomTypes>
     <BondTypes expression="0.5 * k * (r-r_eq)**2">
         <ParametersUnitDef parameter="r_eq" unit="nm"/>
@@ -34,18 +26,45 @@
             </Parameters>
         </AngleType>
     </AngleTypes>
-    <DihedralTypes expression="0.5 * k * (1 + d * cos(n*phi-phi0))">
-        <ParametersUnitDef parameter="phi0" unit="radian"/>
+    <DihedralTypes expression="0.5 * k * (1 + d * cos(n*phi-phi_eq))">
+        <ParametersUnitDef parameter="phi_eq" unit="radian"/>
         <ParametersUnitDef parameter="k" unit="kJ/mol"/>
         <ParametersUnitDef parameter="d" unit="dimensionless"/>
         <ParametersUnitDef parameter="n" unit="dimensionless"/>
         <DihedralType name="HOOMDPeriodicDihedralPotential" type1="_A" type2="_A" type3="_A" type4="_A">
             <Parameters>
-                <Parameter name="phi0" value="0"/>
+                <Parameter name="phi_eq" value="0"/>
                 <Parameter name="k" value="10"/>
                 <Parameter name="d" value="-1"/>
                 <Parameter name="n" value="3"/>
             </Parameters>
         </DihedralType>
     </DihedralTypes>
+
+  <PairPotentialTypes expression="A * (1-(r/r_cut)) - γ">
+    <ParametersUnitDef parameter="A" unit="N"/>
+    <ParametersUnitDef parameter="r_cut" unit="nm"/>
+    <ParametersUnitDef parameter="γ" unit="amu/s/nm"/>
+    <PairPotentialType name="HOOMDDPDForce" type1="_A" type2="_A">
+        <Parameters>
+            <Parameter name="A" value="40.0"/>
+	    <Parameter name="r_cut" value="1.0"/>
+	    <Parameter name="γ" value="8.0"/>
+        </Parameters>
+    </PairPotentialType>
+    <PairPotentialType name="HOOMDDPDForce" type1="_A" type2="_B">
+        <Parameters>
+            <Parameter name="A" value="20.0"/>
+	    <Parameter name="r_cut" value="1.0"/>
+	    <Parameter name="γ" value="1.0"/>
+        </Parameters>
+    </PairPotentialType>
+    <PairPotentialType name="HOOMDDPDForce" type1="_B" type2="_B">
+        <Parameters>
+            <Parameter name="A" value="20.0"/>
+	    <Parameter name="r_cut" value="1.0"/>
+	    <Parameter name="γ" value="1.0"/>
+        </Parameters>
+    </PairPotentialType>
+  </PairPotentialTypes>
 </ForceField>
