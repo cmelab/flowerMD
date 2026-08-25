@@ -16,7 +16,8 @@ class DPDInit(Simulation):
         A,
         r,
         r_cut,
-        N,
+        num_pol,
+        num_mon,
         sim_steps_incr,
         box,
         reference_values=dict(),
@@ -31,7 +32,8 @@ class DPDInit(Simulation):
         self.A = A
         self.r = r
         self.r_cut = r_cut
-        self.N = N
+        self.num_pol = num_pol
+        self.num_mon = num_mon
         self.sim_steps_incr = sim_steps_incr
         self.L = box
         super(DPDInit, self).__init__(
@@ -52,8 +54,9 @@ class DPDInit(Simulation):
             A=self.A,
             r=self.r,
             r_cut=self.r_cut,
-            N=self.N,
-            L=self.L,
+            num_pol=self.num_pol,
+            num_mon=self.num_mon,
+            density=(self.L**3),
             log_file_name=self.log_file_name,
         ):
             self.run_NVE(n_steps=self.sim_steps_incr)

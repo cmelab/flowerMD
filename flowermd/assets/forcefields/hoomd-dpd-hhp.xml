@@ -26,16 +26,14 @@
             </Parameters>
         </AngleType>
     </AngleTypes>
-    <DihedralTypes expression="0.5 * k * (1 + d * cos(n*phi-phi_eq))">
+    <DihedralTypes expression="k * (1 + cos(n*phi-phi_eq))">
         <ParametersUnitDef parameter="phi_eq" unit="radian"/>
         <ParametersUnitDef parameter="k" unit="kJ/mol"/>
-        <ParametersUnitDef parameter="d" unit="dimensionless"/>
         <ParametersUnitDef parameter="n" unit="dimensionless"/>
-        <DihedralType name="HOOMDPeriodicDihedralPotential" type1="_A" type2="_A" type3="_A" type4="_A">
+        <DihedralType name="PeriodicTorsionPotential" type1="_A" type2="_A" type3="_A" type4="_A">
             <Parameters>
                 <Parameter name="phi_eq" value="0"/>
                 <Parameter name="k" value="10"/>
-                <Parameter name="d" value="-1"/>
                 <Parameter name="n" value="3"/>
             </Parameters>
         </DihedralType>
