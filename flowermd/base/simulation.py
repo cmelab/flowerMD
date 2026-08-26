@@ -642,9 +642,7 @@ class Simulation(hoomd.simulation.Simulation):
 
         """
         if not self.integrator:
-            raise ValueError(
-                "Define your integrator before calling FIRE."
-            )
+            raise ValueError("Define your integrator before calling FIRE.")
         else:
             new_method = integrator_method(**method_kwargs)
             new_method.methods.append(self.integrator)
@@ -1068,8 +1066,8 @@ class Simulation(hoomd.simulation.Simulation):
         self,
         n_steps,
         dt=dt,
-        force_tol=1e-1, 
-        angmom_tol=1000, 
+        force_tol=1e-1,
+        angmom_tol=1000,
         energy_tol=1e-1,
         write_at_start=False,
     ):
