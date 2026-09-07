@@ -29,7 +29,7 @@ class DropletSimulation(Simulation):
         log_file_name="log.txt",
         thermostat=HOOMDThermostats.MTTK,
     ):
-        super(DropletSimulation, self).__init__(
+        super().__init__(
             initial_state=initial_state,
             forcefield=forcefield,
             reference_values=reference_values,
@@ -450,7 +450,7 @@ class WettingSimulation(Simulation):
         thermostat=HOOMDThermostats.MTTK,
     ):
         self._fix_surface = fix_surface
-        super(WettingSimulation, self).__init__(
+        super().__init__(
             initial_state=initial_state,
             forcefield=forcefield,
             reference_values=reference_values,

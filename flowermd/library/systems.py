@@ -23,9 +23,7 @@ class SingleChainSystem(System):
 
     def __init__(self, molecules, base_units=dict(), buffer=1.05):
         self.buffer = buffer
-        super(SingleChainSystem, self).__init__(
-            molecules=molecules, base_units=base_units
-        )
+        super().__init__(molecules=molecules, base_units=base_units)
 
     def _build_system(self):
         if len(self.all_molecules) > 1:
@@ -53,9 +51,7 @@ class mbuildSystem(System):
 
     def __init__(self, molecules, base_units=dict()):
         self.box_temp = molecules.box
-        super(mbuildSystem, self).__init__(
-            molecules=molecules, base_units=base_units
-        )
+        super().__init__(molecules=molecules, base_units=base_units)
 
     def _build_system(self):
         chain = self.all_molecules
