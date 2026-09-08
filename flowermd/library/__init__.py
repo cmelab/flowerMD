@@ -30,5 +30,6 @@ from .polymers import (
     PolyEthylene,
 )
 from .simulations.tensile import Tensile
+from .simulations.phantom_walk import PhantomWalk
 from .surfaces import Graphene
 from .systems import RandomWalk, SingleChainSystem, mbuildSystem

@@ -1065,7 +1065,7 @@ class Simulation(hoomd.simulation.Simulation):
     def run_FIRE(
         self,
         n_steps,
-        dt=dt,
+        dt,
         force_tol=1e-1,
         angmom_tol=1000,
         energy_tol=1e-1,
@@ -1084,10 +1084,9 @@ class Simulation(hoomd.simulation.Simulation):
             time step.
 
         """
-        self.set_integrator_minimizer(
+        self.set_integrator_method(
             integrator_method=hoomd.md.minimize.FIRE,
             method_kwargs={
-                "filter": self.integrate_group,
                 "dt": dt,
                 "force_tol": force_tol,
                 "angmom_tol": angmom_tol,
