@@ -626,7 +626,7 @@ class Simulation(hoomd.simulation.Simulation):
             new_method = integrator_method(**method_kwargs)
             self.integrator.methods.append(new_method)
 
-    def set_integrator_minimizer(self, integrator_method, method_kwargs):
+    def set_integrator_minimizer(self, integrator_kwargs, integrator_method, method_kwargs):
         """Update the existing integrator method to add an energy minimizer function.
 
         This doesn't need to be called directly;
@@ -641,13 +641,18 @@ class Simulation(hoomd.simulation.Simulation):
             A diction of parameter:value for the integrator method used.
 
         """
-        if not self.integrator:
-            raise ValueError("Define your integrator before calling FIRE.")
-        else:
-            new_method = integrator_method(**method_kwargs)
-            new_method.methods.append(self.integrator)
-            new_method.forces.append(self._forcefield)
-            self.operations.integrator.methods = [new_method]
+        self.integrator.methods.remove(self.method)
+        fire = hoomd.md.minimize.FIRE(
+            dt=self.dt,
+            **integrator_kwargs,
+        )
+        new_method = integrator_method(**method_kwargs)
+        fire.methods.append(new_method)
+        fire.forces.extend(self._forcefield)
+        self.integrator = fire
+        self.operations.add(self.integrator)
+        self.operations.integrator.methods = [new_method]
+
 
     def add_walls(self, wall_axis, sigma, epsilon, r_cut, r_extrap=0):
         """Add `hoomd.md.external.wall.LJ` forces to the simulation.
@@ -1084,14 +1089,15 @@ class Simulation(hoomd.simulation.Simulation):
             time step.
 
         """
-        self.set_integrator_method(
-            integrator_method=hoomd.md.minimize.FIRE,
-            method_kwargs={
-                "dt": dt,
+        self.set_integrator_minimizer(
+            integrator_kwargs={
                 "force_tol": force_tol,
                 "angmom_tol": angmom_tol,
                 "energy_tol": energy_tol,
             },
+            integrator_method=hoomd.md.methods.ConstantVolume,
+            method_kwargs={"filter": self.integrate_group},
+            
         )
         std_out_logger = StdOutLogger(n_steps=n_steps, sim=self)
         std_out_logger_printer = hoomd.update.CustomUpdater(
