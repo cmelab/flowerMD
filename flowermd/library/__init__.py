@@ -29,7 +29,7 @@ from .polymers import (
     PEKK_para,
     PolyEthylene,
 )
-from .simulations.tensile import Tensile
 from .simulations.phantom_walk import PhantomWalk
+from .simulations.tensile import Tensile
 from .surfaces import Graphene
 from .systems import RandomWalk, SingleChainSystem, mbuildSystem

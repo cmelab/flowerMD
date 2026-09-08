@@ -3,11 +3,10 @@
 import hoomd
 
 from flowermd.base.simulation import Simulation
-from flowermd.utils.dpd_utils import simulation_energy_end
 
 
 class PhantomWalk(Simulation):
-    """ Run an initial energy relaxation of overlapping particles with DPD."""
+    """Run an initial energy relaxation of overlapping particles with DPD."""
 
     def __init__(
         self,
@@ -38,9 +37,8 @@ class PhantomWalk(Simulation):
             log_write_freq=log_write_freq,
             log_file_name=log_file_name,
         )
-        self.run_NVE(n_steps=self.n_steps_dpd,write_at_start=False)
-        self.run_FIRE(n_steps=self.n_steps_fire,dt=self.dt)
+        self.run_NVE(n_steps=self.n_steps_dpd, write_at_start=False)
+        self.run_FIRE(n_steps=self.n_steps_fire, dt=self.dt)
         for writer in self.operations.writers:
             if hasattr(writer, "flush"):
                 writer.flush()
-        
