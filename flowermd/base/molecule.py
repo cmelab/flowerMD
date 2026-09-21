@@ -4,7 +4,6 @@ import itertools
 import os.path
 import random
 import warnings
-from typing import List
 
 import mbuild as mb
 import numpy as np
@@ -200,7 +199,7 @@ class Molecule:
             else:
                 raise MoleculeLoadError(
                     msg=f"Unsupported compound type {type(self.compound)}. "
-                    f"Supported compound types are: {str(mb.Compound)}"
+                    f"Supported compound types are: {mb.Compound!s}"
                 )
         if self.file:
             if isinstance(self.file, str) and os.path.isfile(self.file):
@@ -453,7 +452,7 @@ class Molecule:
             _validate_hoomd_ff(
                 self.force_field.hoomd_forces, self.topology_information
             )
-        elif isinstance(self.force_field, List):
+        elif isinstance(self.force_field, list):
             _validate_hoomd_ff(self.force_field, self.topology_information)
         else:
             raise ForceFieldError(
@@ -528,7 +527,7 @@ class Polymer(Molecule):
         num_mols = check_return_iterable(num_mols)
         if len(num_mols) != len(self.lengths):
             raise ValueError("Number of molecules and lengths must be equal.")
-        super(Polymer, self).__init__(
+        super().__init__(
             num_mols=num_mols,
             smiles=smiles,
             file=file,
@@ -640,7 +639,7 @@ class CoPolymer(Molecule):
         self.smiles = [self.monomer_A.smiles, self.monomer_B.smiles]
         self.file = [self.monomer_A.file, self.monomer_B.file]
         random.seed(self.seed)
-        super(CoPolymer, self).__init__(
+        super().__init__(
             num_mols=num_mols,
             smiles=self.smiles,
             name=name,
