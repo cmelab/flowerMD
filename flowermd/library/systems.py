@@ -1,10 +1,11 @@
 """Examples for the Systems class."""
 
+import warnings
+
 import mbuild as mb
 import numpy as np
 import unyt as u
 from scipy.spatial.distance import pdist
-import warnings
 
 from flowermd.base.system import System
 from flowermd.utils import (
@@ -181,7 +182,7 @@ class RandomWalk(System):
 
         system = mb.Compound()
         system.add(self.all_molecules)
-        system.xyz = all_positions 
+        system.xyz = all_positions
 
         # Set system box from density calculation
         system.box = mb.box.Box(box_lengths)
