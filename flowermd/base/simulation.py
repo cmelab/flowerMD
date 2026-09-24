@@ -626,10 +626,9 @@ class Simulation(hoomd.simulation.Simulation):
             new_method = integrator_method(**method_kwargs)
             self.integrator.methods.append(new_method)
 
-    def set_integrator_minimizer(
-        self, integrator_kwargs, integrator_method, method_kwargs
-    ):
-        """Update the existing integrator method to add an energy minimizer function.
+
+    def set_fire_minimizer(self, fire_kwargs, integrator_method, method_kwargs):
+        """Update the existing integrator method to add a fire energy minimizer function.
 
         This doesn't need to be called directly;
         instead the various run functions use this method to update
@@ -637,20 +636,23 @@ class Simulation(hoomd.simulation.Simulation):
 
         Parameters
         ----------
-        integrator_method : hoomd.md.minimize, required
-            Instance of one of the `hoomd.md.minimize` options.
+        fire_kwargs: dict, required
+            A dictionary of parameter:value for the fire minimizer function.
+        integrator_method : hoomd.md.method, required
+            Instance of one of the `hoomd.md.method` options.
         method_kwargs : dict, required
-            A diction of parameter:value for the integrator method used.
+            A dictionary of parameter:value for the integrator method used.
 
         """
-        self.integrator.methods.remove(self.method)
         fire = hoomd.md.minimize.FIRE(
             dt=self.dt,
-            **integrator_kwargs,
+            **fire_kwargs,
         )
         new_method = integrator_method(**method_kwargs)
         fire.methods.append(new_method)
         fire.forces.extend(self._forcefield)
+        if self.integrator:
+            self.integrator.methods.remove(self.method)
         self.integrator = fire
         self.operations.add(self.integrator)
         self.operations.integrator.methods = [new_method]
@@ -1090,8 +1092,8 @@ class Simulation(hoomd.simulation.Simulation):
             time step.
 
         """
-        self.set_integrator_minimizer(
-            integrator_kwargs={
+        self.set_fire_minimizer(
+            fire_kwargs={
                 "force_tol": force_tol,
                 "angmom_tol": angmom_tol,
                 "energy_tol": energy_tol,
