@@ -626,7 +626,6 @@ class Simulation(hoomd.simulation.Simulation):
             new_method = integrator_method(**method_kwargs)
             self.integrator.methods.append(new_method)
 
-
     def set_fire_minimizer(self, fire_kwargs, integrator_method, method_kwargs):
         """Update the existing integrator method to add a fire energy minimizer function.
 
