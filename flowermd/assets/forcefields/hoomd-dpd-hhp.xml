@@ -12,7 +12,7 @@
         <BondType name="HarmonicBondPotential" type1="_A" type2="_A">
             <Parameters>
                 <Parameter name="r_eq" value="1.0"/>
-                <Parameter name="k" value="10"/>
+                <Parameter name="k" value="250000"/>
             </Parameters>
         </BondType>
     </BondTypes>
@@ -45,9 +45,9 @@
     <ParametersUnitDef parameter="γ" unit="amu/s/nm"/>
     <PairPotentialType name="HOOMDDPDForce" type1="_A" type2="_A">
         <Parameters>
-            <Parameter name="A" value="40.0"/>
-	    <Parameter name="r_cut" value="1.0"/>
-	    <Parameter name="γ" value="8.0"/>
+            <Parameter name="A" value="250000"/>
+	    <Parameter name="r_cut" value="1.01"/>
+	    <Parameter name="γ" value="1500"/>
         </Parameters>
     </PairPotentialType>
     <PairPotentialType name="HOOMDDPDForce" type1="_A" type2="_B">

@@ -4,6 +4,7 @@ import mbuild as mb
 import numpy as np
 import unyt as u
 from scipy.spatial.distance import pdist
+import warnings
 
 from flowermd.base.system import System
 from flowermd.utils import (
@@ -168,7 +169,6 @@ class RandomWalk(System):
 
         box_lengths = target_box.to_value("nm")
         Lx = box_lengths[0]
-
         rng = np.random.default_rng(self.seed)
         all_positions = self._generate_all_random_walks_vectorized(
             num_molecules=self.n_mols,
@@ -180,13 +180,8 @@ class RandomWalk(System):
         )
 
         system = mb.Compound()
-
-        # Apply positions to all molecules and add to system
-        for idx, chain in enumerate(self.all_molecules):
-            for bead_idx, bead in enumerate(chain):
-                flat_idx = idx * self.lengths + bead_idx
-                bead.translate_to(all_positions[flat_idx])
-            system.add(chain)
+        system.add(self.all_molecules)
+        system.xyz = all_positions 
 
         # Set system box from density calculation
         system.box = mb.box.Box(box_lengths)
