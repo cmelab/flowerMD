@@ -13,7 +13,7 @@ from flowermd.base import BaseHOOMDForcefield, BaseXMLForcefield
 class GAFF(BaseXMLForcefield):
     """General Amber forcefield class."""
 
-    def __init__(self, forcefield_files=f"{FF_DIR}/gaff.xml"):
+    def __init__(self, forcefield_files=f"{FF_DIR}/gaff.xml", gmso_xml=False):
         super(GAFF, self).__init__(forcefield_files=forcefield_files)
         self.description = (
             "The General Amber Forcefield written in foyer XML format. "
@@ -25,7 +25,7 @@ class GAFF(BaseXMLForcefield):
 class OPLS_AA(BaseXMLForcefield):
     """OPLS All Atom forcefield class."""
 
-    def __init__(self, name="oplsaa"):
+    def __init__(self, name="oplsaa", gmso_xml=False):
         super(OPLS_AA, self).__init__(name=name)
         self.description = "opls-aa forcefield found in the Foyer package."
 
@@ -33,7 +33,9 @@ class OPLS_AA(BaseXMLForcefield):
 class OPLS_AA_PPS(BaseXMLForcefield):
     """OPLS All Atom for PPS molecule forcefield class."""
 
-    def __init__(self, forcefield_files=f"{FF_DIR}/pps_opls.xml"):
+    def __init__(
+        self, forcefield_files=f"{FF_DIR}/pps_opls.xml", gmso_xml=False
+    ):
         super(OPLS_AA_PPS, self).__init__(forcefield_files=forcefield_files)
         self.description = (
             "Based on flowermd.forcefields.OPLS_AA. "
@@ -49,7 +51,9 @@ class OPLS_AA_PPS(BaseXMLForcefield):
 class OPLS_AA_BENZENE(BaseXMLForcefield):
     """OPLS All Atom for benzene molecule forcefield class."""
 
-    def __init__(self, forcefield_files=f"{FF_DIR}/benzene_opls.xml"):
+    def __init__(
+        self, forcefield_files=f"{FF_DIR}/benzene_opls.xml", gmso_xml=False
+    ):
         super(OPLS_AA_BENZENE, self).__init__(forcefield_files=forcefield_files)
         self.description = (
             "Based on flowermd.forcefields.OPLS_AA. "
@@ -60,7 +64,11 @@ class OPLS_AA_BENZENE(BaseXMLForcefield):
 class OPLS_AA_DIMETHYLETHER(BaseXMLForcefield):
     """OPLS All Atom for dimethyl ether molecule forcefield class."""
 
-    def __init__(self, forcefield_files=f"{FF_DIR}/dimethylether_opls.xml"):
+    def __init__(
+        self,
+        forcefield_files=f"{FF_DIR}/dimethylether_opls.xml",
+        gmso_xml=False,
+    ):
         super(OPLS_AA_DIMETHYLETHER, self).__init__(
             forcefield_files=forcefield_files
         )
@@ -70,11 +78,23 @@ class OPLS_AA_DIMETHYLETHER(BaseXMLForcefield):
         )
 
 
+class Bead_Spring_DPD(BaseXMLForcefield):
+    """Forcefield class for loading a forcefield from an XML file."""
+
+    def __init__(self, forcefield_files=f"{FF_DIR}/hoomd-dpd-hhp.xml"):
+        super(Bead_Spring_DPD, self).__init__(
+            forcefield_files=forcefield_files, gmso_xml=True
+        )
+        self.description = "DPD forcefield loaded from an XML file."
+
+
 class FF_from_file(BaseXMLForcefield):
     """Forcefield class for loading a forcefield from an XML file."""
 
-    def __init__(self, forcefield_files):
-        super(FF_from_file, self).__init__(forcefield_files=forcefield_files)
+    def __init__(self, forcefield_files, gmso_xml):
+        super(FF_from_file, self).__init__(
+            forcefield_files=forcefield_files, gmso_xml=gmso_xml
+        )
         self.description = "Forcefield loaded from an XML file. "
 
 
@@ -805,5 +825,95 @@ class EllipsoidFF_DPD(BaseHOOMDForcefield):
         ]:
             dpd.params[pair] = dict(A=0, gamma=0.1)
             dpd.params[pair].r_cut = 0.0
+        forces.append(dpd)
+        return forces
+
+
+class DPD(BaseHOOMDForcefield):
+    """A DPD forcefield to use with bead-spring systems.
+
+    Notes
+    -----
+    This is designed to be used with `flowermd.library.polymers.LJChain`
+
+    The set of interactions are:
+    1. `hoomd.md.bond.Harmonic`
+    3. `hoomd.md.pair.DPD`
+
+    Parameters
+    ----------
+    epsilon : float, required
+        energy
+    lpar: float, required
+        Semi-axis length of the ellipsoid along the major axis.
+    lperp : float, required
+        Semi-axis length of the ellipsoid along the minor axis.
+    A : int, required
+        DPD pair-wise drag force coefficient
+    gamma : int, required
+        DPD pair-wise random force coefficient
+    kT : float, required
+        Temperature used in pair-wise drag force
+    r_cut : float, required
+        Cut off radius for pair interactions
+    angle_k : float, required
+        Spring constant in harmonic angle.
+    angle_theta0: float, required
+        Equilibrium angle between 2 consecutive beads.
+    bond_k : float, required
+        Spring constant in harmonic bond.
+    bond_r0: float, required
+        Equilibrium distance between 2 ellipsoid tips.
+    nlist : type, default hoomd.md.nlist.Cell
+        A class (not an instance) of the HOOMD neighbor list
+        to use for the pair force.
+    nlist_buffer : float, default 0.40
+        The buffer value (distance) used by the neighbor list.
+
+    """
+
+    def __init__(
+        self,
+        A,
+        gamma,
+        kT,
+        r_cut,
+        angle_k=None,
+        angle_theta0=None,
+        bond_k=100,
+        bond_r0=1.1,
+        nlist=hoomd.md.nlist.Cell,
+        nlist_buffer=0.40,
+    ):
+        self.gamma = gamma
+        self.A = A
+        self.kT = kT
+        self.r_cut = r_cut
+        self.angle_k = angle_k
+        self.angle_theta0 = angle_theta0
+        self.bond_k = bond_k
+        self.bond_r0 = bond_r0
+        self.nlist = nlist
+        self.nlist_buffer = nlist_buffer
+        hoomd_forces = self._create_forcefield()
+        super(DPD, self).__init__(hoomd_forces)
+
+    def _create_forcefield(self):
+        forces = []
+        # Bonds
+        bond = hoomd.md.bond.Harmonic()
+        bond.params["A-A"] = dict(k=self.bond_k, r0=self.bond_r0)
+        forces.append(bond)
+        # Angles
+        if all([self.angle_k, self.angle_theta0]):
+            angle = hoomd.md.angle.Harmonic()
+            angle.params["A-A-A"] = dict(k=self.angle_k, t0=self.angle_theta0)
+            forces.append(angle)
+        # DPD Pairs
+        nlist = self.nlist(buffer=self.nlist_buffer, exclusions=["bond"])
+        dpd = hoomd.md.pair.DPD(
+            nlist=nlist, kT=self.kT, default_r_cut=self.r_cut
+        )
+        dpd.params[("A", "A")] = dict(A=self.A, gamma=self.gamma)
         forces.append(dpd)
         return forces

@@ -2,6 +2,7 @@
 """Library of predefined molecules, recipes and forcefields."""
 
 from .forcefields import (
+    DPD,
     GAFF,
     OPLS_AA,
     OPLS_AA_BENZENE,
@@ -9,6 +10,7 @@ from .forcefields import (
     OPLS_AA_PPS,
     BaseHOOMDForcefield,
     BaseXMLForcefield,
+    Bead_Spring_DPD,
     BeadSpring,
     EllipsoidFF_DPD,
     EllipsoidForcefield,
@@ -27,6 +29,7 @@ from .polymers import (
     PEKK_para,
     PolyEthylene,
 )
+from .simulations.phantom_walk import PhantomWalk
 from .simulations.tensile import Tensile
 from .surfaces import Graphene
-from .systems import SingleChainSystem, mbuildSystem
+from .systems import RandomWalk, SingleChainSystem, mbuildSystem

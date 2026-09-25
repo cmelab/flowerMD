@@ -4,6 +4,7 @@ import hoomd
 import numpy as np
 import pytest
 
+from flowermd.assets import FF_DIR
 from flowermd.library import (
     GAFF,
     OPLS_AA,
@@ -25,6 +26,10 @@ class TestForceFields:
         ff = GAFF()
         assert ff.gmso_ff is not None
 
+    def test_hoomd_dpd(self):
+        ff_path = os.path.join(FF_DIR, "hoomd-dpd-hhp.xml")
+        FF_from_file(forcefield_files=ff_path, gmso_xml=True)
+
     def test_OPLS_AA(self):
         ff = OPLS_AA()
         assert ff.gmso_ff is not None
@@ -43,7 +48,7 @@ class TestForceFields:
 
     def test_FF_from_file(self):
         xml_file = os.path.join(ASSETS_DIR, "test_ff.xml")
-        ff = FF_from_file(xml_file)
+        ff = FF_from_file(forcefield_files=xml_file, gmso_xml=False)
         assert ff.gmso_ff is not None
 
     def test_KremerGrestBeadSpring(self):

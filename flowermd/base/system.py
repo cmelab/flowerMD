@@ -413,12 +413,13 @@ class System(ABC):
         topology.identify_connections()
         return topology
 
-    def _create_hoomd_forcefield(self, r_cut, nlist, pppm_kwargs):
+    def _create_hoomd_forcefield(self, r_cut, kT, nlist, pppm_kwargs):
         """Create a list of HOOMD forces."""
         force_list = []
         ff, refs = to_hoomd_forcefield(
             top=self.gmso_system,
             r_cut=r_cut,
+            kT=kT,
             nlist=nlist,
             pppm_kwargs=pppm_kwargs,
             auto_scale=False,
@@ -497,6 +498,7 @@ class System(ABC):
     def apply_forcefield(
         self,
         r_cut,
+        kT=None,
         force_field=None,
         auto_scale=False,
         scale_charges=False,
@@ -610,7 +612,7 @@ class System(ABC):
             "pppm_kwargs": pppm_kwargs,
         }
         self._hoomd_forcefield = self._create_hoomd_forcefield(
-            r_cut=r_cut, nlist=nlist, pppm_kwargs=pppm_kwargs
+            r_cut=r_cut, kT=kT, nlist=nlist, pppm_kwargs=pppm_kwargs
         )
         self._hoomd_snapshot = self._create_hoomd_snapshot()
 
