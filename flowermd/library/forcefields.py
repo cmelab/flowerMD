@@ -907,7 +907,9 @@ class DPD(BaseHOOMDForcefield):
         # Angles
         if all([self.angle_k, self.angle_theta0]):
             angle = hoomd.md.angle.Harmonic()
-            angle.params["_A-_A-_A"] = dict(k=self.angle_k, t0=self.angle_theta0)
+            angle.params["_A-_A-_A"] = dict(
+                k=self.angle_k, t0=self.angle_theta0
+            )
             forces.append(angle)
         # DPD Pairs
         nlist = self.nlist(buffer=self.nlist_buffer, exclusions=["bond"])
