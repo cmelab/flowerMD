@@ -34,8 +34,8 @@ def find_xml_ff(ff_source):
         ff_xml_path = ff_source
     elif not xml_directory.get(ff_source.split(".xml")[0]):
         raise ValueError(
-            "{} forcefield is not supported. Supported XML forcefields "
-            "are {}".format(ff_source, list(xml_directory.keys()))
+            f"{ff_source} forcefield is not supported. Supported XML forcefields "
+            f"are {list(xml_directory.keys())}"
         )
     else:
         ff_key = ff_source.split(".xml")[0]
