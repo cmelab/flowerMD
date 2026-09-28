@@ -6,7 +6,7 @@ from flowermd.base.simulation import Simulation
 
 
 class PhantomWalk(Simulation):
-    """Run an initial energy relaxation of overlapping particles with DPD."""
+    """Run an initial energy relaxation of overlapping particles with DPD and FIRE."""
 
     def __init__(
         self,
