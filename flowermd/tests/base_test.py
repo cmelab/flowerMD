@@ -10,6 +10,7 @@ from flowermd import Molecule, Pack, Polymer, Simulation
 from flowermd.library import OPLS_AA, BeadSpring
 
 ASSETS_DIR = os.path.join(os.path.dirname(__file__), "assets")
+print(ASSETS_DIR)
 
 
 class BaseTest:

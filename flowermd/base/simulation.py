@@ -626,36 +626,6 @@ class Simulation(hoomd.simulation.Simulation):
             new_method = integrator_method(**method_kwargs)
             self.integrator.methods.append(new_method)
 
-    def set_fire_minimizer(self, fire_kwargs, integrator_method, method_kwargs):
-        """Update the existing integrator method to add a fire energy minimizer function.
-
-        This doesn't need to be called directly;
-        instead the various run functions use this method to update
-        the integrator method as needed.
-
-        Parameters
-        ----------
-        fire_kwargs: dict, required
-            A dictionary of parameter:value for the fire minimizer function.
-        integrator_method : hoomd.md.method, required
-            Instance of one of the `hoomd.md.method` options.
-        method_kwargs : dict, required
-            A dictionary of parameter:value for the integrator method used.
-
-        """
-        fire = hoomd.md.minimize.FIRE(
-            dt=self.dt,
-            **fire_kwargs,
-        )
-        new_method = integrator_method(**method_kwargs)
-        fire.methods.append(new_method)
-        fire.forces.extend(self._forcefield)
-        if self.integrator:
-            self.integrator.methods.remove(self.method)
-        self.integrator = fire
-        self.operations.add(self.integrator)
-        self.operations.integrator.methods = [new_method]
-
     def add_walls(self, wall_axis, sigma, epsilon, r_cut, r_extrap=0):
         """Add `hoomd.md.external.wall.LJ` forces to the simulation.
 
@@ -1069,10 +1039,39 @@ class Simulation(hoomd.simulation.Simulation):
         self.run(steps=n_steps, write_at_start=write_at_start)
         self.operations.updaters.remove(std_out_logger_printer)
 
+    def set_fire_minimizer(self, fire_kwargs, integrator_method, method_kwargs):
+        """Update the existing integrator method to add a fire energy minimizer function.
+
+        This doesn't need to be called directly;
+        instead the various run functions use this method to update
+        the integrator method as needed.
+
+        Parameters
+        ----------
+        fire_kwargs: dict, required
+            A dictionary of parameter:value for the fire minimizer function.
+        integrator_method : hoomd.md.method, required
+            Instance of one of the `hoomd.md.method` options.
+        method_kwargs : dict, required
+            A dictionary of parameter:value for the integrator method used.
+
+        """
+        fire = hoomd.md.minimize.FIRE(
+            dt=self.dt,
+            **fire_kwargs,
+        )
+        new_method = integrator_method(**method_kwargs)
+        fire.methods.append(new_method)
+        fire.forces.extend(self._forcefield)
+        if self.integrator:
+            self.integrator.methods.remove(self.method)
+        self.integrator = fire
+        self.operations.add(self.integrator)
+        self.operations.integrator.methods = [new_method]
+        
     def run_FIRE(
         self,
         n_steps,
-        dt,
         force_tol=1e-1,
         angmom_tol=1000,
         energy_tol=1e-1,

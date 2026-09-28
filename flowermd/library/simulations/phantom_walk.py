@@ -38,7 +38,7 @@ class PhantomWalk(Simulation):
             log_file_name=log_file_name,
         )
         self.run_NVE(n_steps=self.n_steps_dpd, write_at_start=False)
-        self.run_FIRE(n_steps=self.n_steps_fire, dt=self.dt)
+        self.run_FIRE(n_steps=self.n_steps_fire)
         for writer in self.operations.writers:
             if hasattr(writer, "flush"):
                 writer.flush()

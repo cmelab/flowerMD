@@ -903,7 +903,6 @@ class DPD(BaseHOOMDForcefield):
         # Bonds
         bond = hoomd.md.bond.Harmonic()
         bond.params["_A-_A"] = dict(k=self.bond_k, r0=self.bond_r0)
-        forces.append(bond)
         # Angles
         if all([self.angle_k, self.angle_theta0]):
             angle = hoomd.md.angle.Harmonic()
@@ -918,4 +917,5 @@ class DPD(BaseHOOMDForcefield):
         )
         dpd.params[("_A", "_A")] = dict(A=self.A, gamma=self.gamma)
         forces.append(dpd)
+        forces.append(bond)
         return forces
