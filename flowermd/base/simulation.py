@@ -85,7 +85,7 @@ class Simulation(hoomd.simulation.Simulation):
                         "forcefield must be a sequence of "
                         "hoomd.md.force.Force objects."
                     )
-        super(Simulation, self).__init__(device, seed)
+        super().__init__(device, seed)
         self.initial_state = initial_state
         self._forcefield = forcefield
         self.gsd_write_freq = int(gsd_write_freq)

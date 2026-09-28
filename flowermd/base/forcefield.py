@@ -8,9 +8,7 @@ class BaseXMLForcefield(foyer.Forcefield):
     """Base XML forcefield class."""
 
     def __init__(self, forcefield_files=None, name=None):
-        super(BaseXMLForcefield, self).__init__(
-            forcefield_files=forcefield_files, name=name
-        )
+        super().__init__(forcefield_files=forcefield_files, name=name)
         self.gmso_ff = (
             ffutils.FoyerFFs().load(forcefield_files or name).to_gmso_ff()
         )
