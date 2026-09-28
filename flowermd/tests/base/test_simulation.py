@@ -249,9 +249,7 @@ class TestSimulate(BaseTest):
         sim.run_FIRE(n_steps=500, force_tol=1.05e-1)
         assert isinstance(sim.method, hoomd.md.methods.ConstantVolume)
         assert isinstance(sim.integrator, hoomd.md.minimize.FIRE)
-        assert np.isclose(
-            float(1.05e-1), sim.integrator.force_tol, atol=1e-3
-        )
+        assert np.isclose(float(1.05e-1), sim.integrator.force_tol, atol=1e-3)
 
     def test_update_volume_target_box(self, benzene_system):
         sim = Simulation.from_system(benzene_system)

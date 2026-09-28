@@ -5,9 +5,9 @@ from flowermd.library import (
     EllipsoidChainRand,
     LJChain,
     PolyEthylene,
+    RandomWalk,
     SingleChainSystem,
     mbuildSystem,
-    RandomWalk
 )
 
 
@@ -47,12 +47,28 @@ class TestSystems:
     def test_RandomWalk(self):
         lj_chain = LJChain(lengths=10, num_mols=2)
         with pytest.raises(ValueError):
-            RandomWalk(molecules=lj_chain, buffer=1.05, bond_length=1.0, density=1.0)
+            RandomWalk(
+                molecules=lj_chain, buffer=1.05, bond_length=1.0, density=1.0
+            )
 
     def test_RandomWalk(self):
         lj_chain1 = LJChain(lengths=10, num_mols=10)
         lj_chain2 = LJChain(lengths=10, num_mols=10)
-        system1 = RandomWalk(molecules=lj_chain1, buffer=0.2, bond_length=1.0, density=1.1, seed=1234)
-        system2 = RandomWalk(molecules=lj_chain2, buffer=0.2, bond_length=1.0, density=1.1, seed=4567)
+        system1 = RandomWalk(
+            molecules=lj_chain1,
+            buffer=0.2,
+            bond_length=1.0,
+            density=1.1,
+            seed=1234,
+        )
+        system2 = RandomWalk(
+            molecules=lj_chain2,
+            buffer=0.2,
+            bond_length=1.0,
+            density=1.1,
+            seed=4567,
+        )
         with pytest.raises(AssertionError):
-            np.testing.assert_array_equal(system1.gmso_system.positions, system2.gmso_system.positions)
+            np.testing.assert_array_equal(
+                system1.gmso_system.positions, system2.gmso_system.positions
+            )

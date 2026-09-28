@@ -1068,7 +1068,7 @@ class Simulation(hoomd.simulation.Simulation):
         self.integrator = fire
         self.operations.add(self.integrator)
         self.operations.integrator.methods = [new_method]
-        
+
     def run_FIRE(
         self,
         n_steps,
