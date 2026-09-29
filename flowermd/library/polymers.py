@@ -256,11 +256,11 @@ class LJChain(Polymer):
     ----------
     lengths : int, required
         The number of times to repeat bead_sequence in a single chain.
-    bead_sequence : list; default ["A"]
+    bead_sequence : list; default ["_A"]
         The sequence of bead types in the chain.
-    bond_length : dict; optional; default {"A-A": 1.0}
+    bond_length : dict; optional; default {"_A-_A": 1.0}
         The bond length between connected beads (units: nm).
-    bead_mass : dict; default {"A": 1.0}
+    bead_mass : dict; default {"_A": 1.0}
         The mass of the bead types.
     name : str, default 'lj_chain'
         The name of the polymer. Setting the name is
@@ -275,9 +275,9 @@ class LJChain(Polymer):
         self,
         lengths,
         num_mols,
-        bead_sequence=["A"],
-        bead_mass={"A": 1.0},
-        bond_lengths={"A-A": 1.0},
+        bead_sequence=["_A"],
+        bead_mass={"_A": 1.0},
+        bond_lengths={"_A-_A": 1.0},
         name="lj_chain",
     ):
         self.bead_sequence = bead_sequence
