@@ -608,7 +608,7 @@ class System(ABC):
         pppm_kwargs = {"resolution": pppm_resolution, "order": pppm_order}
         self._ff_kwargs = {
             "r_cut": r_cut,
-            "kT":kT,
+            "kT": kT,
             "nlist": nlist,
             "pppm_kwargs": pppm_kwargs,
         }

@@ -1,11 +1,8 @@
 import freud
-import gsd
-import gsd.hoomd
-import hoomd
-import numpy as np
+
 
 def compute_closest_rdf(sim, bins=100, r_max=1.0):
-    """Compute the RDF once from the simulation's current state. 
+    """Compute the RDF once from the simulation's current state.
     Returns the first non-zero bin, indicating the closest particles.
 
     Parameters
@@ -25,5 +22,5 @@ def compute_closest_rdf(sim, bins=100, r_max=1.0):
     rdf = freud.density.RDF(bins=bins, r_max=r_max)
     snap = sim.state.get_snapshot()
     rdf.compute(system=snap, reset=True)
-    b =(rdf.rdf !=0).argmax()
-    return rdf.bin_centers[b] 
+    b = (rdf.rdf != 0).argmax()
+    return rdf.bin_centers[b]

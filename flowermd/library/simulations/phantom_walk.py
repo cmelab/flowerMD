@@ -43,4 +43,7 @@ class PhantomWalk(Simulation):
         for writer in self.operations.writers:
             if hasattr(writer, "flush"):
                 writer.flush()
-        print("The closest particles after DPD + FIRE are: ", compute_closest_rdf(self, bins=100, r_max=1.0))
+        print(
+            "The closest particles after DPD + FIRE are: ",
+            compute_closest_rdf(self, bins=100, r_max=1.0),
+        )
