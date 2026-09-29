@@ -14,7 +14,9 @@ class GAFF(BaseXMLForcefield):
     """General Amber forcefield class."""
 
     def __init__(self, forcefield_files=f"{FF_DIR}/gaff.xml", gmso_xml=False):
-        super(GAFF, self).__init__(forcefield_files=forcefield_files, gmso_xml=gmso_xml)
+        super(GAFF, self).__init__(
+            forcefield_files=forcefield_files, gmso_xml=gmso_xml
+        )
         self.description = (
             "The General Amber Forcefield written in foyer XML format. "
             "The XML file was obtained from the antefoyer package: "
