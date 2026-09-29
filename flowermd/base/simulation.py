@@ -1039,6 +1039,75 @@ class Simulation(hoomd.simulation.Simulation):
         self.run(steps=n_steps, write_at_start=write_at_start)
         self.operations.updaters.remove(std_out_logger_printer)
 
+    def set_fire_minimizer(self, fire_kwargs, integrator_method, method_kwargs):
+        """Update the existing integrator method to add a fire energy minimizer function.
+
+        This doesn't need to be called directly;
+        instead the various run functions use this method to update
+        the integrator method as needed.
+
+        Parameters
+        ----------
+        fire_kwargs: dict, required
+            A dictionary of parameter:value for the fire minimizer function.
+        integrator_method : hoomd.md.method, required
+            Instance of one of the `hoomd.md.method` options.
+        method_kwargs : dict, required
+            A dictionary of parameter:value for the integrator method used.
+
+        """
+        fire = hoomd.md.minimize.FIRE(
+            dt=self.dt,
+            **fire_kwargs,
+        )
+        new_method = integrator_method(**method_kwargs)
+        fire.methods.append(new_method)
+        fire.forces.extend(self._forcefield)
+        if self.integrator:
+            self.integrator.methods.remove(self.method)
+        self.integrator = fire
+        self.operations.integrator = self.integrator
+        self.operations.integrator.methods = [new_method]
+
+    def run_FIRE(
+        self,
+        n_steps,
+        force_tol=1e-1,
+        angmom_tol=1000,
+        energy_tol=1e-1,
+        write_at_start=False,
+    ):
+        """
+
+        Parameters
+        ----------
+        n_steps : int, required
+            Number of steps to run the simulation.
+
+        write_at_start : bool, default False
+            When set to True, triggers writers that evaluate to True
+            for the initial step to execute before the next simulation
+            time step.
+
+        """
+        self.set_fire_minimizer(
+            fire_kwargs={
+                "force_tol": force_tol,
+                "angmom_tol": angmom_tol,
+                "energy_tol": energy_tol,
+            },
+            integrator_method=hoomd.md.methods.ConstantVolume,
+            method_kwargs={"filter": self.integrate_group},
+        )
+        std_out_logger = StdOutLogger(n_steps=n_steps, sim=self)
+        std_out_logger_printer = hoomd.update.CustomUpdater(
+            trigger=hoomd.trigger.Periodic(self._std_out_freq),
+            action=std_out_logger,
+        )
+        self.operations.updaters.append(std_out_logger_printer)
+        self.run(steps=n_steps, write_at_start=write_at_start)
+        self.operations.updaters.remove(std_out_logger_printer)
+
     def temperature_ramp(self, n_steps, kT_start, kT_final):
         """Create a temperature ramp.
 

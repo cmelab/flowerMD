@@ -4,12 +4,15 @@ import hoomd
 import numpy as np
 import pytest
 
+from flowermd.assets import FF_DIR
 from flowermd.library import (
+    DPD,
     GAFF,
     OPLS_AA,
     OPLS_AA_BENZENE,
     OPLS_AA_DIMETHYLETHER,
     OPLS_AA_PPS,
+    Bead_Spring_DPD,
     BeadSpring,
     EllipsoidFF_DPD,
     EllipsoidForcefield,
@@ -24,6 +27,10 @@ class TestForceFields:
     def test_GAFF(self):
         ff = GAFF()
         assert ff.gmso_ff is not None
+
+    def test_hoomd_dpd(self):
+        ff_path = os.path.join(FF_DIR, "hoomd-dpd-hhp.xml")
+        FF_from_file(forcefield_files=ff_path, gmso_xml=True)
 
     def test_OPLS_AA(self):
         ff = OPLS_AA()
@@ -41,9 +48,13 @@ class TestForceFields:
         ff = OPLS_AA_DIMETHYLETHER()
         assert ff.gmso_ff is not None
 
+    def test_Bead_Spring_DPD(self):
+        ff = Bead_Spring_DPD()
+        assert ff.gmso_ff is not None
+
     def test_FF_from_file(self):
         xml_file = os.path.join(ASSETS_DIR, "test_ff.xml")
-        ff = FF_from_file(xml_file)
+        ff = FF_from_file(forcefield_files=xml_file, gmso_xml=False)
         assert ff.gmso_ff is not None
 
     def test_KremerGrestBeadSpring(self):
@@ -105,6 +116,26 @@ class TestForceFields:
             assert ff.hoomd_forces[3].params[param]["k"] == 100
             assert ff.hoomd_forces[3].params[param]["d"] == -1
             assert ff.hoomd_forces[3].params[param]["n"] == 1
+
+    def test_DPD(self):
+        ff = DPD(
+            A=2000, gamma=1000, kT=1.0, r_cut=1.05, bond_k=2000, bond_r0=1.0
+        )
+
+        assert isinstance(ff.hoomd_forces[0], hoomd.md.pair.pair.DPD)
+        assert isinstance(ff.hoomd_forces[1], hoomd.md.bond.Harmonic)
+
+        pair_types = [("_A", "_A")]
+        for param in ff.hoomd_forces[0].params:
+            assert param in pair_types
+            if param == ("_A", "_A"):
+                assert ff.hoomd_forces[0].params[param]["A"] == 2000
+
+        bond_types = [("_A-_A")]
+        for param in ff.hoomd_forces[1].params:
+            assert param in bond_types
+            assert ff.hoomd_forces[1].params[param]["r0"] == 1.0
+            assert ff.hoomd_forces[1].params[param]["k"] == 2000
 
     def test_ellipsoid_ff(self):
         ellipsoid_ff = EllipsoidForcefield(

@@ -56,7 +56,7 @@ class TestMolecule(BaseTest):
     def test_validate_force_field_xml_file_path(self, benzene_mb, benzene_xml):
         molecule = Molecule(
             num_mols=2,
-            force_field=FF_from_file(benzene_xml),
+            force_field=FF_from_file(benzene_xml, gmso_xml=False),
             compound=benzene_mb,
         )
         assert molecule.gmso_molecule.is_typed()
@@ -115,7 +115,7 @@ class TestMolecule(BaseTest):
         hoomd_ff = benzene_hoomd_ff(include_hydrogen=True)
         typed_molecule = Molecule(
             num_mols=2,
-            force_field=FF_from_file(benzene_xml),
+            force_field=FF_from_file(benzene_xml, gmso_xml=False),
             compound=benzene_mb,
         )
         with pytest.raises(exceptions.MissingCoulombPotentialError):

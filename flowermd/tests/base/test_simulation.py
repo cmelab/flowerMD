@@ -244,6 +244,13 @@ class TestSimulate(BaseTest):
         sim.run_displacement_cap(n_steps=500, maximum_displacement=1e-4)
         assert isinstance(sim.method, hoomd.md.methods.DisplacementCapped)
 
+    def test_FIRE(self, benzene_system):
+        sim = Simulation.from_system(benzene_system)
+        sim.run_FIRE(n_steps=500, force_tol=1.05e-1)
+        assert isinstance(sim.method, hoomd.md.methods.ConstantVolume)
+        assert isinstance(sim.integrator, hoomd.md.minimize.FIRE)
+        assert np.isclose(float(1.05e-1), sim.integrator.force_tol, atol=1e-3)
+
     def test_update_volume_target_box(self, benzene_system):
         sim = Simulation.from_system(benzene_system)
         sim.run_update_volume(
@@ -460,7 +467,13 @@ class TestSimulate(BaseTest):
             Simulation.from_system(benzene_system, constraint="A")
 
     def test_d_constrain_sim(self):
-        chains = LJChain(lengths=10, num_mols=1)
+        chains = LJChain(
+            lengths=10,
+            num_mols=1,
+            bead_sequence=["A"],
+            bead_mass={"A": 1.0},
+            bond_lengths={"A-A": 1.0},
+        )
         system = Pack(molecules=chains, density=0.001, base_units=dict())
         snap, d = set_bond_constraints(
             snapshot=system.hoomd_snapshot,
