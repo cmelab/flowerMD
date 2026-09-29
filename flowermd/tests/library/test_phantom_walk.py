@@ -32,7 +32,7 @@ class TestPhantomWalkSimulation(BaseTest):
             A=25000, gamma=800, kT=1.5, r_cut=1.5, bond_k=25000, bond_r0=1.4226
         )
 
-        sim = PhantomWalk(
+        PhantomWalk(
             initial_state=system.hoomd_snapshot,
             forcefield=dpd_ff.hoomd_forces,
             gsd_write_freq=10,
