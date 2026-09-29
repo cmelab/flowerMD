@@ -922,5 +922,5 @@ class DPD(BaseHOOMDForcefield):
         forces.append(bond)
         if all([self.angle_k, self.angle_theta0]):
             forces.append(angle)
-        
+
         return forces
