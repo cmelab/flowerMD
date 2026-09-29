@@ -14,7 +14,7 @@ class TestBondConstraint(BaseTest):
         system = Pack(molecules=chains, density=0.001, base_units=dict())
         snap, d = set_bond_constraints(
             snapshot=system.hoomd_snapshot,
-            bond_types=["A-A"],
+            bond_types=["_A-_A"],
             constraint_values=[1.0],
         )
         assert snap.constraints.N == 9

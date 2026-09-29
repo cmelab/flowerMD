@@ -467,7 +467,13 @@ class TestSimulate(BaseTest):
             Simulation.from_system(benzene_system, constraint="A")
 
     def test_d_constrain_sim(self):
-        chains = LJChain(lengths=10, num_mols=1)
+        chains = LJChain(
+            lengths=10,
+            num_mols=1,
+            bead_sequence=["A"],
+            bead_mass={"A": 1.0},
+            bond_lengths={"A-A": 1.0}
+        )
         system = Pack(molecules=chains, density=0.001, base_units=dict())
         snap, d = set_bond_constraints(
             snapshot=system.hoomd_snapshot,
