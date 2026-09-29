@@ -472,7 +472,7 @@ class TestSimulate(BaseTest):
             num_mols=1,
             bead_sequence=["A"],
             bead_mass={"A": 1.0},
-            bond_lengths={"A-A": 1.0}
+            bond_lengths={"A-A": 1.0},
         )
         system = Pack(molecules=chains, density=0.001, base_units=dict())
         snap, d = set_bond_constraints(
