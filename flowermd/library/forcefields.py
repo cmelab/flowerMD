@@ -845,17 +845,12 @@ class DPD(BaseHOOMDForcefield):
     This is designed to be used with `flowermd.library.polymers.LJChain`
 
     The set of interactions are:
-    1. `hoomd.md.bond.Harmonic`
-    3. `hoomd.md.pair.DPD`
+    1. `hoomd.md.pair.DPD`
+    2. `hoomd.md.bond.Harmonic`
+    3. `hoomd.md.angle.Harmonic` (optional)
 
     Parameters
     ----------
-    epsilon : float, required
-        energy
-    lpar: float, required
-        Semi-axis length of the ellipsoid along the major axis.
-    lperp : float, required
-        Semi-axis length of the ellipsoid along the minor axis.
     A : int, required
         DPD pair-wise drag force coefficient
     gamma : int, required
@@ -864,14 +859,14 @@ class DPD(BaseHOOMDForcefield):
         Temperature used in pair-wise drag force
     r_cut : float, required
         Cut off radius for pair interactions
-    angle_k : float, required
-        Spring constant in harmonic angle.
-    angle_theta0: float, required
-        Equilibrium angle between 2 consecutive beads.
-    bond_k : float, required
+    bond_k : float, default 100
         Spring constant in harmonic bond.
-    bond_r0: float, required
+    bond_r0: float, deault 1.0
         Equilibrium distance between 2 ellipsoid tips.
+    angle_k : float, optional
+        Spring constant in harmonic angle.
+    angle_theta0: float, optional
+        Equilibrium angle between 2 consecutive beads.
     nlist : type, default hoomd.md.nlist.Cell
         A class (not an instance) of the HOOMD neighbor list
         to use for the pair force.
@@ -887,14 +882,14 @@ class DPD(BaseHOOMDForcefield):
         kT,
         r_cut,
         bond_k=100,
-        bond_r0=1.1,
+        bond_r0=1.0,
         angle_k=None,
         angle_theta0=None,
         nlist=hoomd.md.nlist.Cell,
         nlist_buffer=0.40,
     ):
-        self.gamma = gamma
         self.A = A
+        self.gamma = gamma
         self.kT = kT
         self.r_cut = r_cut
         self.angle_k = angle_k
@@ -917,7 +912,6 @@ class DPD(BaseHOOMDForcefield):
             angle.params["_A-_A-_A"] = dict(
                 k=self.angle_k, t0=self.angle_theta0
             )
-            forces.append(angle)
         # DPD Pairs
         nlist = self.nlist(buffer=self.nlist_buffer, exclusions=["bond"])
         dpd = hoomd.md.pair.DPD(
@@ -926,4 +920,7 @@ class DPD(BaseHOOMDForcefield):
         dpd.params[("_A", "_A")] = dict(A=self.A, gamma=self.gamma)
         forces.append(dpd)
         forces.append(bond)
+        if all([self.angle_k, self.angle_theta0]):
+            forces.append(angle)
+        
         return forces
