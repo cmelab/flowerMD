@@ -188,11 +188,11 @@ class RandomWalk(System):
             for idx, chain in enumerate(self.all_molecules):
                 print(idx, chain)
                 for bead_idx, bead in enumerate(chain):
-                    print(bead_idx,bead)
-                    flat_idx = (idx * self.lengths + bead_idx)
+                    print(bead_idx, bead)
+                    flat_idx = idx * self.lengths + bead_idx
                     bead.translate_to(all_positions[flat_idx])
                 system.add(chain)
-            
+
         system.box = mb.box.Box(box_lengths)
 
         return system
