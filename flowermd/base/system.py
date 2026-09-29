@@ -500,7 +500,7 @@ class System(ABC):
         r_cut,
         force_field=None,
         kT=None,
-        auto_scale=False
+        auto_scale=False,
         scale_charges=False,
         remove_charges=False,
         remove_hydrogens=False,

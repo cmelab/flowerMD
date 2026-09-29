@@ -3,6 +3,7 @@
 import hoomd
 
 from flowermd.base.simulation import Simulation
+from flowermd.utils import compute_closest_rdf
 
 
 class PhantomWalk(Simulation):
@@ -42,3 +43,4 @@ class PhantomWalk(Simulation):
         for writer in self.operations.writers:
             if hasattr(writer, "flush"):
                 writer.flush()
+        print("The closest particles after DPD + FIRE are: ", compute_closest_rdf(self, bins=100, r_max=1.0))
