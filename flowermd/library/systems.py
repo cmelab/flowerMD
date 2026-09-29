@@ -121,8 +121,8 @@ class RandomWalk(System):
         self.seed = seed
         self.unique_molecules = unique_molecules
         self.bond_length = bond_length
-        self.n_mols = molecules.n_mols[0]
-        self.lengths = molecules.lengths[0]
+        self.n_mols = sum(molecules.n_mols)
+        self.lengths = max(molecules.lengths)
         self.buffer = buffer
         super(RandomWalk, self).__init__(
             molecules=molecules, base_units=base_units, **kwargs
@@ -181,10 +181,18 @@ class RandomWalk(System):
         )
 
         system = mb.Compound()
-        system.add(self.all_molecules)
-        system.xyz = all_positions
-
-        # Set system box from density calculation
+        if len(self._molecules) == 1 and len(self._molecules[0].n_mols) == 1:
+            system.add(self.all_molecules)
+            system.xyz = all_positions
+        else:
+            for idx, chain in enumerate(self.all_molecules):
+                print(idx, chain)
+                for bead_idx, bead in enumerate(chain):
+                    print(bead_idx,bead)
+                    flat_idx = (idx * self.lengths + bead_idx)
+                    bead.translate_to(all_positions[flat_idx])
+                system.add(chain)
+            
         system.box = mb.box.Box(box_lengths)
 
         return system
