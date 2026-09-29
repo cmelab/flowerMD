@@ -1,8 +1,8 @@
-import unyt as u
 import hoomd
+import unyt as u
 
 from flowermd.base import Simulation
-from flowermd.library import DPD, PPS, PhantomWalk, RandomWalk, LJChain
+from flowermd.library import DPD, PPS, LJChain, PhantomWalk, RandomWalk
 from flowermd.tests import BaseTest
 
 
@@ -40,7 +40,7 @@ class TestPhantomWalkSimulation(BaseTest):
             n_steps_dpd=500,
             n_steps_fire=100,
         )
-        
+
     def test_phantom_walk_comp(self):
         molecules = LJChain(
             num_mols=[10],
@@ -53,8 +53,12 @@ class TestPhantomWalkSimulation(BaseTest):
         ref_length = 1.0 * u.Unit("nm")
         ref_mass = 1.0 * u.Unit("g/mol")
         ref_energy = 1.0 * u.Unit("kcal / mol")
-        ref_values_dict = {"length": ref_length, "mass": ref_mass, "energy": ref_energy}
-        
+        ref_values_dict = {
+            "length": ref_length,
+            "mass": ref_mass,
+            "energy": ref_energy,
+        }
+
         system = RandomWalk(
             molecules=molecules,
             density=1.1 * u.Unit("nm**-3"),
