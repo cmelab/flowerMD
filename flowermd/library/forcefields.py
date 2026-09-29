@@ -38,7 +38,7 @@ class OPLS_AA_PPS(BaseXMLForcefield):
     def __init__(
         self, forcefield_files=f"{FF_DIR}/pps_opls.xml", gmso_xml=False
     ):
-        super(OPLS_AA_PPS, self).__init__(forcefield_files=forcefield_files)
+        super(OPLS_AA_PPS, self).__init__(forcefield_files=forcefield_files, gmso_xml=gmso_xml)
         self.description = (
             "Based on flowermd.forcefields.OPLS_AA. "
             "Trimmed down to include only PPS parameters. "
@@ -56,7 +56,7 @@ class OPLS_AA_BENZENE(BaseXMLForcefield):
     def __init__(
         self, forcefield_files=f"{FF_DIR}/benzene_opls.xml", gmso_xml=False
     ):
-        super(OPLS_AA_BENZENE, self).__init__(forcefield_files=forcefield_files)
+        super(OPLS_AA_BENZENE, self).__init__(forcefield_files=forcefield_files, gmso_xml=gmso_xml)
         self.description = (
             "Based on flowermd.forcefields.OPLS_AA. "
             "Trimmed down to include only benzene parameters."
@@ -72,7 +72,7 @@ class OPLS_AA_DIMETHYLETHER(BaseXMLForcefield):
         gmso_xml=False,
     ):
         super(OPLS_AA_DIMETHYLETHER, self).__init__(
-            forcefield_files=forcefield_files
+            forcefield_files=forcefield_files, gmso_xml=gmso_xml
         )
         self.description = (
             "Based on flowermd.forcefields.OPLS_AA. "
@@ -83,9 +83,9 @@ class OPLS_AA_DIMETHYLETHER(BaseXMLForcefield):
 class Bead_Spring_DPD(BaseXMLForcefield):
     """Forcefield class for loading a forcefield from an XML file."""
 
-    def __init__(self, forcefield_files=f"{FF_DIR}/hoomd-dpd-hhp.xml"):
+    def __init__(self, forcefield_files=f"{FF_DIR}/hoomd-dpd-hhp.xml", gmso_xml=True):
         super(Bead_Spring_DPD, self).__init__(
-            forcefield_files=forcefield_files, gmso_xml=True
+            forcefield_files=forcefield_files, gmso_xml=gmso_xml
         )
         self.description = "DPD forcefield loaded from an XML file."
 
