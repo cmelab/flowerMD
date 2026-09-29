@@ -51,7 +51,7 @@ class TestSystems:
                 molecules=lj_chain, buffer=1.05, bond_length=1.0, density=1.0
             )
 
-    def test_RandomWalk(self):
+    def test_RandomWalk_different_seeds(self):
         lj_chain1 = LJChain(lengths=10, num_mols=10)
         lj_chain2 = LJChain(lengths=10, num_mols=10)
         system1 = RandomWalk(

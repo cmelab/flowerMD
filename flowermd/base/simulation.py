@@ -1066,7 +1066,7 @@ class Simulation(hoomd.simulation.Simulation):
         if self.integrator:
             self.integrator.methods.remove(self.method)
         self.integrator = fire
-        self.operations.add(self.integrator)
+        self.operations.integrator = self.integrator
         self.operations.integrator.methods = [new_method]
 
     def run_FIRE(
@@ -1084,7 +1084,7 @@ class Simulation(hoomd.simulation.Simulation):
         n_steps : int, required
             Number of steps to run the simulation.
 
-        write_at_start : bool, default True
+        write_at_start : bool, default False
             When set to True, triggers writers that evaluate to True
             for the initial step to execute before the next simulation
             time step.

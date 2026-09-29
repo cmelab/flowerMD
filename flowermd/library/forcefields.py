@@ -14,7 +14,7 @@ class GAFF(BaseXMLForcefield):
     """General Amber forcefield class."""
 
     def __init__(self, forcefield_files=f"{FF_DIR}/gaff.xml", gmso_xml=False):
-        super(GAFF, self).__init__(forcefield_files=forcefield_files)
+        super(GAFF, self).__init__(forcefield_files=forcefield_files, gmso_xml=gmso_xml)
         self.description = (
             "The General Amber Forcefield written in foyer XML format. "
             "The XML file was obtained from the antefoyer package: "
@@ -91,7 +91,7 @@ class Bead_Spring_DPD(BaseXMLForcefield):
 class FF_from_file(BaseXMLForcefield):
     """Forcefield class for loading a forcefield from an XML file."""
 
-    def __init__(self, forcefield_files, gmso_xml):
+    def __init__(self, forcefield_files, gmso_xml=False):
         super(FF_from_file, self).__init__(
             forcefield_files=forcefield_files, gmso_xml=gmso_xml
         )

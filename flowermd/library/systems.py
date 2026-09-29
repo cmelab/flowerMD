@@ -161,7 +161,7 @@ class RandomWalk(System):
             )
 
         if len(self._molecules) == 1:
-            if not self.unique_molecules and self._molecules[0].n_mols > 1:
+            if not self.unique_molecules and len(self._molecules[0].n_mols) > 1:
                 raise ValueError(
                     f"unique_molecules kwarg was set to {self.unique_molecules}, "
                     "which doesn't match the polydisperse system given: "

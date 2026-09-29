@@ -5,7 +5,7 @@ from flowermd.tests import BaseTest
 
 
 class TestPhantomWalkSimulation(BaseTest):
-    def test_tensile(self):
+    def test_phantom_walk(self):
         pps = PPS(lengths=6, num_mols=32)
         pps.coarse_grain(beads={"_A": "c1cc(S)ccc1"})
 

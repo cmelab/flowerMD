@@ -498,9 +498,9 @@ class System(ABC):
     def apply_forcefield(
         self,
         r_cut,
-        kT=None,
         force_field=None,
-        auto_scale=False,
+        kT=None,
+        auto_scale=False
         scale_charges=False,
         remove_charges=False,
         remove_hydrogens=False,
@@ -608,6 +608,7 @@ class System(ABC):
         pppm_kwargs = {"resolution": pppm_resolution, "order": pppm_order}
         self._ff_kwargs = {
             "r_cut": r_cut,
+            "kT":kT,
             "nlist": nlist,
             "pppm_kwargs": pppm_kwargs,
         }
