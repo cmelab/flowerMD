@@ -453,7 +453,6 @@ class Molecule:
                 identify_connections=self.identify_connections,
                 speedup_by_moltag=True,
                 speedup_by_molgraph=False,
-                **kwargs,
             )
             # Update topology information from typed gmso after applying ff.
             self._identify_topology_information(self.gmso_molecule)
