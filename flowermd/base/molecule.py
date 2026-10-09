@@ -62,6 +62,7 @@ class Molecule:
         file=None,
         compound=None,
         name="Compound",
+        identify_connections=True,
     ):
         self.n_mols = num_mols
         self.force_field = force_field
@@ -69,6 +70,7 @@ class Molecule:
         self.file = file
         self.compound = compound
         self.name = name
+        self.identify_connections = identify_connections
         self._mapping = None
         self._mb_molecule = self._load()
         self._molecules = []
@@ -262,7 +264,7 @@ class Molecule:
     def _convert_to_gmso(self, mb_molecule):
         """Convert the mbuild molecule to a GMSO topology."""
         topology = from_mbuild(mb_molecule)
-        topology.identify_connections()
+        # topology.identify_connections()
         return topology
 
     def _identify_particle_information(self, gmso_molecule):
@@ -433,9 +435,14 @@ class Molecule:
         self._identify_particle_information(gmso_molecule)
         self._identify_pairs(self.particle_types)
         self._identify_bond_types(gmso_molecule)
-        self._identify_angle_types(gmso_molecule)
-        self._identify_dihedral_types(gmso_molecule)
-        self._identify_improper_types(gmso_molecule)
+        if self.identify_connections:
+            self._identify_angle_types(gmso_molecule)
+            self._identify_dihedral_types(gmso_molecule)
+            self._identify_improper_types(gmso_molecule)
+        else:
+            self.angle_types = set()
+            self.dihedral_types = set()
+            self.improper_types = set()
 
     def _validate_force_field(self):
         """Validate the force field for the molecule."""
@@ -443,9 +450,10 @@ class Molecule:
             self.gmso_molecule = apply(
                 self.gmso_molecule,
                 self.force_field.gmso_ff,
-                identify_connections=True,
+                identify_connections=self.identify_connections,
                 speedup_by_moltag=True,
                 speedup_by_molgraph=False,
+                **kwargs,
             )
             # Update topology information from typed gmso after applying ff.
             self._identify_topology_information(self.gmso_molecule)

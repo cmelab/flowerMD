@@ -11,6 +11,7 @@ from flowermd.base.system import System
 from flowermd.utils import (
     get_target_box_mass_density,
     get_target_box_number_density,
+    random_walk_positions_from_bonds,
 )
 
 
@@ -75,12 +76,6 @@ class mbuildSystem(System):
 class RandomWalk(System):
     """Places molecules in the system using in a random walk.
 
-    Assumes all beads in each molecule are identical type (e.g., all "A" beads).
-    All molecules are positioned in a single vectorized computation:
-    - Each chain's first bead is placed at a random location within the box
-    - Subsequent beads are placed at fixed bond length steps in random directions
-    - All molecules are processed simultaneously using numpy broadcasting
-
     Parameters
     ----------
     molecules : Polymer or list of Polymer
@@ -121,19 +116,12 @@ class RandomWalk(System):
         self.seed = seed
         self.unique_molecules = unique_molecules
         self.bond_length = bond_length
-        self.n_mols = sum(molecules.n_mols)
-        self.lengths = max(molecules.lengths)
         self.buffer = buffer
         super(RandomWalk, self).__init__(
             molecules=molecules, base_units=base_units, **kwargs
         )
 
     def _build_system(self, **kwargs):
-        """Build the system by placing molecules using random walk algorithm.
-
-        Uses vectorized computation to generate all positions at once.
-        """
-
         mass_density = u.Unit("kg") / u.Unit("m**3")
         number_density = u.Unit("nm**-3")
 
@@ -147,113 +135,33 @@ class RandomWalk(System):
             ).to("nm")
         else:
             raise ValueError(
-                f"Density dimensions of {self.density.units.dimensions} "
-                "were given, but only mass density "
-                f"({mass_density.dimensions}) and "
+                f"Density dimensions of {self.density.units.dimensions} were given, "
+                f"but only mass density ({mass_density.dimensions}) and "
                 f"number density ({number_density.dimensions}) are supported."
             )
 
-        if not self.unique_molecules and len(self._molecules) > 1:
-            raise ValueError(
-                f"unique_molecules kwarg was set to {self.unique_molecules}, "
-                "which doesn't match the length of molecules given: "
-                f"{len(self._molecules)} molecules"
-            )
-
-        if len(self._molecules) == 1:
-            if not self.unique_molecules and len(self._molecules[0].n_mols) > 1:
-                raise ValueError(
-                    f"unique_molecules kwarg was set to {self.unique_molecules}, "
-                    "which doesn't match the polydisperse system given: "
-                    f"{self._molecules[0].n_mols}"
-                )
-
         box_lengths = target_box.to_value("nm")
-        Lx = box_lengths[0]
         rng = np.random.default_rng(self.seed)
-        all_positions = self._generate_all_random_walks_vectorized(
-            num_molecules=self.n_mols,
-            beads_per_molecule=self.lengths,
+
+        system = mb.Compound()
+        system.add(self.all_molecules)
+
+        particles = list(system.particles())
+        idx_map = {p: i for i, p in enumerate(particles)}
+        bonds = np.array(
+            [(idx_map[b[0]], idx_map[b[1]]) for b in system.bonds()], dtype=int
+        )
+
+        positions = random_walk_positions_from_bonds(
+            bonds=bonds,
+            n_particles=len(particles),
             bond_length=self.bond_length,
-            box_lengths=Lx,
+            box_lengths=box_lengths[
+                0
+            ],  # cubic box; pass box_lengths directly if not
             buffer=self.buffer,
             rng=rng,
         )
-
-        system = mb.Compound()
-        if len(self._molecules) == 1 and len(self._molecules[0].n_mols) == 1:
-            system.add(self.all_molecules)
-            system.xyz = all_positions
-        else:
-            for idx, chain in enumerate(self.all_molecules):
-                print(idx, chain)
-                for bead_idx, bead in enumerate(chain):
-                    print(bead_idx, bead)
-                    flat_idx = idx * self.lengths + bead_idx
-                    bead.translate_to(all_positions[flat_idx])
-                system.add(chain)
-
+        system.xyz = positions
         system.box = mb.box.Box(box_lengths)
-
         return system
-
-    def _generate_all_random_walks_vectorized(
-        self,
-        num_molecules,
-        beads_per_molecule,
-        bond_length,
-        box_lengths,
-        buffer,
-        rng,
-    ):
-        """Generate random walk positions for ALL identical molecules at once.
-
-        Uses vectorized numpy operations for efficiency. Each molecule has
-        identical structure (same bead type throughout), differing only in position.
-
-        Parameters
-        ----------
-        num_molecules : int
-            Number of molecules to generate positions for.
-        beads_per_molecule : int
-            Number of beads in each molecule.
-        bond_length : float
-            Bond length between consecutive beads (nm).
-        box_lengths : np.ndarray
-            The box dimensions [Lx, Ly, Lz] in nm.
-        rng : np.random.Generator
-            Random number generator instance.
-
-        Returns
-        -------
-        np.ndarray
-            Array of shape (num_molecules, beads_per_molecule, 3) with all
-            positions in nm.
-        """
-        positions = np.empty((num_molecules * beads_per_molecule, 3))
-        starts = rng.uniform(
-            buffer, box_lengths - buffer, size=(num_molecules, 3)
-        )
-
-        thetas = rng.uniform(
-            0, 2 * np.pi, size=(num_molecules, beads_per_molecule - 1)
-        )
-        phis = np.arccos(
-            rng.uniform(-1, 1, size=(num_molecules, beads_per_molecule - 1))
-        )
-        x = np.sin(phis) * np.cos(thetas)
-        y = np.sin(phis) * np.sin(thetas)
-        z = np.cos(phis)
-
-        deltas = np.stack([x, y, z], axis=2) * bond_length
-        displacements = np.cumsum(deltas, axis=1)
-
-        positions_view = positions.reshape(num_molecules, beads_per_molecule, 3)
-        positions_view[:, 0, :] = starts
-        positions_view[:, 1:, :] = starts[:, None, :] + displacements
-
-        # pbc
-        positions %= box_lengths
-        positions -= box_lengths / 2
-        print(positions.shape)
-        return positions
