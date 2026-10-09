@@ -5,7 +5,7 @@
     <AtomTypes>
        <AtomType name="_A" element="_A" atomclass="_A" mass="1.0" charge="0.0" definition="_A" description="CG Bead"/>
        <AtomType name="_B" element="_B" atomclass="_B" mass="1.0" charge="0.0" definition="_B" description="CG Bead"/>
-        <AtomType name="_C" element="_C" atomclass="_C" mass="1.0" charge="0.0" definition="_C" description="CG Bead"/>
+       <AtomType name="_C" element="_C" atomclass="_C" mass="1.0" charge="0.0" definition="_C" description="CG Bead"/>
     </AtomTypes>
     <BondTypes expression="0.5 * k * (r-r_eq)**2">
         <ParametersUnitDef parameter="r_eq" unit="nm"/>
