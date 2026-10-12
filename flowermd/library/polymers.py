@@ -33,7 +33,7 @@ class PolyEthylene(Polymer):
         bond_indices = [2, 6]
         bond_length = 0.145
         bond_orientation = [None, None]
-        super(PolyEthylene, self).__init__(
+        super().__init__(
             lengths=lengths,
             num_mols=num_mols,
             smiles=smiles,
@@ -69,7 +69,7 @@ class PPS(Polymer):
         bond_indices = [7, 10]
         bond_length = 0.176
         bond_orientation = [[0, 0, 1], [0, 0, -1]]
-        super(PPS, self).__init__(
+        super().__init__(
             lengths=lengths,
             num_mols=num_mols,
             smiles=smiles,
@@ -114,7 +114,7 @@ class PEEK(Polymer):
         bond_indices = [35, 34]
         bond_length = 0.1376
         bond_orientation = [[-1, 0, 0], [1, 0, 0]]
-        super(PEEK, self).__init__(
+        super().__init__(
             lengths=lengths,
             num_mols=num_mols,
             smiles=smiles,
@@ -158,7 +158,7 @@ class PEKK(CoPolymer):
         TI_ratio=0.50,
         seed=24,
     ):
-        super(PEKK, self).__init__(
+        super().__init__(
             monomer_A=PEKK_meta,
             monomer_B=PEKK_para,
             lengths=lengths,
@@ -198,7 +198,7 @@ class PEKK_para(Polymer):
         bond_indices = [35, 36]
         bond_length = 0.148
         bond_orientation = [[0, 0, -1], [0, 0, 1]]
-        super(PEKK_para, self).__init__(
+        super().__init__(
             lengths=lengths,
             num_mols=num_mols,
             smiles=smiles,
@@ -237,7 +237,7 @@ class PEKK_meta(Polymer):
         bond_indices = [35, 36]
         bond_length = 0.148
         bond_orientation = [[0, 0, -1], [0, 0, 1]]
-        super(PEKK_meta, self).__init__(
+        super().__init__(
             lengths=lengths,
             num_mols=num_mols,
             smiles=smiles,
@@ -283,9 +283,7 @@ class LJChain(Polymer):
         self.bead_sequence = bead_sequence
         self.bead_mass = bead_mass
         self.bond_lengths = bond_lengths
-        super(LJChain, self).__init__(
-            lengths=lengths, num_mols=num_mols, name=name
-        )
+        super().__init__(lengths=lengths, num_mols=num_mols, name=name)
 
     def _build(self, length):
         chain = mb.Compound()
@@ -370,9 +368,7 @@ class EllipsoidChain(Polymer):
         self.bond_L = bond_L
         # get the indices of the particles in a rigid body
         self.bead_constituents_types = ["X", "A", "T", "T"]
-        super(EllipsoidChain, self).__init__(
-            lengths=lengths, num_mols=num_mols, name=name
-        )
+        super().__init__(lengths=lengths, num_mols=num_mols, name=name)
 
     def _build(self, length):
         # Build up ellipsoid bead
@@ -463,9 +459,7 @@ class EllipsoidChainRand(Polymer):
         self.L = L
         self.box = mb.Box(lengths=np.array([L] * 3))
         self.bead_constituents_types = ["X", "A", "T", "T"]
-        super(EllipsoidChainRand, self).__init__(
-            lengths=lengths, num_mols=num_mols, name=name
-        )
+        super().__init__(lengths=lengths, num_mols=num_mols, name=name)
 
     def _build(self, length):
         bead = mb.Compound(name="ellipsoid")
