@@ -15,8 +15,8 @@ from flowermd.library import (
     OPLS_AA_DIMETHYLETHER,
     OPLS_AA_PPS,
     PPS,
-    LJChain,
     Bead_Spring_DPD,
+    LJChain,
 )
 from flowermd.tests import BaseTest
 
