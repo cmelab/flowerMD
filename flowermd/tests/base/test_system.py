@@ -16,6 +16,7 @@ from flowermd.library import (
     OPLS_AA_PPS,
     PPS,
     LJChain,
+    Bead_Spring_DPD,
 )
 from flowermd.tests import BaseTest
 
@@ -775,6 +776,18 @@ class TestSystem(BaseTest):
             system.apply_forcefield(
                 r_cut=2.5, force_field=OPLS_AA(), auto_scale=True
             )
+
+    def test_apply_forcefield_no_ang_dih(self):
+        mols = LJChain(n_mols=3,lengths=3,identify_connections=False)
+        system = Pack(
+            molecules=[mols],
+            density=1.0,
+        )
+        with pytest.raises(ForceFieldError):
+            system.apply_forcefield(
+                r_cut=2.5, force_field=Bead_Spring_DPD(), auto_scale=True
+            )
+        ststem.
 
     def test_validate_forcefield_invalid_ff_type(self, benzene_molecule):
         benzene_mol = benzene_molecule(n_mols=1)
