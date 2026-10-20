@@ -42,6 +42,23 @@ class TestMolecule(BaseTest):
         assert len(molecule.topology_information["dihedral_types"]) == 3
         assert not any(molecule.topology_information["particle_charge"])
 
+    def test_molecule_topology_benzene_no_ang_dih(self, benzene_mb):
+        molecule = Molecule(num_mols=2, compound=benzene_mb, identify_connections=False)
+        assert set(molecule.topology_information["particle_types"]) == {
+            "C",
+            "H",
+        }
+        assert set(molecule.topology_information["pair_types"]) == {
+            ("C", "C"),
+            ("C", "H"),
+            ("H", "H"),
+        }
+        assert len(set(molecule.topology_information["particle_typeid"])) == 2
+        assert len(molecule.topology_information["bond_types"]) == 2
+        assert len(molecule.topology_information["angle_types"]) == 0
+        assert len(molecule.topology_information["dihedral_types"]) == 0
+        assert not any(molecule.topology_information["particle_charge"])
+
     def test_validate_force_field_oplsaa(self, benzene_mb):
         molecule = Molecule(
             num_mols=2, force_field=OPLS_AA(), compound=benzene_mb
