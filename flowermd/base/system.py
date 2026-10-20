@@ -73,7 +73,7 @@ class System(ABC):
         **kwargs,
     ):
         self._molecules = check_return_iterable(molecules)
-        self.identify_connections = molecules.identify_connections
+        self.identify_connections = self._molecules[0].identify_connections
         self.all_molecules = []
         self.gmso_system = None
         self._reference_values = base_units
