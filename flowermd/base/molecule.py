@@ -264,7 +264,8 @@ class Molecule:
     def _convert_to_gmso(self, mb_molecule):
         """Convert the mbuild molecule to a GMSO topology."""
         topology = from_mbuild(mb_molecule)
-        # topology.identify_connections()
+        if self.identify_connections:
+            topology.identify_connections()
         return topology
 
     def _identify_particle_information(self, gmso_molecule):
