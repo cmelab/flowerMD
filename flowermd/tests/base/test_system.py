@@ -778,7 +778,7 @@ class TestSystem(BaseTest):
             )
 
     def test_apply_forcefield_no_ang_dih(self):
-        mols = LJChain(num_mols=3,lengths=3,identify_connections=False)
+        mols = LJChain(num_mols=3, lengths=3, identify_connections=False)
         system = Pack(
             molecules=[mols],
             density=0.4,
