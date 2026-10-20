@@ -43,7 +43,9 @@ class TestMolecule(BaseTest):
         assert not any(molecule.topology_information["particle_charge"])
 
     def test_molecule_topology_benzene_no_ang_dih(self, benzene_mb):
-        molecule = Molecule(num_mols=2, compound=benzene_mb, identify_connections=False)
+        molecule = Molecule(
+            num_mols=2, compound=benzene_mb, identify_connections=False
+        )
         assert set(molecule.topology_information["particle_types"]) == {
             "C",
             "H",
