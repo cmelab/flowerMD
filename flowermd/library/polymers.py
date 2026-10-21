@@ -157,6 +157,7 @@ class PEKK(CoPolymer):
         name="pekk",
         TI_ratio=0.50,
         seed=24,
+        **kwargs,
     ):
         super(PEKK, self).__init__(
             monomer_A=PEKK_meta,
@@ -168,6 +169,7 @@ class PEKK(CoPolymer):
             sequence=sequence,
             AB_ratio=TI_ratio,
             seed=seed,
+            **kwargs,
         )
 
 
@@ -192,7 +194,7 @@ class PEKK_para(Polymer):
 
     """
 
-    def __init__(self, lengths, num_mols, name="pekk_para"):
+    def __init__(self, lengths, num_mols, name="pekk_para", **kwargs):
         smiles = "c1ccc(Oc2ccc(C(=O)c3ccc(C(=O))cc3)cc2)cc1"
         file = os.path.join(MON_DIR, "pekk_para.mol2")
         bond_indices = [35, 36]
@@ -207,6 +209,7 @@ class PEKK_para(Polymer):
             bond_indices=bond_indices,
             bond_length=bond_length,
             bond_orientation=bond_orientation,
+            **kwargs,
         )
 
 
@@ -231,7 +234,7 @@ class PEKK_meta(Polymer):
 
     """
 
-    def __init__(self, lengths, num_mols, name="pekk_meta"):
+    def __init__(self, lengths, num_mols, name="pekk_meta", **kwargs):
         smiles = "c1cc(Oc2ccc(C(=O)c3cc(C(=O))ccc3)cc2)ccc1"
         file = os.path.join(MON_DIR, "pekk_meta.mol2")
         bond_indices = [35, 36]
@@ -246,6 +249,7 @@ class PEKK_meta(Polymer):
             bond_indices=bond_indices,
             bond_length=bond_length,
             bond_orientation=bond_orientation,
+            **kwargs,
         )
 
 
@@ -279,12 +283,16 @@ class LJChain(Polymer):
         bead_mass={"_A": 1.0},
         bond_lengths={"_A-_A": 1.0},
         name="lj_chain",
+        **kwargs,
     ):
         self.bead_sequence = bead_sequence
         self.bead_mass = bead_mass
         self.bond_lengths = bond_lengths
         super(LJChain, self).__init__(
-            lengths=lengths, num_mols=num_mols, name=name
+            lengths=lengths,
+            num_mols=num_mols,
+            name=name,
+            **kwargs,
         )
 
     def _build(self, length):
@@ -364,6 +372,7 @@ class EllipsoidChain(Polymer):
         bead_mass,
         bond_L=0.1,
         name="ellipsoid_chain",
+        **kwargs,
     ):
         self.bead_mass = bead_mass
         self.lpar = lpar
@@ -371,7 +380,7 @@ class EllipsoidChain(Polymer):
         # get the indices of the particles in a rigid body
         self.bead_constituents_types = ["X", "A", "T", "T"]
         super(EllipsoidChain, self).__init__(
-            lengths=lengths, num_mols=num_mols, name=name
+            lengths=lengths, num_mols=num_mols, name=name, **kwargs
         )
 
     def _build(self, length):
@@ -453,6 +462,7 @@ class EllipsoidChainRand(Polymer):
         density,
         bond_L=0.1,  # T-T bond length
         name="ellipsoid_chain",
+        **kwargs,
     ):
         self.bead_mass = bead_mass
         self.lpar = lpar
@@ -464,7 +474,7 @@ class EllipsoidChainRand(Polymer):
         self.box = mb.Box(lengths=np.array([L] * 3))
         self.bead_constituents_types = ["X", "A", "T", "T"]
         super(EllipsoidChainRand, self).__init__(
-            lengths=lengths, num_mols=num_mols, name=name
+            lengths=lengths, num_mols=num_mols, name=name, **kwargs
         )
 
     def _build(self, length):
