@@ -1,4 +1,5 @@
 import mbuild as mb
+import numpy as np
 import pytest
 
 from flowermd.library import (
@@ -33,6 +34,19 @@ class TestPolymers:
         assert chain.n_particles == (monomer.n_particles * 5) - 8
         for mol in chain._molecules:
             assert mol.name == "polyethylene_5mer"
+
+    @pytest.mark.parametrize("bond_length", [None, 0.16])
+    def test_polyethylene_bond_length(self, bond_length):
+        kwargs = {} if bond_length is None else {"bond_length": bond_length}
+        chain = PolyEthylene(lengths=3, num_mols=1, **kwargs).molecules[0]
+        carbons = [p for p in chain.particles() if p.name == "C"]
+        between = [  # the C-C bonds between repeat units
+            np.linalg.norm(a.pos - b.pos)
+            for a, b in chain.bonds()
+            if a in carbons and b in carbons and a.parent is not b.parent
+        ]
+        assert len(between) == 2
+        assert np.allclose(between, bond_length or 0.154, atol=1e-3)
 
     def test_pekk_meta(self):
         chain = PEKK_meta(lengths=5, num_mols=1)
