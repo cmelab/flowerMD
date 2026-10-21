@@ -1,11 +1,27 @@
+import json
+
 import hoomd
 import pytest
 import unyt as u
 
 from flowermd.base import Simulation
-from flowermd.library import DPD, PPS, LJChain, PhantomWalk, RandomWalk
-from flowermd.library.simulations.phantom_walk import run_until
+from flowermd.library import (
+    DPD,
+    PPS,
+    UFF_DPD,
+    AtomisticRandomWalk,
+    LJChain,
+    PhantomWalk,
+    PolyEthylene,
+    RandomWalk,
+    UniformTorsion,
+)
+from flowermd.library.simulations.phantom_walk import (
+    run_FIRE_until_converged,
+    run_until,
+)
 from flowermd.tests import BaseTest
+from flowermd.utils import protect_stereochemistry
 
 
 class TestPhantomWalkSimulation(BaseTest):
@@ -88,6 +104,66 @@ class TestPhantomWalkSimulation(BaseTest):
         assert isinstance(sim.forces[0], hoomd.md.pair.pair.DPD)
         assert isinstance(sim.integrator, hoomd.md.minimize.FIRE)
         assert isinstance(sim.method, hoomd.md.methods.ConstantVolume)
+
+
+class TestAllAtomPhantomWalk(BaseTest):
+    def sim(self, n_steps_dpd=1000):
+        system = AtomisticRandomWalk(
+            PolyEthylene(lengths=10, num_mols=12),
+            density=0.85,
+            seed=1,
+            torsion_sampler=UniformTorsion(),
+        )
+        ff = UFF_DPD(system)
+        system.apply_forcefield(r_cut=0.35, force_field=ff, kT=4.184)
+        ref = protect_stereochemistry(system)
+        sim = PhantomWalk(
+            system.hoomd_snapshot,
+            system.hoomd_forcefield,
+            n_steps_dpd=n_steps_dpd,
+            n_steps_fire=50,
+            dt=5e-5,
+            device=hoomd.device.CPU(),
+            run_now=False,
+        )
+        return sim, ref
+
+    def test_run_initialization(self):
+        sim, ref = self.sim()
+        forces = list(sim.forces)
+        record = sim.run_initialization(
+            stop=lambda s: True,
+            min_steps=100,
+            chunk=100,
+            stereo_reference=ref,
+            record_file="record.json",
+        )
+        assert record["dpd_steps"] == 200 and record["dpd_converged"]
+        assert record["stereochemistry"]["inverted"] == 0
+        assert json.load(open("record.json")) == record
+        assert sim.timestep == 250
+        # every force, the DPD force included, is back for the next MD run
+        assert {id(f) for f in sim.forces} == {id(f) for f in forces}
+        sim.run_NVE(n_steps=10)
+        assert type(sim.integrator) is hoomd.md.Integrator
+
+    def test_run_FIRE_until_converged(self):
+        sim, _ = self.sim()
+        tolerances = dict(force_tol=1e9, angmom_tol=1e9, energy_tol=1e9)
+        result = run_FIRE_until_converged(sim, 50, 200, **tolerances)
+        assert result == {"steps": 50, "converged": True}
+        with pytest.raises(ValueError):
+            run_FIRE_until_converged(sim, n_steps=50, max_steps=10)
+
+    def test_require_convergence(self):
+        sim, _ = self.sim(n_steps_dpd=200)
+        with pytest.raises(RuntimeError):
+            sim.run_initialization(
+                stop=lambda s: False,
+                min_steps=100,
+                chunk=100,
+                require_convergence=True,
+            )
 
 
 class TestRunUntil:

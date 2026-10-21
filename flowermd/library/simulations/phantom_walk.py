@@ -1,13 +1,50 @@
 """DPD energy relaxation simulation class and its run loops."""
 
+import json
+import warnings
+
 import hoomd
+import numpy as np
 
 from flowermd.base.simulation import Simulation
-from flowermd.utils import compute_closest_rdf
+from flowermd.internal.exceptions import StereoIntegrityError
+from flowermd.utils import (
+    EnergyStationarity,
+    audit_stereochemistry,
+    compute_closest_rdf,
+)
 
 
 class PhantomWalk(Simulation):
-    """Run an initial energy relaxation of overlapping particles with DPD and FIRE."""
+    """Run an initial energy relaxation of overlapping particles with DPD and FIRE.
+
+    By default `n_steps_dpd` DPD steps and `n_steps_fire` FIRE steps run on
+    construction. With ``run_now=False``, call `run_initialization` instead, which
+    runs DPD until the energies are stationary (at most `n_steps_dpd`
+    steps) and returns a record of the run; this is the protocol for
+    all-atom systems built with `flowermd.library.AtomisticRandomWalk` and
+    `flowermd.library.UFF_DPD`.
+
+    Parameters
+    ----------
+    initial_state : gsd.hoomd.Frame or str, required
+        The initial overlapping configuration.
+    forcefield : list of hoomd.md.force.Force, required
+        Forces including a `hoomd.md.pair.DPD`.
+    n_steps_dpd : int, required
+        DPD steps, or the cap on DPD steps for `run_initialization`.
+    n_steps_fire : int, required
+        FIRE steps.
+    dt : float, default 0.001
+        Time step. The default suits reduced units; for all-atom systems in
+        kJ/mol, nm and amu (`flowermd.library.UFF_DPD`) use about 5e-5 ps,
+        since 0.001 ps is unstable under the stiffened bonded terms.
+    write_at_start : bool, default False
+        Trigger the writers before the first DPD step.
+    run_now : bool, default True
+        Run DPD and FIRE on construction.
+
+    """
 
     def __init__(
         self,
@@ -24,6 +61,7 @@ class PhantomWalk(Simulation):
         log_write_freq=1e3,
         log_file_name="log.txt",
         write_at_start=False,
+        run_now=True,
     ):
         self.n_steps_dpd = n_steps_dpd
         self.n_steps_fire = n_steps_fire
@@ -40,13 +78,13 @@ class PhantomWalk(Simulation):
             log_write_freq=log_write_freq,
             log_file_name=log_file_name,
         )
+        if not run_now:
+            return
         self.run_NVE(
             n_steps=self.n_steps_dpd, write_at_start=self.write_at_start
         )
         self.run_FIRE(n_steps=self.n_steps_fire)
-        for writer in self.operations.writers:
-            if hasattr(writer, "flush"):
-                writer.flush()
+        self.flush_writers()
         self.particle_separation = compute_closest_rdf(
             self, bins=100, r_max=1.05
         )
@@ -54,6 +92,102 @@ class PhantomWalk(Simulation):
             "The closest particles after DPD + FIRE are: ",
             self.particle_separation,
         )
+
+    def run_initialization(
+        self,
+        stop=None,
+        min_steps=3500,
+        chunk=500,
+        samples_per_chunk=5,
+        conservative_fire=True,
+        stereo_reference=None,
+        require_convergence=False,
+        record_file=None,
+        **fire_kwargs,
+    ):
+        """Run DPD until `stop` is satisfied, then FIRE, and return a record.
+
+        Parameters
+        ----------
+        stop : callable, optional
+            ``stop(sim) -> bool``, see `run_until`. Defaults to
+            `flowermd.utils.EnergyStationarity`.
+        min_steps : int, default 3500
+            DPD steps before the first check.
+        chunk : int, default 500
+            DPD steps between checks.
+        samples_per_chunk : int, default 5
+            Energy samples averaged per chunk, see `run_until`.
+        conservative_fire : bool, default True
+            Run FIRE with `hoomd.md.pair.DPDConservative` (the repulsion
+            only) in place of the DPD pair force, whose noise and friction
+            keep FIRE from converging.
+        stereo_reference : dict, optional
+            From `flowermd.utils.protect_stereochemistry`. Audited after
+            FIRE; an inverted or flattened center raises
+            `StereoIntegrityError`.
+        require_convergence : bool, default False
+            Raise ``RuntimeError`` instead of warning when DPD reaches
+            `n_steps_dpd` without satisfying `stop`.
+        record_file : str, optional
+            Also write the record to this JSON file.
+        **fire_kwargs
+            Passed to `run_FIRE`.
+
+        Returns
+        -------
+        dict
+            DPD steps, convergence and energy history, FIRE convergence and
+            the stereochemistry audit.
+
+        """
+        stop = stop or EnergyStationarity()
+        dpd = run_DPD(
+            self,
+            n_steps=self.n_steps_dpd,
+            stop=stop,
+            chunk=chunk,
+            min_steps=min_steps,
+            samples_per_chunk=samples_per_chunk,
+            write_at_start=self.write_at_start,
+        )
+        if not dpd["stopped_by_criterion"]:
+            message = f"DPD reached {dpd['steps']} steps without converging."
+            if require_convergence:
+                raise RuntimeError(message)
+            warnings.warn(message)
+        if conservative_fire:
+            pair = next(f for f in self.forces if type(f) is hoomd.md.pair.DPD)
+            repulsion = hoomd.md.pair.DPDConservative(nlist=pair.nlist)
+            for types, params in pair.params.items():
+                repulsion.params[types] = dict(A=params["A"])
+                repulsion.r_cut[types] = pair.r_cut[types]
+            self.remove_force(pair)
+            self.add_force(repulsion)
+        self.run_FIRE(n_steps=self.n_steps_fire, **fire_kwargs)
+        record = {
+            "dpd_steps": dpd["steps"],
+            "dpd_converged": dpd["stopped_by_criterion"],
+            "dpd_energy_history": np.asarray(
+                getattr(stop, "history", [])
+            ).tolist(),
+            "fire_converged": bool(self.integrator.converged),
+        }
+        if conservative_fire:  # the next MD run gets the DPD force back
+            self.remove_force(repulsion)
+            self.add_force(pair)
+        if stereo_reference is not None:
+            audit = audit_stereochemistry(
+                stereo_reference, self.state.get_snapshot()
+            )
+            record["stereochemistry"] = audit
+            if audit["inverted"] or audit["near_planar"]:
+                raise StereoIntegrityError(str(audit))
+        if record_file:
+            with open(record_file, "w") as f:
+                json.dump(record, f, indent=2)
+        self.flush_writers()
+        return record
 
 
 def run_until(
