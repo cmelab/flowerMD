@@ -608,6 +608,12 @@ class Simulation(hoomd.simulation.Simulation):
             A diction of parameter:value for the integrator method used.
 
         """
+        if isinstance(self.integrator, hoomd.md.minimize.FIRE):
+            # run_FIRE left a minimizer in place; MD needs an MD integrator.
+            # Detach the minimizer first, so its forces can move over.
+            self.operations.integrator = None
+            self.integrator.forces.clear()
+            self.integrator = None
         if not self.integrator:  # Integrator and method not yet created
             self.integrator = hoomd.md.Integrator(
                 dt=self.dt,
@@ -1050,16 +1056,14 @@ class Simulation(hoomd.simulation.Simulation):
         ----------
         fire_kwargs: dict, required
             A dictionary of parameter:value for the fire minimizer function.
+            ``dt`` defaults to the simulation time step.
         integrator_method : hoomd.md.method, required
             Instance of one of the `hoomd.md.method` options.
         method_kwargs : dict, required
             A dictionary of parameter:value for the integrator method used.
 
         """
-        fire = hoomd.md.minimize.FIRE(
-            dt=self.dt,
-            **fire_kwargs,
-        )
+        fire = hoomd.md.minimize.FIRE(**{"dt": self.dt, **fire_kwargs})
         new_method = integrator_method(**method_kwargs)
         fire.methods.append(new_method)
         fire.forces.extend(self._forcefield)
@@ -1076,6 +1080,7 @@ class Simulation(hoomd.simulation.Simulation):
         angmom_tol=1000,
         energy_tol=1e-1,
         write_at_start=False,
+        **fire_kwargs,
     ):
         """
 
@@ -1088,6 +1093,10 @@ class Simulation(hoomd.simulation.Simulation):
             When set to True, triggers writers that evaluate to True
             for the initial step to execute before the next simulation
             time step.
+        **fire_kwargs
+            Further `hoomd.md.minimize.FIRE` parameters, such as ``dt``
+            (default: the simulation time step), ``finc_dt`` or
+            ``alpha_start``.
 
         """
         self.set_fire_minimizer(
@@ -1095,6 +1104,7 @@ class Simulation(hoomd.simulation.Simulation):
                 "force_tol": force_tol,
                 "angmom_tol": angmom_tol,
                 "energy_tol": energy_tol,
+                **fire_kwargs,
             },
             integrator_method=hoomd.md.methods.ConstantVolume,
             method_kwargs={"filter": self.integrate_group},
