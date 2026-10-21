@@ -227,9 +227,7 @@ class RandomWalk(System):
             positions in nm.
         """
         positions = np.empty((num_molecules * beads_per_molecule, 3))
-        starts = rng.uniform(
-            0, box_lengths, size=(num_molecules, 3)
-        )
+        starts = rng.uniform(0, box_lengths, size=(num_molecules, 3))
 
         thetas = rng.uniform(
             0, 2 * np.pi, size=(num_molecules, beads_per_molecule - 1)
