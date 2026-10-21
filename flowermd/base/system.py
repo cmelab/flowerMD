@@ -10,6 +10,7 @@ import mbuild as mb
 import numpy as np
 import unyt as u
 from gmso.external import from_mbuild, to_gsd_snapshot, to_hoomd_forcefield
+from gmso.external.convert_hoomd import get_cell_nlist
 from gmso.parameterization import apply
 
 from flowermd.base.forcefield import BaseHOOMDForcefield, BaseXMLForcefield
@@ -72,11 +73,15 @@ class System(ABC):
         base_units=dict(),
         **kwargs,
     ):
+        if isinstance(molecules, mb.Compound):
+            molecules = [molecules]  # a Compound iterates over its children
         self._molecules = check_return_iterable(molecules)
-        self.identify_connections = self._molecules[0].identify_connections
+        self.identify_connections = getattr(
+            self._molecules[0], "identify_connections", True
+        )
         self.all_molecules = []
         self.gmso_system = None
-        self._reference_values = base_units
+        self._reference_values = dict(base_units)
         self._hoomd_snapshot = None
         self._hoomd_forcefield = []
         self._gmso_forcefields_dict = dict()
@@ -113,11 +118,18 @@ class System(ABC):
             elif isinstance(mol_item, mb.Compound):
                 mol_item.name = str(self.n_mol_types)
                 self.all_molecules.append(mol_item)
+                self._mol_type_idx.extend(
+                    [self.n_mol_types] * mol_item.n_particles
+                )
+                self.n_mol_types += 1
             elif isinstance(mol_item, List):
                 for sub_mol in mol_item:
                     if isinstance(sub_mol, mb.Compound):
                         sub_mol.name = str(self.n_mol_types)
                         self.all_molecules.append(sub_mol)
+                        self._mol_type_idx.extend(
+                            [self.n_mol_types] * sub_mol.n_particles
+                        )
                     else:
                         raise MoleculeLoadError(
                             msg=f"Unsupported compound type {type(sub_mol)}. "
@@ -444,6 +456,14 @@ class System(ABC):
             ),
         )
         self._snap_refs = self._reference_values.copy()
+        # Wrap unwrapped positions (e.g. all-atom random walks) into the box
+        # and keep the image flags, so molecules stay whole when unwrapped.
+        box = np.asarray(snap.configuration.box)
+        if np.all(box[:3] > 0) and not np.any(box[3:]):  # 3D orthorhombic
+            box = box[:3]
+            image = np.floor(snap.particles.position / box + 0.5)
+            snap.particles.position = snap.particles.position - image * box
+            snap.particles.image = image.astype(np.int32)
         return snap
 
     def _validate_forcefield(self, input_forcefield):
@@ -545,7 +565,8 @@ class System(ABC):
         nlist : hoomd.md.nlist.Neighborlist, default None
             Neighborlist instance for simulation cell.
             If None, a cell nlist will be created by default using the
-            exclusions set by the foyer/GMSO forcefield.
+            exclusions set by the foyer/GMSO forcefield, and the
+            forcefield's ``nlist_buffer`` if it has one.
             see gmso.externl.convert_hoomd.py
         speedup_by_molgraph: bool, optional, default=False
             A flag to determine whether or not to search the system for repeated disconnected
@@ -582,6 +603,18 @@ class System(ABC):
         if scale_charges and not remove_charges:
             self._scale_charges()
 
+        site_params = self.gmso_system.sites[0].atom_type.parameters
+        if not self._reference_values and "epsilon" not in site_params:
+            # No Lennard-Jones (e.g. DPD only): nothing to infer units from,
+            # so use the force field's own units.
+            if self.auto_scale:
+                warnings.warn(
+                    "auto_scale needs Lennard-Jones atom types; using units "
+                    "of kJ/mol, nm and amu instead."
+                )
+            self._reference_values.update(
+                energy=1 * u.Unit("kJ/mol"), length=1 * u.nm, mass=1 * u.amu
+            )
         if not self._reference_values:
             epsilons = [
                 s.atom_type.parameters["epsilon"]
@@ -607,6 +640,9 @@ class System(ABC):
         if remove_hydrogens:
             self.remove_hydrogens()
 
+        buffer = getattr(force_field, "nlist_buffer", None)
+        if nlist is None and buffer is not None:
+            nlist = get_cell_nlist(self.gmso_system, buffer=buffer)
         pppm_kwargs = {"resolution": pppm_resolution, "order": pppm_order}
         self._ff_kwargs = {
             "r_cut": r_cut,

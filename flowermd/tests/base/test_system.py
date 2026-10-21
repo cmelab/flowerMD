@@ -2,6 +2,7 @@ import os
 
 import gmso
 import hoomd
+import mbuild as mb
 import numpy as np
 import pytest
 import unyt as u
@@ -1018,3 +1019,27 @@ class TestSystem(BaseTest):
         benzene_mol = benzene_molecule(n_mols=100)
         system = Pack(molecules=[benzene_mol], density=0.8 * u.g / u.cm**3)
         assert system.n_particles == 100 * 12
+
+
+class TestSystemInputs(BaseTest):
+    def test_compound_input(self):
+        from flowermd.base import Molecule
+        from flowermd.library import mbuildSystem
+
+        compound = mb.Compound(Molecule(num_mols=2, smiles="CCCC").molecules)
+        compound.box = mb.Box([3, 3, 3])
+        system = mbuildSystem(compound)
+        assert system.n_mol_types == 1
+        assert len(system._mol_type_idx) == system.n_particles == 28
+
+    def test_base_units_not_shared(self, benzene_molecule):
+        units = {"length": 1 * u.nm}
+        system = Lattice(
+            molecules=benzene_molecule(n_mols=4),
+            x=1,
+            y=1,
+            n=2,
+            base_units=units,
+        )
+        system.reference_energy = 1 * u.Unit("kJ/mol")
+        assert units == {"length": 1 * u.nm}
