@@ -47,7 +47,11 @@ The steps:
    lengths, bond angles and stereocenters keep the relaxed geometry.
    `UniformTorsion` (no force field needed) turns only the bonds between
    repeat units to uniform random torsions, which gives unrealistic chain
-   dimensions (see below).
+   dimensions (see below). Without OpenFF, pass
+   ``LocalBoltzmannSampler(force_field=OPLS_AA())`` to take the energies
+   from FlowerMD's OPLS-AA instead, typed with GMSO as `System` types it
+   (geometric combining rule, 1-4 Lennard-Jones halved); see the
+   polyethylene caveat below.
 2. **Force field**: `UFF_DPD` (RDKit UFF) or `OpenFF_DPD` (a SMIRNOFF
    force field, through OpenFF Interchange) writes a GMSO XML file for the
    system: bonded terms scaled by ``bonded_scale`` (30; proper torsions by
@@ -100,6 +104,13 @@ between repeat units uniformly (`UniformTorsion`) was off by +712 %
 bonded terms disturb, return to the force field's own within about 100 ps
 of MD. Crowded chains such as PMMA come out too compact (about -35 %);
 `LocalBoltzmannSampler` documents why.
+
+With OPLS-AA energies the placement of atactic polystyrene (20-mers) is
+close to Sage's (single-chain C_n about 7.3), but polyethylene is too stiff:
+single-chain C_n of C40 is about 9, against about 6.5 expected, because
+OPLS-AA over-stabilizes trans states in long alkanes (the reason for L-OPLS;
+Siu et al., J. Chem. Theory Comput. 8, 1459 (2012)). Sage 2.3.0 remains the
+validated default.
 
 API
 ---

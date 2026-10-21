@@ -1,3 +1,4 @@
+import sys
 import time
 
 import mbuild as mb
@@ -6,12 +7,14 @@ import pytest
 import unyt as u
 
 from flowermd.base import Molecule, Polymer
+from flowermd.internal.local_boltzmann import _plan
 from flowermd.internal.placement import (
     chain_junctions,
     random_chain_conformation,
     repeat_units,
 )
 from flowermd.library import (
+    OPLS_AA,
     AtomisticRandomWalk,
     EllipsoidChainRand,
     LJChain,
@@ -311,3 +314,67 @@ class TestLocalBoltzmannSampler:
                 chain, np.zeros(3), np.random.default_rng(0), sampler
             )
         assert time.perf_counter() - start < 60
+
+
+class TestLocalBoltzmannSamplerOPLS:
+    @pytest.fixture
+    def no_openff(self, monkeypatch):
+        """Make every openff import fail."""
+        for name in [m for m in sys.modules if m.startswith("openff")]:
+            monkeypatch.setitem(sys.modules, name, None)
+        for name in ("openff", "openff.toolkit", "openff.interchange"):
+            monkeypatch.setitem(sys.modules, name, None)
+
+    def test_without_openff(self, no_openff):
+        with pytest.raises(ImportError, match="OPLS_AA"):
+            LocalBoltzmannSampler()
+        sampler = LocalBoltzmannSampler(force_field=OPLS_AA())
+        assert LocalBoltzmannSampler(force_field="oplsaa").force_field.name
+        ps = "CC(c1ccccc1)CC(c1ccccc1)CC(c1ccccc1)C"
+        chain = Molecule(num_mols=1, smiles=ps).molecules[0]
+        xyz, units = sampler.template(chain)
+        assert len(units) == 8
+        new = random_chain_conformation(
+            chain, np.zeros(3), np.random.default_rng(0), sampler
+        )
+        for before, after in zip(_geometry(chain, xyz), _geometry(chain, new)):
+            np.testing.assert_allclose(after, before, atol=1e-6)
+        built = _geometry(chain, chain.xyz)
+        assert np.all(np.sign(built[2]) == np.sign(_geometry(chain, new)[2]))
+        chain = PolyEthylene(lengths=5, num_mols=1).molecules[0]
+        x = random_chain_conformation(
+            chain, np.zeros(3), np.random.default_rng(1), sampler
+        )
+        assert np.all(np.isfinite(x))
+
+    def test_torsion_and_lj_terms(self):
+        sampler = LocalBoltzmannSampler(force_field=OPLS_AA())
+        chain = PolyEthylene(lengths=3, num_mols=1).molecules[0]  # hexane
+        terms = sampler._topology(chain)[1]
+        carbon = [p.element.symbol == "C" for p in chain.particles()]
+        # OPLS-AA Ryckaert-Bellemans coefficients (kJ/mol), psi = phi - pi
+        rb = {True: (2.9288, -1.4644, 0.2092, -1.6736)}  # CT-CT-CT-CT
+        rb[False] = (0.6276, 1.8828, 0.0, -2.5104)  # with an HC end
+        phi = np.linspace(-np.pi, np.pi, 37)
+        for quad, values in terms["dihedrals"].items():
+            mine = sum(k * (1 + np.cos(n * phi - p)) for k, n, p in values)
+            c = rb[all(carbon[i] for i in quad)]
+            ref = sum(c[m] * np.cos(phi - np.pi) ** m for m in range(4))
+            np.testing.assert_allclose(mine - mine[0], ref - ref[0], atol=1e-9)
+        assert terms["scale14"] == 0.5 and terms["combining"] == "geometric"
+        sigma = {True: 0.35, False: 0.25}
+        eps = {True: 0.276144, False: 0.125520}
+        junctions = chain_junctions(
+            terms["units"], list(terms["bonds"]), len(carbon)
+        )
+        for j, step in zip(junctions, _plan(terms, junctions, 4)):
+            rows, cols = j.moved[step.pr], step.pc
+            si = np.array([sigma[carbon[i]] for i in rows])
+            sj = np.array([sigma[carbon[i]] for i in cols])
+            np.testing.assert_allclose(step.sigma2, si * sj)
+            ei = np.array([eps[carbon[i]] for i in rows])
+            ej = np.array([eps[carbon[i]] for i in cols])
+            assert np.all(
+                np.isclose(step.eps, np.sqrt(ei * ej))
+                | np.isclose(step.eps, 0.5 * np.sqrt(ei * ej))
+            )

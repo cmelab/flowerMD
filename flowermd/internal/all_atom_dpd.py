@@ -191,6 +191,92 @@ def openff_terms(mol, force_field):
     return out
 
 
+def gmso_terms(compound, force_field):
+    """Terms (kJ/mol, nm, rad) of a GMSO force field applied to `compound`.
+
+    The compound is typed as `flowermd.base.System` types it
+    (`gmso.parameterization.apply`, impropers ignored), and the tables have
+    the layout of `openff_terms`, atoms in particle order, plus
+    ``combining``, the force field's combining rule. Torsions are written
+    exactly as sums of ``k (1 + cos(n phi - phase))``, up to a constant.
+    """
+    from gmso.external import from_mbuild
+    from gmso.parameterization import apply
+
+    top = apply(from_mbuild(compound), force_field, identify_connections=True)
+    index = {site: i for i, site in enumerate(top.sites)}
+
+    def members(connection):
+        return tuple(index[s] for s in connection.connection_members)
+
+    def value(p, name, units):
+        return float(p[name].to_value(units))
+
+    out = {kind: {} for kind in KINDS}
+    out["sigma"], out["eps"], out["mass"] = {}, {}, []
+    for i, site in enumerate(top.sites):
+        p = site.atom_type.parameters
+        out["sigma"][i] = value(p, "sigma", "nm")
+        out["eps"][i] = value(p, "epsilon", "kJ/mol")
+        out["mass"].append(float(site.mass.to_value("amu")))
+    out["scale14"] = float(force_field.scaling_factors["nonBonded14Scale"])
+    out["combining"] = force_field.combining_rule
+    for bond in top.bonds:
+        p = bond.bond_type.parameters
+        out["bonds"][members(bond)] = (
+            value(p, "k", "kJ/(mol*nm**2)"),
+            value(p, "r_eq", "nm"),
+        )
+    for angle in top.angles:
+        p = angle.angle_type.parameters
+        out["angles"][members(angle)] = (
+            value(p, "k", "kJ/(mol*rad**2)"),
+            value(p, "theta_eq", "rad"),
+        )
+    for kind in ("dihedrals", "impropers"):
+        for c in getattr(top, kind):
+            out[kind][members(c)] = _periodic_torsion(
+                c.connection_type.parameters
+            )
+    return out
+
+
+def _periodic_torsion(p):
+    """GMSO torsion parameters as ``((k, n, phase), ...)``, kJ/mol and rad.
+
+    Ryckaert-Bellemans ``sum_m c_m cos(psi)**m``, ``psi = phi - pi``, is
+    ``sum_n a_n (-1)**n cos(n phi)``, with `a_n` the Chebyshev coefficients
+    (``cos(n psi) = T_n(cos(psi))``); the OPLS (Fourier) form has
+    ``0.5 k_n (1 - (-1)**n cos(n phi))``. Constant offsets are dropped.
+    """
+    if "c0" in p:  # RyckaertBellemansTorsionPotential
+        c = [p[f"c{m}"].to_value("kJ/mol") for m in range(6)]
+        a = np.polynomial.chebyshev.poly2cheb(c)
+        cosines = {n: a[n] * (-1) ** n for n in range(1, len(a))}
+    elif "k1" in p:  # OPLSTorsionPotential, FourierTorsionPotential
+        cosines = {
+            n: -0.5 * (-1) ** n * p[f"k{n}"].to_value("kJ/mol")
+            for n in range(1, 5)
+        }
+    elif "phi_eq" in p:  # PeriodicTorsionPotential, PeriodicImproperPotential
+        k = np.atleast_1d(p["k"].to_value("kJ/mol"))
+        n = np.atleast_1d(np.asarray(p["n"], dtype=float))
+        phase = np.atleast_1d(p["phi_eq"].to_value("rad"))
+        return tuple(zip(k.tolist(), n.astype(int).tolist(), phase.tolist()))
+    else:
+        raise NotImplementedError(
+            f"Torsion parameters {sorted(p)} are not supported; use "
+            "Ryckaert-Bellemans, OPLS (Fourier) or periodic torsions."
+        )
+    # a cos(n phi) = |a| (1 + cos(n phi - phase)) - |a|
+    terms = tuple(
+        (abs(float(a)), n, 0.0 if a > 0 else math.pi)
+        for n, a in cosines.items()
+        if abs(a) > 1e-12
+    )
+    return terms or ((0.0, 1, 0.0),)
+
+
 def _merge_impropers(out):
     """Sum SMIRNOFF's three trefoil terms per center into one improper.
 

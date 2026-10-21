@@ -1,4 +1,4 @@
-"""Torsion sampler with local Boltzmann weights from a SMIRNOFF force field.
+"""Torsion sampler with local Boltzmann weights from an all-atom force field.
 
 Each rotatable bond of a chain is turned, in growth order, to an angle drawn
 from ``p(phi) ~ exp(-E(phi) / kT)``, where `E` holds only the terms that the
@@ -7,7 +7,9 @@ the Lennard-Jones energy between the atoms it moves and the atoms already
 placed at most `max_sep` bonds away. This is a rotational-isomeric-state
 style model of an unperturbed chain, so it gives realistic chain
 dimensions without any knowledge of the other chains. The parameters are
-the unscaled terms that `flowermd.library.OpenFF_DPD` writes.
+the unscaled terms of a SMIRNOFF force field (those that
+`flowermd.library.OpenFF_DPD` writes) or of a FlowerMD XML force field
+such as `flowermd.library.OPLS_AA`.
 """
 
 import functools
@@ -17,7 +19,11 @@ import numpy as np
 from scipy.optimize import minimize
 from scipy.sparse import csr_matrix
 
-from flowermd.internal.all_atom_dpd import openff_terms, to_sanitized_rdkit
+from flowermd.internal.all_atom_dpd import (
+    gmso_terms,
+    openff_terms,
+    to_sanitized_rdkit,
+)
 
 KB = 0.0083144626  # kJ/(mol K)
 # Per junction: the turned bond a-b; its torsions i-a-b-l (placed atom i,
@@ -43,19 +49,23 @@ class LocalBoltzmannSampler:
     Each torsion is drawn on a grid of `n_grid` angles, with a uniform
     offset within the chosen grid cell, from the Boltzmann weights of the
     force field's proper torsions about the bond plus the Lennard-Jones
-    energy (1-4 pairs scaled by the force field's factor) between the moved
-    atoms and the placed atoms at most `max_sep` bonds away. Electrostatics
-    are left out. A draw that brings a moved heavy atom closer than `r_min`
-    to a placed heavy atom more than three bonds away is redrawn; after
-    `max_redraw` draws the chain starts again, and after `max_restarts`
-    restarts a ``RuntimeError`` is raised.
+    energy (the force field's combining rule, 1-4 pairs scaled by its
+    factor) between the moved atoms and the placed atoms at most `max_sep`
+    bonds away. Electrostatics are left out. A draw that brings a moved
+    heavy atom closer than `r_min` to a placed heavy atom more than three
+    bonds away is redrawn; after `max_redraw` draws the chain starts again,
+    and after `max_restarts` restarts a ``RuntimeError`` is raised.
 
     Parameters
     ----------
     temperature : float, default 413.0
         Temperature (K) of the Boltzmann weights; use the melt temperature.
-    force_field : str, default "openff-2.3.0.offxml"
-        SMIRNOFF force field name or path.
+    force_field : str or BaseXMLForcefield, default "openff-2.3.0.offxml"
+        A SMIRNOFF force field name or path, parameterized with OpenFF
+        Interchange; or a FlowerMD XML force field such as
+        ``flowermd.library.OPLS_AA()`` (or its GMSO ``ForceField``), typed
+        with GMSO as `flowermd.base.System` types it, which needs no
+        OpenFF. The string ``"oplsaa"`` is short for ``OPLS_AA()``.
     n_grid : int, default 72
         Grid points per torsion.
     max_sep : int, default 4
@@ -83,7 +93,16 @@ class LocalBoltzmannSampler:
     PMMA (alpha,alpha-disubstituted vinyl polymers) are not handled: their
     local energy prefers gauche states that the full chain does not, so they
     come out too compact, and with `r_min` they may not be placeable at all.
-    Requires openff-toolkit and openff-interchange.
+    A SMIRNOFF force field requires openff-toolkit and openff-interchange.
+
+    With OPLS-AA (``force_field=OPLS_AA()``), the single-chain placement C_n
+    of C40 polyethylene at 413 K is about 9 (about 11 on Sage's geometry,
+    whose C-C-C angle is 109.7 rather than 112.7 degrees), against about
+    6.5 expected: OPLS-AA over-stabilizes trans states in long alkanes (the
+    reason for L-OPLS; Siu, Pluhackova and Boeckmann, J. Chem. Theory
+    Comput. 8, 1459 (2012), doi:10.1021/ct200908r), and the placement
+    inherits it. For atactic polystyrene (20-mers, 450 K) it is about 7.3,
+    close to Sage. Sage 2.3.0 remains the validated default.
 
     """
 
@@ -98,17 +117,21 @@ class LocalBoltzmannSampler:
         max_restarts=500,
         relax=True,
     ):
-        try:
-            import openff.interchange  # noqa: F401
-            import openff.toolkit  # noqa: F401
-        except ImportError as error:
-            raise ImportError(
-                "LocalBoltzmannSampler needs openff-toolkit and "
-                "openff-interchange (conda-forge). Without them, pass "
-                "torsion_sampler=UniformTorsion(), which turns only the "
-                "bonds between repeat units and gives much less realistic "
-                "chain dimensions."
-            ) from error
+        if isinstance(force_field, str) and force_field == "oplsaa":
+            from flowermd.library.forcefields import OPLS_AA
+
+            force_field = OPLS_AA()
+        if isinstance(force_field, str):
+            try:
+                import openff.interchange  # noqa: F401
+                import openff.toolkit  # noqa: F401
+            except ImportError as error:
+                raise ImportError(
+                    "A SMIRNOFF force field needs openff-toolkit and "
+                    "openff-interchange (conda-forge). Without them, use "
+                    "LocalBoltzmannSampler(force_field=OPLS_AA()), with "
+                    "OPLS_AA from flowermd.library."
+                ) from error
         self.kT = KB * temperature
         self.force_field = force_field
         self.n_grid = n_grid
@@ -133,7 +156,11 @@ class LocalBoltzmannSampler:
         )
         if key not in self._tables:
             mol = to_sanitized_rdkit(chain)
-            terms = openff_terms(mol, self.force_field)
+            if isinstance(self.force_field, str):
+                terms = openff_terms(mol, self.force_field)
+            else:  # a BaseXMLForcefield or a GMSO ForceField
+                ff = getattr(self.force_field, "gmso_ff", self.force_field)
+                terms = gmso_terms(chain, ff)
             terms["heavy"] = np.array(
                 [a.GetAtomicNum() > 1 for a in mol.GetAtoms()]
             )
@@ -305,6 +332,10 @@ def _plan(terms, junctions, max_sep):
         pr, pc, ps = np.array(pairs, dtype=int).reshape(-1, 3).T
         pm = j.moved[pr]
         scale = np.where(ps == 3, terms["scale14"], 1.0)
+        if terms.get("combining", "lorentz") == "geometric":  # e.g. OPLS
+            sigma_ij = np.sqrt(sigma[pm] * sigma[pc])
+        else:  # Lorentz-Berthelot, e.g. SMIRNOFF
+            sigma_ij = (sigma[pm] + sigma[pc]) / 2
         hr = [r for r, m in enumerate(j.moved) if terms["heavy"][m]]
         ex = [
             (h, column[q])
@@ -321,7 +352,7 @@ def _plan(terms, junctions, max_sep):
                 torsion_terms,
                 pr,
                 pc,
-                ((sigma[pm] + sigma[pc]) / 2) ** 2,  # Lorentz-Berthelot
+                sigma_ij**2,
                 scale * np.sqrt(eps[pm] * eps[pc]),
                 np.array(hr, dtype=int),
                 tuple(np.array(ex, dtype=int).reshape(-1, 2).T),
@@ -344,7 +375,8 @@ def relax_bonded(xyz, terms, tol=1.0):
     xyz : numpy.ndarray, shape (N, 3), required
         Coordinates (nm).
     terms : dict, required
-        Tables as returned by `flowermd.internal.all_atom_dpd.openff_terms`.
+        Tables as returned by `flowermd.internal.all_atom_dpd.openff_terms`
+        or `flowermd.internal.all_atom_dpd.gmso_terms`.
     tol : float, default 1.0
         Largest force component (kJ/(mol nm)) at convergence. Bond lengths
         and angles are then within about 0.02 pm and 0.3 degrees of a much
