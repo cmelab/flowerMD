@@ -23,9 +23,11 @@ class PhantomWalk(Simulation):
         gsd_file_name="trajectory.gsd",
         log_write_freq=1e3,
         log_file_name="log.txt",
+        write_at_start=False
     ):
         self.n_steps_dpd = n_steps_dpd
         self.n_steps_fire = n_steps_fire
+        self.write_at_start = write_at_start
         super(PhantomWalk, self).__init__(
             initial_state=initial_state,
             forcefield=forcefield,
@@ -38,7 +40,7 @@ class PhantomWalk(Simulation):
             log_write_freq=log_write_freq,
             log_file_name=log_file_name,
         )
-        self.run_NVE(n_steps=self.n_steps_dpd, write_at_start=False)
+        self.run_NVE(n_steps=self.n_steps_dpd, write_at_start=self.write_at_start)
         self.run_FIRE(n_steps=self.n_steps_fire)
         for writer in self.operations.writers:
             if hasattr(writer, "flush"):
