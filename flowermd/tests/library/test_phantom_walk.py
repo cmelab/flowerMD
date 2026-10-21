@@ -1,8 +1,10 @@
 import hoomd
+import pytest
 import unyt as u
 
 from flowermd.base import Simulation
 from flowermd.library import DPD, PPS, LJChain, PhantomWalk, RandomWalk
+from flowermd.library.simulations.phantom_walk import run_until
 from flowermd.tests import BaseTest
 
 
@@ -86,3 +88,38 @@ class TestPhantomWalkSimulation(BaseTest):
         assert isinstance(sim.forces[0], hoomd.md.pair.pair.DPD)
         assert isinstance(sim.integrator, hoomd.md.minimize.FIRE)
         assert isinstance(sim.method, hoomd.md.methods.ConstantVolume)
+
+
+class TestRunUntil:
+    class Sim:
+        timestep = 0
+
+        def run(self, steps, write_at_start=False):
+            self.timestep += steps
+
+    class Stop:
+        def __init__(self, at):
+            self.at, self.samples, self.calls = at, [], []
+
+        def sample(self, sim):
+            self.samples.append(sim.timestep)
+
+        def __call__(self, sim):
+            self.calls.append(sim.timestep)
+            return sim.timestep >= self.at
+
+    def test_chunks_and_samples(self):
+        sim, stop = self.Sim(), self.Stop(at=400)
+        result = run_until(
+            sim, 1000, stop, chunk=100, min_steps=200, samples_per_chunk=4
+        )
+        assert result == {"steps": 400, "stopped_by_criterion": True}
+        assert stop.calls == [300, 400]
+        assert stop.samples == [225, 250, 275, 325, 350, 375]
+
+    def test_cap(self):
+        sim, stop = self.Sim(), self.Stop(at=10**9)
+        result = run_until(sim, 250, stop, chunk=100)
+        assert result == {"steps": 300, "stopped_by_criterion": False}
+        with pytest.raises(ValueError):
+            run_until(sim, 250, stop, chunk=100, samples_per_chunk=3)
