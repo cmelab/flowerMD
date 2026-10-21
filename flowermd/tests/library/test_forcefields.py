@@ -3,8 +3,10 @@ import os
 import hoomd
 import numpy as np
 import pytest
+import unyt as u
 
 from flowermd.assets import FF_DIR
+from flowermd.base import Lattice, Molecule
 from flowermd.library import (
     DPD,
     GAFF,
@@ -12,15 +14,17 @@ from flowermd.library import (
     OPLS_AA_BENZENE,
     OPLS_AA_DIMETHYLETHER,
     OPLS_AA_PPS,
+    UFF_DPD,
     Bead_Spring_DPD,
     BeadSpring,
     EllipsoidFF_DPD,
     EllipsoidForcefield,
     FF_from_file,
     KremerGrestBeadSpring,
+    OpenFF_DPD,
     TableForcefield,
 )
-from flowermd.tests.base_test import ASSETS_DIR
+from flowermd.tests.base_test import ASSETS_DIR, BaseTest
 
 
 class TestForceFields:
@@ -256,3 +260,87 @@ class TestTableForcefield:
     def test_bad_file_type(self):
         with pytest.raises(ValueError):
             TableForcefield.from_files(bonds={"A-A": "bond_table.bad"})
+
+
+class TestAllAtomDPD(BaseTest):
+    PS = "CC(c1ccccc1)CC(c1ccccc1)CC(c1ccccc1)C"
+
+    def build(self, smiles, ff_class=UFF_DPD, **kwargs):
+        mols = Molecule(num_mols=2, smiles=smiles)
+        system = Lattice(molecules=mols, x=1.5, y=1.5, n=1)
+        ff = ff_class(system, **kwargs)
+        system.apply_forcefield(r_cut=0.35, force_field=ff, kT=4.184)
+        return system
+
+    def force(self, system, kind):
+        forces = system.hoomd_forcefield
+        return next(f for f in forces if isinstance(f, kind))
+
+    def test_uff_matches_rdkit(self):
+        from rdkit import Chem
+        from rdkit.Chem import rdForceFieldHelpers
+
+        system = self.build("CC", bonded_scale=1.0)
+        ethane = Chem.AddHs(Chem.MolFromSmiles("CC"))
+        k, r0 = rdForceFieldHelpers.GetUFFBondStretchParams(ethane, 0, 1)
+        bond = self.force(system, hoomd.md.bond.Harmonic).params["_C000-_C000"]
+        assert np.isclose(bond["k"], k * 418.4)
+        assert np.isclose(bond["r0"], r0 / 10)
+        assert system.reference_energy == 1 * u.Unit("kJ/mol")
+
+    def test_bonded_scale_and_types(self):
+        system = self.build(self.PS)
+        types = system.hoomd_snapshot.particles.types
+        assert len([t for t in types if t.startswith("_C")]) > 1
+        assert all(len(t) == 5 for t in types)  # zero-padded: sorts agree
+        one = self.build(self.PS, bonded_scale=1.0, dihedral_scale=1.0)
+        k30 = self.force(system, hoomd.md.angle.Harmonic).params
+        k1 = self.force(one, hoomd.md.angle.Harmonic).params
+        assert all(np.isclose(k30[t]["k"], 30 * k1[t]["k"]) for t in k1)
+        k300 = self.force(system, hoomd.md.dihedral.Periodic).params
+        k1 = self.force(one, hoomd.md.dihedral.Periodic).params
+        assert all(np.isclose(k300[t]["k"], 300 * k1[t]["k"]) for t in k1)
+
+    def test_pair_weighting_and_overrides(self):
+        system = self.build(self.PS, epsilon_weighting=False, A=100.0)
+        dpd = self.force(system, hoomd.md.pair.DPD)
+        assert {p["A"] for p in dpd.params.values()} == {100.0}
+        assert {p["gamma"] for p in dpd.params.values()} == {4091.0}
+        assert np.isclose(dpd.nlist.buffer, 0.04)
+        pair = tuple(sorted(system.hoomd_snapshot.particles.types)[:2])
+        system = self.build(self.PS, pair_overrides={pair: 7.0})
+        assert self.force(system, hoomd.md.pair.DPD).params[pair]["A"] == 7.0
+
+    def test_untyped_dihedrals_get_zero_k(self):
+        system = self.build("C=CC#N")  # UFF has no torsion next to C#N
+        params = self.force(system, hoomd.md.dihedral.Periodic).params
+        k = [params[t]["k"] for t in system.hoomd_snapshot.dihedrals.types]
+        assert 0.0 in k and max(k) > 0
+
+    def test_aromatic_sulfur(self):
+        from rdkit import Chem
+
+        from flowermd.base import Polymer
+        from flowermd.internal.all_atom_dpd import to_sanitized_rdkit
+
+        bithiophene = Polymer(
+            lengths=2,
+            num_mols=1,
+            smiles="c1ccsc1",
+            bond_indices=[7, 8],
+            bond_length=0.145,
+            bond_orientation=[None, None],
+        )
+        mol = to_sanitized_rdkit(bithiophene.molecules[0])
+        assert not any(a.GetNumRadicalElectrons() for a in mol.GetAtoms())
+        assert all(a.GetIsAromatic() for a in mol.GetAtoms() if a.IsInRing())
+        reference = Chem.AddHs(Chem.MolFromSmiles("c1ccc(-c2cccs2)s1"))
+        assert Chem.MolToSmiles(mol) == Chem.MolToSmiles(reference)
+        UFF_DPD(bithiophene.molecules[0])  # UFF types the aromatic S too
+
+    def test_openff(self):
+        pytest.importorskip("openff.interchange")
+        system = self.build(self.PS, ff_class=OpenFF_DPD)
+        assert system.hoomd_snapshot.impropers.N > 0
+        periodic = hoomd.md.dihedral.Periodic
+        assert any(isinstance(f, periodic) for f in system.hoomd_forcefield)

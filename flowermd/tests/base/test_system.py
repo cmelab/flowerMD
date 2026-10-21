@@ -1043,3 +1043,23 @@ class TestSystemInputs(BaseTest):
         )
         system.reference_energy = 1 * u.Unit("kJ/mol")
         assert units == {"length": 1 * u.nm}
+
+    @pytest.mark.parametrize("auto_scale", [True, False])
+    def test_no_lennard_jones_units(self, auto_scale):
+        from flowermd.base import Molecule
+        from flowermd.library import UFF_DPD
+
+        system = Lattice(
+            molecules=Molecule(num_mols=2, smiles="CC"), x=1.5, y=1.5, n=1
+        )
+        ff = UFF_DPD(system)
+        if auto_scale:
+            with pytest.warns(UserWarning, match="auto_scale"):
+                system.apply_forcefield(
+                    r_cut=0.35, force_field=ff, kT=1.0, auto_scale=True
+                )
+        else:
+            system.apply_forcefield(r_cut=0.35, force_field=ff, kT=1.0)
+        assert system.reference_length == 1 * u.nm
+        assert system.reference_energy == 1 * u.Unit("kJ/mol")
+        assert system.reference_mass == 1 * u.amu

@@ -8,6 +8,7 @@ from .forcefields import (
     OPLS_AA_BENZENE,
     OPLS_AA_DIMETHYLETHER,
     OPLS_AA_PPS,
+    UFF_DPD,
     BaseHOOMDForcefield,
     BaseXMLForcefield,
     Bead_Spring_DPD,
@@ -16,6 +17,7 @@ from .forcefields import (
     EllipsoidForcefield,
     FF_from_file,
     KremerGrestBeadSpring,
+    OpenFF_DPD,
     TableForcefield,
 )
 from .polymers import (

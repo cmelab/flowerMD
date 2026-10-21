@@ -14,6 +14,7 @@ dependencies:
   - pip
   - py3Dmol
   - python >=3.11, <3.14
+  - rdkit
   - fresnel >=0.13.5
   - cmeutils >=1.3
   - pip:
