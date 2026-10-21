@@ -8,6 +8,8 @@ import unyt as u
 from scipy.spatial.distance import pdist
 
 from flowermd.base.system import System
+from flowermd.internal.local_boltzmann import LocalBoltzmannSampler
+from flowermd.internal.placement import random_chain_conformation
 from flowermd.utils import (
     get_target_box_mass_density,
     get_target_box_number_density,
@@ -143,19 +145,82 @@ class RandomWalk(System):
         system = mb.Compound()
         system.add(self.all_molecules)
 
+        positions = self._walk_positions(system, box_lengths, rng)
+        system.xyz = positions
+        system.box = mb.box.Box(box_lengths)
+        return system
+
+    def _walk_positions(self, system, box_lengths, rng):
+        """Positions (nm) of every particle in `system`, one row each."""
         particles = list(system.particles())
         idx_map = {p: i for i, p in enumerate(particles)}
         bonds = np.array(
             [(idx_map[b[0]], idx_map[b[1]]) for b in system.bonds()], dtype=int
         )
 
-        positions = random_walk_positions_from_bonds(
+        return random_walk_positions_from_bonds(
             bonds=bonds,
             n_particles=len(particles),
             bond_length=self.bond_length,
             box_lengths=box_lengths[0],
             rng=rng,
         )
-        system.xyz = positions
-        system.box = mb.box.Box(box_lengths)
-        return system
+
+
+class AtomisticRandomWalk(RandomWalk):
+    """Places all-atom chains in the system as random coils.
+
+    Box sizing, seeding and assembly are `RandomWalk`'s; only the walk
+    differs. Each chain gets a random start and orientation and is grown
+    rigid unit by rigid unit, with the torsion of each free bond
+    chosen by `torsion_sampler` (see
+    `flowermd.internal.placement.random_chain_conformation`). Bond lengths,
+    bond angles and stereocenters stay as in the sampler's template, and
+    chains overlap freely; relax them with `flowermd.library.PhantomWalk`.
+    Positions are left unwrapped and wrapped with image flags in
+    `hoomd_snapshot`.
+
+    Parameters
+    ----------
+    molecules : flowermd.base.Polymer, required
+        All-atom chains built from repeat units.
+    density : float or unyt_quantity, required
+        The target density for the system (g/cm^3 or nm^-3).
+    buffer : float, default 0.3
+        Distance (nm) between the box faces and the chain starts.
+    torsion_sampler : object, optional
+        Defaults to `flowermd.library.LocalBoltzmannSampler` at its default
+        settings (Sage 2.3.0, 413 K), which turns every rotatable bond and
+        needs OpenFF. `flowermd.library.UniformTorsion` turns only the bonds
+        between repeat units and needs no force field, but its chain
+        dimensions depend on how the repeat unit was built.
+    **kwargs
+        ``base_units``, ``seed`` and ``unique_molecules``, as in
+        `RandomWalk`.
+
+    """
+
+    def __init__(
+        self, molecules, density, buffer=0.3, torsion_sampler=None, **kwargs
+    ):
+        self.torsion_sampler = torsion_sampler or LocalBoltzmannSampler()
+        self.buffer = buffer
+        super(AtomisticRandomWalk, self).__init__(
+            molecules=molecules,
+            bond_length=None,
+            density=density,
+            **kwargs,
+        )
+
+    def _walk_positions(self, system, box_lengths, rng):
+        """Unwrapped positions of every atom, chain after chain (nm)."""
+        starts = rng.uniform(
+            self.buffer,
+            box_lengths - self.buffer,
+            size=(len(self.all_molecules), 3),
+        )
+        positions = [
+            random_chain_conformation(chain, start, rng, self.torsion_sampler)
+            for chain, start in zip(self.all_molecules, starts)
+        ]
+        return np.concatenate(positions) - box_lengths / 2

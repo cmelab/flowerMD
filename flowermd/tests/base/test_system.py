@@ -1063,3 +1063,24 @@ class TestSystemInputs(BaseTest):
         assert system.reference_length == 1 * u.nm
         assert system.reference_energy == 1 * u.Unit("kJ/mol")
         assert system.reference_mass == 1 * u.amu
+
+    def test_snapshot_wraps_with_images(self):
+        from flowermd.library import (
+            AtomisticRandomWalk,
+            PolyEthylene,
+            UniformTorsion,
+        )
+
+        system = AtomisticRandomWalk(
+            PolyEthylene(lengths=6, num_mols=4),
+            density=0.85,
+            seed=3,
+            torsion_sampler=UniformTorsion(),
+        )
+        snap = system.hoomd_snapshot
+        box = snap.configuration.box[:3]
+        assert np.all(np.abs(snap.particles.position) <= box / 2 + 1e-6)
+        unwrapped = snap.particles.position + snap.particles.image * box
+        a, b = np.asarray(snap.bonds.group).T
+        lengths = np.linalg.norm(unwrapped[a] - unwrapped[b], axis=1)
+        assert lengths.max() < 0.16

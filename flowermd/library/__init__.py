@@ -1,6 +1,9 @@
 # ruff: noqa: F401
 """Library of predefined molecules, recipes and forcefields."""
 
+from flowermd.internal.local_boltzmann import LocalBoltzmannSampler
+from flowermd.internal.placement import UniformTorsion
+
 from .forcefields import (
     DPD,
     GAFF,
@@ -34,4 +37,9 @@ from .polymers import (
 from .simulations.phantom_walk import PhantomWalk
 from .simulations.tensile import Tensile
 from .surfaces import Graphene
-from .systems import RandomWalk, SingleChainSystem, mbuildSystem
+from .systems import (
+    AtomisticRandomWalk,
+    RandomWalk,
+    SingleChainSystem,
+    mbuildSystem,
+)
