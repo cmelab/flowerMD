@@ -61,3 +61,8 @@ class ReferenceUnitError(Exception):
 class ForceFieldError(Exception):
     def __init__(self, msg):
         super().__init__(msg)
+
+
+class StereoIntegrityError(Exception):
+    def __init__(self, msg):
+        super().__init__(msg)
