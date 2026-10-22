@@ -228,6 +228,34 @@ class TestAtomisticRandomWalk:
             np.linalg.norm(new[:, None] - new, axis=2), distances, atol=1e-6
         )
 
+    def test_backtrack(self):
+        dead, seen = [], {}
+
+        class DeadEnds(UniformTorsion):
+            backtrack = 2
+
+            def choose(self, index, placed, propose, rng):
+                # each junction sees the same placed atoms on every visit
+                known = tuple(np.flatnonzero(~np.isnan(placed[:, 0])))
+                assert seen.setdefault(index, known) == known
+                if index == 6 and len(dead) < 3:
+                    dead.append(index)
+                    return None
+                return rng.uniform(0.0, 2 * np.pi)
+
+        chain = PolyEthylene(lengths=8, num_mols=1).molecules[0]
+        rng = np.random.default_rng(0)
+        new = random_chain_conformation(chain, np.zeros(3), rng, DeadEnds())
+        assert len(dead) == 3  # backed up 2, 4 and 6 junctions
+        for before, after in zip(
+            _geometry(chain, chain.xyz), _geometry(chain, new)
+        ):
+            np.testing.assert_allclose(after, before, atol=1e-6)
+        dead.clear()
+        DeadEnds.backtrack = 0
+        with pytest.raises(RuntimeError, match="1 attempts"):
+            random_chain_conformation(chain, np.zeros(3), rng, DeadEnds())
+
     def test_system(self):
         chains = PolyEthylene(lengths=6, num_mols=4)
         uniform = UniformTorsion()
@@ -308,6 +336,40 @@ class TestLocalBoltzmannSampler:
         # C_n of a C20 chain at 413 K is about 5 (rotational isomeric state
         # theory); a uniform walk over every torsion would give about 2.
         assert 4.3 < np.mean(ree2) / (19 * 0.154**2) < 6.0
+
+    def test_clash_window(self, sampler):
+        nx = pytest.importorskip("networkx")
+        ps = "CC(c1ccccc1)CC(c1ccccc1)CC(c1ccccc1)CC(c1ccccc1)C"
+        chain = Molecule(num_mols=1, smiles=ps).molecules[0]
+        terms = sampler._topology(chain)[1]
+        heavy = terms["heavy"]
+        graph = nx.Graph(
+            [(i, j) for i, j in terms["bonds"] if heavy[i] and heavy[j]]
+        )
+        bonds_apart = dict(nx.all_pairs_shortest_path_length(graph))
+        junctions = chain_junctions(
+            terms["units"], list(terms["bonds"]), len(heavy)
+        )
+        placed = set(terms["units"][0]) | {
+            b for j in junctions if j.parent == 0 for _, b in j.bonds
+        }
+        everywhere = _plan(terms, junctions, 4, None)
+        for j, step, far in zip(
+            junctions, _plan(terms, junctions, 4, 6), everywhere
+        ):
+            np.testing.assert_array_equal(far.near, np.flatnonzero(heavy))
+            moved = j.moved[step.hr]
+            expect = {
+                q
+                for q in placed - set(j.moved)
+                if heavy[q] and min(bonds_apart[m][q] for m in moved) <= 6
+            }
+            assert set(step.near) == expect
+            placed |= set(j.moved)
+        new = random_chain_conformation(
+            chain, np.zeros(3), np.random.default_rng(0), sampler
+        )
+        assert np.all(np.isfinite(new))
 
     def test_relax_converges(self, sampler):
         chain = PolyEthylene(lengths=100, num_mols=1).molecules[0]

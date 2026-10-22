@@ -42,7 +42,14 @@ The steps:
    turns every rotatable bond to a torsion drawn from local Boltzmann
    weights: the force field's torsions about that bond plus the
    Lennard-Jones energy of atoms at most four bonds apart (1-4 pairs
-   halved), with a 0.30 nm heavy-atom contact check. Pass the melt
+   halved). A 0.30 nm heavy-atom contact check keeps rings from spearing
+   each other and the chain from folding back onto itself, but only
+   between atoms at most ``clash_window`` (12) bonds apart: overlaps
+   between distant parts of a chain, like those between chains, are left
+   for DPD to resolve, as a melt screens excluded volume. At a dead end
+   the growth backs up a few bonds rather than starting the chain again,
+   so long chains can be placed (atactic polystyrene at 20 kg/mol in
+   about a second per chain). Pass the melt
    temperature as ``temperature``. Ring bonds, ladder junctions, bond
    lengths, bond angles and stereocenters keep the relaxed geometry.
    `UniformTorsion` (no force field needed) turns only the bonds between
@@ -93,17 +100,40 @@ Chain dimensions
 DPD and FIRE keep the chain dimensions that the placement gives (C_n
 changes by less than 3 % with six times more DPD), and so does a later
 nanosecond-scale anneal for entangled chains, so the placement sets them.
-After Sage minimization and a 200 ps Sage NPT anneal, C_n with
-`LocalBoltzmannSampler` was within about 7 % of the experimental melt
-values (scaled to chain length) for polyethylene (C40 and C160), atactic
-polystyrene (20- and 40-mers) and atactic polypropylene, -2 % for
-bisphenol-A polycarbonate and -14 % for PET. Turning only the bonds
-between repeat units uniformly (`UniformTorsion`) was off by +712 %
-(polyethylene C160), -61 % (polypropylene), -36 % (polystyrene) and -38 %
-(polycarbonate). Local torsion populations, which the stiffened DPD
-bonded terms disturb, return to the force field's own within about 100 ps
-of MD. Crowded chains such as PMMA come out too compact (about -35 %);
-`LocalBoltzmannSampler` documents why.
+Local torsion populations, which the stiffened DPD bonded terms disturb,
+return to the force field's own within about 100 ps of MD.
+
+Single chains placed with `LocalBoltzmannSampler` (Sage 2.3.0, local
+contact check) were compared with the melt <R²>/M of Fetters, Lohse and
+Colby (Physical Properties of Polymers Handbook, ch. 25, 2007) at 2, 5
+and 20 kg/mol:
+
+=================================  =========  ========================
+Polymer                            T (K)      <R²>/M, placed / measured
+=================================  =========  ========================
+Polyethylene                       413        0.89-0.96
+Bisphenol-A polycarbonate          473        0.92-1.04
+Atactic polypropylene              413        0.75-0.84
+Atactic polystyrene                413        0.47-0.58
+=================================  =========  ========================
+
+Polyethylene and polycarbonate level off with length; polypropylene and
+polystyrene rise slowly. The local energy, which sees only atoms up to
+four bonds apart, is too compact for chains with side groups, more so the
+more crowded the backbone. A survey of 73 polymers without the contact
+check found it within 10 % of experiment only for polyethylene,
+cis-polybutadiene, polycarbonate-type backbones and a few others. Earlier
+versions checked contacts against the whole chain, which swelled short
+chains (atactic polystyrene 20-mers came out close to experiment) but made
+<R²>/M grow without limit with length and long chains hard or impossible
+to place; ``LocalBoltzmannSampler(clash_window=None)`` restores that check.
+alpha,alpha-Disubstituted vinyl polymers (PMMA, polyisobutylene,
+poly(alpha-methylstyrene)) cannot be placed with the default ``r_min``,
+and with ``r_min=None`` come out 55-80 % too compact.
+
+Turning only the bonds between repeat units uniformly (`UniformTorsion`)
+was off by +712 % in C_n (polyethylene C160), -61 % (polypropylene),
+-36 % (polystyrene) and -38 % (polycarbonate).
 
 With OPLS-AA energies the placement of atactic polystyrene (20-mers) is
 close to Sage's (single-chain C_n about 7.3), but polyethylene is too stiff:

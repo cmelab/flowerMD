@@ -14,7 +14,11 @@ returns ``choose(index, placed, propose, rng) -> angle``, and
 order: `placed` holds the coordinates fixed so far (NaN for the rest),
 and ``propose(angles)`` returns the coordinates of the junction's `moved`
 atoms for an array of candidate angles. Returning None instead of an
-angle restarts the chain, at most `max_restarts` times. `UniformTorsion`
+angle is a dead end: if the sampler has a positive ``backtrack``, the
+growth backs up that many junctions (more after repeated dead ends) and
+continues; otherwise, or after as many dead ends as the chain has
+junctions, the chain starts again, at most `max_restarts` times.
+`UniformTorsion`
 is the simplest sampler; `flowermd.internal.local_boltzmann` has the
 force-field-weighted one.
 """
@@ -228,8 +232,11 @@ def random_chain_conformation(chain, start, rng, torsion_sampler=None):
     junctions = chain_junctions(units, bonds, len(xyz))
     choose = sampler.chooser(chain, junctions)
     stops = Counter()
+    backtrack = getattr(sampler, "backtrack", 0)
     for _ in range(sampler.max_restarts + 1):
-        placed, stop = _grow(xyz, units, junctions, start, rng, choose)
+        placed, stop = _grow(
+            xyz, units, junctions, start, rng, choose, backtrack
+        )
         if stop is None:
             return placed
         stops[stop] += 1
@@ -238,12 +245,18 @@ def random_chain_conformation(chain, start, rng, torsion_sampler=None):
         f"No conformation of a {len(xyz)}-atom chain was found in "
         f"{sum(stops.values())} attempts; {count} stopped at the bond "
         f"between atoms {a} and {b}. Relax the sampler's constraints (for "
-        "LocalBoltzmannSampler, a smaller r_min)."
+        "LocalBoltzmannSampler, a smaller r_min or clash_window, or a "
+        "larger backtrack)."
     )
 
 
-def _grow(xyz, units, junctions, start, rng, choose):
-    """One growth attempt: (coordinates, None), or (None, stopping bond)."""
+def _grow(xyz, units, junctions, start, rng, choose, backtrack=0):
+    """One growth attempt: (coordinates, None), or (None, stopping bond).
+
+    At a dead end, back up ``backtrack * k`` junctions, where `k` counts
+    the dead ends since the growth last got past the furthest one, and give
+    up after ``len(junctions)`` dead ends (at once if `backtrack` is 0).
+    """
     pose = {0: np.eye(4)}
     pose[0][:3, :3] = Rotation.random(random_state=rng).as_matrix()
     pose[0][:3, 3] = start - pose[0][:3, :3] @ xyz[units[0]].mean(axis=0)
@@ -253,7 +266,9 @@ def _grow(xyz, units, junctions, start, rng, choose):
     ]
     placed = np.full_like(xyz, np.nan)
     placed[first] = _apply(pose[0], xyz[first])
-    for i, j in enumerate(junctions):
+    i, dead_ends, furthest, streak, overwritten = 0, 0, -1, 0, []
+    while i < len(junctions):
+        j = junctions[i]
         relative = np.eye(4)
         if j.torsion:
             a, b = j.bonds[0]
@@ -273,8 +288,20 @@ def _grow(xyz, units, junctions, start, rng, choose):
 
             angle = choose(i, placed, propose, rng)
             if angle is None:
-                return None, (a, b)
+                dead_ends += 1
+                if not backtrack or dead_ends > len(junctions):
+                    return None, (a, b)
+                streak = streak + 1 if i <= furthest else 1
+                furthest = max(furthest, i)
+                back = max(0, i - backtrack * streak)
+                while i > back:  # restore what each placement overwrote
+                    i -= 1
+                    placed[junctions[i].moved] = overwritten.pop()
+                continue
             relative = _about(xyz[a], xyz[b], angle)[0]
         pose[j.child] = pose[j.parent] @ relative
+        if backtrack:
+            overwritten.append(placed[j.moved])
         placed[j.moved] = _apply(pose[j.child], xyz[j.moved])
+        i += 1
     return placed, None

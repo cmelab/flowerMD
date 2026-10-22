@@ -5,8 +5,10 @@ from ``p(phi) ~ exp(-E(phi) / kT)``, where `E` holds only the terms that the
 turn changes locally: the force field's proper torsions about the bond and
 the Lennard-Jones energy between the atoms it moves and the atoms already
 placed at most `max_sep` bonds away. This is a rotational-isomeric-state
-style model of an unperturbed chain, so it gives realistic chain
-dimensions without any knowledge of the other chains. The parameters are
+style model of an unperturbed chain, which needs no knowledge of the other
+chains; it gives realistic chain dimensions for backbones without bulky
+side groups, and too compact ones for crowded chains (see
+`LocalBoltzmannSampler`). The parameters are
 the unscaled terms of a SMIRNOFF force field (those that
 `flowermd.library.OpenFF_DPD` writes) or of a FlowerMD XML force field
 such as `flowermd.library.OPLS_AA`.
@@ -26,14 +28,29 @@ from flowermd.internal.all_atom_dpd import (
 )
 
 KB = 0.0083144626  # kJ/(mol K)
+CLASH_WINDOW = 12  # bonds; see LocalBoltzmannSampler
+BACKTRACK = 4  # junctions
 # Per junction: the turned bond a-b; its torsions i-a-b-l (placed atom i,
 # row of l among the moved atoms, and k, n, phase); the Lennard-Jones pairs
 # (moved row, placed atom, sigma**2, epsilon); the moved heavy-atom rows and
-# the (row, heavy-atom column) pairs within three bonds, which the contact
-# check skips.
+# the heavy atoms that the contact check compares them with; and the (row,
+# position in `near`) pairs within three bonds, which the check skips.
 Step = namedtuple(
     "Step",
-    ["a", "b", "ti", "tl", "terms", "pr", "pc", "sigma2", "eps", "hr", "ex"],
+    [
+        "a",
+        "b",
+        "ti",
+        "tl",
+        "terms",
+        "pr",
+        "pc",
+        "sigma2",
+        "eps",
+        "hr",
+        "near",
+        "ex",
+    ],
 )
 
 
@@ -51,10 +68,22 @@ class LocalBoltzmannSampler:
     force field's proper torsions about the bond plus the Lennard-Jones
     energy (the force field's combining rule, 1-4 pairs scaled by its
     factor) between the moved atoms and the placed atoms at most `max_sep`
-    bonds away. Electrostatics are left out. A draw that brings a moved
-    heavy atom closer than `r_min` to a placed heavy atom more than three
-    bonds away is redrawn; after `max_redraw` draws the chain starts again,
-    and after `max_restarts` restarts a ``RuntimeError`` is raised.
+    bonds away. Electrostatics are left out.
+
+    A draw that brings a moved heavy atom closer than `r_min` to a placed
+    heavy atom more than three and at most `clash_window` bonds away is
+    redrawn. The check is local on purpose: it keeps rings from spearing
+    each other and the chain from folding back onto its neighbors, and
+    leaves overlaps between parts of a chain further apart, like those
+    between chains, to the DPD relaxation. Checked against the whole chain
+    (``clash_window=None``), it would make each chain a self-avoiding walk,
+    whose size per mass grows with length without limit, unlike a chain in
+    a melt, where excluded volume is screened; long chains would also
+    rarely be placed at all. After `max_redraw` draws the growth is at a
+    dead end and backs up `backtrack` rotatable bonds (more after repeated
+    dead ends); after as many dead ends as the chain has rotatable bonds
+    it starts again, and after `max_restarts` restarts a ``RuntimeError``
+    is raised.
 
     Parameters
     ----------
@@ -74,26 +103,55 @@ class LocalBoltzmannSampler:
     r_min : float or None, default 0.30
         Closest allowed heavy-atom distance (nm), or None for no check.
     max_redraw : int, default 200
-        Draws per torsion before the chain starts again.
+        Draws per torsion before a dead end.
     max_restarts : int, default 500
         Restarts per chain before giving up.
     relax : bool, default True
         Minimize each chain under the force field's bonded terms (bonds,
         angles, torsions and impropers) before sampling, so that the
         placement uses the force field's geometry rather than the built one.
+    clash_window : int or None, default 12
+        Largest separation, in bonds between heavy atoms, of the pairs that
+        the `r_min` check compares; None compares every placed heavy atom.
+        Twelve bonds reach the side groups of the next two repeat units of
+        a vinyl polymer (the phenyl rings of neighboring styrene units are
+        at most ten bonds apart) and about one Kuhn length of
+        polyethylene. Any finite window lets the chain size per mass level
+        off with length, but larger windows swell chains with side groups:
+        for atactic polystyrene at 2 to 20 kg/mol, <R^2>/M is about 0.17
+        A^2 mol/g with 8 bonds and 0.21-0.26 with 12 or 16, against 0.44
+        measured.
+    backtrack : int, default 4
+        Rotatable bonds to back up at a dead end, times the number of dead
+        ends since the growth last got past the furthest one; 0 starts the
+        chain again at every dead end.
 
     Notes
     -----
-    Validated with Sage 2.3.0, the default: single-chain and melt C_n
-    within about 7 % of the experimental values (scaled to chain length) for
-    polyethylene, atactic polystyrene and polypropylene, -2 % for
-    bisphenol-A polycarbonate and -14 % for PET. The energy must come from a
-    force field with realistic torsion and 1-4 terms; UFF energies, for
-    example, make polyethylene about 70 % too stiff. Crowded chains such as
-    PMMA (alpha,alpha-disubstituted vinyl polymers) are not handled: their
-    local energy prefers gauche states that the full chain does not, so they
-    come out too compact, and with `r_min` they may not be placeable at all.
-    A SMIRNOFF force field requires openff-toolkit and openff-interchange.
+    With Sage 2.3.0, the default, and the local contact check, the
+    single-chain <R^2>/M of 2, 5 and 20 kg/mol chains levels off with
+    length and is 0.89-0.96 times the melt value of Fetters, Lohse and
+    Colby (Physical Properties of Polymers Handbook, ch. 25 (2007),
+    doi:10.1007/978-0-387-69002-5_25) for polyethylene (413 K) and
+    0.92-1.04 times for bisphenol-A polycarbonate (473 K). Chains with side
+    groups come out too compact, more so the more crowded the backbone:
+    atactic polypropylene 0.75-0.84 and atactic polystyrene 0.47-0.58
+    times (413 K; each rising slowly with length). The local energy sees only atoms at most `max_sep`
+    bonds apart and misses the longer-range side-group repulsions that
+    stiffen these chains; without any contact check, it is within 10 % of
+    experiment for only 8 of 73 polymers surveyed (polyethylene,
+    cis-polybutadiene, polycarbonate and a few others). The earlier
+    whole-chain contact check hid part of this for short chains by
+    swelling them. alpha,alpha-Disubstituted vinyl polymers (PMMA,
+    polyisobutylene, poly(alpha-methylstyrene)) cannot be placed with the
+    default `r_min`: every torsion at one of the first junctions brings a 1-5
+    heavy-atom pair closer than `r_min`, since the backbone angles stay at
+    the force field's equilibrium rather than opening up as in the real
+    chain. With ``r_min=None`` they are placed but 55-80 % too compact.
+    The energy must come from a force field with realistic torsion and
+    1-4 terms; UFF energies, for example, make polyethylene about 70 % too
+    stiff. A SMIRNOFF force field requires openff-toolkit and
+    openff-interchange.
 
     With OPLS-AA (``force_field=OPLS_AA()``), the single-chain placement C_n
     of C40 polyethylene at 413 K is about 9 (about 11 on Sage's geometry,
@@ -116,6 +174,8 @@ class LocalBoltzmannSampler:
         max_redraw=200,
         max_restarts=500,
         relax=True,
+        clash_window=CLASH_WINDOW,
+        backtrack=BACKTRACK,
     ):
         if isinstance(force_field, str) and force_field == "oplsaa":
             from flowermd.library.forcefields import OPLS_AA
@@ -140,6 +200,8 @@ class LocalBoltzmannSampler:
         self.max_redraw = max_redraw
         self.max_restarts = max_restarts
         self.relax = relax
+        self.clash_window = clash_window
+        self.backtrack = backtrack
         self._tables, self._templates, self._steps = {}, {}, {}
 
     def _topology(self, chain):
@@ -183,12 +245,12 @@ class LocalBoltzmannSampler:
         """Return the per-junction choice function for `chain`."""
         key, terms = self._topology(chain)
         if key not in self._steps:
-            self._steps[key] = _plan(terms, junctions, self.max_sep)
-        return functools.partial(
-            self._choose, self._steps[key], np.flatnonzero(terms["heavy"])
-        )
+            self._steps[key] = _plan(
+                terms, junctions, self.max_sep, self.clash_window
+            )
+        return functools.partial(self._choose, self._steps[key])
 
-    def _choose(self, steps, heavy, index, placed, propose, rng):
+    def _choose(self, steps, index, placed, propose, rng):
         step = steps[index]
         width = 2 * np.pi / self.n_grid
         x = propose((np.arange(self.n_grid) + 0.5) * width)
@@ -211,7 +273,7 @@ class LocalBoltzmannSampler:
             s6 = (step.sigma2 / np.einsum("gpk,gpk->gp", d, d)) ** 3
             energy += np.sum(4 * step.eps * (s6 * s6 - s6), axis=1)
         cdf = np.cumsum(np.exp(-(energy - energy.min()) / self.kT))
-        others = placed[heavy]
+        others = placed[step.near]
         for _ in range(0, self.max_redraw, 8):  # eight draws at a time
             u = rng.uniform(size=(2, 8))
             cell = np.searchsorted(cdf, u[0] * cdf[-1])
@@ -221,7 +283,7 @@ class LocalBoltzmannSampler:
             d = propose(angles)[:, step.hr, None] - others
             d2 = np.einsum("bhok,bhok->bho", d, d)
             d2[:, step.ex[0], step.ex[1]] = np.inf  # within three bonds
-            ok = ~np.any(d2 < self.r_min**2, axis=(1, 2))  # NaN: not placed
+            ok = ~np.any(d2 < self.r_min**2, axis=(1, 2))  # NaN: unplaced
             if ok.any():
                 return angles[ok.argmax()]
         return None
@@ -299,21 +361,40 @@ def _separations(terms, n_atoms, depth):
     return out
 
 
-def _plan(terms, junctions, max_sep):
+def _within(neighbors, sources, depth):
+    """Atoms at most `depth` bonds from any of `sources`."""
+    seen, shell = set(sources), list(sources)
+    for _ in range(depth):
+        shell = [k for i in shell for k in neighbors[i] if k not in seen]
+        seen.update(shell)
+    return seen
+
+
+def _plan(terms, junctions, max_sep, clash_window=None):
     """Index and parameter arrays of each junction, in growth order."""
     n = len(terms["heavy"])
     sep = _separations(terms, n, max(max_sep, 3))
+    heavy_neighbors = [[] for _ in range(n)]
+    for i, j in terms["bonds"]:
+        if terms["heavy"][i] and terms["heavy"][j]:
+            heavy_neighbors[i].append(j)
+            heavy_neighbors[j].append(i)
     by_bond = {}
     for (i, j, k, m), values in terms["dihedrals"].items():
         for a, b, c, d in ((i, j, k, m), (m, k, j, i)):
             by_bond.setdefault((b, c), []).extend((a, d, *t) for t in values)
     heavy = np.flatnonzero(terms["heavy"])
-    column = {atom: c for c, atom in enumerate(heavy)}
     sigma = np.array([terms["sigma"][i] for i in range(n)])
     eps = np.array([terms["eps"][i] for i in range(n)])
     placed = np.ones(n, dtype=bool)  # the first unit
     for j in junctions:
         placed[j.moved] = False
+    # placed, as the contact check sees it: also the atoms on the axes of
+    # the first unit's junctions, which are placed with it
+    known = placed.copy()
+    for j in junctions:
+        if j.parent == 0:
+            known[[b for _, b in j.bonds]] = True
     counted, steps = set(), []
     for j in junctions:
         row = {atom: r for r, atom in enumerate(j.moved)}
@@ -337,6 +418,15 @@ def _plan(terms, junctions, max_sep):
         else:  # Lorentz-Berthelot, e.g. SMIRNOFF
             sigma_ij = (sigma[pm] + sigma[pc]) / 2
         hr = [r for r, m in enumerate(j.moved) if terms["heavy"][m]]
+        if clash_window is None:
+            near = heavy  # unplaced atoms are NaN and never clash
+        else:
+            reach = _within(heavy_neighbors, j.moved[hr], clash_window)
+            near = np.array(
+                sorted(q for q in reach if known[q] and q not in row),
+                dtype=int,
+            )
+        column = {atom: c for c, atom in enumerate(near)}
         ex = [
             (h, column[q])
             for h, r in enumerate(hr)
@@ -355,10 +445,12 @@ def _plan(terms, junctions, max_sep):
                 sigma_ij**2,
                 scale * np.sqrt(eps[pm] * eps[pc]),
                 np.array(hr, dtype=int),
+                near,
                 tuple(np.array(ex, dtype=int).reshape(-1, 2).T),
             )
         )
         placed[j.moved] = True
+        known[j.moved] = True
     return steps
 
 
