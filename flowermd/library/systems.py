@@ -97,7 +97,6 @@ class RandomWalk(System):
     def __init__(
         self,
         molecules,
-        buffer,
         bond_length,
         density: float,
         base_units=dict(),
@@ -116,7 +115,6 @@ class RandomWalk(System):
         self.seed = seed
         self.unique_molecules = unique_molecules
         self.bond_length = bond_length
-        self.buffer = buffer
         super(RandomWalk, self).__init__(
             molecules=molecules, base_units=base_units, **kwargs
         )
@@ -145,7 +143,6 @@ class RandomWalk(System):
         box_lengths = target_box.to_value("nm")
         print(box_lengths)
         rng = np.random.default_rng(self.seed)
-
         system = mb.Compound()
         system.add(self.all_molecules)
 
@@ -160,7 +157,6 @@ class RandomWalk(System):
             n_particles=len(particles),
             bond_length=self.bond_length,
             box_lengths=box_lengths[0],
-            buffer=self.buffer,
             rng=rng,
         )
         system.xyz = positions

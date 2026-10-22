@@ -96,14 +96,12 @@ class TestSystems(BaseTest):
         lj_chain2 = LJChain(lengths=10, num_mols=10)
         system1 = RandomWalk(
             molecules=lj_chain1,
-            buffer=0.2,
             bond_length=1.0,
             density=1.1,
             seed=1234,
         )
         system2 = RandomWalk(
             molecules=lj_chain2,
-            buffer=0.2,
             bond_length=1.0,
             density=1.1,
             seed=4567,
