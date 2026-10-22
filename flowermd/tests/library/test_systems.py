@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+import unyt as u
 
 from flowermd.library import (
     EllipsoidChainRand,
@@ -9,9 +10,10 @@ from flowermd.library import (
     SingleChainSystem,
     mbuildSystem,
 )
+from flowermd.tests import BaseTest
 
 
-class TestSystems:
+class TestSystems(BaseTest):
     def test_single_chain_buffer(self):
         chain = PolyEthylene(lengths=10, num_mols=1)
         system = SingleChainSystem(molecules=chain, buffer=1.05)
@@ -45,8 +47,49 @@ class TestSystems:
         assert system.n_particles == 400  # 10 x 10 x 4
 
     def test_RandomWalk(self):
-        lj_chain = LJChain(lengths=10, num_mols=2)
-        RandomWalk(molecules=lj_chain, bond_length=1.0, density=1.0)
+        lj_chain = LJChain(
+            lengths=[10],
+            num_mols=[20],
+            bead_sequence=["_A"],
+            bead_mass={"_A": 1.0},
+            bond_lengths={"_A-_A": 1.0},
+            identify_connections=False,
+        )
+        bond_length = 1.0
+        ref_length = 1.0 * u.Unit("nm")
+        ref_mass = 1.0 * u.Unit("g/mol")
+        ref_energy = 1.0 * u.Unit("kcal / mol")
+        ref_values_dict = {
+            "length": ref_length,
+            "mass": ref_mass,
+            "energy": ref_energy,
+        }
+        system = RandomWalk(
+            molecules=lj_chain,
+            buffer=0.2,
+            bond_length=bond_length,
+            density=1.0 * u.Unit("nm**-3"),
+            base_units=ref_values_dict,
+        )
+        snapshot = system.hoomd_snapshot
+        positions = np.asarray(snapshot.particles.position)
+        box = np.array(snapshot.configuration.box[:3])
+        bond_group = np.asarray(snapshot.bonds.group)
+
+        r_ij = positions[bond_group[:, 0]] - positions[bond_group[:, 1]]
+        r_ij -= box * np.round(r_ij / box)
+        bond_lengths = np.linalg.norm(r_ij, axis=1)
+
+        np.testing.assert_allclose(
+            bond_lengths,
+            bond_length,
+            atol=1e-3,
+            err_msg=(
+                f"Bond length deviates from target {bond_length}. "
+                f"min={bond_lengths.min():.6f}, max={bond_lengths.max():.6f}, "
+                f"n_bad={np.sum(~np.isclose(bond_lengths, bond_length, atol=1e-3))}"
+            ),
+        )
 
     def test_RandomWalk_different_seeds(self):
         lj_chain1 = LJChain(lengths=10, num_mols=10)
