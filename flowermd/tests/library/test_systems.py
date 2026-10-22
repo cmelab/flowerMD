@@ -10,8 +10,8 @@ from flowermd.library import (
     SingleChainSystem,
     mbuildSystem,
 )
-from flowermd.base import Molecule
 from flowermd.tests import BaseTest
+
 
 class TestSystems(BaseTest):
     def test_single_chain_buffer(self):
@@ -53,13 +53,17 @@ class TestSystems(BaseTest):
             bead_sequence=["_A"],
             bead_mass={"_A": 1.0},
             bond_lengths={"_A-_A": 1.0},
-            identify_connections=False
+            identify_connections=False,
         )
-        bond_length=1.0
+        bond_length = 1.0
         ref_length = 1.0 * u.Unit("nm")
         ref_mass = 1.0 * u.Unit("g/mol")
         ref_energy = 1.0 * u.Unit("kcal / mol")
-        ref_values_dict = {"length": ref_length, "mass": ref_mass, "energy": ref_energy}
+        ref_values_dict = {
+            "length": ref_length,
+            "mass": ref_mass,
+            "energy": ref_energy,
+        }
         system = RandomWalk(
             molecules=lj_chain,
             buffer=0.2,
@@ -70,7 +74,7 @@ class TestSystems(BaseTest):
         snapshot = system.hoomd_snapshot
         positions = np.asarray(snapshot.particles.position)
         box = np.array(snapshot.configuration.box[:3])
-        bond_group = np.asarray(snapshot.bonds.group) 
+        bond_group = np.asarray(snapshot.bonds.group)
 
         r_ij = positions[bond_group[:, 0]] - positions[bond_group[:, 1]]
         r_ij -= box * np.round(r_ij / box)
@@ -86,7 +90,7 @@ class TestSystems(BaseTest):
                 f"n_bad={np.sum(~np.isclose(bond_lengths, bond_length, atol=1e-3))}"
             ),
         )
-  
+
     def test_RandomWalk_different_seeds(self):
         lj_chain1 = LJChain(lengths=10, num_mols=10)
         lj_chain2 = LJChain(lengths=10, num_mols=10)
