@@ -7,7 +7,7 @@ import pytest
 import unyt as u
 
 from flowermd.base import Molecule, Polymer
-from flowermd.internal.local_boltzmann import _plan
+from flowermd.internal.local_boltzmann import _plan, relax_bonded
 from flowermd.internal.placement import (
     chain_junctions,
     random_chain_conformation,
@@ -143,6 +143,11 @@ def _geometry(chain, xyz):
     volumes = [np.linalg.det(v[:3]) for v in unit if len(v) == 4]
     lengths = np.linalg.norm(xyz[bonds[:, 0]] - xyz[bonds[:, 1]], axis=1)
     return lengths, cosines, np.array(volumes)
+
+
+def _angle(xyz, ijk):
+    u, v = xyz[ijk[0]] - xyz[ijk[1]], xyz[ijk[2]] - xyz[ijk[1]]
+    return np.arccos(u @ v / np.linalg.norm(u) / np.linalg.norm(v))
 
 
 def _ladder():
@@ -303,6 +308,24 @@ class TestLocalBoltzmannSampler:
         # C_n of a C20 chain at 413 K is about 5 (rotational isomeric state
         # theory); a uniform walk over every torsion would give about 2.
         assert 4.3 < np.mean(ree2) / (19 * 0.154**2) < 6.0
+
+    def test_relax_converges(self, sampler):
+        chain = PolyEthylene(lengths=100, num_mols=1).molecules[0]
+        terms = sampler._topology(chain)[1]
+        xyz = np.asarray(chain.xyz, dtype=float)
+        with pytest.raises(RuntimeError, match="max_iter"):
+            relax_bonded(xyz, terms, max_iter=50)
+        relaxed = relax_bonded(xyz, terms)
+        # Mid-chain C-C-C angles reach the force field's equilibrium.
+        carbon = [p.element.symbol == "C" for p in chain.particles()]
+        middle = len(carbon) // 4, 3 * len(carbon) // 4
+        error = [
+            np.degrees(_angle(relaxed, ijk) - theta0)
+            for ijk, (_, theta0) in terms["angles"].items()
+            if all(carbon[i] and middle[0] < i < middle[1] for i in ijk)
+        ]
+        assert len(error) > 50
+        assert np.max(np.abs(error)) < 0.3
 
     def test_restart_cap(self):
         pytest.importorskip("openff.interchange")

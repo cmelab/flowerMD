@@ -362,13 +362,15 @@ def _plan(terms, junctions, max_sep):
     return steps
 
 
-def relax_bonded(xyz, terms, tol=1.0):
+def relax_bonded(xyz, terms, tol=1.0, max_iter=None):
     """Minimize a molecule's bonded energy: bonds, angles and torsions.
 
     Nonbonded terms are left out, so the minimization only brings bond
     lengths and angles to the force field's values and cannot invert a
     stereocenter by a clash; a stereocenter that changes handedness anyway
-    raises ``RuntimeError``.
+    raises ``RuntimeError``. So does a minimization that stops before the
+    largest force is below `tol`: a partly relaxed chain keeps strained
+    bond angles in its middle, which change the chain's dimensions.
 
     Parameters
     ----------
@@ -382,6 +384,10 @@ def relax_bonded(xyz, terms, tol=1.0):
         and angles are then within about 0.02 pm and 0.3 degrees of a much
         tighter minimization; only the floppy torsions, which the sampler
         sets anyway, are left less converged.
+    max_iter : int, optional
+        Most L-BFGS-B iterations, and energy evaluations, before giving up.
+        Defaults to 100 per atom and at least 100,000; chains of a few
+        thousand atoms need a few times 10,000.
 
     Returns
     -------
@@ -452,13 +458,29 @@ def relax_bonded(xyz, terms, tol=1.0):
         )
         return total, grad.ravel()
 
+    if max_iter is None:
+        max_iter = max(100_000, 100 * len(xyz))
     result = minimize(
         energy,
         np.asarray(xyz, dtype=float).ravel(),
         jac=True,
         method="L-BFGS-B",
-        options={"maxiter": 20000, "gtol": tol, "ftol": 1e-15},
+        options={
+            "maxiter": max_iter,
+            "maxfun": max_iter,
+            "gtol": tol,
+            "ftol": 1e-15,
+        },
     )
+    force = np.max(np.abs(result.jac))
+    if force > tol:
+        raise RuntimeError(
+            f"Relaxing a {len(xyz)}-atom chain stopped after {result.nit} "
+            f"iterations with a largest force of {force:.3g} kJ/(mol nm), "
+            f"above tol={tol} ({result.message}). Pass a larger max_iter, "
+            "or LocalBoltzmannSampler(relax=False) to sample the built "
+            "geometry."
+        )
     relaxed = result.x.reshape(-1, 3)
     if np.any(_handedness(xyz, terms) != _handedness(relaxed, terms)):
         raise RuntimeError("Relaxing a chain inverted a stereocenter.")
