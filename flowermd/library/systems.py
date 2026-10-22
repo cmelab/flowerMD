@@ -159,9 +159,7 @@ class RandomWalk(System):
             bonds=bonds,
             n_particles=len(particles),
             bond_length=self.bond_length,
-            box_lengths=box_lengths[
-                0
-            ],
+            box_lengths=box_lengths[0],
             buffer=self.buffer,
             rng=rng,
         )
