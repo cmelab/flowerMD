@@ -33,7 +33,7 @@ def random_walk_positions_from_bonds(
 ):
     """Random-walk coordinates using bond connectivity.
 
-    BFS from the lowest-id particle in each connected component ("molecule").
+    Breadth-first search from the lowest-id particle in each connected component ("molecule").
     Each particle is placed exactly once, bond_length from the parent that
     discovered it; already-placed particles are never regenerated.
 
@@ -60,7 +60,7 @@ def random_walk_positions_from_bonds(
     ).copy()
 
     graph = nx.Graph()
-    graph.add_nodes_from(range(n_particles))  # keeps isolated particles too
+    graph.add_nodes_from(range(n_particles))
     graph.add_edges_from(bonds)
 
     components = list(nx.connected_components(graph))

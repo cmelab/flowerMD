@@ -81,7 +81,7 @@ class RandomWalk(System):
     molecules : Polymer or list of Polymer
         The molecule(s) to place in the system. All molecules must be identical.
     density : float or unyt_quantity
-        The target density for the system (g/cm^3 or m^-3).
+        The target density for the system (g/cm^3 or nm^-3).
     base_units : dict, default {}
         Base units for the system.
     seed : int, default 12345
@@ -161,7 +161,7 @@ class RandomWalk(System):
             bond_length=self.bond_length,
             box_lengths=box_lengths[
                 0
-            ],  # cubic box; pass box_lengths directly if not
+            ],
             buffer=self.buffer,
             rng=rng,
         )
