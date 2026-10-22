@@ -102,7 +102,6 @@ class RandomWalk(System):
     def __init__(
         self,
         molecules,
-        buffer,
         bond_length,
         density: float,
         base_units=dict(),
@@ -123,7 +122,6 @@ class RandomWalk(System):
         self.bond_length = bond_length
         self.n_mols = sum(molecules.n_mols)
         self.lengths = max(molecules.lengths)
-        self.buffer = buffer
         super(RandomWalk, self).__init__(
             molecules=molecules, base_units=base_units, **kwargs
         )
@@ -176,7 +174,6 @@ class RandomWalk(System):
             beads_per_molecule=self.lengths,
             bond_length=self.bond_length,
             box_lengths=Lx,
-            buffer=self.buffer,
             rng=rng,
         )
 
@@ -203,7 +200,6 @@ class RandomWalk(System):
         beads_per_molecule,
         bond_length,
         box_lengths,
-        buffer,
         rng,
     ):
         """Generate random walk positions for ALL identical molecules at once.
@@ -231,9 +227,7 @@ class RandomWalk(System):
             positions in nm.
         """
         positions = np.empty((num_molecules * beads_per_molecule, 3))
-        starts = rng.uniform(
-            buffer, box_lengths - buffer, size=(num_molecules, 3)
-        )
+        starts = rng.uniform(0, box_lengths, size=(num_molecules, 3))
 
         thetas = rng.uniform(
             0, 2 * np.pi, size=(num_molecules, beads_per_molecule - 1)
