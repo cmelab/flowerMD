@@ -124,6 +124,7 @@ class RandomWalk(System):
     def _build_system(self, **kwargs):
         mass_density = u.Unit("kg") / u.Unit("m**3")
         number_density = u.Unit("nm**-3")
+        print(self.density)
 
         if self.density.units.dimensions == mass_density.dimensions:
             target_box = get_target_box_mass_density(
@@ -140,7 +141,9 @@ class RandomWalk(System):
                 f"number density ({number_density.dimensions}) are supported."
             )
 
+        print(target_box)
         box_lengths = target_box.to_value("nm")
+        print(box_lengths)
         rng = np.random.default_rng(self.seed)
 
         system = mb.Compound()
