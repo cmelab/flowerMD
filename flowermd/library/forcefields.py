@@ -14,9 +14,7 @@ class GAFF(BaseXMLForcefield):
     """General Amber forcefield class."""
 
     def __init__(self, forcefield_files=f"{FF_DIR}/gaff.xml", gmso_xml=False):
-        super(GAFF, self).__init__(
-            forcefield_files=forcefield_files, gmso_xml=gmso_xml
-        )
+        super().__init__(forcefield_files=forcefield_files, gmso_xml=gmso_xml)
         self.description = (
             "The General Amber Forcefield written in foyer XML format. "
             "The XML file was obtained from the antefoyer package: "
@@ -28,7 +26,7 @@ class OPLS_AA(BaseXMLForcefield):
     """OPLS All Atom forcefield class."""
 
     def __init__(self, name="oplsaa", gmso_xml=False):
-        super(OPLS_AA, self).__init__(name=name)
+        super().__init__(name=name)
         self.description = "opls-aa forcefield found in the Foyer package."
 
 
@@ -38,9 +36,7 @@ class OPLS_AA_PPS(BaseXMLForcefield):
     def __init__(
         self, forcefield_files=f"{FF_DIR}/pps_opls.xml", gmso_xml=False
     ):
-        super(OPLS_AA_PPS, self).__init__(
-            forcefield_files=forcefield_files, gmso_xml=gmso_xml
-        )
+        super().__init__(forcefield_files=forcefield_files, gmso_xml=gmso_xml)
         self.description = (
             "Based on flowermd.forcefields.OPLS_AA. "
             "Trimmed down to include only PPS parameters. "
@@ -58,9 +54,7 @@ class OPLS_AA_BENZENE(BaseXMLForcefield):
     def __init__(
         self, forcefield_files=f"{FF_DIR}/benzene_opls.xml", gmso_xml=False
     ):
-        super(OPLS_AA_BENZENE, self).__init__(
-            forcefield_files=forcefield_files, gmso_xml=gmso_xml
-        )
+        super().__init__(forcefield_files=forcefield_files, gmso_xml=gmso_xml)
         self.description = (
             "Based on flowermd.forcefields.OPLS_AA. "
             "Trimmed down to include only benzene parameters."
@@ -75,9 +69,7 @@ class OPLS_AA_DIMETHYLETHER(BaseXMLForcefield):
         forcefield_files=f"{FF_DIR}/dimethylether_opls.xml",
         gmso_xml=False,
     ):
-        super(OPLS_AA_DIMETHYLETHER, self).__init__(
-            forcefield_files=forcefield_files, gmso_xml=gmso_xml
-        )
+        super().__init__(forcefield_files=forcefield_files, gmso_xml=gmso_xml)
         self.description = (
             "Based on flowermd.forcefields.OPLS_AA. "
             "Trimmed down to include only dimethyl ether parameters."
@@ -90,9 +82,7 @@ class Bead_Spring_DPD(BaseXMLForcefield):
     def __init__(
         self, forcefield_files=f"{FF_DIR}/hoomd-dpd-hhp.xml", gmso_xml=True
     ):
-        super(Bead_Spring_DPD, self).__init__(
-            forcefield_files=forcefield_files, gmso_xml=gmso_xml
-        )
+        super().__init__(forcefield_files=forcefield_files, gmso_xml=gmso_xml)
         self.description = "DPD forcefield loaded from an XML file."
 
 
@@ -100,9 +90,7 @@ class FF_from_file(BaseXMLForcefield):
     """Forcefield class for loading a forcefield from an XML file."""
 
     def __init__(self, forcefield_files, gmso_xml=False):
-        super(FF_from_file, self).__init__(
-            forcefield_files=forcefield_files, gmso_xml=gmso_xml
-        )
+        super().__init__(forcefield_files=forcefield_files, gmso_xml=gmso_xml)
         self.description = "Forcefield loaded from an XML file. "
 
 
@@ -166,7 +154,7 @@ class KremerGrestBeadSpring(BaseHOOMDForcefield):
         self.nlist = nlist
         self.nlist_buffer = nlist_buffer
         hoomd_forces = self._create_forcefield()
-        super(KremerGrestBeadSpring, self).__init__(hoomd_forces)
+        super().__init__(hoomd_forces)
 
     def _create_forcefield(self):
         """Create the hoomd force objects."""
@@ -265,7 +253,7 @@ class BeadSpring(BaseHOOMDForcefield):
         self.nlist_buffer = nlist_buffer
         self.exclusions = exclusions
         hoomd_forces = self._create_forcefield()
-        super(BeadSpring, self).__init__(hoomd_forces)
+        super().__init__(hoomd_forces)
 
     def _create_forcefield(self):
         """Create the hoomd force objects."""
@@ -373,7 +361,7 @@ class TableForcefield(BaseHOOMDForcefield):
         self.nlist_buffer = nlist_buffer
         self.bond_width, self.angle_width, self.dih_width = self._check_widths()
         hoomd_forces = self._create_forcefield()
-        super(TableForcefield, self).__init__(hoomd_forces)
+        super().__init__(hoomd_forces)
 
     @classmethod
     def from_files(
@@ -680,7 +668,7 @@ class EllipsoidForcefield(BaseHOOMDForcefield):
         self.nlist = nlist
         self.nlist_buffer = nlist_buffer
         hoomd_forces = self._create_forcefield()
-        super(EllipsoidForcefield, self).__init__(hoomd_forces)
+        super().__init__(hoomd_forces)
 
     def _create_forcefield(self):
         forces = []
@@ -798,7 +786,7 @@ class EllipsoidFF_DPD(BaseHOOMDForcefield):
         self.nlist = nlist
         self.nlist_buffer = nlist_buffer
         hoomd_forces = self._create_forcefield()
-        super(EllipsoidFF_DPD, self).__init__(hoomd_forces)
+        super().__init__(hoomd_forces)
 
     def _create_forcefield(self):
         forces = []
@@ -899,7 +887,7 @@ class DPD(BaseHOOMDForcefield):
         self.nlist = nlist
         self.nlist_buffer = nlist_buffer
         hoomd_forces = self._create_forcefield()
-        super(DPD, self).__init__(hoomd_forces)
+        super().__init__(hoomd_forces)
 
     def _create_forcefield(self):
         forces = []

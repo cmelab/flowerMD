@@ -28,7 +28,7 @@ class PhantomWalk(Simulation):
         self.n_steps_dpd = n_steps_dpd
         self.n_steps_fire = n_steps_fire
         self.write_at_start = write_at_start
-        super(PhantomWalk, self).__init__(
+        super().__init__(
             initial_state=initial_state,
             forcefield=forcefield,
             reference_values=reference_values,
