@@ -3,7 +3,6 @@
 import pickle
 import warnings
 from abc import ABC, abstractmethod
-from typing import List
 
 import gsd
 import mbuild as mb
@@ -113,7 +112,7 @@ class System(ABC):
             elif isinstance(mol_item, mb.Compound):
                 mol_item.name = str(self.n_mol_types)
                 self.all_molecules.append(mol_item)
-            elif isinstance(mol_item, List):
+            elif isinstance(mol_item, list):
                 for sub_mol in mol_item:
                     if isinstance(sub_mol, mb.Compound):
                         sub_mol.name = str(self.n_mol_types)
@@ -122,7 +121,7 @@ class System(ABC):
                         raise MoleculeLoadError(
                             msg=f"Unsupported compound type {type(sub_mol)}. "
                             f"Supported compound types are: "
-                            f"{str(mb.Compound)}"
+                            f"{mb.Compound!s}"
                         )
                 self.n_mol_types += 1
 
@@ -134,7 +133,6 @@ class System(ABC):
     @abstractmethod
     def _build_system(self):
         """Abstract method to arrange molecules into a box."""
-        pass
 
     @property
     def n_molecules(self):
@@ -702,9 +700,7 @@ class Pack(System):
         self.seed = seed
         self.unique_molecules = unique_molecules
         self.fix_orientation = fix_orientation
-        super(Pack, self).__init__(
-            molecules=molecules, base_units=base_units, **kwargs
-        )
+        super().__init__(molecules=molecules, base_units=base_units, **kwargs)
 
     def _build_system(self, **kwargs):
         mass_density = u.Unit("kg") / u.Unit("m**3")
@@ -798,7 +794,7 @@ class Lattice(System):
         self.y = y
         self.n = n
         self.basis_vector = basis_vector
-        super(Lattice, self).__init__(
+        super().__init__(
             molecules=molecules,
             base_units=base_units,
         )
