@@ -28,6 +28,18 @@
                 <Parameter name="k" value="250000"/>
             </Parameters>
         </BondType>
+        <BondType name="HarmonicBondPotential" type1="_B" type2="_B">
+            <Parameters>
+                <Parameter name="r_eq" value="1.0"/>
+                <Parameter name="k" value="250000"/>
+            </Parameters>
+        </BondType>
+        <BondType name="HarmonicBondPotential" type1="_B" type2="_C">
+            <Parameters>
+                <Parameter name="r_eq" value="1.0"/>
+                <Parameter name="k" value="250000"/>
+            </Parameters>
+        </BondType>
     </BondTypes>
   <PairPotentialTypes expression="A * (1-(r/r_cut)) - γ">
     <ParametersUnitDef parameter="A" unit="N"/>
