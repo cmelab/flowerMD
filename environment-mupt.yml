@@ -64,6 +64,6 @@ dependencies:
     - build
     - twine
     - mupt @ git+https://github.com/MuPT-hub/mupt.git@prim-refactor
-    - flowermd @ git+https://github.com/cmelab/flowerMD.git
+    - flowermd @ git+https://github.com/cmelab/flowerMD.git@mupt-demo
     - "gmso @ git+https://github.com/mosdef-hub/gmso"
     - "mbuild @ git+https://github.com/mosdef-hub/mbuild@develop"

@@ -10,12 +10,6 @@
     <BondTypes expression="0.5 * k * (r-r_eq)**2">
         <ParametersUnitDef parameter="r_eq" unit="nm"/>
         <ParametersUnitDef parameter="k" unit="kJ/mol/(nm**2)"/>
-        <BondType name="HarmonicBondPotential" type1="_C" type2="_A">
-            <Parameters>
-                <Parameter name="r_eq" value="1.0"/>
-                <Parameter name="k" value="250000"/>
-            </Parameters>
-        </BondType>
         <BondType name="HarmonicBondPotential" type1="_A" type2="_A">
             <Parameters>
                 <Parameter name="r_eq" value="1.0"/>
@@ -28,6 +22,12 @@
                 <Parameter name="k" value="250000"/>
             </Parameters>
         </BondType>
+        <BondType name="HarmonicBondPotential" type1="_A" type2="_C">
+            <Parameters>
+                <Parameter name="r_eq" value="1.0"/>
+                <Parameter name="k" value="250000"/>
+            </Parameters>
+        </BondType>
         <BondType name="HarmonicBondPotential" type1="_B" type2="_B">
             <Parameters>
                 <Parameter name="r_eq" value="1.0"/>
@@ -35,6 +35,12 @@
             </Parameters>
         </BondType>
         <BondType name="HarmonicBondPotential" type1="_B" type2="_C">
+            <Parameters>
+                <Parameter name="r_eq" value="1.0"/>
+                <Parameter name="k" value="250000"/>
+            </Parameters>
+        </BondType>
+        <BondType name="HarmonicBondPotential" type1="_C" type2="_C">
             <Parameters>
                 <Parameter name="r_eq" value="1.0"/>
                 <Parameter name="k" value="250000"/>
@@ -59,6 +65,13 @@
 	        <Parameter name="γ" value="1500"/>
         </Parameters>
     </PairPotentialType>
+    <PairPotentialType name="HOOMDDPDForce" type1="_A" type2="_C">
+        <Parameters>
+            <Parameter name="A" value="250000.0"/>
+	        <Parameter name="r_cut" value="1.01"/>
+	        <Parameter name="γ" value="1500"/>
+        </Parameters>
+    </PairPotentialType>
     <PairPotentialType name="HOOMDDPDForce" type1="_B" type2="_B">
         <Parameters>
             <Parameter name="A" value="250000.0"/>
@@ -74,13 +87,6 @@
         </Parameters>
     </PairPotentialType>
     <PairPotentialType name="HOOMDDPDForce" type1="_C" type2="_C">
-        <Parameters>
-            <Parameter name="A" value="250000.0"/>
-	        <Parameter name="r_cut" value="1.01"/>
-	        <Parameter name="γ" value="1500"/>
-        </Parameters>
-    </PairPotentialType>
-    <PairPotentialType name="HOOMDDPDForce" type1="_A" type2="_C">
         <Parameters>
             <Parameter name="A" value="250000.0"/>
 	        <Parameter name="r_cut" value="1.01"/>
