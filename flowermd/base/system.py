@@ -408,6 +408,29 @@ class System(ABC):
         with gsd.hoomd.open(file_name, "w") as traj:
             traj.append(self.hoomd_snapshot)
 
+    def update_gmso_system_positions_from_snapshot(system, snapshot):
+        """Push positions from a HOOMD snapshot (or a raw positions array) back
+        onto each mb.Compound in ``system.all_molecules``, vectorized per-molecule. """
+    
+        molecules = system.all_molecules
+        positions = snap.particles.position
+    
+        if len(molecules) == 1:
+            molecules[0].xyz = positions
+            return
+    
+        n_particles = np.array([mol.n_particles for mol in molecules])
+        if n_particles.sum() != positions.shape[0]:
+            raise ValueError(
+                f"Total particle count mismatch: molecules have "
+                f"{n_particles.sum()} beads, positions array has {pos.shape[0]}."
+            )
+    
+        bounds = np.concatenate([[0], np.cumsum(n_particles)])
+    
+        for mol, start, end in zip(molecules, bounds[:-1], bounds[1:]):
+            mol.xyz = positions[start:end]
+
     def _convert_to_gmso(self):
         """Convert the mbuild system to a gmso system."""
         topology = from_mbuild(self.system)
