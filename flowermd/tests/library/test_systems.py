@@ -1,6 +1,7 @@
 import sys
 import time
 
+import gsd.hoomd
 import mbuild as mb
 import numpy as np
 import pytest
@@ -26,6 +27,7 @@ from flowermd.library import (
     mbuildSystem,
 )
 from flowermd.tests import BaseTest
+from flowermd.utils import find_ring_spears
 
 
 class TestSystems(BaseTest):
@@ -391,7 +393,9 @@ class TestLocalBoltzmannSampler:
 
     def test_restart_cap(self):
         pytest.importorskip("openff.interchange")
-        sampler = LocalBoltzmannSampler(r_min=0.6, max_restarts=3)
+        sampler = LocalBoltzmannSampler(
+            r_min=0.6, max_restarts=3, on_dead_end="error"
+        )
         chain = PolyEthylene(lengths=10, num_mols=1).molecules[0]
         start = time.perf_counter()
         with pytest.raises(RuntimeError, match="4 attempts"):
@@ -463,3 +467,59 @@ class TestLocalBoltzmannSamplerOPLS:
                 np.isclose(step.eps, np.sqrt(ei * ej))
                 | np.isclose(step.eps, 0.5 * np.sqrt(ei * ej))
             )
+
+
+class TestLeastBad:
+    @pytest.fixture(autouse=True)
+    def openff(self):
+        pytest.importorskip("openff.interchange")
+
+    def test_crowded_chain(self):
+        # PMMA: every torsion at one of the first junctions brings two heavy
+        # atoms closer than r_min.
+        pmma = Polymer(
+            lengths=5,
+            num_mols=3,
+            smiles="CC(C)(C(=O)OC)",
+            bond_indices=[7, 10],
+            bond_length=0.154,
+            bond_orientation=[None, None],
+        )
+        chain = pmma.molecules[0]
+        old = LocalBoltzmannSampler(on_dead_end="error", max_restarts=2)
+        with pytest.raises(RuntimeError, match="3 attempts"):
+            random_chain_conformation(
+                chain, np.zeros(3), np.random.default_rng(0), old
+            )
+        sampler = LocalBoltzmannSampler()
+        xyz, _ = sampler.template(chain)
+        new = random_chain_conformation(
+            chain, np.zeros(3), np.random.default_rng(0), sampler
+        )
+        for before, after in zip(_geometry(chain, xyz), _geometry(chain, new)):
+            np.testing.assert_allclose(after, before, atol=1e-6)
+        assert 0 < min(sampler.accepted[-1]) < sampler.r_min
+        with pytest.warns(UserWarning, match="dead ends") as record:
+            AtomisticRandomWalk(
+                pmma, density=0.5, seed=1, torsion_sampler=sampler
+            )
+        assert sum("dead ends" in str(w.message) for w in record) == 1
+        with pytest.raises(ValueError, match="on_dead_end"):
+            LocalBoltzmannSampler(on_dead_end="restart")
+
+    def test_no_threaded_rings(self):
+        ps = "C" + "C(c1ccccc1)C" * 12 + "C"
+        chain = Molecule(num_mols=1, smiles=ps).molecules[0]
+        sampler = LocalBoltzmannSampler(clash_window=4)
+        index = {p: i for i, p in enumerate(chain.particles())}
+        frame = gsd.hoomd.Frame()
+        frame.particles.N = chain.n_particles
+        frame.configuration.box = [100, 100, 100, 0, 0, 0]
+        frame.bonds.group = [(index[a], index[b]) for a, b in chain.bonds()]
+        frame.bonds.N = len(frame.bonds.group)
+        rng = np.random.default_rng(0)
+        for _ in range(5):
+            frame.particles.position = random_chain_conformation(
+                chain, np.zeros(3), rng, sampler
+            )
+            assert find_ring_spears(frame) == []

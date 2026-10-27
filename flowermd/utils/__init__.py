@@ -17,7 +17,11 @@ from .dpd_utils import (
     compute_closest_rdf,
     random_walk_positions_from_bonds,
 )
-from .stereochemistry import audit_stereochemistry, protect_stereochemistry
+from .stereochemistry import (
+    audit_stereochemistry,
+    find_ring_spears,
+    protect_stereochemistry,
+)
 from .utils import (
     _calculate_box_length,
     get_target_box_mass_density,

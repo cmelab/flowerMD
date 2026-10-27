@@ -219,8 +219,19 @@ class AtomisticRandomWalk(RandomWalk):
             box_lengths - self.buffer,
             size=(len(self.all_molecules), 3),
         )
+        accepted = getattr(self.torsion_sampler, "accepted", [])
+        before = len(accepted)
         positions = [
             random_chain_conformation(chain, start, rng, self.torsion_sampler)
             for chain, start in zip(self.all_molecules, starts)
         ]
+        closest = [d for chain in accepted[before:] for d in chain]
+        if closest:
+            warnings.warn(
+                f"{len(closest)} torsions in "
+                f"{sum(map(bool, accepted[before:]))} of {len(positions)} "
+                "chains were set at dead ends of the contact check, with "
+                "heavy atoms closer than r_min (closest "
+                f"{min(closest):.3f} nm); PhantomWalk relaxes them."
+            )
         return np.concatenate(positions) - box_lengths / 2

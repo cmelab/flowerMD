@@ -34,7 +34,9 @@ BACKTRACK = 4  # junctions
 # row of l among the moved atoms, and k, n, phase); the Lennard-Jones pairs
 # (moved row, placed atom, sigma**2, epsilon); the moved heavy-atom rows and
 # the heavy atoms that the contact check compares them with; and the (row,
-# position in `near`) pairs within three bonds, which the check skips.
+# position in `near`) pairs within three bonds, which the check skips; the
+# moved atoms, the bonds they are in and the triangles of the rings among
+# them, for the ring-threading check.
 Step = namedtuple(
     "Step",
     [
@@ -50,6 +52,9 @@ Step = namedtuple(
         "hr",
         "near",
         "ex",
+        "moved",
+        "sb",
+        "st",
     ],
 )
 
@@ -72,18 +77,28 @@ class LocalBoltzmannSampler:
 
     A draw that brings a moved heavy atom closer than `r_min` to a placed
     heavy atom more than three and at most `clash_window` bonds away is
-    redrawn. The check is local on purpose: it keeps rings from spearing
-    each other and the chain from folding back onto its neighbors, and
-    leaves overlaps between parts of a chain further apart, like those
-    between chains, to the DPD relaxation. Checked against the whole chain
-    (``clash_window=None``), it would make each chain a self-avoiding walk,
+    redrawn. The check is local on purpose: it keeps the chain from
+    folding back onto its neighbors, and leaves overlaps between parts of
+    a chain further apart, like those between chains, to the DPD
+    relaxation. A draw that threads a bond through a ring of the chain,
+    which no relaxation undoes, is redrawn wherever it happens. Checked
+    against the whole chain (``clash_window=None``), the contact check
+    would make each chain a self-avoiding walk,
     whose size per mass grows with length without limit, unlike a chain in
     a melt, where excluded volume is screened; long chains would also
     rarely be placed at all. After `max_redraw` draws the growth is at a
     dead end and backs up `backtrack` rotatable bonds (more after repeated
-    dead ends); after as many dead ends as the chain has rotatable bonds
-    it starts again, and after `max_restarts` restarts a ``RuntimeError``
-    is raised.
+    dead ends). After as many dead ends as the chain has rotatable bonds,
+    each later dead end takes the least bad torsion: of the `n_grid` grid
+    angles that thread no ring, those whose closest checked heavy-atom
+    contact is within 0.01 nm of the farthest, drawn by their Boltzmann
+    weights. Such contacts, often well under `r_min`, are left to DPD and
+    recorded in `accepted`; `flowermd.library.AtomisticRandomWalk` warns
+    once with their number. Chains whose growth never reaches that point,
+    such as polyethylene and, up to about 5 kg/mol, atactic polystyrene,
+    are placed exactly as with ``on_dead_end="error"``, which starts the
+    chain again instead and raises ``RuntimeError`` after `max_restarts`
+    restarts.
 
     Parameters
     ----------
@@ -125,6 +140,14 @@ class LocalBoltzmannSampler:
         Rotatable bonds to back up at a dead end, times the number of dead
         ends since the growth last got past the furthest one; 0 starts the
         chain again at every dead end.
+    on_dead_end : str, default "least_bad"
+        ``"least_bad"`` or ``"error"``; see above.
+
+    Attributes
+    ----------
+    accepted : list of list of float
+        For each chain placed, the closest contacts (nm) of the torsions
+        taken at dead ends.
 
     Notes
     -----
@@ -142,12 +165,17 @@ class LocalBoltzmannSampler:
     experiment for only 8 of 73 polymers surveyed (polyethylene,
     cis-polybutadiene, polycarbonate and a few others). The earlier
     whole-chain contact check hid part of this for short chains by
-    swelling them. alpha,alpha-Disubstituted vinyl polymers (PMMA,
-    polyisobutylene, poly(alpha-methylstyrene)) cannot be placed with the
-    default `r_min`: every torsion at one of the first junctions brings a 1-5
-    heavy-atom pair closer than `r_min`, since the backbone angles stay at
-    the force field's equilibrium rather than opening up as in the real
-    chain. With ``r_min=None`` they are placed but 55-80 % too compact.
+    swelling them. In alpha,alpha-disubstituted vinyl polymers (PMMA and
+    the other methacrylates, polyisobutylene, poly(alpha-methylstyrene)),
+    PTFE and other crowded chains, most torsions are dead ends: every grid
+    angle brings a heavy-atom pair closer than `r_min`, since the backbone
+    angles stay at the force field's equilibrium rather than opening up as
+    in the real chain. These chains are placed with the least bad torsions
+    (0.5-3 such contacts per repeat unit, the closest 0.04-0.2 nm), which the
+    DPD relaxation and a minimization resolve; their dimensions follow
+    neither the local energy nor experiment and are rough (single-chain
+    <R^2>/M 0.26-1.7 times the melt value of Fetters et al. at 2-20
+    kg/mol).
     The energy must come from a force field with realistic torsion and
     1-4 terms; UFF energies, for example, make polyethylene about 70 % too
     stiff. A SMIRNOFF force field requires openff-toolkit and
@@ -176,6 +204,7 @@ class LocalBoltzmannSampler:
         relax=True,
         clash_window=CLASH_WINDOW,
         backtrack=BACKTRACK,
+        on_dead_end="least_bad",
     ):
         if isinstance(force_field, str) and force_field == "oplsaa":
             from flowermd.library.forcefields import OPLS_AA
@@ -202,6 +231,10 @@ class LocalBoltzmannSampler:
         self.relax = relax
         self.clash_window = clash_window
         self.backtrack = backtrack
+        if on_dead_end not in ("least_bad", "error"):
+            raise ValueError("on_dead_end must be 'least_bad' or 'error'.")
+        self.on_dead_end = on_dead_end
+        self.accepted = []  # per chain: closest distances accepted (nm)
         self._tables, self._templates, self._steps = {}, {}, {}
 
     def _topology(self, chain):
@@ -227,6 +260,20 @@ class LocalBoltzmannSampler:
                 [a.GetAtomicNum() > 1 for a in mol.GetAtoms()]
             )
             terms["units"] = _rigid_units(mol)
+            terms["bond_array"] = np.array(list(terms["bonds"]), dtype=int)
+            rings = [r for r in mol.GetRingInfo().AtomRings() if len(r) <= 8]
+            terms["rings"] = np.full((len(rings), 8), -1)
+            for i, r in enumerate(rings):
+                terms["rings"][i, : len(r)] = r
+            # fan triangles (ring, atom, next atom) about each ring's center
+            terms["triangles"] = np.array(
+                [
+                    (i, a, r[k - 1])
+                    for i, r in enumerate(rings)
+                    for k, a in enumerate(r)
+                ],
+                dtype=int,
+            ).reshape(-1, 3)
             self._tables[key] = terms
         return key, self._tables[key]
 
@@ -248,9 +295,12 @@ class LocalBoltzmannSampler:
             self._steps[key] = _plan(
                 terms, junctions, self.max_sep, self.clash_window
             )
-        return functools.partial(self._choose, self._steps[key])
+        self.accepted.append([])
+        return functools.partial(self._choose, self._steps[key], terms)
 
-    def _choose(self, steps, index, placed, propose, rng):
+    def _choose(
+        self, steps, terms, index, placed, propose, rng, least_bad=False
+    ):
         step = steps[index]
         width = 2 * np.pi / self.n_grid
         x = propose((np.arange(self.n_grid) + 0.5) * width)
@@ -274,19 +324,93 @@ class LocalBoltzmannSampler:
             energy += np.sum(4 * step.eps * (s6 * s6 - s6), axis=1)
         cdf = np.cumsum(np.exp(-(energy - energy.min()) / self.kT))
         others = placed[step.near]
+        if least_bad:  # the grid angle with the farthest closest contact
+            closest = _closest(step, others, x)
+            threads = _threads(step, terms, placed, x)
+            if threads.all():
+                return None  # back up further
+            closest[threads] = -np.inf
+            good = closest >= closest.max() - 0.01
+            energy = np.where(good, np.nan_to_num(energy, nan=1e300), np.inf)
+            weight = np.exp(-(energy - energy.min()) / self.kT)
+            g = rng.choice(self.n_grid, p=weight / weight.sum())
+            self.accepted[-1].append(closest[g])
+            return (g + 0.5) * width
         for _ in range(0, self.max_redraw, 8):  # eight draws at a time
             u = rng.uniform(size=(2, 8))
             cell = np.searchsorted(cdf, u[0] * cdf[-1])
             angles = (np.minimum(cell, self.n_grid - 1) + u[1]) * width
-            if self.r_min is None:
-                return angles[0]
-            d = propose(angles)[:, step.hr, None] - others
-            d2 = np.einsum("bhok,bhok->bho", d, d)
-            d2[:, step.ex[0], step.ex[1]] = np.inf  # within three bonds
-            ok = ~np.any(d2 < self.r_min**2, axis=(1, 2))  # NaN: unplaced
+            x = propose(angles)
+            ok = _closest(step, others, x) >= (self.r_min or 0)
+            ok[ok] = ~_threads(step, terms, placed, x[ok])
             if ok.any():
                 return angles[ok.argmax()]
         return None
+
+
+def _closest(step, others, x):
+    """Closest checked heavy-atom distance of each candidate `x`."""
+    d = x[:, step.hr, None] - others
+    d2 = np.einsum("bhok,bhok->bho", d, d)
+    d2[:, step.ex[0], step.ex[1]] = np.inf  # within three bonds
+    return np.sqrt(np.nanmin(d2, axis=(1, 2), initial=np.inf))  # NaN: unplaced
+
+
+def crosses(p, q, center, u, v):
+    """Whether segment p-q crosses triangle (center, u, v); broadcasts."""
+    e1, e2, d, s = u - center, v - center, q - p, p - center
+    h, w = np.cross(d, e2), np.cross(s, e1)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        a = np.sum(e1 * h, axis=-1)
+        x, y, t = (
+            np.sum(m * n, axis=-1) / a for m, n in ((s, h), (d, w), (e2, w))
+        )
+    return (x >= 0) & (y >= 0) & (x + y <= 1) & (t >= 0) & (t <= 1)
+
+
+def _threads(step, terms, placed, x, reach=0.3):
+    """Whether each candidate threads a bond through a ring of the chain.
+
+    The bonds of the moved atoms are checked against the placed rings, and
+    the placed bonds against the moved rings, where a bond's midpoint is
+    within `reach` (nm) of a ring's center. Only the placed bonds and rings
+    within reach of the sphere about the junction that holds the moved
+    atoms are looked at.
+    """
+    out = np.zeros(len(x), dtype=bool)
+    if not len(terms["triangles"]) or not len(x):
+        return out
+    rings, bonds, triangles = (
+        terms[k] for k in ("rings", "bond_array", "triangles")
+    )
+
+    def centers(y):
+        xyz = np.where(rings[..., None] >= 0, y[..., rings, :], 0.0)
+        return xyz.sum(axis=-2) / np.sum(rings >= 0, axis=1)[:, None]
+
+    origin = placed[step.b]
+    radius = np.sqrt(np.max(np.sum((x - origin) ** 2, axis=-1))) + reach
+    placed_rings = np.sum((centers(placed) - origin) ** 2, axis=1) < radius**2
+    middle = (placed[bonds[:, 0]] + placed[bonds[:, 1]]) / 2
+    placed_bonds = np.sum((middle - origin) ** 2, axis=1) < radius**2
+    pairs = (
+        (step.sb, np.flatnonzero(placed_rings[triangles[:, 0]])),
+        (np.flatnonzero(placed_bonds), step.st),
+    )
+    y = np.repeat(placed[None], len(x), axis=0)
+    y[:, step.moved] = x
+    c_all = centers(y)
+    for b, t in pairs:
+        b, t = bonds[b], triangles[t]
+        p, q, c = y[:, b[:, 0]], y[:, b[:, 1]], c_all[:, t[:, 0]]
+        gap = (p + q)[:, :, None] / 2 - c[:, None]
+        near = np.einsum("bitk,bitk->bit", gap, gap) < reach**2
+        shared = b[:, None, :, None] == rings[t[:, 0]][None, :, None]
+        near &= ~np.any(shared, axis=(2, 3))
+        k, i, j = np.nonzero(near)
+        hit = crosses(p[k, i], q[k, i], c[k, j], y[k, t[j, 1]], y[k, t[j, 2]])
+        out[k[hit]] = True
+    return out
 
 
 def rotatable_bonds(mol):
@@ -418,6 +542,10 @@ def _plan(terms, junctions, max_sep, clash_window=None):
         else:  # Lorentz-Berthelot, e.g. SMIRNOFF
             sigma_ij = (sigma[pm] + sigma[pc]) / 2
         hr = [r for r, m in enumerate(j.moved) if terms["heavy"][m]]
+        moved = set(j.moved.tolist())
+        rings = [
+            i for i, r in enumerate(terms["rings"]) if set(r[r >= 0]) <= moved
+        ]
         if clash_window is None:
             near = heavy  # unplaced atoms are NaN and never clash
         else:
@@ -447,6 +575,9 @@ def _plan(terms, junctions, max_sep, clash_window=None):
                 np.array(hr, dtype=int),
                 near,
                 tuple(np.array(ex, dtype=int).reshape(-1, 2).T),
+                j.moved,
+                np.flatnonzero(np.isin(terms["bond_array"], j.moved).any(1)),
+                np.flatnonzero(np.isin(terms["triangles"][:, 0], rings)),
             )
         )
         placed[j.moved] = True

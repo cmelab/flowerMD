@@ -17,7 +17,10 @@ atoms for an array of candidate angles. Returning None instead of an
 angle is a dead end: if the sampler has a positive ``backtrack``, the
 growth backs up that many junctions (more after repeated dead ends) and
 continues; otherwise, or after as many dead ends as the chain has
-junctions, the chain starts again, at most `max_restarts` times.
+junctions, the chain starts again, at most `max_restarts` times. A sampler
+whose ``on_dead_end`` is ``"least_bad"`` is instead asked, from then on,
+for its least bad angle with ``choose(..., least_bad=True)``, and the
+growth backs up only if that is None too.
 `UniformTorsion`
 is the simplest sampler; `flowermd.internal.local_boltzmann` has the
 force-field-weighted one.
@@ -233,9 +236,10 @@ def random_chain_conformation(chain, start, rng, torsion_sampler=None):
     choose = sampler.chooser(chain, junctions)
     stops = Counter()
     backtrack = getattr(sampler, "backtrack", 0)
+    least_bad = getattr(sampler, "on_dead_end", "error") == "least_bad"
     for _ in range(sampler.max_restarts + 1):
         placed, stop = _grow(
-            xyz, units, junctions, start, rng, choose, backtrack
+            xyz, units, junctions, start, rng, choose, backtrack, least_bad
         )
         if stop is None:
             return placed
@@ -250,12 +254,15 @@ def random_chain_conformation(chain, start, rng, torsion_sampler=None):
     )
 
 
-def _grow(xyz, units, junctions, start, rng, choose, backtrack=0):
+def _grow(
+    xyz, units, junctions, start, rng, choose, backtrack=0, least_bad=False
+):
     """One growth attempt: (coordinates, None), or (None, stopping bond).
 
     At a dead end, back up ``backtrack * k`` junctions, where `k` counts
     the dead ends since the growth last got past the furthest one, and give
-    up after ``len(junctions)`` dead ends (at once if `backtrack` is 0).
+    up after ``len(junctions)`` dead ends (at once if `backtrack` is 0), or
+    with `least_bad`, take the sampler's least bad angle from then on.
     """
     pose = {0: np.eye(4)}
     pose[0][:3, :3] = Rotation.random(random_state=rng).as_matrix()
@@ -289,10 +296,15 @@ def _grow(xyz, units, junctions, start, rng, choose, backtrack=0):
             angle = choose(i, placed, propose, rng)
             if angle is None:
                 dead_ends += 1
-                if not backtrack or dead_ends > len(junctions):
-                    return None, (a, b)
                 streak = streak + 1 if i <= furthest else 1
                 furthest = max(furthest, i)
+                if not backtrack or dead_ends > len(junctions):
+                    if not least_bad:
+                        return None, (a, b)
+                    angle = choose(i, placed, propose, rng, least_bad=True)
+            if angle is None:
+                if not backtrack:
+                    return None, (a, b)
                 back = max(0, i - backtrack * streak)
                 while i > back:  # restore what each placement overwrote
                     i -= 1

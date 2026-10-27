@@ -42,14 +42,22 @@ The steps:
    turns every rotatable bond to a torsion drawn from local Boltzmann
    weights: the force field's torsions about that bond plus the
    Lennard-Jones energy of atoms at most four bonds apart (1-4 pairs
-   halved). A 0.30 nm heavy-atom contact check keeps rings from spearing
-   each other and the chain from folding back onto itself, but only
-   between atoms at most ``clash_window`` (12) bonds apart: overlaps
-   between distant parts of a chain, like those between chains, are left
-   for DPD to resolve, as a melt screens excluded volume. At a dead end
-   the growth backs up a few bonds rather than starting the chain again,
-   so long chains can be placed (atactic polystyrene at 20 kg/mol in
-   about a second per chain). Pass the melt
+   halved). A 0.30 nm heavy-atom contact check keeps the chain from
+   folding back onto itself, but only between atoms at most
+   ``clash_window`` (12) bonds apart: overlaps between distant parts of a
+   chain, like those between chains, are left for DPD to resolve, as a
+   melt screens excluded volume. A torsion that would thread a bond of
+   the chain through one of its rings is always rejected, since no later
+   relaxation undoes it. At a dead end the growth backs up a few bonds
+   rather than starting the chain again; once it has met as many dead
+   ends as the chain has rotatable bonds, it takes the least bad torsion
+   at each later one (the grid angle whose closest contact is farthest),
+   so every chain is placed. Crowded chains (methacrylates,
+   polyisobutylene, poly(alpha-methylstyrene), PTFE) are placed this way
+   with one to three such contacts per repeat unit, some closer than
+   0.1 nm, and `AtomisticRandomWalk` warns once with their number; DPD,
+   FIRE and the Sage minimization resolve them (see below). Placing a
+   20 kg/mol chain takes about 1-10 s. Pass the melt
    temperature as ``temperature``. Ring bonds, ladder junctions, bond
    lengths, bond angles and stereocenters keep the relaxed geometry.
    `UniformTorsion` (no force field needed) turns only the bonds between
@@ -127,9 +135,27 @@ versions checked contacts against the whole chain, which swelled short
 chains (atactic polystyrene 20-mers came out close to experiment) but made
 <R²>/M grow without limit with length and long chains hard or impossible
 to place; ``LocalBoltzmannSampler(clash_window=None)`` restores that check.
-alpha,alpha-Disubstituted vinyl polymers (PMMA, polyisobutylene,
-poly(alpha-methylstyrene)) cannot be placed with the default ``r_min``,
-and with ``r_min=None`` come out 55-80 % too compact.
+Crowded chains, whose torsions are mostly set at dead ends of the contact
+check (PMMA and the other methacrylates, polyisobutylene,
+poly(alpha-methylstyrene), PTFE, hydrogenated and 3,4-polyisoprenes,
+atactic poly(vinylcyclohexane)), are placed with rough dimensions:
+single-chain <R²>/M from 0.26 to 1.7 times the measured value at 2-20
+kg/mol, with no trend. ``LocalBoltzmannSampler(on_dead_end="error")``
+restores the earlier behavior, which restarts the chain and raises
+``RuntimeError`` for these polymers.
+
+Melts of about 4,000 atoms (5 kg/mol chains, two seeds each) of PMMA,
+polyisobutylene, poly(alpha-methylstyrene) and PTFE placed this way,
+relaxed with DPD and FIRE (``UFF_DPD``), minimized with Sage 2.3.0 and run
+for 100 ps of Sage NPT at the melt temperature kept every stereocenter,
+had no bond threaded through a ring after DPD
+(`flowermd.utils.find_ring_spears` finds a few between chains at
+placement, which DPD removes) and no stretched bond, and minimized to finite energies; the minimization removed 1.5-4.6
+kJ/mol per atom (10.5 for PTFE), against 1.2-1.7 for polyethylene and
+atactic polystyrene. The density after MD was within 5 % of experiment
+for polyisobutylene and PTFE, as for polyethylene and polystyrene, but
+11-13 % low for PMMA and poly(alpha-methylstyrene), and stayed there
+over another 300 ps.
 
 Turning only the bonds between repeat units uniformly (`UniformTorsion`)
 was off by +712 % in C_n (polyethylene C160), -61 % (polypropylene),

@@ -4,7 +4,8 @@ DPD lets atoms pass through each other, so a stereocenter can invert and a
 later minimizer will not undo it. `protect_stereochemistry` records every
 potential tetrahedral center of a parameterized `System` and adds a
 periodic-dihedral restraint over its four substituents; `audit_stereochemistry`
-checks the handedness afterwards. Requires RDKit.
+checks the handedness afterwards. Requires RDKit. `find_ring_spears`
+finds bonds threaded through rings, which no minimizer undoes either.
 """
 
 import warnings
@@ -13,6 +14,7 @@ import hoomd
 import numpy as np
 
 from flowermd.internal.all_atom_dpd import to_sanitized_rdkit
+from flowermd.internal.local_boltzmann import crosses
 
 PREFIX = "stereo_"
 
@@ -156,3 +158,67 @@ def audit_stereochemistry(reference, snapshot, planar_tolerance=0.05):
         "inverted": int(np.sum(volume * reference["sign"] < 0)),
         "near_planar": int(np.sum(np.abs(volume) < planar_tolerance)),
     }
+
+
+def find_ring_spears(snapshot, max_ring=8):
+    """Find bonds that pass through the face of a ring.
+
+    Each ring of at most `max_ring` atoms (from a cycle basis of the bond
+    graph) is split into triangles fanning out from its centroid, which
+    also covers puckered rings, and every bond that does not touch the
+    ring and whose midpoint is within 0.35 nm of the centroid is tested
+    for crossing one of them. Requires networkx.
+
+    Parameters
+    ----------
+    snapshot : gsd.hoomd.Frame or hoomd.Snapshot, required
+        Coordinates and bonds to check, wrapped or not.
+    max_ring : int, default 8
+        Largest ring checked.
+
+    Returns
+    -------
+    list of tuple
+        ``((i, j), ring)`` for each bond i-j threaded through `ring`, a
+        tuple of atom indices.
+
+    """
+    import networkx as nx
+    from scipy.spatial import cKDTree
+
+    xyz = np.asarray(snapshot.particles.position, dtype=float)
+    box = np.asarray(snapshot.configuration.box[:3], dtype=float)
+    bonds = np.asarray(snapshot.bonds.group, dtype=int).reshape(-1, 2)
+    rings = [
+        r
+        for r in nx.cycle_basis(nx.Graph(bonds.tolist()))
+        if len(r) <= max_ring
+    ]
+    if not rings:
+        return []
+
+    def image(d):
+        return d - box * np.rint(d / box)
+
+    corners = [xyz[r[0]] + image(xyz[r] - xyz[r[0]]) for r in rings]
+    centers = np.array([c.mean(axis=0) for c in corners])
+    ends = xyz[bonds[:, 0]] + 0.5 * image(xyz[bonds[:, 1]] - xyz[bonds[:, 0]])
+    trees = [
+        cKDTree(np.where(x % box < box, x % box, 0.0), boxsize=box)
+        for x in (centers, ends)
+    ]
+    found = trees[0].query_ball_tree(trees[1], 0.35)
+    out = []
+    for r, c, center, near in zip(rings, corners, centers, found):
+        near = [b for b in near if not set(bonds[b]) & set(r)]
+        if not near:
+            continue
+        p = xyz[bonds[near, 0]]
+        p += image(center - p) - (center - p)  # nearest image of the bond
+        q = p + image(xyz[bonds[near, 1]] - xyz[bonds[near, 0]])
+        hit = crosses(p[:, None], q[:, None], center, c, np.roll(c, -1, axis=0))
+        out += [
+            (tuple(map(int, bonds[near[b]])), tuple(map(int, r)))
+            for b in np.flatnonzero(hit.any(1))
+        ]
+    return out
