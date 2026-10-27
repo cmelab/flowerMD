@@ -408,12 +408,12 @@ class System(ABC):
         with gsd.hoomd.open(file_name, "w") as traj:
             traj.append(self.hoomd_snapshot)
 
-    def update_gmso_system_positions_from_snapshot(system, snapshot):
+    def update_system_positions(self, snapshot):
         """Push positions from a HOOMD snapshot (or a raw positions array) back
         onto each mb.Compound in ``system.all_molecules``, vectorized per-molecule. """
     
-        molecules = system.all_molecules
-        positions = snap.particles.position
+        molecules = self.all_molecules
+        positions = snapshot.particles.position
     
         if len(molecules) == 1:
             molecules[0].xyz = positions
