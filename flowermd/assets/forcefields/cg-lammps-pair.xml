@@ -1,0 +1,100 @@
+<ForceField version="0.0.1" name="CG-LAMMPS">
+    <FFMetaData combiningRule="lorentz">
+        <Units energy="kJ/mol" distance="nm" mass="amu" time="s" charge="coulomb"/>
+    </FFMetaData>
+    <AtomTypes>
+       <AtomType name="_A" element="_A" atomclass="_A" mass="1.0" charge="0.0" definition="_A" description="CG Bead"/>
+       <AtomType name="_B" element="_B" atomclass="_B" mass="1.0" charge="0.0" definition="_B" description="CG Bead"/>
+       <AtomType name="_C" element="_C" atomclass="_C" mass="1.0" charge="0.0" definition="_C" description="CG Bead"/>
+    </AtomTypes>
+    <BondTypes expression="0.5*k*(r - r_eq)**2">
+        <ParametersUnitDef parameter="r_eq" unit="nm"/>
+        <ParametersUnitDef parameter="k" unit="kJ/mol/(nm**2)"/>
+        <BondType name="HarmonicBondPotential" type1="_A" type2="_A">
+            <Parameters>
+                <Parameter name="r_eq" value="1.0"/>
+                <Parameter name="k" value="25"/>
+            </Parameters>
+        </BondType>
+        <BondType name="HarmonicBondPotential" type1="_A" type2="_B">
+            <Parameters>
+                <Parameter name="r_eq" value="1.0"/>
+                <Parameter name="k" value="25"/>
+            </Parameters>
+        </BondType>
+        <BondType name="HarmonicBondPotential" type1="_A" type2="_C">
+            <Parameters>
+                <Parameter name="r_eq" value="1.0"/>
+                <Parameter name="k" value="25"/>
+            </Parameters>
+        </BondType>
+        <BondType name="HarmonicBondPotential" type1="_B" type2="_B">
+            <Parameters>
+                <Parameter name="r_eq" value="1.0"/>
+                <Parameter name="k" value="25"/>
+            </Parameters>
+        </BondType>
+        <BondType name="HarmonicBondPotential" type1="_B" type2="_C">
+            <Parameters>
+                <Parameter name="r_eq" value="1.0"/>
+                <Parameter name="k" value="25"/>
+            </Parameters>
+        </BondType>
+        <BondType name="HarmonicBondPotential" type1="_C" type2="_C">
+            <Parameters>
+                <Parameter name="r_eq" value="1.0"/>
+                <Parameter name="k" value="25"/>
+            </Parameters>
+        </BondType>
+    </BondTypes>
+  <PairPotentialTypes expression="4*epsilon*(-sigma**6/r**6 + sigma**12/r**12)">
+    <ParametersUnitDef parameter="sigma" unit="nm"/>
+    <ParametersUnitDef parameter="epsilon" unit="kJ/mol"/>
+    <PairPotentialType name="LennardJonesPotential" type1="_A" type2="_A">
+        <Parameters>
+            <Parameter name="epsilon" value="1.0"/>
+            <Parameter name="sigma" value="1.0"/>
+        </Parameters>
+    </PairPotentialType>
+    <ParametersUnitDef parameter="sigma" unit="nm"/>
+    <ParametersUnitDef parameter="epsilon" unit="kJ/mol"/>
+    <PairPotentialType name="LennardJonesPotential" type1="_A" type2="_B">
+        <Parameters>
+            <Parameter name="epsilon" value="1.0"/>
+            <Parameter name="sigma" value="1.0"/>
+        </Parameters>
+    </PairPotentialType>
+    <ParametersUnitDef parameter="sigma" unit="nm"/>
+    <ParametersUnitDef parameter="epsilon" unit="kJ/mol"/>
+    <PairPotentialType name="LennardJonesPotential" type1="_A" type2="_C">
+        <Parameters>
+            <Parameter name="epsilon" value="1.0"/>
+            <Parameter name="sigma" value="1.0"/>
+        </Parameters>
+    </PairPotentialType>
+    <ParametersUnitDef parameter="sigma" unit="nm"/>
+    <ParametersUnitDef parameter="epsilon" unit="kJ/mol"/>
+    <PairPotentialType name="LennardJonesPotential" type1="_B" type2="_B">
+        <Parameters>
+            <Parameter name="epsilon" value="1.0"/>
+            <Parameter name="sigma" value="1.0"/>
+        </Parameters>
+    </PairPotentialType>
+    <ParametersUnitDef parameter="sigma" unit="nm"/>
+    <ParametersUnitDef parameter="epsilon" unit="kJ/mol"/>
+    <PairPotentialType name="LennardJonesPotential" type1="_B" type2="_C">
+        <Parameters>
+            <Parameter name="epsilon" value="1.0"/>
+            <Parameter name="sigma" value="1.0"/>
+        </Parameters>
+    </PairPotentialType>
+    <ParametersUnitDef parameter="sigma" unit="nm"/>
+    <ParametersUnitDef parameter="epsilon" unit="kJ/mol"/>
+    <PairPotentialType name="LennardJonesPotential" type1="_C" type2="_C">
+        <Parameters>
+            <Parameter name="epsilon" value="1.0"/>
+            <Parameter name="sigma" value="1.0"/>
+        </Parameters>
+    </PairPotentialType>
+  </PairPotentialTypes>
+</ForceField>
