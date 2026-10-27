@@ -410,24 +410,24 @@ class System(ABC):
 
     def update_system_positions(self, snapshot):
         """Push positions from a HOOMD snapshot (or a raw positions array) back
-        onto each mb.Compound in ``system.all_molecules``, vectorized per-molecule. """
-    
+        onto each mb.Compound in ``system.all_molecules``, vectorized per-molecule."""
+
         molecules = self.all_molecules
         positions = snapshot.particles.position
-    
+
         if len(molecules) == 1:
             molecules[0].xyz = positions
             return
-    
+
         n_particles = np.array([mol.n_particles for mol in molecules])
         if n_particles.sum() != positions.shape[0]:
             raise ValueError(
                 f"Total particle count mismatch: molecules have "
                 f"{n_particles.sum()} beads, positions array has {pos.shape[0]}."
             )
-    
+
         bounds = np.concatenate([[0], np.cumsum(n_particles)])
-    
+
         for mol, start, end in zip(molecules, bounds[:-1], bounds[1:]):
             mol.xyz = positions[start:end]
 
