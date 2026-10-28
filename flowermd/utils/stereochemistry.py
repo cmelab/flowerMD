@@ -14,7 +14,7 @@ import hoomd
 import numpy as np
 
 from flowermd.internal.all_atom_dpd import to_sanitized_rdkit
-from flowermd.internal.local_boltzmann import crosses
+from flowermd.internal.geometry import crosses, dihedrals, signed_volumes
 
 PREFIX = "stereo_"
 
@@ -24,15 +24,12 @@ def _volumes(xyz, neighbors, box=None):
     edges = xyz[neighbors[:, :3]] - xyz[neighbors[:, 3:]]
     if box is not None:  # wrapped HOOMD positions
         edges -= box * np.rint(edges / box)
-    return np.linalg.det(edges) / np.prod(np.linalg.norm(edges, axis=2), 1)
+    return signed_volumes(edges) / np.prod(np.linalg.norm(edges, axis=2), 1)
 
 
 def _dihedrals(p):
     """Dihedral of the four substituents in HOOMD's convention (radians)."""
-    b1, b2, b3 = p[:, 1] - p[:, 0], p[:, 2] - p[:, 1], p[:, 3] - p[:, 2]
-    n1, n2 = np.cross(b1, b2), np.cross(b2, b3)
-    y = np.linalg.norm(b2, axis=1) * np.einsum("ij,ij->i", n1, b3)
-    return np.arctan2(y, np.einsum("ij,ij->i", n1, n2))
+    return dihedrals(p[:, 0], p[:, 1], p[:, 2], p[:, 3])
 
 
 def protect_stereochemistry(system, k=125520.0, planar_tolerance=0.05):

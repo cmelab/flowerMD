@@ -15,7 +15,9 @@ dependencies:
   - pytest
   - pytest-cov
   - rdkit
+  - scipy >=1.15
   - nbmake
+  - networkx
   - python >=3.11, <3.14
   - fresnel >=0.13.5
   - cmeutils >=1.3

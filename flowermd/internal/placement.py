@@ -32,6 +32,8 @@ from collections import Counter, namedtuple
 import numpy as np
 from scipy.spatial.transform import Rotation
 
+from flowermd.internal.geometry import apply_pose, compose, turn_about_bond
+
 Junction = namedtuple(
     "Junction", ["parent", "child", "bonds", "torsion", "moved"]
 )
@@ -184,26 +186,6 @@ class UniformTorsion:
         return rng.uniform(0.0, 2 * math.pi)
 
 
-def _about(xyz_a, xyz_b, angles):
-    """4x4 rotations by `angles` about the line from `xyz_a` to `xyz_b`."""
-    k = (xyz_b - xyz_a) / np.linalg.norm(xyz_b - xyz_a)
-    angles = np.atleast_1d(np.asarray(angles, dtype=float))
-    cos, sin = np.cos(angles)[:, None, None], np.sin(angles)[:, None, None]
-    cross = np.array([[0, -k[2], k[1]], [k[2], 0, -k[0]], [-k[1], k[0], 0]])
-    matrix = np.zeros((len(angles), 4, 4))
-    matrix[:, 3, 3] = 1.0
-    # Rodrigues' rotation formula
-    matrix[:, :3, :3] = (
-        cos * np.eye(3) + sin * cross + (1 - cos) * np.outer(k, k)
-    )
-    matrix[:, :3, 3] = xyz_a - matrix[:, :3, :3] @ xyz_a
-    return matrix
-
-
-def _apply(matrix, xyz):
-    return xyz @ matrix[..., :3, :3].swapaxes(-1, -2) + matrix[..., None, :3, 3]
-
-
 def random_chain_conformation(chain, start, rng, torsion_sampler=None):
     """Random conformation of an all-atom chain by rigid-unit placement.
 
@@ -264,22 +246,25 @@ def _grow(
     up after ``len(junctions)`` dead ends (at once if `backtrack` is 0), or
     with `least_bad`, take the sampler's least bad angle from then on.
     """
-    pose = {0: np.eye(4)}
-    pose[0][:3, :3] = Rotation.random(random_state=rng).as_matrix()
-    pose[0][:3, 3] = start - pose[0][:3, :3] @ xyz[units[0]].mean(axis=0)
+    # A pose (R, t) carries a unit from the template into the box,
+    # x -> R x + t. The first unit gets a random orientation with its
+    # centroid at `start`: x -> R (x - centroid) + start.
+    spin = Rotation.random(rng=rng).as_matrix()
+    pose = {0: (spin, start - spin @ xyz[units[0]].mean(axis=0))}
     first = [
         *units[0],
         *(b for j in junctions if j.parent == 0 for _, b in j.bonds),
     ]
     placed = np.full_like(xyz, np.nan)
-    placed[first] = _apply(pose[0], xyz[first])
+    placed[first] = apply_pose(pose[0], xyz[first])
     i, dead_ends, furthest, streak, overwritten = 0, 0, -1, 0, []
     while i < len(junctions):
         j = junctions[i]
-        relative = np.eye(4)
         if j.torsion:
             a, b = j.bonds[0]
-            # Rodrigues' formula on the moved atoms, then the parent's pose.
+            # Rodrigues' formula: split each moved atom, measured from a,
+            # into the part along the bond and the arm perpendicular to it;
+            # the arm turned 90 degrees about the bond is k x y.
             k = (xyz[b] - xyz[a]) / np.linalg.norm(xyz[b] - xyz[a])
             y = xyz[j.moved] - xyz[a]
             along = np.outer(y @ k, k)
@@ -288,10 +273,13 @@ def _grow(
             def propose(
                 angles, parts=parts, origin=xyz[a], frame=pose[j.parent]
             ):
+                """Box coordinates of the moved atoms, one set per angle."""
                 cos = np.cos(angles)[:, None, None]
                 sin = np.sin(angles)[:, None, None]
+                # turned in the template, then carried into the box the
+                # way the parent was carried
                 local = cos * parts[0] + sin * parts[1] + parts[2] + origin
-                return _apply(frame, local)
+                return apply_pose(frame, local)
 
             angle = choose(i, placed, propose, rng)
             if angle is None:
@@ -310,10 +298,13 @@ def _grow(
                     i -= 1
                     placed[junctions[i].moved] = overwritten.pop()
                 continue
-            relative = _about(xyz[a], xyz[b], angle)[0]
-        pose[j.child] = pose[j.parent] @ relative
+            relative = turn_about_bond(xyz[a], xyz[b], angle)
+        else:  # ring (ladder) junction: the child keeps its built pose
+            relative = (np.eye(3), np.zeros(3))
+        # turn the child in the template, then carry it as its parent was
+        pose[j.child] = compose(pose[j.parent], relative)
         if backtrack:
             overwritten.append(placed[j.moved])
-        placed[j.moved] = _apply(pose[j.child], xyz[j.moved])
+        placed[j.moved] = apply_pose(pose[j.child], xyz[j.moved])
         i += 1
     return placed, None

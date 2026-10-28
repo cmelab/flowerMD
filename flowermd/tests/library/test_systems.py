@@ -359,14 +359,14 @@ class TestLocalBoltzmannSampler:
         for j, step, far in zip(
             junctions, _plan(terms, junctions, 4, 6), everywhere
         ):
-            np.testing.assert_array_equal(far.near, np.flatnonzero(heavy))
-            moved = j.moved[step.hr]
+            np.testing.assert_array_equal(far.nearby, np.flatnonzero(heavy))
+            moved = j.moved[step.heavy_moved]
             expect = {
                 q
                 for q in placed - set(j.moved)
                 if heavy[q] and min(bonds_apart[m][q] for m in moved) <= 6
             }
-            assert set(step.near) == expect
+            assert set(step.nearby) == expect
             placed |= set(j.moved)
         new = random_chain_conformation(
             chain, np.zeros(3), np.random.default_rng(0), sampler
@@ -457,15 +457,15 @@ class TestLocalBoltzmannSamplerOPLS:
             terms["units"], list(terms["bonds"]), len(carbon)
         )
         for j, step in zip(junctions, _plan(terms, junctions, 4)):
-            rows, cols = j.moved[step.pr], step.pc
+            rows, cols = j.moved[step.pair_moved], step.pair_placed
             si = np.array([sigma[carbon[i]] for i in rows])
             sj = np.array([sigma[carbon[i]] for i in cols])
-            np.testing.assert_allclose(step.sigma2, si * sj)
+            np.testing.assert_allclose(step.pair_sigma2, si * sj)
             ei = np.array([eps[carbon[i]] for i in rows])
             ej = np.array([eps[carbon[i]] for i in cols])
             assert np.all(
-                np.isclose(step.eps, np.sqrt(ei * ej))
-                | np.isclose(step.eps, 0.5 * np.sqrt(ei * ej))
+                np.isclose(step.pair_eps, np.sqrt(ei * ej))
+                | np.isclose(step.pair_eps, 0.5 * np.sqrt(ei * ej))
             )
 
 

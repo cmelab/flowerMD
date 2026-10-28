@@ -15,48 +15,56 @@ such as `flowermd.library.OPLS_AA`.
 """
 
 import functools
-from collections import namedtuple
+from dataclasses import dataclass
 
+import networkx as nx
 import numpy as np
 from scipy.optimize import minimize
-from scipy.sparse import csr_matrix
+from scipy.spatial.distance import cdist
 
 from flowermd.internal.all_atom_dpd import (
     gmso_terms,
     openff_terms,
     to_sanitized_rdkit,
 )
+from flowermd.internal.geometry import crosses, dihedrals, signed_volumes
 
 KB = 0.0083144626  # kJ/(mol K)
 CLASH_WINDOW = 12  # bonds; see LocalBoltzmannSampler
 BACKTRACK = 4  # junctions
-# Per junction: the turned bond a-b; its torsions i-a-b-l (placed atom i,
-# row of l among the moved atoms, and k, n, phase); the Lennard-Jones pairs
-# (moved row, placed atom, sigma**2, epsilon); the moved heavy-atom rows and
-# the heavy atoms that the contact check compares them with; and the (row,
-# position in `near`) pairs within three bonds, which the check skips; the
-# moved atoms, the bonds they are in and the triangles of the rings among
-# them, for the ring-threading check.
-Step = namedtuple(
-    "Step",
-    [
-        "a",
-        "b",
-        "ti",
-        "tl",
-        "terms",
-        "pr",
-        "pc",
-        "sigma2",
-        "eps",
-        "hr",
-        "near",
-        "ex",
-        "moved",
-        "sb",
-        "st",
-    ],
-)
+
+
+@dataclass
+class Step:
+    """What `_choose` needs at one rotatable bond, worked out once by `_plan`.
+
+    A "row" indexes `moved`, the atoms the turn moves (the second axis of
+    the candidate coordinates that ``propose`` returns); an "atom" indexes
+    the whole chain.
+    """
+
+    a: int  # the turned bond a-b; a is already placed
+    b: int
+    moved: np.ndarray  # atoms
+    # proper torsions i-a-b-l about the bond, one entry per Fourier term
+    torsion_i: np.ndarray  # placed atom i
+    torsion_l: np.ndarray  # row of the moved atom l
+    torsion_k: np.ndarray  # kJ/mol
+    torsion_n: np.ndarray  # periodicity
+    torsion_phase: np.ndarray  # radians
+    # Lennard-Jones pairs (moved atom, placed atom) at most max_sep bonds apart
+    pair_moved: np.ndarray  # rows
+    pair_placed: np.ndarray  # atoms
+    pair_sigma2: np.ndarray  # nm**2
+    pair_eps: np.ndarray  # kJ/mol, 1-4 pairs already scaled
+    # contact check: moved heavy atoms against nearby placed heavy atoms,
+    # skipping the (heavy_moved index, nearby index) pairs within 3 bonds
+    heavy_moved: np.ndarray  # rows
+    nearby: np.ndarray  # atoms
+    skip: tuple
+    # ring-threading check: the bonds and ring triangles of the moved atoms
+    moved_bonds: np.ndarray  # indices into terms["bond_array"]
+    moved_triangles: np.ndarray  # indices into terms["triangles"]
 
 
 class LocalBoltzmannSampler:
@@ -301,71 +309,83 @@ class LocalBoltzmannSampler:
     def _choose(
         self, steps, terms, index, placed, propose, rng, least_bad=False
     ):
+        """Torsion angle (radians) for junction `index`, or None (dead end)."""
         step = steps[index]
         width = 2 * np.pi / self.n_grid
-        x = propose((np.arange(self.n_grid) + 0.5) * width)
-        energy = np.zeros(self.n_grid)
-        if len(step.ti):
-            # Dihedral i-a-b-l: only l moves, so project once onto the
-            # frame of the bond and the fixed atom i.
-            axis = placed[step.b] - placed[step.a]
-            axis /= np.sqrt(axis @ axis)
-            v = placed[step.ti] - placed[step.a]
-            v -= np.outer(v @ axis, axis)
-            frame = np.stack([v, np.cross(axis, v)])
-            w = x[:, step.tl] - placed[step.b]
-            cos, sin = np.einsum("gtk,ctk->cgt", w, frame)
-            phi = np.arctan2(sin, cos)
-            k, n, phase = step.terms
-            energy += np.sum(k * (1 + np.cos(n * phi - phase)), axis=1)
-        if len(step.pr):
-            d = x[:, step.pr] - placed[step.pc]
-            s6 = (step.sigma2 / np.einsum("gpk,gpk->gp", d, d)) ** 3
-            energy += np.sum(4 * step.eps * (s6 * s6 - s6), axis=1)
-        cdf = np.cumsum(np.exp(-(energy - energy.min()) / self.kT))
-        others = placed[step.near]
-        if least_bad:  # the grid angle with the farthest closest contact
-            closest = _closest(step, others, x)
-            threads = _threads(step, terms, placed, x)
-            if threads.all():
-                return None  # back up further
-            closest[threads] = -np.inf
-            good = closest >= closest.max() - 0.01
-            energy = np.where(good, np.nan_to_num(energy, nan=1e300), np.inf)
-            weight = np.exp(-(energy - energy.min()) / self.kT)
-            g = rng.choice(self.n_grid, p=weight / weight.sum())
-            self.accepted[-1].append(closest[g])
-            return (g + 0.5) * width
+        grid = (np.arange(self.n_grid) + 0.5) * width  # cell centers
+        candidates = propose(grid)  # (n_grid, moved atoms, 3)
+        energy = _torsion_energy(step, placed, candidates)
+        energy += _lj_energy(step, placed, candidates)
+        if least_bad:
+            return self._least_bad(step, terms, placed, candidates, energy, rng)
+        weight = np.exp(-(energy - energy.min()) / self.kT)
         for _ in range(0, self.max_redraw, 8):  # eight draws at a time
-            u = rng.uniform(size=(2, 8))
-            cell = np.searchsorted(cdf, u[0] * cdf[-1])
-            angles = (np.minimum(cell, self.n_grid - 1) + u[1]) * width
-            x = propose(angles)
-            ok = _closest(step, others, x) >= (self.r_min or 0)
-            ok[ok] = ~_threads(step, terms, placed, x[ok])
+            cells = rng.choice(self.n_grid, size=8, p=weight / weight.sum())
+            angles = (cells + rng.uniform(size=8)) * width  # anywhere in cell
+            ok = self._allowed(step, terms, placed, propose(angles))
             if ok.any():
                 return angles[ok.argmax()]
         return None
 
+    def _allowed(self, step, terms, placed, candidates):
+        """Candidates with no close contact and no bond through a ring."""
+        ok = _closest(step, placed, candidates) >= (self.r_min or 0)
+        ok[ok] = ~_threads(step, terms, placed, candidates[ok])
+        return ok
 
-def _closest(step, others, x):
-    """Closest checked heavy-atom distance of each candidate `x`."""
-    d = x[:, step.hr, None] - others
-    d2 = np.einsum("bhok,bhok->bho", d, d)
-    d2[:, step.ex[0], step.ex[1]] = np.inf  # within three bonds
-    return np.sqrt(np.nanmin(d2, axis=(1, 2), initial=np.inf))  # NaN: unplaced
+    def _least_bad(self, step, terms, placed, candidates, energy, rng):
+        """Grid angle whose closest contact is about the farthest, or None.
+
+        Of the grid angles that thread no ring, those within 0.01 nm of the
+        farthest closest contact are drawn by their Boltzmann weights.
+        """
+        closest = _closest(step, placed, candidates)
+        threads = _threads(step, terms, placed, candidates)
+        if threads.all():
+            return None  # back up further
+        closest[threads] = -np.inf
+        good = closest >= closest.max() - 0.01
+        energy = np.where(good, np.nan_to_num(energy, nan=1e300), np.inf)
+        weight = np.exp(-(energy - energy.min()) / self.kT)
+        g = rng.choice(self.n_grid, p=weight / weight.sum())
+        self.accepted[-1].append(closest[g])
+        return (g + 0.5) * 2 * np.pi / self.n_grid
 
 
-def crosses(p, q, center, u, v):
-    """Whether segment p-q crosses triangle (center, u, v); broadcasts."""
-    e1, e2, d, s = u - center, v - center, q - p, p - center
-    h, w = np.cross(d, e2), np.cross(s, e1)
-    with np.errstate(divide="ignore", invalid="ignore"):
-        a = np.sum(e1 * h, axis=-1)
-        x, y, t = (
-            np.sum(m * n, axis=-1) / a for m, n in ((s, h), (d, w), (e2, w))
-        )
-    return (x >= 0) & (y >= 0) & (x + y <= 1) & (t >= 0) & (t <= 1)
+def _torsion_energy(step, placed, x):
+    """Torsion energy about the turned bond of each candidate `x` (kJ/mol)."""
+    phi = dihedrals(
+        placed[step.torsion_i],
+        placed[step.a],
+        placed[step.b],
+        x[:, step.torsion_l],
+    )  # (candidates, torsion terms)
+    n, phase = step.torsion_n, step.torsion_phase
+    return np.sum(step.torsion_k * (1 + np.cos(n * phi - phase)), axis=1)
+
+
+def _lj_energy(step, placed, x):
+    """Lennard-Jones energy of each candidate `x` with nearby placed atoms."""
+    d = x[:, step.pair_moved] - placed[step.pair_placed]
+    s6 = (step.pair_sigma2 / np.sum(d**2, axis=-1)) ** 3  # (sigma / r)**6
+    return np.sum(4 * step.pair_eps * (s6 * s6 - s6), axis=1)
+
+
+def _closest(step, placed, x):
+    """Closest checked heavy-atom distance (nm) of each candidate `x`."""
+    moved = x[:, step.heavy_moved].reshape(-1, 3)
+    d = cdist(moved, placed[step.nearby]).reshape(
+        len(x), len(step.heavy_moved), len(step.nearby)
+    )
+    d[:, step.skip[0], step.skip[1]] = np.inf  # pairs within three bonds
+    return np.nanmin(d, axis=(1, 2), initial=np.inf)  # NaN: not placed yet
+
+
+def _ring_centers(rings, xyz):
+    """Centroids of `rings` (rows of atoms padded with -1) in `xyz`."""
+    members = rings >= 0
+    corners = np.where(members[..., None], xyz[..., rings, :], 0.0)
+    return corners.sum(axis=-2) / members.sum(axis=1)[:, None]
 
 
 def _threads(step, terms, placed, x, reach=0.3):
@@ -380,35 +400,36 @@ def _threads(step, terms, placed, x, reach=0.3):
     out = np.zeros(len(x), dtype=bool)
     if not len(terms["triangles"]) or not len(x):
         return out
-    rings, bonds, triangles = (
-        terms[k] for k in ("rings", "bond_array", "triangles")
-    )
-
-    def centers(y):
-        xyz = np.where(rings[..., None] >= 0, y[..., rings, :], 0.0)
-        return xyz.sum(axis=-2) / np.sum(rings >= 0, axis=1)[:, None]
-
+    rings, bonds = terms["rings"], terms["bond_array"]
+    triangles = terms["triangles"]  # (ring, atom, next atom) fans
+    # each candidate's chain: the placed atoms plus its own moved atoms
+    chains = np.repeat(placed[None], len(x), axis=0)
+    chains[:, step.moved] = x
+    # placed rings and bonds within reach of the junction (NaN: not placed)
     origin = placed[step.b]
-    radius = np.sqrt(np.max(np.sum((x - origin) ** 2, axis=-1))) + reach
-    placed_rings = np.sum((centers(placed) - origin) ** 2, axis=1) < radius**2
-    middle = (placed[bonds[:, 0]] + placed[bonds[:, 1]]) / 2
-    placed_bonds = np.sum((middle - origin) ** 2, axis=1) < radius**2
-    pairs = (
-        (step.sb, np.flatnonzero(placed_rings[triangles[:, 0]])),
-        (np.flatnonzero(placed_bonds), step.st),
+    radius = np.max(np.linalg.norm(x - origin, axis=-1)) + reach
+    ring_near = np.linalg.norm(_ring_centers(rings, placed) - origin, axis=1)
+    bond_near = np.linalg.norm(placed[bonds].mean(axis=1) - origin, axis=1)
+    checks = (  # moved bonds vs placed rings, placed bonds vs moved rings
+        (step.moved_bonds, np.flatnonzero(ring_near[triangles[:, 0]] < radius)),
+        (np.flatnonzero(bond_near < radius), step.moved_triangles),
     )
-    y = np.repeat(placed[None], len(x), axis=0)
-    y[:, step.moved] = x
-    c_all = centers(y)
-    for b, t in pairs:
-        b, t = bonds[b], triangles[t]
-        p, q, c = y[:, b[:, 0]], y[:, b[:, 1]], c_all[:, t[:, 0]]
-        gap = (p + q)[:, :, None] / 2 - c[:, None]
-        near = np.einsum("bitk,bitk->bit", gap, gap) < reach**2
-        shared = b[:, None, :, None] == rings[t[:, 0]][None, :, None]
-        near &= ~np.any(shared, axis=(2, 3))
+    centers = _ring_centers(rings, chains)
+    for bond_ids, triangle_ids in checks:
+        b, t = bonds[bond_ids], triangles[triangle_ids]
+        p, q, c = chains[:, b[:, 0]], chains[:, b[:, 1]], centers[:, t[:, 0]]
+        # (candidate, bond, triangle) with the bond's midpoint near the ring
+        # center, leaving out bonds that touch the ring
+        midpoint = (p + q) / 2
+        near = (
+            np.linalg.norm(midpoint[:, :, None] - c[:, None], axis=-1) < reach
+        )
+        touches = b[:, None, :, None] == rings[t[:, 0]][None, :, None]
+        near &= ~np.any(touches, axis=(2, 3))
         k, i, j = np.nonzero(near)
-        hit = crosses(p[k, i], q[k, i], c[k, j], y[k, t[j, 1]], y[k, t[j, 2]])
+        hit = crosses(
+            p[k, i], q[k, i], c[k, j], chains[k, t[j, 1]], chains[k, t[j, 2]]
+        )
         out[k[hit]] = True
     return out
 
@@ -448,69 +469,43 @@ def rotatable_bonds(mol):
 
 def _rigid_units(mol):
     """Atoms connected without crossing a rotatable bond, as sorted lists."""
-    from scipy.sparse import coo_matrix
-    from scipy.sparse.csgraph import connected_components
-
-    cut = set(map(frozenset, rotatable_bonds(mol)))
-    pairs = [
-        (b.GetBeginAtomIdx(), b.GetEndAtomIdx())
-        for b in mol.GetBonds()
-        if frozenset((b.GetBeginAtomIdx(), b.GetEndAtomIdx())) not in cut
-    ]
-    n = mol.GetNumAtoms()
-    i, j = np.array(pairs, dtype=int).reshape(-1, 2).T
-    graph = coo_matrix((np.ones(len(i)), (i, j)), shape=(n, n))
-    labels = connected_components(graph, directed=False)[1]
-    _, first = np.unique(labels, return_index=True)  # number units by atom
-    rank = np.argsort(np.argsort(first))
-    units = [[] for _ in first]
-    for atom, label in enumerate(labels):
-        units[rank[label]].append(atom)
-    return units
+    graph = nx.Graph()
+    graph.add_nodes_from(range(mol.GetNumAtoms()))
+    graph.add_edges_from(
+        (b.GetBeginAtomIdx(), b.GetEndAtomIdx()) for b in mol.GetBonds()
+    )
+    graph.remove_edges_from(rotatable_bonds(mol))
+    return sorted(sorted(unit) for unit in nx.connected_components(graph))
 
 
-def _separations(terms, n_atoms, depth):
-    """Bond separation of every atom pair within `depth` bonds, per atom."""
-    neighbors = [[] for _ in range(n_atoms)]
-    for i, j in terms["bonds"]:
-        neighbors[i].append(j)
-        neighbors[j].append(i)
-    out = []
-    for start in range(n_atoms):
-        seen, shell = {start: 0}, [start]
-        for d in range(1, depth + 1):
-            shell = [k for i in shell for k in neighbors[i] if k not in seen]
-            seen.update((k, d) for k in shell)
-        out.append(seen)
-    return out
-
-
-def _within(neighbors, sources, depth):
-    """Atoms at most `depth` bonds from any of `sources`."""
-    seen, shell = set(sources), list(sources)
-    for _ in range(depth):
-        shell = [k for i in shell for k in neighbors[i] if k not in seen]
-        seen.update(shell)
-    return seen
+def _bond_graph(terms, atoms=None):
+    """The chain's bonds as a graph, or only those among `atoms`."""
+    graph = nx.Graph()
+    graph.add_nodes_from(range(len(terms["heavy"])) if atoms is None else atoms)
+    graph.add_edges_from(
+        (i, j) for i, j in terms["bonds"] if i in graph and j in graph
+    )
+    return graph
 
 
 def _plan(terms, junctions, max_sep, clash_window=None):
-    """Index and parameter arrays of each junction, in growth order."""
-    n = len(terms["heavy"])
-    sep = _separations(terms, n, max(max_sep, 3))
-    heavy_neighbors = [[] for _ in range(n)]
-    for i, j in terms["bonds"]:
-        if terms["heavy"][i] and terms["heavy"][j]:
-            heavy_neighbors[i].append(j)
-            heavy_neighbors[j].append(i)
-    by_bond = {}
+    """The `Step` of each junction, in growth order."""
+    n_atoms = len(terms["heavy"])
+    heavy = np.flatnonzero(terms["heavy"])
+    bond_graph, heavy_graph = _bond_graph(terms), _bond_graph(terms, heavy)
+    # bond separation of every atom pair at most max(max_sep, 3) bonds apart
+    separation = [
+        nx.single_source_shortest_path_length(bond_graph, i, max(max_sep, 3))
+        for i in range(n_atoms)
+    ]
+    # torsion terms by central bond, both ways round: (i, l, k, n, phase)
+    about = {}
     for (i, j, k, m), values in terms["dihedrals"].items():
         for a, b, c, d in ((i, j, k, m), (m, k, j, i)):
-            by_bond.setdefault((b, c), []).extend((a, d, *t) for t in values)
-    heavy = np.flatnonzero(terms["heavy"])
-    sigma = np.array([terms["sigma"][i] for i in range(n)])
-    eps = np.array([terms["eps"][i] for i in range(n)])
-    placed = np.ones(n, dtype=bool)  # the first unit
+            about.setdefault((b, c), []).extend((a, d, *t) for t in values)
+    sigma = np.array([terms["sigma"][i] for i in range(n_atoms)])
+    eps = np.array([terms["eps"][i] for i in range(n_atoms)])
+    placed = np.ones(n_atoms, dtype=bool)  # the first unit
     for j in junctions:
         placed[j.moved] = False
     # placed, as the contact check sees it: also the atoms on the axes of
@@ -523,61 +518,73 @@ def _plan(terms, junctions, max_sep, clash_window=None):
     for j in junctions:
         row = {atom: r for r, atom in enumerate(j.moved)}
         a, b = j.bonds[0]
-        torsions = [t for t in by_bond.get((a, b), []) if t[1] in row]
-        torsion_terms = np.array([t[2:] for t in torsions]).reshape(-1, 3).T
+        torsions = [t for t in about.get((a, b), []) if t[1] in row]
+        torsion_k, torsion_n, torsion_phase = (
+            np.array([t[2:] for t in torsions]).reshape(-1, 3).T
+        )
         # Each pair of atoms at most `max_sep` bonds apart is counted once,
         # at the first junction that fixes their distance.
         pairs = []
         for m in j.moved:
-            for q, s in sep[m].items():
+            for q, s in separation[m].items():
                 if 3 <= s <= max_sep and placed[q] and q not in row:
                     if frozenset((m, q)) not in counted:
                         counted.add(frozenset((m, q)))
                         pairs.append((row[m], q, s))
-        pr, pc, ps = np.array(pairs, dtype=int).reshape(-1, 3).T
-        pm = j.moved[pr]
-        scale = np.where(ps == 3, terms["scale14"], 1.0)
+        pair_moved, pair_placed, pair_sep = (
+            np.array(pairs, dtype=int).reshape(-1, 3).T
+        )
+        mi, pj = j.moved[pair_moved], pair_placed
         if terms.get("combining", "lorentz") == "geometric":  # e.g. OPLS
-            sigma_ij = np.sqrt(sigma[pm] * sigma[pc])
+            sigma_ij = np.sqrt(sigma[mi] * sigma[pj])
         else:  # Lorentz-Berthelot, e.g. SMIRNOFF
-            sigma_ij = (sigma[pm] + sigma[pc]) / 2
-        hr = [r for r, m in enumerate(j.moved) if terms["heavy"][m]]
+            sigma_ij = (sigma[mi] + sigma[pj]) / 2
+        scale = np.where(pair_sep == 3, terms["scale14"], 1.0)
+        heavy_moved = [r for r, m in enumerate(j.moved) if terms["heavy"][m]]
+        if clash_window is None:
+            nearby = heavy  # unplaced atoms are NaN and never clash
+        else:
+            reach = nx.multi_source_dijkstra_path_length(
+                heavy_graph, set(j.moved[heavy_moved]), cutoff=clash_window
+            )
+            nearby = np.array(
+                sorted(q for q in reach if known[q] and q not in row),
+                dtype=int,
+            )
+        column = {atom: c for c, atom in enumerate(nearby)}
+        skip = [
+            (h, column[q])
+            for h, r in enumerate(heavy_moved)
+            for q, s in separation[j.moved[r]].items()
+            if s <= 3 and q in column
+        ]
         moved = set(j.moved.tolist())
         rings = [
             i for i, r in enumerate(terms["rings"]) if set(r[r >= 0]) <= moved
         ]
-        if clash_window is None:
-            near = heavy  # unplaced atoms are NaN and never clash
-        else:
-            reach = _within(heavy_neighbors, j.moved[hr], clash_window)
-            near = np.array(
-                sorted(q for q in reach if known[q] and q not in row),
-                dtype=int,
-            )
-        column = {atom: c for c, atom in enumerate(near)}
-        ex = [
-            (h, column[q])
-            for h, r in enumerate(hr)
-            for q, s in sep[j.moved[r]].items()
-            if s <= 3 and q in column
-        ]
         steps.append(
             Step(
-                a,
-                b,
-                np.array([t[0] for t in torsions], dtype=int),
-                np.array([row[t[1]] for t in torsions], dtype=int),
-                torsion_terms,
-                pr,
-                pc,
-                sigma_ij**2,
-                scale * np.sqrt(eps[pm] * eps[pc]),
-                np.array(hr, dtype=int),
-                near,
-                tuple(np.array(ex, dtype=int).reshape(-1, 2).T),
-                j.moved,
-                np.flatnonzero(np.isin(terms["bond_array"], j.moved).any(1)),
-                np.flatnonzero(np.isin(terms["triangles"][:, 0], rings)),
+                a=a,
+                b=b,
+                moved=j.moved,
+                torsion_i=np.array([t[0] for t in torsions], dtype=int),
+                torsion_l=np.array([row[t[1]] for t in torsions], dtype=int),
+                torsion_k=torsion_k,
+                torsion_n=torsion_n,
+                torsion_phase=torsion_phase,
+                pair_moved=pair_moved,
+                pair_placed=pair_placed,
+                pair_sigma2=sigma_ij**2,
+                pair_eps=scale * np.sqrt(eps[mi] * eps[pj]),
+                heavy_moved=np.array(heavy_moved, dtype=int),
+                nearby=nearby,
+                skip=tuple(np.array(skip, dtype=int).reshape(-1, 2).T),
+                moved_bonds=np.flatnonzero(
+                    np.isin(terms["bond_array"], j.moved).any(1)
+                ),
+                moved_triangles=np.flatnonzero(
+                    np.isin(terms["triangles"][:, 0], rings)
+                ),
             )
         )
         placed[j.moved] = True
@@ -617,68 +624,18 @@ def relax_bonded(xyz, terms, tol=1.0, max_iter=None):
     numpy.ndarray, shape (N, 3)
 
     """
-    bond = np.array([(*ij, *p) for ij, p in terms["bonds"].items()]).reshape(
-        -1, 4
-    )
-    angle = np.array(
-        [(*ijk, *p) for ijk, p in terms["angles"].items()]
-    ).reshape(-1, 5)
-    torsion = np.array(
-        [
-            (*q, *t)
-            for kind in ("dihedrals", "impropers")
-            for q, values in terms[kind].items()
-            for t in values
-        ]
-    ).reshape(-1, 7)
-    i_b, j_b = bond[:, :2].T.astype(int)
-    i_a, j_a, k_a = angle[:, :3].T.astype(int)
-    i_t, j_t, k_t, l_t = torsion[:, :4].T.astype(int)
-    # Sums the per-term atom gradients, stacked in this order, onto atoms.
-    atoms = np.concatenate([j_b, i_b, i_a, k_a, j_a, i_t, l_t, j_t, k_t])
-    scatter = csr_matrix(
-        (np.ones(len(atoms)), (atoms, np.arange(len(atoms)))),
-        shape=(len(xyz), len(atoms)),
-    )
+    bonds, angles, torsions = _bonded_tables(terms)
 
     def energy(flat):
+        """Bonded energy (kJ/mol) and its gradient, flat like `flat`."""
         x = flat.reshape(-1, 3)
-        d = x[j_b] - x[i_b]
-        r = np.linalg.norm(d, axis=1)
-        dr = r - bond[:, 3]
-        g = (bond[:, 2] * dr / r)[:, None] * d
-        u, v = x[i_a] - x[j_a], x[k_a] - x[j_a]
-        ru, rv = np.linalg.norm(u, axis=1), np.linalg.norm(v, axis=1)
-        cos = np.clip(np.sum(u * v, axis=1) / (ru * rv), -1.0, 1.0)
-        theta = np.arccos(cos)
-        dtheta = theta - angle[:, 4]
-        # dE/dcos = k (theta - theta0) dtheta/dcos, dtheta/dcos = -1/sin
-        f = -angle[:, 3] * dtheta / np.sqrt(np.maximum(1 - cos**2, 1e-12))
-        gu = f[:, None] * (v / (ru * rv)[:, None] - (cos / ru**2)[:, None] * u)
-        gv = f[:, None] * (u / (ru * rv)[:, None] - (cos / rv**2)[:, None] * v)
-        # Torsions, with the gradient of Blondel and Karplus (1996).
-        F, G, H = x[i_t] - x[j_t], x[j_t] - x[k_t], x[l_t] - x[k_t]
-        A, B = np.cross(F, G), np.cross(H, G)
-        rg = np.linalg.norm(G, axis=1)
-        aa, bb = np.sum(A * A, axis=1), np.sum(B * B, axis=1)
-        phi = np.arctan2(
-            np.sum(np.cross(B, A) * G, axis=1) / rg, np.sum(A * B, axis=1)
-        )
-        k, n, phase = torsion[:, 4:].T
-        dphi = (-k * n * np.sin(n * phi - phase))[:, None]
-        fg = (np.sum(F * G, axis=1) / (aa * rg))[:, None] * A
-        hg = (np.sum(H * G, axis=1) / (bb * rg))[:, None] * B
-        gi = -dphi * (rg / aa)[:, None] * A
-        gl = dphi * (rg / bb)[:, None] * B
-        gfh = dphi * (fg - hg)
-        grad = scatter @ np.concatenate(
-            [g, -g, gu, gv, -gu - gv, gi, gl, gfh - gi, -gl - gfh]
-        )
-        total = (
-            0.5 * np.sum(bond[:, 2] * dr**2)
-            + 0.5 * np.sum(angle[:, 3] * dtheta**2)
-            + np.sum(k * (1 + np.cos(n * phi - phase)))
-        )
+        parts = [
+            _bond_terms(x, *bonds),
+            _angle_terms(x, *angles),
+            _torsion_terms(x, *torsions),
+        ]
+        total = sum(e for e, _ in parts)
+        grad = _sum_onto_atoms(len(x), [g for _, rows in parts for g in rows])
         return total, grad.ravel()
 
     if max_iter is None:
@@ -710,14 +667,98 @@ def relax_bonded(xyz, terms, tol=1.0, max_iter=None):
     return relaxed
 
 
+def _bonded_tables(terms):
+    """Atom indices and parameters of every bond, angle and torsion term."""
+    bond = np.array([(*ij, *p) for ij, p in terms["bonds"].items()])
+    angle = np.array([(*ijk, *p) for ijk, p in terms["angles"].items()])
+    torsion = np.array(
+        [
+            (*q, *t)
+            for kind in ("dihedrals", "impropers")
+            for q, values in terms[kind].items()
+            for t in values
+        ]
+    )
+    bond, angle, torsion = (
+        t.reshape(-1, n) for t, n in ((bond, 4), (angle, 5), (torsion, 7))
+    )
+    return (
+        (*bond[:, :2].T.astype(int), *bond[:, 2:].T),  # i, j, k, r0
+        (*angle[:, :3].T.astype(int), *angle[:, 3:].T),  # i, j, k, k, theta0
+        (*torsion[:, :4].T.astype(int), *torsion[:, 4:].T),  # i-l, k, n, phase
+    )
+
+
+def _bond_terms(x, i, j, k, r0):
+    """Harmonic bonds, E = k/2 (r - r0)**2; energy and (atoms, gradient)."""
+    d = x[j] - x[i]
+    r = np.linalg.norm(d, axis=1)
+    g = (k * (r - r0) / r)[:, None] * d  # dE/dx_j, along the bond
+    return 0.5 * np.sum(k * (r - r0) ** 2), [(j, g), (i, -g)]
+
+
+def _angle_terms(x, i, j, k, k_theta, theta0):
+    """Harmonic angles i-j-k, E = k/2 (theta - theta0)**2."""
+    u, v = x[i] - x[j], x[k] - x[j]  # arms from the vertex j
+    ru, rv = np.linalg.norm(u, axis=1), np.linalg.norm(v, axis=1)
+    cos = np.clip(np.sum(u * v, axis=1) / (ru * rv), -1.0, 1.0)
+    theta = np.arccos(cos)
+    # chain rule: dE/du = k (theta - theta0) * dtheta/dcos * dcos/du, with
+    # dtheta/dcos = -1/sin(theta); dcos/du is the part of v perpendicular
+    # to u over |u| |v|
+    f = -k_theta * (theta - theta0) / np.sqrt(np.maximum(1 - cos**2, 1e-12))
+    gu = f[:, None] * (v / (ru * rv)[:, None] - (cos / ru**2)[:, None] * u)
+    gv = f[:, None] * (u / (ru * rv)[:, None] - (cos / rv**2)[:, None] * v)
+    energy = 0.5 * np.sum(k_theta * (theta - theta0) ** 2)
+    return energy, [(i, gu), (k, gv), (j, -gu - gv)]
+
+
+def _torsion_terms(x, i, j, k, m, k_phi, n, phase):
+    """Periodic torsions i-j-k-m, E = k (1 + cos(n phi - phase)).
+
+    The gradient is that of Blondel and Karplus, J. Comput. Chem. 17,
+    1132 (1996), which stays finite at phi = 0 and 180 degrees: the end
+    atoms move along the normals of their planes, A and B, and the middle
+    atoms take the rest so that the four gradients add to zero.
+    """
+    F, G, H = x[i] - x[j], x[j] - x[k], x[m] - x[k]
+    A, B = np.cross(F, G), np.cross(H, G)  # normals of i-j-k and j-k-m
+    rg = np.linalg.norm(G, axis=1)
+    aa, bb = np.sum(A * A, axis=1), np.sum(B * B, axis=1)
+    phi = dihedrals(x[i], x[j], x[k], x[m])
+    de = -k_phi * n * np.sin(n * phi - phase)  # dE/dphi
+    gi = -(de * rg / aa)[:, None] * A
+    gm = (de * rg / bb)[:, None] * B
+    shared = de[:, None] * (
+        (np.sum(F * G, axis=1) / (aa * rg))[:, None] * A
+        - (np.sum(H * G, axis=1) / (bb * rg))[:, None] * B
+    )
+    energy = np.sum(k_phi * (1 + np.cos(n * phi - phase)))
+    return energy, [(i, gi), (m, gm), (j, shared - gi), (k, -gm - shared)]
+
+
+def _sum_onto_atoms(n_atoms, contributions):
+    """Add each term's gradient rows onto their atoms: shape (n_atoms, 3).
+
+    An atom in several terms gets the sum of its rows. (``grad[atoms] +=
+    rows`` would keep only one row per repeated atom.)
+    """
+    atoms = np.concatenate([a for a, _ in contributions])
+    rows = np.concatenate([g for _, g in contributions])
+    return np.column_stack(
+        [
+            np.bincount(atoms, weights=rows[:, c], minlength=n_atoms)
+            for c in range(3)
+        ]
+    )
+
+
 def _handedness(xyz, terms):
     """Sign of the substituent volume at every atom with four neighbors."""
-    neighbors = {}
-    for i, j in terms["bonds"]:
-        neighbors.setdefault(i, []).append(j)
-        neighbors.setdefault(j, []).append(i)
-    quads = np.array([n for n in neighbors.values() if len(n) == 4], dtype=int)
-    if not len(quads):
-        return np.empty(0)
+    graph = nx.Graph(list(terms["bonds"]))
+    quads = np.array(
+        [list(graph[atom]) for atom in graph if graph.degree(atom) == 4],
+        dtype=int,
+    ).reshape(-1, 4)
     edges = xyz[quads[:, :3]] - xyz[quads[:, 3:]]
-    return np.sign(np.linalg.det(edges))
+    return np.sign(signed_volumes(edges))
