@@ -230,33 +230,35 @@ class TestAtomisticRandomWalk:
             np.linalg.norm(new[:, None] - new, axis=2), distances, atol=1e-6
         )
 
-    def test_backtrack(self):
-        dead, seen = [], {}
+    def test_dead_end(self):
+        calls = []
 
-        class DeadEnds(UniformTorsion):
-            backtrack = 2
-
-            def choose(self, index, placed, propose, rng):
-                # each junction sees the same placed atoms on every visit
-                known = tuple(np.flatnonzero(~np.isnan(placed[:, 0])))
-                assert seen.setdefault(index, known) == known
-                if index == 6 and len(dead) < 3:
-                    dead.append(index)
+        class DeadEnd(UniformTorsion):
+            def choose(self, index, placed, propose, rng, least_bad=False):
+                calls.append((index, least_bad))
+                if index == 6 and not least_bad:
                     return None
                 return rng.uniform(0.0, 2 * np.pi)
 
         chain = PolyEthylene(lengths=8, num_mols=1).molecules[0]
         rng = np.random.default_rng(0)
-        new = random_chain_conformation(chain, np.zeros(3), rng, DeadEnds())
-        assert len(dead) == 3  # backed up 2, 4 and 6 junctions
+        new = random_chain_conformation(chain, np.zeros(3), rng, DeadEnd())
+        # the dead end took the least bad angle, and nothing was revisited
+        assert [c for c in calls if c[0] == 6] == [(6, False), (6, True)]
+        assert len(calls) == len({c[0] for c in calls}) + 1
         for before, after in zip(
             _geometry(chain, chain.xyz), _geometry(chain, new)
         ):
             np.testing.assert_allclose(after, before, atol=1e-6)
-        dead.clear()
-        DeadEnds.backtrack = 0
-        with pytest.raises(RuntimeError, match="1 attempts"):
-            random_chain_conformation(chain, np.zeros(3), rng, DeadEnds())
+
+        class Stuck(UniformTorsion):
+            max_restarts = 2
+
+            def choose(self, index, placed, propose, rng, least_bad=False):
+                return None if index == 6 else 0.0
+
+        with pytest.raises(RuntimeError, match="3 attempts"):
+            random_chain_conformation(chain, np.zeros(3), rng, Stuck())
 
     def test_system(self):
         chains = PolyEthylene(lengths=6, num_mols=4)
@@ -388,17 +390,17 @@ class TestLocalBoltzmannSampler:
         assert len(error) > 50
         assert np.max(np.abs(error)) < 0.3
 
-    def test_restart_cap(self):
+    def test_tight_contact_check(self):
+        # Every bond is a dead end; each takes its least bad angle at once.
         pytest.importorskip("openff.interchange")
-        sampler = LocalBoltzmannSampler(
-            r_min=0.6, max_restarts=3, on_dead_end="error"
-        )
+        sampler = LocalBoltzmannSampler(r_min=0.6)
         chain = PolyEthylene(lengths=10, num_mols=1).molecules[0]
         start = time.perf_counter()
-        with pytest.raises(RuntimeError, match="4 attempts"):
-            random_chain_conformation(
-                chain, np.zeros(3), np.random.default_rng(0), sampler
-            )
+        new = random_chain_conformation(
+            chain, np.zeros(3), np.random.default_rng(0), sampler
+        )
+        assert np.all(np.isfinite(new))
+        assert len(sampler.accepted[-1]) > 0
         assert time.perf_counter() - start < 60
 
 
@@ -483,11 +485,6 @@ class TestLeastBad:
             bond_orientation=[None, None],
         )
         chain = pmma.molecules[0]
-        old = LocalBoltzmannSampler(on_dead_end="error", max_restarts=2)
-        with pytest.raises(RuntimeError, match="3 attempts"):
-            random_chain_conformation(
-                chain, np.zeros(3), np.random.default_rng(0), old
-            )
         sampler = LocalBoltzmannSampler()
         xyz, _ = sampler.template(chain)
         new = random_chain_conformation(
@@ -501,8 +498,6 @@ class TestLeastBad:
                 pmma, density=0.5, seed=1, torsion_sampler=sampler
             )
         assert sum("dead ends" in str(w.message) for w in record) == 1
-        with pytest.raises(ValueError, match="on_dead_end"):
-            LocalBoltzmannSampler(on_dead_end="restart")
 
     def test_no_pierced_rings(self):
         ps = "C" + "C(c1ccccc1)C" * 12 + "C"

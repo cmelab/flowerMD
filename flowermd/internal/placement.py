@@ -14,15 +14,10 @@ returns ``choose(index, placed, propose, rng) -> angle``, and
 order: `placed` holds the coordinates fixed so far (NaN for the rest),
 and ``propose(angles)`` returns the coordinates of the junction's `moved`
 atoms for an array of candidate angles. Returning None instead of an
-angle is a dead end: if the sampler has a positive ``backtrack``, the
-growth backs up that many junctions (more after repeated dead ends) and
-continues; otherwise, or after `DEAD_ENDS_PER_JUNCTION` dead ends at the
-same junction, the chain starts again, at most `max_restarts` times. A
-sampler whose ``on_dead_end`` is ``"least_bad"`` is instead asked for that
-junction's least bad angle with ``choose(..., least_bad=True)``, and the
-growth backs up only if that is None too. The limit is per junction, so a
-chain that grows into a tight spot costs a bounded amount of extra work,
-however long it is.
+angle is a dead end: the sampler is then asked for its least bad angle
+with ``choose(..., least_bad=True)``, so each junction is visited once and
+a chain grows in time linear in its length. Only if that is None too does
+the chain start again, at most `max_restarts` times.
 `UniformTorsion`
 is the simplest sampler; `flowermd.internal.local_boltzmann` has the
 force-field-weighted one.
@@ -35,8 +30,6 @@ import numpy as np
 from scipy.spatial.transform import Rotation
 
 from flowermd.internal.geometry import apply_pose, compose, turn_about_bond
-
-DEAD_ENDS_PER_JUNCTION = 4
 
 Junction = namedtuple(
     "Junction", ["parent", "child", "bonds", "torsion", "moved"]
@@ -185,7 +178,7 @@ class UniformTorsion:
         """Return the per-junction choice function for `chain`."""
         return self.choose
 
-    def choose(self, index, placed, propose, rng):
+    def choose(self, index, placed, propose, rng, least_bad=False):
         """A uniform random angle in [0, 2 pi)."""
         return rng.uniform(0.0, 2 * math.pi)
 
@@ -221,12 +214,8 @@ def random_chain_conformation(chain, start, rng, torsion_sampler=None):
     junctions = chain_junctions(units, bonds, len(xyz))
     choose = sampler.chooser(chain, junctions)
     stops = Counter()
-    backtrack = getattr(sampler, "backtrack", 0)
-    least_bad = getattr(sampler, "on_dead_end", "error") == "least_bad"
     for _ in range(sampler.max_restarts + 1):
-        placed, stop = _grow(
-            xyz, units, junctions, start, rng, choose, backtrack, least_bad
-        )
+        placed, stop = _grow(xyz, units, junctions, start, rng, choose)
         if stop is None:
             return placed
         stops[stop] += 1
@@ -234,23 +223,12 @@ def random_chain_conformation(chain, start, rng, torsion_sampler=None):
     raise RuntimeError(
         f"No conformation of a {len(xyz)}-atom chain was found in "
         f"{sum(stops.values())} attempts; {count} stopped at the bond "
-        f"between atoms {a} and {b}. Relax the sampler's constraints (for "
-        "LocalBoltzmannSampler, a smaller r_min or clash_window, or a "
-        "larger backtrack)."
+        f"between atoms {a} and {b}. Relax the sampler's constraints."
     )
 
 
-def _grow(
-    xyz, units, junctions, start, rng, choose, backtrack=0, least_bad=False
-):
-    """One growth attempt: (coordinates, None), or (None, stopping bond).
-
-    At a dead end, back up ``backtrack * k`` junctions, where `k` counts
-    the dead ends since the growth last got past the furthest one. After
-    `DEAD_ENDS_PER_JUNCTION` dead ends at one junction (at once if
-    `backtrack` is 0), give up, or with `least_bad`, take the sampler's
-    least bad angle there.
-    """
+def _grow(xyz, units, junctions, start, rng, choose):
+    """One growth attempt: (coordinates, None), or (None, stopping bond)."""
     # A pose (R, t) carries a unit from the template into the box,
     # x -> R x + t. The first unit gets a random orientation with its
     # centroid at `start`: x -> R (x - centroid) + start.
@@ -262,10 +240,7 @@ def _grow(
     ]
     placed = np.full_like(xyz, np.nan)
     placed[first] = apply_pose(pose[0], xyz[first])
-    i, furthest, streak, overwritten = 0, -1, 0, []
-    dead_ends = Counter()  # per junction
-    while i < len(junctions):
-        j = junctions[i]
+    for i, j in enumerate(junctions):
         if j.torsion:
             a, b = j.bonds[0]
             # Rodrigues' formula: split each moved atom, measured from a,
@@ -288,29 +263,14 @@ def _grow(
                 return apply_pose(frame, local)
 
             angle = choose(i, placed, propose, rng)
+            if angle is None:  # dead end: take the least bad angle
+                angle = choose(i, placed, propose, rng, least_bad=True)
             if angle is None:
-                dead_ends[i] += 1
-                streak = streak + 1 if i <= furthest else 1
-                furthest = max(furthest, i)
-                if not backtrack or dead_ends[i] > DEAD_ENDS_PER_JUNCTION:
-                    if not least_bad:
-                        return None, (a, b)
-                    angle = choose(i, placed, propose, rng, least_bad=True)
-            if angle is None:
-                if not backtrack:
-                    return None, (a, b)
-                back = max(0, i - backtrack * streak)
-                while i > back:  # restore what each placement overwrote
-                    i -= 1
-                    placed[junctions[i].moved] = overwritten.pop()
-                continue
+                return None, (a, b)
             relative = turn_about_bond(xyz[a], xyz[b], angle)
         else:  # ring (ladder) junction: the child keeps its built pose
             relative = (np.eye(3), np.zeros(3))
         # turn the child in the template, then carry it as its parent was
         pose[j.child] = compose(pose[j.parent], relative)
-        if backtrack:
-            overwritten.append(placed[j.moved])
         placed[j.moved] = apply_pose(pose[j.child], xyz[j.moved])
-        i += 1
     return placed, None

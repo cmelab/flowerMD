@@ -35,7 +35,6 @@ from flowermd.internal.geometry import crosses, dihedrals, signed_volumes
 
 KB = 0.0083144626  # kJ/(mol K)
 CLASH_WINDOW = 12  # bonds; see LocalBoltzmannSampler
-BACKTRACK = 4  # junctions
 
 
 @dataclass
@@ -85,12 +84,13 @@ class LocalBoltzmannSampler:
     most `max_sep` bonds away (no electrostatics), and placed uniformly
     within its cell. A cell is left out if it brings a moved heavy atom
     closer than `r_min` to a placed heavy atom 4 to `clash_window` bonds
-    away, or pushes a bond through a ring of the chain. With no cell left
-    the growth backs up `backtrack` rotatable bonds; after four dead ends at
-    the same bond, that bond takes the least bad cell instead, and its
-    closest contact is recorded in `accepted`. Overlaps
-    further along the chain, and between chains, are left to the DPD
-    relaxation.
+    away, or pushes a bond through a ring of the chain. With no cell left,
+    the bond takes the least bad cell instead (of the cells that pierce no
+    ring, those within 0.01 nm of the farthest closest contact, by Boltzmann
+    weight), and that contact is recorded in `accepted`. Each bond is
+    visited once, so a chain is placed in time linear in its length.
+    Overlaps further along the chain, and between chains, are left to the
+    DPD relaxation.
 
     Parameters
     ----------
@@ -107,7 +107,8 @@ class LocalBoltzmannSampler:
     r_min : float or None, default 0.30
         Closest allowed heavy-atom distance (nm); None for no check.
     max_restarts : int, default 500
-        Restarts per chain before giving up, with ``on_dead_end="error"``.
+        Restarts per chain before giving up; a chain restarts only when every
+        angle at a bond would push a bond through a ring.
     relax : bool, default True
         Minimize each chain under the force field's bonded terms before
         sampling (`relax_bonded`), so that the placement uses the force
@@ -116,11 +117,6 @@ class LocalBoltzmannSampler:
         Largest bond separation of the heavy-atom pairs that `r_min` checks.
         None checks the whole chain, which makes each chain a self-avoiding
         walk that swells with length, unlike a chain in a melt.
-    backtrack : int, default 4
-        Rotatable bonds to back up at a dead end, times the number of dead
-        ends since the growth last got past the furthest one.
-    on_dead_end : str, default "least_bad"
-        ``"least_bad"``, or ``"error"`` to restart the chain instead.
 
     Attributes
     ----------
@@ -148,8 +144,6 @@ class LocalBoltzmannSampler:
         max_restarts=500,
         relax=True,
         clash_window=CLASH_WINDOW,
-        backtrack=BACKTRACK,
-        on_dead_end="least_bad",
     ):
         if isinstance(force_field, str) and force_field == "oplsaa":
             from flowermd.library.forcefields import OPLS_AA
@@ -174,10 +168,6 @@ class LocalBoltzmannSampler:
         self.max_restarts = max_restarts
         self.relax = relax
         self.clash_window = clash_window
-        self.backtrack = backtrack
-        if on_dead_end not in ("least_bad", "error"):
-            raise ValueError("on_dead_end must be 'least_bad' or 'error'.")
-        self.on_dead_end = on_dead_end
         self.accepted = []  # per chain: closest distances accepted (nm)
         self._tables, self._templates, self._steps = {}, {}, {}
 

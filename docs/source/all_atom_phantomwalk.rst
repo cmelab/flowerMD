@@ -48,10 +48,9 @@ The steps:
    chain, like those between chains, are left for DPD to resolve, as a
    melt screens excluded volume. A torsion that would push a bond of the
    chain through one of its rings (ring piercing) is always rejected, since no later
-   relaxation undoes it. At a dead end the growth backs up a few bonds
-   rather than starting the chain again; after four dead ends at the same
-   bond, it takes the least bad torsion there (the grid angle whose
-   closest contact is farthest), so every chain is placed. Crowded chains (methacrylates,
+   relaxation undoes it. At a dead end the bond takes the least bad
+   torsion (the grid angle whose closest contact is farthest), so every
+   chain is placed, in time linear in its length. Crowded chains (methacrylates,
    polyisobutylene, poly(alpha-methylstyrene), PTFE) are placed this way
    with one to three such contacts per repeat unit, some closer than
    0.1 nm, and `AtomisticRandomWalk` warns once with their number; DPD,
@@ -139,9 +138,7 @@ check (PMMA and the other methacrylates, polyisobutylene,
 poly(alpha-methylstyrene), PTFE, hydrogenated and 3,4-polyisoprenes,
 atactic poly(vinylcyclohexane)), are placed with rough dimensions:
 single-chain <R²>/M from 0.26 to 1.7 times the measured value at 2-20
-kg/mol, with no trend. ``LocalBoltzmannSampler(on_dead_end="error")``
-restores the earlier behavior, which restarts the chain and raises
-``RuntimeError`` for these polymers.
+kg/mol, with no trend.
 
 Melts of about 4,000 atoms (5 kg/mol chains, two seeds each) of PMMA,
 polyisobutylene, poly(alpha-methylstyrene) and PTFE placed this way,
