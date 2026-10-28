@@ -288,6 +288,12 @@ class TestAllAtomDPD(BaseTest):
         assert np.isclose(bond["r0"], r0 / 10)
         assert system.reference_energy == 1 * u.Unit("kJ/mol")
 
+    def test_rounding_noise_is_not_a_new_type(self):
+        # The two S-C bonds of bisphenol S get UFF parameters that differ
+        # only in the last digit; typing used to refine them forever.
+        system = self.build("Oc1ccc(cc1)S(=O)(=O)c1ccc(O)cc1")
+        assert system.hoomd_snapshot.particles.N == 2 * 27
+
     def test_bonded_scale_and_types(self):
         system = self.build(self.PS)
         types = system.hoomd_snapshot.particles.types

@@ -365,6 +365,13 @@ def _key(kind, labels):
     return min(tuple(labels), tuple(reversed(labels)))
 
 
+def _rounded(value):
+    """Parameters to 10 significant digits, nested as given."""
+    if isinstance(value, (tuple, list)):
+        return tuple(_rounded(v) for v in value)
+    return float(f"{value:.10g}") if isinstance(value, float) else value
+
+
 def _refine(frags, data):
     """Atom type names that make every bonded parameter a function of types.
 
@@ -385,6 +392,7 @@ def _refine(frags, data):
             for kind in KINDS:
                 for idx, value in d[kind].items():
                     key = (kind, _key(kind, [lab[i] for i in idx]))
+                    value = _rounded(value)  # rounding noise is no clash
                     if seen.setdefault(key, value) != value:
                         clash.add(key)
         if not clash:
@@ -408,7 +416,9 @@ def _refine(frags, data):
                     lab[i][0],
                     ids.setdefault((lab[i], *around), len(ids)),
                 )
-        if new == labels:
+        if len({x for lab in new for x in lab}) == len(
+            {x for lab in labels for x in lab}
+        ):  # no atom type was split
             raise RuntimeError("Atom-type refinement did not converge.")
         labels = new
     names = {}
