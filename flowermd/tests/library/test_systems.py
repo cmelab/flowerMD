@@ -499,6 +499,25 @@ class TestLeastBad:
             )
         assert sum("dead ends" in str(w.message) for w in record) == 1
 
+    def test_ring_spinning_on_its_axis(self):
+        # Turning a phenyl about the bond to its ring spins the ring about
+        # its own axis; if a placed bond lies across it, every angle pierces
+        # it. That bond takes its least bad angle instead of restarting the
+        # chain, so a long polystyrene chain is placed at the first attempt.
+        chains = Polymer(
+            lengths=50,
+            num_mols=1,
+            smiles="CCc1ccccc1",
+            bond_indices=[8, 11],
+            bond_length=0.154,
+            bond_orientation=[None, None],
+        )
+        sampler = LocalBoltzmannSampler(max_restarts=0)
+        new = random_chain_conformation(  # this seed meets such a bond
+            chains.molecules[0], np.zeros(3), np.random.default_rng(3), sampler
+        )
+        assert np.all(np.isfinite(new))
+
     def test_no_pierced_rings(self):
         ps = "C" + "C(c1ccccc1)C" * 12 + "C"
         chain = Molecule(num_mols=1, smiles=ps).molecules[0]

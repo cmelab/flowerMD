@@ -84,8 +84,9 @@ class LocalBoltzmannSampler:
     closer than `r_min` to a placed heavy atom 4 to `clash_window` bonds
     away, or pushes a bond through a ring of the chain. With no cell left,
     the bond takes the least bad cell instead (of the cells that pierce no
-    ring, those within 0.01 nm of the farthest closest contact, by Boltzmann
-    weight), and that contact is recorded in `accepted`. Each bond is
+    ring, or of all cells if every one does, those within 0.01 nm of the
+    farthest closest contact, by Boltzmann weight), and that contact is
+    recorded in `accepted`. Each bond is
     visited once, so a chain is placed in time linear in its length.
     Overlaps further along the chain, and between chains, are left to the
     DPD relaxation.
@@ -247,8 +248,8 @@ class LocalBoltzmannSampler:
             if not least_bad:
                 return None
             pierces = _pierces_ring(step, terms, placed, cells)
-            if pierces.all():
-                return None
+            if pierces.all():  # e.g. a ring turning about its own axis
+                pierces[:] = False  # leave the piercing to the relaxation
             # least bad: the cells within 0.01 nm of the farthest contact
             allowed = ~pierces & (closest >= closest[~pierces].max() - 0.01)
             cell = self._draw(energy, allowed, rng)
