@@ -1,6 +1,8 @@
 """Examples for the Systems class."""
 
+import multiprocessing
 import warnings
+from concurrent.futures import ProcessPoolExecutor
 
 import mbuild as mb
 import numpy as np
@@ -194,6 +196,10 @@ class AtomisticRandomWalk(RandomWalk):
         needs OpenFF. `flowermd.library.UniformTorsion` turns only the bonds
         between repeat units and needs no force field, but its chain
         dimensions depend on how the repeat unit was built.
+    n_workers : int, default 1
+        Processes that place chains in parallel (forked, so Linux and
+        macOS). Each chain has its own random stream, so a seed gives the
+        same system with any number of workers.
     **kwargs
         ``base_units``, ``seed`` and ``unique_molecules``, as in
         `RandomWalk`.
@@ -201,10 +207,17 @@ class AtomisticRandomWalk(RandomWalk):
     """
 
     def __init__(
-        self, molecules, density, buffer=0.3, torsion_sampler=None, **kwargs
+        self,
+        molecules,
+        density,
+        buffer=0.3,
+        torsion_sampler=None,
+        n_workers=1,
+        **kwargs,
     ):
         self.torsion_sampler = torsion_sampler or LocalBoltzmannSampler()
         self.buffer = buffer
+        self.n_workers = n_workers
         super(AtomisticRandomWalk, self).__init__(
             molecules=molecules,
             bond_length=None,
@@ -221,10 +234,21 @@ class AtomisticRandomWalk(RandomWalk):
         )
         accepted = getattr(self.torsion_sampler, "accepted", [])
         before = len(accepted)
-        positions = [
-            random_chain_conformation(chain, start, rng, self.torsion_sampler)
-            for chain, start in zip(self.all_molecules, starts)
-        ]
+        streams = rng.spawn(len(starts))  # one random stream per chain
+        _JOB["chains"] = (self.all_molecules, starts, streams)
+        _JOB["sampler"] = self.torsion_sampler
+        first, _ = _place_chain(0)  # also fills the sampler's caches
+        positions = [first]
+        if self.n_workers > 1:
+            context = multiprocessing.get_context("fork")
+            with ProcessPoolExecutor(
+                self.n_workers, mp_context=context
+            ) as pool:
+                placed = list(pool.map(_place_chain, range(1, len(starts))))
+            positions += [x for x, _ in placed]
+            accepted.extend(a for _, a in placed)  # recorded in the workers
+        else:
+            positions += [_place_chain(i)[0] for i in range(1, len(starts))]
         closest = [d for chain in accepted[before:] for d in chain]
         if closest:
             warnings.warn(
@@ -235,3 +259,15 @@ class AtomisticRandomWalk(RandomWalk):
                 f"{min(closest):.3f} nm); PhantomWalk relaxes them."
             )
         return np.concatenate(positions) - box_lengths / 2
+
+
+_JOB = {}  # the chains and sampler being placed, shared with forked workers
+
+
+def _place_chain(i):
+    """Positions of chain `i` of `_JOB`, and its dead-end contacts."""
+    chains, starts, streams = _JOB["chains"]
+    sampler = _JOB["sampler"]
+    x = random_chain_conformation(chains[i], starts[i], streams[i], sampler)
+    accepted = getattr(sampler, "accepted", None)
+    return x, accepted[-1] if accepted else []

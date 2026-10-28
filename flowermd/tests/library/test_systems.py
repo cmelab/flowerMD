@@ -260,6 +260,18 @@ class TestAtomisticRandomWalk:
         with pytest.raises(RuntimeError, match="3 attempts"):
             random_chain_conformation(chain, np.zeros(3), rng, Stuck())
 
+    def test_parallel_placement(self):
+        def build(n_workers):
+            return AtomisticRandomWalk(
+                PolyEthylene(lengths=6, num_mols=4),
+                density=0.85,
+                seed=3,
+                torsion_sampler=UniformTorsion(),
+                n_workers=n_workers,
+            ).system.xyz
+
+        np.testing.assert_allclose(build(1), build(3))
+
     def test_system(self):
         chains = PolyEthylene(lengths=6, num_mols=4)
         uniform = UniformTorsion()
