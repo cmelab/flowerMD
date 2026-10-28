@@ -128,7 +128,7 @@ class UFF_DPD(BaseXMLForcefield):
     workflow: soft overlaps relax under DPD while the scaled bonded terms
     keep the chemistry. Units are kJ/mol, nm and amu; GMSO passes the DPD
     parameters to HOOMD unconverted, so use ``base_units`` of 1 kJ/mol,
-    1 nm and 1 amu. Use a time step of about 5e-5 ps. Requires RDKit.
+    1 nm and 1 amu. Use a time step of about 2e-4 ps. Requires RDKit.
 
     Parameters
     ----------
@@ -144,10 +144,12 @@ class UFF_DPD(BaseXMLForcefield):
         DPD cutoff (nm).
     bonded_scale : float, default 30.0
         Multiplier on the bond, angle and improper force constants.
-    dihedral_scale : float, default 300.0
-        Multiplier on the proper dihedral force constants. Stiff torsions
-        keep the placed torsions, and so the chain dimensions, through DPD
-        (polyethylene C_n drops about 6 % more at 30).
+    dihedral_scale : float, default 30.0
+        Multiplier on the proper dihedral force constants. Stiffer torsions
+        keep the placed torsions more closely (polyethylene C_n drops a few
+        percent less at 300), but UFF's aryl-O and aryl-S torsions at 300
+        hold neighboring rings nearly coplanar and push ortho hydrogens
+        into each other, which the soft repulsion cannot undo.
     epsilon_weighting : bool, default True
         Weight ``A`` and ``gamma`` of each pair by
         ``sqrt(eps_i * eps_j) / eps_max``.
@@ -168,7 +170,7 @@ class UFF_DPD(BaseXMLForcefield):
         gamma=4091.0,
         r_cut=0.35,
         bonded_scale=30.0,
-        dihedral_scale=300.0,
+        dihedral_scale=30.0,
         epsilon_weighting=True,
         pair_overrides=None,
         nlist_buffer=0.04,

@@ -27,7 +27,7 @@ equilibrated melt.
     system.apply_forcefield(r_cut=0.35, force_field=ff, kT=4.184)
     sim = PhantomWalk(
         system.hoomd_snapshot, system.hoomd_forcefield,
-        n_steps_dpd=40000, n_steps_fire=100, dt=5e-5, run_now=False,
+        n_steps_dpd=40000, n_steps_fire=100, dt=2e-4, run_now=False,
     )
     record = sim.run_initialization()
 
@@ -67,13 +67,13 @@ The steps:
 2. **Force field**: `UFF_DPD` (RDKit UFF) or `OpenFF_DPD` (a SMIRNOFF
    force field, through OpenFF Interchange) writes a GMSO XML file for the
    system: bonded terms scaled by ``bonded_scale`` (30; proper torsions by
-   ``dihedral_scale``, 300) and a DPD pair
+   ``dihedral_scale``, also 30) and a DPD pair
    force whose ``A`` and ``gamma`` are weighted by
    ``sqrt(eps_i eps_j) / eps_max``. Atom types are refined until every
    bonded parameter is a function of its types, and the particles are
-   renamed to match. Units are kJ/mol, nm and amu, so pass ``dt=5e-5``
-   (ps) to `PhantomWalk`; its default of 0.001 is meant for reduced units
-   and is unstable here.
+   renamed to match. Units are kJ/mol, nm and amu, so pass ``dt=2e-4``
+   (ps) to `PhantomWalk` (4e-4 is unstable); its default of 0.001 is
+   meant for reduced units.
 3. **Stereochemistry**: DPD lets atoms pass through each other, so a
    tetrahedral center can invert. When a DPD force field is applied,
    `AtomisticRandomWalk` calls `protect_stereochemistry`, which adds a
@@ -99,9 +99,9 @@ Defaults
 Setting                        Default
 =============================  ============================================
 DPD ``A`` / ``gamma``          52,300 kJ/(mol nm) / 4,091 amu/ps, weighted
-``kT``, cutoff, time step      4.184 kJ/mol, 0.35 nm, 5e-5 ps (pass it)
+``kT``, cutoff, time step      4.184 kJ/mol, 0.35 nm, 2e-4 ps (pass it)
 Neighbor-list buffer           0.04 nm
-Bonded / dihedral scale        30 / 300
+Bonded / dihedral scale        30 / 30
 Stereochemistry restraint      ``k`` = 125,520 kJ/mol
 =============================  ============================================
 

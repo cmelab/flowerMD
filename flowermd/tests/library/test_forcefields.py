@@ -303,9 +303,46 @@ class TestAllAtomDPD(BaseTest):
         k30 = self.force(system, hoomd.md.angle.Harmonic).params
         k1 = self.force(one, hoomd.md.angle.Harmonic).params
         assert all(np.isclose(k30[t]["k"], 30 * k1[t]["k"]) for t in k1)
-        k300 = self.force(system, hoomd.md.dihedral.Periodic).params
+        k30 = self.force(system, hoomd.md.dihedral.Periodic).params
         k1 = self.force(one, hoomd.md.dihedral.Periodic).params
-        assert all(np.isclose(k300[t]["k"], 300 * k1[t]["k"]) for t in k1)
+        assert all(np.isclose(k30[t]["k"], 30 * k1[t]["k"]) for t in k1)
+
+    def test_ortho_hydrogens_stay_apart(self):
+        # A polysulfone repeat unit: with torsions scaled by 300, UFF holds
+        # its rings coplanar and DPD leaves ortho hydrogens overlapping.
+        import networkx as nx
+        from scipy.spatial import cKDTree
+
+        from flowermd.library import PhantomWalk
+
+        psf = "CC(C)(c1ccc(Oc2ccc(S(=O)(=O)c3ccccc3)cc2)cc1)c1ccccc1"
+        system = Lattice(
+            molecules=Molecule(num_mols=8, smiles=psf), x=1.2, y=1.2, n=2
+        )
+        system.apply_forcefield(
+            r_cut=0.35, force_field=UFF_DPD(system), kT=4.184
+        )
+        sim = PhantomWalk(
+            system.hoomd_snapshot,
+            system.hoomd_forcefield,
+            n_steps_dpd=4000,
+            n_steps_fire=100,
+            dt=2e-4,
+            device=hoomd.device.CPU(),
+            run_now=False,
+        )
+        sim.run_initialization(stop=lambda s: True, min_steps=3000)
+        snap = sim.state.get_snapshot()
+        box = np.asarray(snap.configuration.box[:3])
+        graph = nx.Graph(np.asarray(snap.bonds.group).tolist())
+        tree = cKDTree(np.mod(snap.particles.position, box), boxsize=box)
+        close = [
+            (i, j)
+            for i, j in tree.query_pairs(0.15)
+            if nx.has_path(graph, i, j)
+            and nx.shortest_path_length(graph, i, j) > 3
+        ]
+        assert close == []
 
     def test_pair_weighting_and_overrides(self):
         system = self.build(self.PS, epsilon_weighting=False, A=100.0)

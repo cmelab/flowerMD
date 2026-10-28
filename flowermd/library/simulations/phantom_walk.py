@@ -39,7 +39,7 @@ class PhantomWalk(Simulation):
         FIRE steps.
     dt : float, default 0.001
         Time step. The default suits reduced units; for all-atom systems in
-        kJ/mol, nm and amu (`flowermd.library.UFF_DPD`) use about 5e-5 ps,
+        kJ/mol, nm and amu (`flowermd.library.UFF_DPD`) use about 2e-4 ps,
         since 0.001 ps is unstable under the stiffened bonded terms.
     write_at_start : bool, default False
         Trigger the writers before the first DPD step.

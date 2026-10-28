@@ -123,7 +123,7 @@ class TestAllAtomPhantomWalk(BaseTest):
             system.hoomd_forcefield,
             n_steps_dpd=n_steps_dpd,
             n_steps_fire=50,
-            dt=5e-5,
+            dt=2e-4,
             device=hoomd.device.CPU(),
             run_now=False,
         )
