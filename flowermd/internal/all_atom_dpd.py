@@ -18,7 +18,7 @@ KINDS = ("bonds", "angles", "dihedrals", "impropers")
 def bonds_of(mol):
     """Each bond of an RDKit molecule once, in time linear in its size.
 
-    ``bonds_of(mol)`` fetches every bond by index, which RDKit does in time
+    ``mol.GetBonds()`` fetches every bond by index, which RDKit does in time
     proportional to the number of bonds, so looping over it is quadratic.
     """
     for atom in mol.GetAtoms():
@@ -30,6 +30,37 @@ def bonds_of(mol):
 KCAL = 4.184  # kJ per kcal
 
 
+def molecules_rdkit(compound):
+    """Each molecule of `compound` as a sanitized RDKit molecule.
+
+    Yields ``(mol, atoms)``, `atoms` being the indices of the molecule's
+    atoms in `compound`; identical molecules share one RDKit molecule.
+    Sanitizing a whole system as one molecule takes time that grows faster
+    than its size, so each distinct molecule is sanitized on its own.
+    """
+    from rdkit import Chem
+
+    atoms = []
+    frags = Chem.GetMolFrags(
+        compound.to_rdkit(),
+        asMols=True,
+        sanitizeFrags=False,
+        fragsMolAtomMapping=atoms,
+    )
+    cache = {}
+    for frag, where in zip(frags, atoms):
+        key = (
+            tuple(a.GetAtomicNum() for a in frag.GetAtoms()),
+            tuple(
+                (b.GetBeginAtomIdx(), b.GetEndAtomIdx(), b.GetBondType())
+                for b in bonds_of(frag)
+            ),
+        )
+        if key not in cache:
+            cache[key] = _sanitize(frag)
+        yield cache[key], where
+
+
 def write_all_atom_dpd_xml(system, file_path, terms, **settings):
     """Type `system`, rename its particles and write the XML force field.
 
@@ -39,27 +70,15 @@ def write_all_atom_dpd_xml(system, file_path, terms, **settings):
     GMSO sites, if already converted) are renamed to match, so the file
     applies by name.
     """
-    from rdkit import Chem
-
     compound = getattr(system, "system", system)
-    mol = to_sanitized_rdkit(compound)
-    atom_map, unique, where = [], {}, []
-    for frag in Chem.GetMolFrags(
-        mol, asMols=True, fragsMolAtomMapping=atom_map
-    ):
-        bonds = sorted(
-            (b.GetBeginAtomIdx(), b.GetEndAtomIdx(), b.GetBondType())
-            for b in bonds_of(frag)
-        )
-        key = (tuple(a.GetAtomicNum() for a in frag.GetAtoms()), tuple(bonds))
-        where.append(unique.setdefault(key, frag))
-    frags = list(unique.values())
+    where = list(molecules_rdkit(compound))
+    frags = list({id(mol): mol for mol, _ in where}.values())
     data = [_merge_impropers(_fill_dihedrals(f, terms(f))) for f in frags]
     labels = dict(zip(map(id, frags), _refine(frags, data)))
-    names = [None] * mol.GetNumAtoms()
-    for frag, atoms in zip(where, atom_map):
-        for local, i in enumerate(atoms):
-            names[i] = labels[id(frag)][local]
+    names = [None] * compound.n_particles
+    for mol, atoms in where:
+        for i, name in zip(atoms, labels[id(mol)]):
+            names[i] = name
     for particle, name in zip(compound.particles(), names):
         particle.name = name
     if getattr(system, "gmso_system", None) is not None:
@@ -79,9 +98,13 @@ def to_sanitized_rdkit(compound):
     rings (and thiophene S) typed as non-aromatic; their atoms are marked
     before sanitizing.
     """
+    return _sanitize(compound.to_rdkit())
+
+
+def _sanitize(mol):
+    """Set the bond orders and aromatic atoms of `mol`, then sanitize it."""
     from rdkit import Chem
 
-    mol = compound.to_rdkit()
     for bond in bonds_of(mol):
         if bond.GetBondType() == Chem.BondType.UNSPECIFIED:
             bond.SetBondType(Chem.BondType.SINGLE)

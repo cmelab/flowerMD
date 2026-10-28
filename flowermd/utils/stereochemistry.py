@@ -13,7 +13,7 @@ import warnings
 import hoomd
 import numpy as np
 
-from flowermd.internal.all_atom_dpd import to_sanitized_rdkit
+from flowermd.internal.all_atom_dpd import molecules_rdkit
 from flowermd.internal.geometry import crosses, dihedrals, signed_volumes
 
 PREFIX = "stereo_"
@@ -62,28 +62,40 @@ def protect_stereochemistry(system, k=125520.0, planar_tolerance=0.05):
     """
     from rdkit import Chem
 
-    mol = to_sanitized_rdkit(system.system)
-    centers = [
-        info.centeredOn
-        for info in Chem.FindPotentialStereo(mol, flagPossible=True)
-        if info.type == Chem.StereoType.Atom_Tetrahedral
-    ]
+    found = {}  # per distinct molecule: its centers and their neighbors
+    centers, neighbors = [], []
+    for mol, atoms in molecules_rdkit(system.system):
+        if id(mol) not in found:
+            local = [
+                info.centeredOn
+                for info in Chem.FindPotentialStereo(mol, flagPossible=True)
+                if info.type == Chem.StereoType.Atom_Tetrahedral
+            ]
+            found[id(mol)] = (
+                mol,
+                local,
+                [
+                    [n.GetIdx() for n in mol.GetAtomWithIdx(c).GetNeighbors()]
+                    for c in local
+                ],
+            )
+        _, local, around = found[id(mol)]
+        centers += [atoms[c] for c in local]
+        neighbors += [[atoms[n] for n in near] for near in around]
     if not centers:
         # Cross-check: four neighbors of four different symmetry classes.
-        ranks = list(Chem.CanonicalRankAtoms(mol, breakTies=False))
-        if any(
-            len({ranks[n.GetIdx()] for n in atom.GetNeighbors()}) == 4
-            for atom in mol.GetAtoms()
-        ):
-            warnings.warn(
-                "No stereocenters were found, but some atoms have four "
-                "distinct substituents. Nothing is protected."
-            )
+        for mol, _, _ in found.values():
+            ranks = list(Chem.CanonicalRankAtoms(mol, breakTies=False))
+            if any(
+                len({ranks[n.GetIdx()] for n in atom.GetNeighbors()}) == 4
+                for atom in mol.GetAtoms()
+            ):
+                warnings.warn(
+                    "No stereocenters were found, but some atoms have four "
+                    "distinct substituents. Nothing is protected."
+                )
+                break
     reference = {"centers": np.array(centers, dtype=int)}
-    neighbors = [
-        [n.GetIdx() for n in mol.GetAtomWithIdx(c).GetNeighbors()]
-        for c in centers
-    ]
     if any(len(n) != 4 for n in neighbors):
         raise ValueError("Stereocenters need four explicit neighbors.")
     reference["neighbors"] = np.array(neighbors, dtype=int).reshape(-1, 4)
