@@ -85,9 +85,9 @@ class LocalBoltzmannSampler:
     within its cell. A cell is left out if it brings a moved heavy atom
     closer than `r_min` to a placed heavy atom 4 to `clash_window` bonds
     away, or pushes a bond through a ring of the chain. With no cell left
-    the growth backs up `backtrack` rotatable bonds; after as many dead ends
-    as the chain has rotatable bonds, each dead end takes the least bad cell
-    instead, and its closest contact is recorded in `accepted`. Overlaps
+    the growth backs up `backtrack` rotatable bonds; after four dead ends at
+    the same bond, that bond takes the least bad cell instead, and its
+    closest contact is recorded in `accepted`. Overlaps
     further along the chain, and between chains, are left to the DPD
     relaxation.
 
@@ -252,10 +252,13 @@ class LocalBoltzmannSampler:
         energy += _lj_energy(step, placed, cells)
         energy = np.nan_to_num(energy, nan=1e300, posinf=1e300)
         closest = _closest(step, placed, cells)
-        pierces = _pierces_ring(step, terms, placed, cells)
-        allowed = (closest >= self.r_min) & ~pierces
+        allowed = closest >= self.r_min  # the ring check is slower: only here
+        allowed[allowed] = ~_pierces_ring(step, terms, placed, cells[allowed])
         if not allowed.any():
-            if not least_bad or pierces.all():
+            if not least_bad:
+                return None
+            pierces = _pierces_ring(step, terms, placed, cells)
+            if pierces.all():
                 return None
             # least bad: the cells within 0.01 nm of the farthest contact
             allowed = ~pierces & (closest >= closest[~pierces].max() - 0.01)
@@ -331,9 +334,6 @@ def _pierces_ring(step, terms, placed, x, reach=0.3):
         return out
     rings, bonds = terms["rings"], terms["bond_array"]
     triangles = terms["triangles"]  # (ring, atom, next atom) fans
-    # each candidate's chain: the placed atoms plus its own moved atoms
-    chains = np.repeat(placed[None], len(x), axis=0)
-    chains[:, step.moved] = x
     # placed rings and bonds within reach of the junction (NaN: not placed)
     origin = placed[step.b]
     radius = np.max(np.linalg.norm(x - origin, axis=-1)) + reach
@@ -343,10 +343,28 @@ def _pierces_ring(step, terms, placed, x, reach=0.3):
         (step.moved_bonds, np.flatnonzero(ring_near[triangles[:, 0]] < radius)),
         (np.flatnonzero(bond_near < radius), step.moved_triangles),
     )
-    centers = _ring_centers(rings, chains)
+    # Coordinates of only the atoms these checks use, for each candidate:
+    # the placed atoms, with the candidate's own moved atoms.
+    used = np.unique(np.concatenate([triangles[t, 0] for _, t in checks]))
+    ring_atoms = rings[used]
+    atoms = np.unique(
+        np.concatenate(
+            [step.moved, *(bonds[b].ravel() for b, _ in checks)]
+            + [ring_atoms[ring_atoms >= 0]]
+        )
+    )
+    local = np.repeat(placed[atoms][None], len(x), axis=0)
+    local[:, np.searchsorted(atoms, step.moved)] = x
+    centers = _ring_centers(
+        np.where(ring_atoms >= 0, np.searchsorted(atoms, ring_atoms), -1), local
+    )
     for bond_ids, triangle_ids in checks:
         b, t = bonds[bond_ids], triangles[triangle_ids]
-        p, q, c = chains[:, b[:, 0]], chains[:, b[:, 1]], centers[:, t[:, 0]]
+        p = local[:, np.searchsorted(atoms, b[:, 0])]
+        q = local[:, np.searchsorted(atoms, b[:, 1])]
+        c = centers[:, np.searchsorted(used, t[:, 0])]
+        corner1 = local[:, np.searchsorted(atoms, t[:, 1])]
+        corner2 = local[:, np.searchsorted(atoms, t[:, 2])]
         # (candidate, bond, triangle) with the bond's midpoint near the ring
         # center, leaving out bonds that touch the ring
         midpoint = (p + q) / 2
@@ -356,9 +374,7 @@ def _pierces_ring(step, terms, placed, x, reach=0.3):
         touches = b[:, None, :, None] == rings[t[:, 0]][None, :, None]
         near &= ~np.any(touches, axis=(2, 3))
         k, i, j = np.nonzero(near)
-        hit = crosses(
-            p[k, i], q[k, i], c[k, j], chains[k, t[j, 1]], chains[k, t[j, 2]]
-        )
+        hit = crosses(p[k, i], q[k, i], c[k, j], corner1[k, j], corner2[k, j])
         out[k[hit]] = True
     return out
 

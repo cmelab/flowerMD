@@ -49,10 +49,9 @@ The steps:
    melt screens excluded volume. A torsion that would push a bond of the
    chain through one of its rings (ring piercing) is always rejected, since no later
    relaxation undoes it. At a dead end the growth backs up a few bonds
-   rather than starting the chain again; once it has met as many dead
-   ends as the chain has rotatable bonds, it takes the least bad torsion
-   at each later one (the grid angle whose closest contact is farthest),
-   so every chain is placed. Crowded chains (methacrylates,
+   rather than starting the chain again; after four dead ends at the same
+   bond, it takes the least bad torsion there (the grid angle whose
+   closest contact is farthest), so every chain is placed. Crowded chains (methacrylates,
    polyisobutylene, poly(alpha-methylstyrene), PTFE) are placed this way
    with one to three such contacts per repeat unit, some closer than
    0.1 nm, and `AtomisticRandomWalk` warns once with their number; DPD,

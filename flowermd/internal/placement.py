@@ -16,11 +16,13 @@ and ``propose(angles)`` returns the coordinates of the junction's `moved`
 atoms for an array of candidate angles. Returning None instead of an
 angle is a dead end: if the sampler has a positive ``backtrack``, the
 growth backs up that many junctions (more after repeated dead ends) and
-continues; otherwise, or after as many dead ends as the chain has
-junctions, the chain starts again, at most `max_restarts` times. A sampler
-whose ``on_dead_end`` is ``"least_bad"`` is instead asked, from then on,
-for its least bad angle with ``choose(..., least_bad=True)``, and the
-growth backs up only if that is None too.
+continues; otherwise, or after `DEAD_ENDS_PER_JUNCTION` dead ends at the
+same junction, the chain starts again, at most `max_restarts` times. A
+sampler whose ``on_dead_end`` is ``"least_bad"`` is instead asked for that
+junction's least bad angle with ``choose(..., least_bad=True)``, and the
+growth backs up only if that is None too. The limit is per junction, so a
+chain that grows into a tight spot costs a bounded amount of extra work,
+however long it is.
 `UniformTorsion`
 is the simplest sampler; `flowermd.internal.local_boltzmann` has the
 force-field-weighted one.
@@ -33,6 +35,8 @@ import numpy as np
 from scipy.spatial.transform import Rotation
 
 from flowermd.internal.geometry import apply_pose, compose, turn_about_bond
+
+DEAD_ENDS_PER_JUNCTION = 4
 
 Junction = namedtuple(
     "Junction", ["parent", "child", "bonds", "torsion", "moved"]
@@ -242,9 +246,10 @@ def _grow(
     """One growth attempt: (coordinates, None), or (None, stopping bond).
 
     At a dead end, back up ``backtrack * k`` junctions, where `k` counts
-    the dead ends since the growth last got past the furthest one, and give
-    up after ``len(junctions)`` dead ends (at once if `backtrack` is 0), or
-    with `least_bad`, take the sampler's least bad angle from then on.
+    the dead ends since the growth last got past the furthest one. After
+    `DEAD_ENDS_PER_JUNCTION` dead ends at one junction (at once if
+    `backtrack` is 0), give up, or with `least_bad`, take the sampler's
+    least bad angle there.
     """
     # A pose (R, t) carries a unit from the template into the box,
     # x -> R x + t. The first unit gets a random orientation with its
@@ -257,7 +262,8 @@ def _grow(
     ]
     placed = np.full_like(xyz, np.nan)
     placed[first] = apply_pose(pose[0], xyz[first])
-    i, dead_ends, furthest, streak, overwritten = 0, 0, -1, 0, []
+    i, furthest, streak, overwritten = 0, -1, 0, []
+    dead_ends = Counter()  # per junction
     while i < len(junctions):
         j = junctions[i]
         if j.torsion:
@@ -283,10 +289,10 @@ def _grow(
 
             angle = choose(i, placed, propose, rng)
             if angle is None:
-                dead_ends += 1
+                dead_ends[i] += 1
                 streak = streak + 1 if i <= furthest else 1
                 furthest = max(furthest, i)
-                if not backtrack or dead_ends > len(junctions):
+                if not backtrack or dead_ends[i] > DEAD_ENDS_PER_JUNCTION:
                     if not least_bad:
                         return None, (a, b)
                     angle = choose(i, placed, propose, rng, least_bad=True)
