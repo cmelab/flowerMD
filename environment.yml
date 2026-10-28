@@ -12,6 +12,7 @@ dependencies:
   - networkx
   - numpy >=2.0
   - openbabel >=3
+  - openmm
   - pip
   - py3Dmol
   - python >=3.11, <3.14

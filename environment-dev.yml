@@ -9,6 +9,7 @@ dependencies:
   - hoomd>=5.0,!=5.3.0
   - numpy >=2.0
   - openbabel >=3
+  - openmm
   - pip
   - pre-commit
   - py3Dmol

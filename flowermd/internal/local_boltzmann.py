@@ -15,8 +15,6 @@ such as `flowermd.library.OPLS_AA`.
 """
 
 import functools
-import os
-import tempfile
 from dataclasses import dataclass
 
 import networkx as nx
@@ -218,7 +216,7 @@ class LocalBoltzmannSampler:
         if self.relax:
             cached = (key, xyz.round(6).tobytes())
             if cached not in self._templates:
-                self._templates[cached] = relax_bonded(chain, self.force_field)
+                self._templates[cached] = relax_bonded(xyz, terms)
             xyz = self._templates[cached]
         return xyz, terms["units"]
 
@@ -513,98 +511,64 @@ def _plan(terms, junctions, max_sep, clash_window=None):
     return steps
 
 
-def relax_bonded(chain, force_field="openff-2.3.0.offxml", force_tol=0.01):
-    """Minimize a chain under its force field's bonded terms with FIRE.
+def relax_bonded(xyz, terms, tolerance=1.0):
+    """Minimize a chain under its force field's bonded terms with OpenMM.
 
-    Only the bond, angle, dihedral and improper forces are kept, so the
-    minimization brings bond lengths and angles to the force field's values
-    and cannot invert a stereocenter through a clash; a stereocenter that
-    changes handedness anyway raises ``RuntimeError``, as does a
-    minimization that does not converge. Runs a `flowermd.base.Simulation`
-    on the CPU in a temporary directory.
+    Only the bonds, angles and proper and improper torsions are kept, so
+    the minimization brings bond lengths and angles to the force field's
+    values and cannot invert a stereocenter through a clash; a stereocenter
+    that changes handedness anyway raises ``RuntimeError``. Uses OpenMM's
+    L-BFGS minimizer on the CPU.
 
     Parameters
     ----------
-    chain : mbuild.Compound, required
-        All-atom chain with elements and explicit hydrogens.
-    force_field : str or BaseXMLForcefield, default "openff-2.3.0.offxml"
-        A SMIRNOFF force field, applied through
-        `flowermd.library.OpenFF_DPD` at full strength, or a FlowerMD XML
-        force field such as ``flowermd.library.OPLS_AA()``.
-    force_tol : float, default 0.01
-        FIRE's force tolerance (kJ/(mol nm), root mean square per degree
-        of freedom); the largest force left is then about 1 kJ/(mol nm),
-        which leaves bond angles within about 0.05 degrees.
+    xyz : numpy.ndarray, shape (N, 3), required
+        Coordinates (nm).
+    terms : dict, required
+        Tables as returned by `flowermd.internal.all_atom_dpd.openff_terms`
+        or `flowermd.internal.all_atom_dpd.gmso_terms`.
+    tolerance : float, default 1.0
+        OpenMM's force tolerance (kJ/(mol nm)).
 
     Returns
     -------
     numpy.ndarray, shape (N, 3)
-        Relaxed coordinates (nm) in ``chain.particles()`` order.
 
     """
-    import hoomd
-    import mbuild as mb
-    import unyt as u
+    import openmm
 
-    from flowermd.base import Simulation
-    from flowermd.library import OpenFF_DPD, mbuildSystem
-    from flowermd.library.simulations.phantom_walk import (
-        run_FIRE_until_converged,
+    system = openmm.System()
+    for mass in terms["mass"]:
+        system.addParticle(mass)
+    bonds = openmm.HarmonicBondForce()  # k/2 (r - r0)**2
+    for (i, j), (k, r0) in terms["bonds"].items():
+        bonds.addBond(i, j, r0, k)
+    angles = openmm.HarmonicAngleForce()  # k/2 (theta - theta0)**2
+    for (i, j, k), (k_theta, theta0) in terms["angles"].items():
+        angles.addAngle(i, j, k, theta0, k_theta)
+    torsions = openmm.PeriodicTorsionForce()  # k (1 + cos(n phi - phase))
+    for kind in ("dihedrals", "impropers"):
+        for (i, j, k, m), values in terms[kind].items():
+            for k_phi, n, phase in values:
+                torsions.addTorsion(i, j, k, m, int(n), phase, k_phi)
+    for force in (bonds, angles, torsions):
+        system.addForce(force)
+    context = openmm.Context(
+        system,
+        openmm.VerletIntegrator(0.001),
+        openmm.Platform.getPlatformByName("CPU"),
     )
-
-    xyz = np.asarray(chain.xyz, dtype=float)
-    compound = mb.clone(chain)
-    compound.box = mb.Box(lengths=np.ptp(xyz, axis=0) + 3.0)
-    units = dict(length=1 * u.nm, mass=1 * u.amu, energy=1 * u.Unit("kJ/mol"))
-    system = mbuildSystem(compound, base_units=units)
-    with tempfile.TemporaryDirectory() as tmp:
-        if isinstance(force_field, str):
-            force_field = OpenFF_DPD(
-                system,
-                os.path.join(tmp, "bonded.xml"),
-                force_field=force_field,
-                bonded_scale=1.0,
-                dihedral_scale=1.0,
-            )
-        system.apply_forcefield(
-            r_cut=0.35, force_field=force_field, kT=1.0, remove_charges=True
-        )
-        bonded = [
-            force
-            for force in system.hoomd_forcefield
-            if not isinstance(force, hoomd.md.pair.Pair)
-        ]
-        sim = Simulation(
-            system.hoomd_snapshot,
-            bonded,
-            dt=1e-3,
-            device=hoomd.device.CPU(),
-            gsd_file_name=os.path.join(tmp, "relax.gsd"),
-            log_file_name=os.path.join(tmp, "relax.txt"),
-        )
-        result = run_FIRE_until_converged(
-            sim,
-            n_steps=2000,
-            max_steps=1_000_000,
-            force_tol=force_tol,
-            energy_tol=1e-6,
-            angmom_tol=1e9,
-        )
-        snap = sim.state.get_snapshot()
-    if not result["converged"]:
-        raise RuntimeError(
-            f"Relaxing a {len(xyz)}-atom chain did not converge in "
-            f"{result['steps']} FIRE steps. Pass "
-            "LocalBoltzmannSampler(relax=False) to sample the built geometry."
-        )
-    box = np.asarray(snap.configuration.box[:3])
-    relaxed = snap.particles.position + snap.particles.image * box
-    relaxed = relaxed - relaxed.mean(axis=0) + xyz.mean(axis=0)
-    index = {p: i for i, p in enumerate(chain.particles())}
-    bonds = [(index[a], index[b]) for a, b in chain.bonds()]
-    if np.any(_handedness(xyz, bonds) != _handedness(relaxed, bonds)):
+    context.setPositions(np.asarray(xyz, dtype=float))
+    openmm.LocalEnergyMinimizer.minimize(context, tolerance)
+    state = context.getState(getPositions=True)
+    relaxed = state.getPositions(asNumpy=True).value_in_unit(
+        openmm.unit.nanometer
+    )
+    if np.any(
+        _handedness(xyz, terms["bonds"]) != _handedness(relaxed, terms["bonds"])
+    ):
         raise RuntimeError("Relaxing a chain inverted a stereocenter.")
-    return relaxed
+    return np.asarray(relaxed)
 
 
 def _handedness(xyz, bonds):

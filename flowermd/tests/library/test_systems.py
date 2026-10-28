@@ -378,7 +378,7 @@ class TestLocalBoltzmannSampler:
     def test_relax_converges(self, sampler):
         chain = PolyEthylene(lengths=100, num_mols=1).molecules[0]
         terms = sampler._topology(chain)[1]
-        relaxed = relax_bonded(chain)
+        relaxed = relax_bonded(np.asarray(chain.xyz, dtype=float), terms)
         # Mid-chain C-C-C angles reach the force field's equilibrium.
         carbon = [p.element.symbol == "C" for p in chain.particles()]
         middle = len(carbon) // 4, 3 * len(carbon) // 4
