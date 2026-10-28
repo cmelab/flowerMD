@@ -19,6 +19,14 @@ from flowermd.internal.geometry import crosses, dihedrals, signed_volumes
 PREFIX = "stereo_"
 
 
+class StereoRestraint(hoomd.md.dihedral.Periodic):
+    """The restraint `protect_stereochemistry` adds, with its `reference`."""
+
+    def __init__(self, reference):
+        super().__init__()
+        self.reference = reference
+
+
 def _volumes(xyz, neighbors, box=None):
     """Signed substituent-tetrahedron volume divided by its edge lengths."""
     edges = xyz[neighbors[:, :3]] - xyz[neighbors[:, 3:]]
@@ -35,12 +43,15 @@ def _dihedrals(p):
 def protect_stereochemistry(system, k=125520.0, planar_tolerance=0.05):
     """Record stereocenters and add a restraint that keeps their handedness.
 
-    Call after `System.apply_forcefield`. Each center's four substituents
+    Call after `System.apply_forcefield`; `flowermd.library.AtomisticRandomWalk`
+    calls it when it applies `flowermd.library.UFF_DPD` or
+    `flowermd.library.OpenFF_DPD`. Each center's four substituents
     get a dihedral ``U = k/2 [1 - cos(phi - phi0)]`` with phi0 from the
     current geometry (rounded to 1 degree to bound the number of types).
-    The restraint is its own `hoomd.md.dihedral.Periodic` force, appended
-    to ``system.hoomd_forcefield``, so its energy is logged and checked for
-    stationarity separately; the other periodic dihedral forces get k = 0
+    The restraint is its own periodic dihedral force, a `StereoRestraint`
+    appended to ``system.hoomd_forcefield`` that carries the returned
+    reference, so `flowermd.library.PhantomWalk.run_initialization` audits
+    it and its energy is logged and checked for stationarity separately; the other periodic dihedral forces get k = 0
     for its types. Every 1-4 pair of the restraint is already a 1-3 pair,
     so neighbor-list exclusions do not change.
 
@@ -126,7 +137,7 @@ def protect_stereochemistry(system, k=125520.0, planar_tolerance=0.05):
         ]
     ).astype(np.uint32)
     snap.dihedrals.N, snap.dihedrals.types = len(snap.dihedrals.group), types
-    restraint = hoomd.md.dihedral.Periodic()
+    restraint = StereoRestraint(reference)
     for force in system.hoomd_forcefield:
         if isinstance(force, hoomd.md.dihedral.Periodic):
             for name in set(names):  # each force must cover every type

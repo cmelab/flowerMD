@@ -116,6 +116,10 @@ class LocalBoltzmannSampler:
         Largest bond separation of the heavy-atom pairs that `r_min` checks.
         None checks the whole chain, which makes each chain a self-avoiding
         walk that swells with length, unlike a chain in a melt.
+    reject_ring_piercing : bool, default True
+        Leave out cells that push a bond through a ring of the chain. False
+        places chains about 2.5 times faster and leaves the piercings to
+        the DPD relaxation, which removed them in the melts tested.
 
     Attributes
     ----------
@@ -143,6 +147,7 @@ class LocalBoltzmannSampler:
         max_restarts=500,
         relax=True,
         clash_window=CLASH_WINDOW,
+        reject_ring_piercing=True,
     ):
         if isinstance(force_field, str) and force_field == "oplsaa":
             from flowermd.library.forcefields import OPLS_AA
@@ -167,6 +172,7 @@ class LocalBoltzmannSampler:
         self.max_restarts = max_restarts
         self.relax = relax
         self.clash_window = clash_window
+        self.reject_ring_piercing = reject_ring_piercing
         self.accepted = []  # per chain: closest distances accepted (nm)
         self._tables, self._templates, self._steps = {}, {}, {}
 
@@ -243,11 +249,11 @@ class LocalBoltzmannSampler:
         energy = np.nan_to_num(energy, nan=1e300, posinf=1e300)
         closest = _closest(step, placed, cells)
         allowed = closest >= self.r_min  # the ring check is slower: only here
-        allowed[allowed] = ~_pierces_ring(step, terms, placed, cells[allowed])
+        allowed[allowed] = ~self._pierces(step, terms, placed, cells[allowed])
         if not allowed.any():
             if not least_bad:
                 return None
-            pierces = _pierces_ring(step, terms, placed, cells)
+            pierces = self._pierces(step, terms, placed, cells)
             if pierces.all():  # e.g. a ring turning about its own axis
                 pierces[:] = False  # leave the piercing to the relaxation
             # least bad: the cells within 0.01 nm of the farthest contact
@@ -261,11 +267,17 @@ class LocalBoltzmannSampler:
             x = propose(np.array([angle]))
             if (
                 _closest(step, placed, x)[0] >= self.r_min
-                and not (_pierces_ring(step, terms, placed, x)[0])
+                and not (self._pierces(step, terms, placed, x)[0])
             ):
                 return angle
             allowed[cell] = False
         return None
+
+    def _pierces(self, step, terms, placed, x):
+        """Whether each angle pushes a bond through a ring, if checked."""
+        if not self.reject_ring_piercing:
+            return np.zeros(len(x), dtype=bool)
+        return _pierces_ring(step, terms, placed, x)
 
     def _draw(self, energy, allowed, rng):
         """A grid cell drawn by its Boltzmann weight among the `allowed`."""

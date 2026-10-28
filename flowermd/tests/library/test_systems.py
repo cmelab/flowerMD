@@ -530,6 +530,21 @@ class TestLeastBad:
         )
         assert np.all(np.isfinite(new))
 
+    def test_ring_piercing_check_off(self, monkeypatch):
+        from flowermd.internal import local_boltzmann
+
+        def fail(*args, **kwargs):
+            raise AssertionError("the ring-piercing check ran")
+
+        monkeypatch.setattr(local_boltzmann, "_pierces_ring", fail)
+        ps = "C" + "C(c1ccccc1)C" * 4 + "C"
+        chain = Molecule(num_mols=1, smiles=ps).molecules[0]
+        sampler = LocalBoltzmannSampler(reject_ring_piercing=False)
+        x = random_chain_conformation(
+            chain, np.zeros(3), np.random.default_rng(0), sampler
+        )
+        assert np.all(np.isfinite(x))
+
     def test_no_pierced_rings(self):
         ps = "C" + "C(c1ccccc1)C" * 12 + "C"
         chain = Molecule(num_mols=1, smiles=ps).molecules[0]

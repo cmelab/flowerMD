@@ -16,7 +16,6 @@ equilibrated melt.
         AtomisticRandomWalk, LocalBoltzmannSampler, PhantomWalk,
         PolyEthylene, UFF_DPD,
     )
-    from flowermd.utils import protect_stereochemistry
 
     chains = PolyEthylene(lengths=20, num_mols=10)
     system = AtomisticRandomWalk(
@@ -26,12 +25,11 @@ equilibrated melt.
     )
     ff = UFF_DPD(system, file_path="pe_dpd.xml")
     system.apply_forcefield(r_cut=0.35, force_field=ff, kT=4.184)
-    reference = protect_stereochemistry(system)
     sim = PhantomWalk(
         system.hoomd_snapshot, system.hoomd_forcefield,
         n_steps_dpd=40000, n_steps_fire=100, dt=5e-5, run_now=False,
     )
-    record = sim.run_initialization(stereo_reference=reference)
+    record = sim.run_initialization()
 
 The steps:
 
@@ -47,8 +45,9 @@ The steps:
    ``clash_window`` (12) bonds apart: overlaps between distant parts of a
    chain, like those between chains, are left for DPD to resolve, as a
    melt screens excluded volume. A torsion that would push a bond of the
-   chain through one of its rings (ring piercing) is always rejected, since no later
-   relaxation undoes it. At a dead end the bond takes the least bad
+   chain through one of its rings (ring piercing) is rejected, since
+   relaxation rarely undoes it (``reject_ring_piercing=False`` leaves
+   piercings to DPD and places chains about 2.5 times faster). At a dead end the bond takes the least bad
    torsion (the grid angle whose closest contact is farthest), so every
    chain is placed, in time linear in its length. Crowded chains (methacrylates,
    polyisobutylene, poly(alpha-methylstyrene), PTFE) are placed this way
@@ -76,16 +75,22 @@ The steps:
    (ps) to `PhantomWalk`; its default of 0.001 is meant for reduced units
    and is unstable here.
 3. **Stereochemistry**: DPD lets atoms pass through each other, so a
-   tetrahedral center can invert. `protect_stereochemistry` adds a
+   tetrahedral center can invert. When a DPD force field is applied,
+   `AtomisticRandomWalk` calls `protect_stereochemistry`, which adds a
    one-term periodic dihedral restraint per center, with its phase taken
-   from the input geometry (rounded to 1 degree). The restraints form
+   from the input geometry (rounded to 1 degree); pass
+   ``protect_stereo=False`` to skip it. For other systems, call
+   `protect_stereochemistry` after `apply_forcefield`. The restraints form
    their own force, so the stop rule monitors their energy separately.
 4. **Relaxation**: `PhantomWalk.run_initialization` runs DPD until every
    force's per-particle energy is stationary (`EnergyStationarity`: five
    samples per 500-step chunk after 3,500 steps, at most 2 % change for two
    chunks in a row, capped at ``n_steps_dpd``), then FIRE with the
-   conservative part of the DPD force, audits the stereocenters, and
-   returns a record of the run.
+   conservative part of the DPD force, audits the restrained
+   stereocenters (raising `StereoIntegrityError` if one inverted), counts
+   ring piercings (warning if there are any), and returns a record of the
+   run. ``check_stereo=False`` and ``check_ring_piercing=False`` skip
+   the checks.
 
 Defaults
 --------

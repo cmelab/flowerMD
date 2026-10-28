@@ -12,7 +12,9 @@ from flowermd.utils import (
     EnergyStationarity,
     audit_stereochemistry,
     compute_closest_rdf,
+    find_ring_piercings,
 )
+from flowermd.utils.stereochemistry import StereoRestraint
 
 
 class PhantomWalk(Simulation):
@@ -100,7 +102,8 @@ class PhantomWalk(Simulation):
         chunk=500,
         samples_per_chunk=5,
         conservative_fire=True,
-        stereo_reference=None,
+        check_stereo=True,
+        check_ring_piercing=True,
         require_convergence=False,
         record_file=None,
         **fire_kwargs,
@@ -122,10 +125,15 @@ class PhantomWalk(Simulation):
             Run FIRE with `hoomd.md.pair.DPDConservative` (the repulsion
             only) in place of the DPD pair force, whose noise and friction
             keep FIRE from converging.
-        stereo_reference : dict, optional
-            From `flowermd.utils.protect_stereochemistry`. Audited after
-            FIRE; an inverted or flattened center raises
-            `StereoIntegrityError`.
+        check_stereo : bool, default True
+            After FIRE, audit the stereocenters restrained by
+            `flowermd.utils.protect_stereochemistry` (which
+            `flowermd.library.AtomisticRandomWalk` adds); an inverted or
+            flattened center raises `StereoIntegrityError`. Without the
+            restraint there is nothing to audit.
+        check_ring_piercing : bool, default True
+            After FIRE, count bonds that pierce a ring
+            (`flowermd.utils.find_ring_piercings`), and warn if any do.
         require_convergence : bool, default False
             Raise ``RuntimeError`` instead of warning when DPD reaches
             `n_steps_dpd` without satisfying `stop`.
@@ -137,8 +145,8 @@ class PhantomWalk(Simulation):
         Returns
         -------
         dict
-            DPD steps, convergence and energy history, FIRE convergence and
-            the stereochemistry audit.
+            DPD steps, convergence and energy history, FIRE convergence,
+            the stereochemistry audit and the number of ring piercings.
 
         """
         stop = stop or EnergyStationarity()
@@ -176,13 +184,22 @@ class PhantomWalk(Simulation):
         if conservative_fire:  # the next MD run gets the DPD force back
             self.remove_force(repulsion)
             self.add_force(pair)
-        if stereo_reference is not None:
-            audit = audit_stereochemistry(
-                stereo_reference, self.state.get_snapshot()
-            )
+        snapshot = self.state.get_snapshot()
+        restraint = next(
+            (f for f in self.forces if isinstance(f, StereoRestraint)), None
+        )
+        if check_stereo and restraint is not None:
+            audit = audit_stereochemistry(restraint.reference, snapshot)
             record["stereochemistry"] = audit
             if audit["inverted"] or audit["near_planar"]:
                 raise StereoIntegrityError(str(audit))
+        if check_ring_piercing:
+            record["ring_piercings"] = len(find_ring_piercings(snapshot))
+            if record["ring_piercings"]:
+                warnings.warn(
+                    f"{record['ring_piercings']} bonds pierce rings after "
+                    "relaxation; minimization rarely removes them."
+                )
         if record_file:
             with open(record_file, "w") as f:
                 json.dump(record, f, indent=2)

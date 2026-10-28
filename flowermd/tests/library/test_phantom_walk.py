@@ -4,7 +4,7 @@ import hoomd
 import pytest
 import unyt as u
 
-from flowermd.base import Simulation
+from flowermd.base import Polymer, Simulation
 from flowermd.library import (
     DPD,
     PPS,
@@ -16,12 +16,13 @@ from flowermd.library import (
     RandomWalk,
     UniformTorsion,
 )
+from flowermd.library.simulations import phantom_walk
 from flowermd.library.simulations.phantom_walk import (
     run_FIRE_until_converged,
     run_until,
 )
 from flowermd.tests import BaseTest
-from flowermd.utils import protect_stereochemistry
+from flowermd.utils.stereochemistry import StereoRestraint
 
 
 class TestPhantomWalkSimulation(BaseTest):
@@ -107,16 +108,16 @@ class TestPhantomWalkSimulation(BaseTest):
 
 
 class TestAllAtomPhantomWalk(BaseTest):
-    def sim(self, n_steps_dpd=1000):
+    def sim(self, n_steps_dpd=1000, chains=None, **kwargs):
         system = AtomisticRandomWalk(
-            PolyEthylene(lengths=10, num_mols=12),
+            chains or PolyEthylene(lengths=10, num_mols=12),
             density=0.85,
             seed=1,
             torsion_sampler=UniformTorsion(),
+            **kwargs,
         )
         ff = UFF_DPD(system)
         system.apply_forcefield(r_cut=0.35, force_field=ff, kT=4.184)
-        ref = protect_stereochemistry(system)
         sim = PhantomWalk(
             system.hoomd_snapshot,
             system.hoomd_forcefield,
@@ -126,20 +127,35 @@ class TestAllAtomPhantomWalk(BaseTest):
             device=hoomd.device.CPU(),
             run_now=False,
         )
-        return sim, ref
+        return sim
+
+    def styrene(self):
+        return Polymer(
+            lengths=5,
+            num_mols=4,
+            smiles="CC(c1ccccc1)",
+            bond_indices=[8, 11],
+            bond_length=0.154,
+            bond_orientation=[None, None],
+        )
+
+    def run(self, sim, **kwargs):
+        return sim.run_initialization(
+            stop=lambda s: True, min_steps=100, chunk=100, **kwargs
+        )
 
     def test_run_initialization(self):
-        sim, ref = self.sim()
+        sim = self.sim(chains=self.styrene())
         forces = list(sim.forces)
-        record = sim.run_initialization(
-            stop=lambda s: True,
-            min_steps=100,
-            chunk=100,
-            stereo_reference=ref,
-            record_file="record.json",
-        )
+        record = self.run(sim, record_file="record.json")
         assert record["dpd_steps"] == 200 and record["dpd_converged"]
-        assert record["stereochemistry"]["inverted"] == 0
+        # stereocenters are restrained and audited without being asked
+        assert record["stereochemistry"] == {
+            "n_centers": 16,
+            "inverted": 0,
+            "near_planar": 0,
+        }
+        assert isinstance(record["ring_piercings"], int)
         assert json.load(open("record.json")) == record
         assert sim.timestep == 250
         # every force, the DPD force included, is back for the next MD run
@@ -147,8 +163,28 @@ class TestAllAtomPhantomWalk(BaseTest):
         sim.run_NVE(n_steps=10)
         assert type(sim.integrator) is hoomd.md.Integrator
 
+    def test_checks_off(self):
+        sim = self.sim(chains=self.styrene(), protect_stereo=False)
+        assert not any(isinstance(f, StereoRestraint) for f in sim.forces)
+        record = self.run(sim, check_ring_piercing=False)
+        assert "stereochemistry" not in record
+        assert "ring_piercings" not in record
+
+    def test_no_centers(self):
+        record = self.run(self.sim())  # polyethylene: nothing to restrain
+        assert "stereochemistry" not in record
+
+    def test_ring_piercing_warning(self, monkeypatch):
+        sim = self.sim()
+        monkeypatch.setattr(
+            phantom_walk, "find_ring_piercings", lambda snap: [((0, 1), ())]
+        )
+        with pytest.warns(UserWarning, match="pierce rings"):
+            record = self.run(sim)
+        assert record["ring_piercings"] == 1
+
     def test_run_FIRE_until_converged(self):
-        sim, _ = self.sim()
+        sim = self.sim()
         tolerances = dict(force_tol=1e9, angmom_tol=1e9, energy_tol=1e9)
         result = run_FIRE_until_converged(sim, 50, 200, **tolerances)
         assert result == {"steps": 50, "converged": True}
@@ -156,7 +192,7 @@ class TestAllAtomPhantomWalk(BaseTest):
             run_FIRE_until_converged(sim, n_steps=50, max_steps=10)
 
     def test_require_convergence(self):
-        sim, _ = self.sim(n_steps_dpd=200)
+        sim = self.sim(n_steps_dpd=200)
         with pytest.raises(RuntimeError):
             sim.run_initialization(
                 stop=lambda s: False,

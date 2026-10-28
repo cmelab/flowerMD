@@ -12,9 +12,11 @@ from scipy.spatial.distance import pdist
 from flowermd.base.system import System
 from flowermd.internal.local_boltzmann import LocalBoltzmannSampler
 from flowermd.internal.placement import random_chain_conformation
+from flowermd.library.forcefields import UFF_DPD
 from flowermd.utils import (
     get_target_box_mass_density,
     get_target_box_number_density,
+    protect_stereochemistry,
     random_walk_positions_from_bonds,
 )
 
@@ -200,6 +202,11 @@ class AtomisticRandomWalk(RandomWalk):
         Processes that place chains in parallel (forked, so Linux and
         macOS). Each chain has its own random stream, so a seed gives the
         same system with any number of workers.
+    protect_stereo : bool, default True
+        When `apply_forcefield` applies `flowermd.library.UFF_DPD` or
+        `flowermd.library.OpenFF_DPD`, restrain every stereocenter with
+        `flowermd.utils.protect_stereochemistry`, so that DPD does not
+        invert it.
     **kwargs
         ``base_units``, ``seed`` and ``unique_molecules``, as in
         `RandomWalk`.
@@ -213,17 +220,31 @@ class AtomisticRandomWalk(RandomWalk):
         buffer=0.3,
         torsion_sampler=None,
         n_workers=1,
+        protect_stereo=True,
         **kwargs,
     ):
         self.torsion_sampler = torsion_sampler or LocalBoltzmannSampler()
         self.buffer = buffer
         self.n_workers = n_workers
+        self.protect_stereo = protect_stereo
         super(AtomisticRandomWalk, self).__init__(
             molecules=molecules,
             bond_length=None,
             density=density,
             **kwargs,
         )
+
+    def apply_forcefield(self, r_cut, force_field=None, **kwargs):
+        """Apply the force field as `System` does, then protect stereocenters.
+
+        See `System.apply_forcefield` for the parameters, and
+        `protect_stereo`.
+        """
+        super(AtomisticRandomWalk, self).apply_forcefield(
+            r_cut=r_cut, force_field=force_field, **kwargs
+        )
+        if self.protect_stereo and isinstance(force_field, UFF_DPD):
+            protect_stereochemistry(self)  # OpenFF_DPD is a UFF_DPD too
 
     def _walk_positions(self, system, box_lengths, rng):
         """Unwrapped positions of every atom, chain after chain (nm)."""
