@@ -7,7 +7,7 @@ from flowermd.library import UFF_DPD
 from flowermd.tests import BaseTest
 from flowermd.utils import (
     audit_stereochemistry,
-    find_ring_spears,
+    find_ring_piercings,
     protect_stereochemistry,
 )
 
@@ -68,7 +68,7 @@ class TestStereochemistry(BaseTest):
         assert system.hoomd_snapshot.dihedrals.N == n_dihedrals
         assert np.size(ref["sign"]) == 0
 
-    def test_find_ring_spears(self):
+    def test_find_ring_piercings(self):
         # a hexagon in the xy plane and a C-C bond along z
         angle = np.arange(6) * np.pi / 3
         ring = np.c_[0.14 * np.cos(angle), 0.14 * np.sin(angle), np.zeros(6)]
@@ -77,7 +77,7 @@ class TestStereochemistry(BaseTest):
         frame.configuration.box = [3, 3, 3, 0, 0, 0]
         frame.bonds.N = 7
         frame.bonds.group = [(k, (k + 1) % 6) for k in range(6)] + [(6, 7)]
-        for x, z, threaded in [
+        for x, z, pierced in [
             (0, 0, 1),
             (0.1, 0, 1),
             (0.2, 0, 0),
@@ -87,7 +87,7 @@ class TestStereochemistry(BaseTest):
             # also across the periodic boundary
             for shift in (0.0, 1.45):
                 frame.particles.position = np.r_[ring, bond] + shift
-                spears = find_ring_spears(frame)
-                assert len(spears) == threaded
+                piercings = find_ring_piercings(frame)
+                assert len(piercings) == pierced
         frame.particles.position = np.r_[ring, [[0, 0, 0.077], [0, 0, -0.077]]]
-        assert find_ring_spears(frame) == [((6, 7), (4, 3, 2, 1, 0, 5))]
+        assert find_ring_piercings(frame) == [((6, 7), (4, 3, 2, 1, 0, 5))]

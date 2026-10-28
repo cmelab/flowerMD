@@ -27,7 +27,7 @@ from flowermd.library import (
     mbuildSystem,
 )
 from flowermd.tests import BaseTest
-from flowermd.utils import find_ring_spears
+from flowermd.utils import find_ring_piercings
 
 
 class TestSystems(BaseTest):
@@ -376,10 +376,7 @@ class TestLocalBoltzmannSampler:
     def test_relax_converges(self, sampler):
         chain = PolyEthylene(lengths=100, num_mols=1).molecules[0]
         terms = sampler._topology(chain)[1]
-        xyz = np.asarray(chain.xyz, dtype=float)
-        with pytest.raises(RuntimeError, match="max_iter"):
-            relax_bonded(xyz, terms, max_iter=50)
-        relaxed = relax_bonded(xyz, terms)
+        relaxed = relax_bonded(chain)
         # Mid-chain C-C-C angles reach the force field's equilibrium.
         carbon = [p.element.symbol == "C" for p in chain.particles()]
         middle = len(carbon) // 4, 3 * len(carbon) // 4
@@ -507,7 +504,7 @@ class TestLeastBad:
         with pytest.raises(ValueError, match="on_dead_end"):
             LocalBoltzmannSampler(on_dead_end="restart")
 
-    def test_no_threaded_rings(self):
+    def test_no_pierced_rings(self):
         ps = "C" + "C(c1ccccc1)C" * 12 + "C"
         chain = Molecule(num_mols=1, smiles=ps).molecules[0]
         sampler = LocalBoltzmannSampler(clash_window=4)
@@ -522,4 +519,4 @@ class TestLeastBad:
             frame.particles.position = random_chain_conformation(
                 chain, np.zeros(3), rng, sampler
             )
-            assert find_ring_spears(frame) == []
+            assert find_ring_piercings(frame) == []

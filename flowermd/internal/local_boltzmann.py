@@ -15,11 +15,14 @@ such as `flowermd.library.OPLS_AA`.
 """
 
 import functools
+import os
+import tempfile
 from dataclasses import dataclass
 
 import networkx as nx
 import numpy as np
-from scipy.optimize import minimize
+from scipy.sparse import csr_matrix
+from scipy.sparse.csgraph import dijkstra
 from scipy.spatial.distance import cdist
 
 from flowermd.internal.all_atom_dpd import (
@@ -62,141 +65,75 @@ class Step:
     heavy_moved: np.ndarray  # rows
     nearby: np.ndarray  # atoms
     skip: tuple
-    # ring-threading check: the bonds and ring triangles of the moved atoms
+    # ring-piercing check: the bonds and ring triangles of the moved atoms
     moved_bonds: np.ndarray  # indices into terms["bond_array"]
     moved_triangles: np.ndarray  # indices into terms["triangles"]
 
 
 class LocalBoltzmannSampler:
-    """Torsion sampler: local Boltzmann weights from a SMIRNOFF force field.
+    """Torsion sampler: local Boltzmann weights from an all-atom force field.
 
-    For `flowermd.library.AtomisticRandomWalk`. Every rotatable bond turns,
-    not only the bonds between repeat units: single bonds outside rings
-    with a heavy atom beyond each end, except the C(=O)-O and C(=O)-N bonds
-    of esters and amides and bonds to linear (sp) atoms. Ring bonds, and so
-    ladder junctions, keep their geometry, and stereocenters are kept.
+    For `flowermd.library.AtomisticRandomWalk`. Every rotatable bond turns:
+    single bonds outside rings with a heavy atom beyond each end, except the
+    C(=O)-O and C(=O)-N bonds of esters and amides and bonds to linear (sp)
+    atoms. Ring bonds, and so ladder junctions, keep their geometry.
 
-    Each torsion is drawn on a grid of `n_grid` angles, with a uniform
-    offset within the chosen grid cell, from the Boltzmann weights of the
-    force field's proper torsions about the bond plus the Lennard-Jones
-    energy (the force field's combining rule, 1-4 pairs scaled by its
-    factor) between the moved atoms and the placed atoms at most `max_sep`
-    bonds away. Electrostatics are left out.
-
-    A draw that brings a moved heavy atom closer than `r_min` to a placed
-    heavy atom more than three and at most `clash_window` bonds away is
-    redrawn. The check is local on purpose: it keeps the chain from
-    folding back onto its neighbors, and leaves overlaps between parts of
-    a chain further apart, like those between chains, to the DPD
-    relaxation. A draw that threads a bond through a ring of the chain,
-    which no relaxation undoes, is redrawn wherever it happens. Checked
-    against the whole chain (``clash_window=None``), the contact check
-    would make each chain a self-avoiding walk,
-    whose size per mass grows with length without limit, unlike a chain in
-    a melt, where excluded volume is screened; long chains would also
-    rarely be placed at all. After `max_redraw` draws the growth is at a
-    dead end and backs up `backtrack` rotatable bonds (more after repeated
-    dead ends). After as many dead ends as the chain has rotatable bonds,
-    each later dead end takes the least bad torsion: of the `n_grid` grid
-    angles that thread no ring, those whose closest checked heavy-atom
-    contact is within 0.01 nm of the farthest, drawn by their Boltzmann
-    weights. Such contacts, often well under `r_min`, are left to DPD and
-    recorded in `accepted`; `flowermd.library.AtomisticRandomWalk` warns
-    once with their number. Chains whose growth never reaches that point,
-    such as polyethylene and, up to about 5 kg/mol, atactic polystyrene,
-    are placed exactly as with ``on_dead_end="error"``, which starts the
-    chain again instead and raises ``RuntimeError`` after `max_restarts`
-    restarts.
+    Each torsion is drawn from a grid of `n_grid` cells by the Boltzmann
+    weights of the force field's proper torsions about the bond plus the
+    Lennard-Jones energy between the moved atoms and the placed atoms at
+    most `max_sep` bonds away (no electrostatics), and placed uniformly
+    within its cell. A cell is left out if it brings a moved heavy atom
+    closer than `r_min` to a placed heavy atom 4 to `clash_window` bonds
+    away, or pushes a bond through a ring of the chain. With no cell left
+    the growth backs up `backtrack` rotatable bonds; after as many dead ends
+    as the chain has rotatable bonds, each dead end takes the least bad cell
+    instead, and its closest contact is recorded in `accepted`. Overlaps
+    further along the chain, and between chains, are left to the DPD
+    relaxation.
 
     Parameters
     ----------
     temperature : float, default 413.0
         Temperature (K) of the Boltzmann weights; use the melt temperature.
     force_field : str or BaseXMLForcefield, default "openff-2.3.0.offxml"
-        A SMIRNOFF force field name or path, parameterized with OpenFF
-        Interchange; or a FlowerMD XML force field such as
-        ``flowermd.library.OPLS_AA()`` (or its GMSO ``ForceField``), typed
-        with GMSO as `flowermd.base.System` types it, which needs no
-        OpenFF. The string ``"oplsaa"`` is short for ``OPLS_AA()``.
+        A SMIRNOFF force field (needs openff-toolkit and openff-interchange)
+        or a FlowerMD XML force field such as
+        ``flowermd.library.OPLS_AA()``; ``"oplsaa"`` is short for the latter.
     n_grid : int, default 72
-        Grid points per torsion.
+        Grid cells per torsion.
     max_sep : int, default 4
-        Largest bond separation of the pairs whose Lennard-Jones energy is
-        counted.
+        Largest bond separation of the Lennard-Jones pairs counted.
     r_min : float or None, default 0.30
-        Closest allowed heavy-atom distance (nm), or None for no check.
-    max_redraw : int, default 200
-        Draws per torsion before a dead end.
+        Closest allowed heavy-atom distance (nm); None for no check.
     max_restarts : int, default 500
-        Restarts per chain before giving up.
+        Restarts per chain before giving up, with ``on_dead_end="error"``.
     relax : bool, default True
-        Minimize each chain under the force field's bonded terms (bonds,
-        angles, torsions and impropers) before sampling, so that the
-        placement uses the force field's geometry rather than the built one.
+        Minimize each chain under the force field's bonded terms before
+        sampling (`relax_bonded`), so that the placement uses the force
+        field's geometry rather than the built one.
     clash_window : int or None, default 12
-        Largest separation, in bonds between heavy atoms, of the pairs that
-        the `r_min` check compares; None compares every placed heavy atom.
-        Twelve bonds reach the side groups of the next two repeat units of
-        a vinyl polymer (the phenyl rings of neighboring styrene units are
-        at most ten bonds apart) and about one Kuhn length of
-        polyethylene. Any finite window lets the chain size per mass level
-        off with length, but larger windows swell chains with side groups:
-        for atactic polystyrene at 2 to 20 kg/mol, <R^2>/M is about 0.17
-        A^2 mol/g with 8 bonds and 0.21-0.26 with 12 or 16, against 0.44
-        measured.
+        Largest bond separation of the heavy-atom pairs that `r_min` checks.
+        None checks the whole chain, which makes each chain a self-avoiding
+        walk that swells with length, unlike a chain in a melt.
     backtrack : int, default 4
         Rotatable bonds to back up at a dead end, times the number of dead
-        ends since the growth last got past the furthest one; 0 starts the
-        chain again at every dead end.
+        ends since the growth last got past the furthest one.
     on_dead_end : str, default "least_bad"
-        ``"least_bad"`` or ``"error"``; see above.
+        ``"least_bad"``, or ``"error"`` to restart the chain instead.
 
     Attributes
     ----------
     accepted : list of list of float
-        For each chain placed, the closest contacts (nm) of the torsions
-        taken at dead ends.
+        For each chain, the closest contacts (nm) of its least-bad torsions.
 
     Notes
     -----
-    With Sage 2.3.0, the default, and the local contact check, the
-    single-chain <R^2>/M of 2, 5 and 20 kg/mol chains levels off with
-    length and is 0.89-0.96 times the melt value of Fetters, Lohse and
-    Colby (Physical Properties of Polymers Handbook, ch. 25 (2007),
-    doi:10.1007/978-0-387-69002-5_25) for polyethylene (413 K) and
-    0.92-1.04 times for bisphenol-A polycarbonate (473 K). Chains with side
-    groups come out too compact, more so the more crowded the backbone:
-    atactic polypropylene 0.75-0.84 and atactic polystyrene 0.47-0.58
-    times (413 K; each rising slowly with length). The local energy sees only atoms at most `max_sep`
-    bonds apart and misses the longer-range side-group repulsions that
-    stiffen these chains; without any contact check, it is within 10 % of
-    experiment for only 8 of 73 polymers surveyed (polyethylene,
-    cis-polybutadiene, polycarbonate and a few others). The earlier
-    whole-chain contact check hid part of this for short chains by
-    swelling them. In alpha,alpha-disubstituted vinyl polymers (PMMA and
-    the other methacrylates, polyisobutylene, poly(alpha-methylstyrene)),
-    PTFE and other crowded chains, most torsions are dead ends: every grid
-    angle brings a heavy-atom pair closer than `r_min`, since the backbone
-    angles stay at the force field's equilibrium rather than opening up as
-    in the real chain. These chains are placed with the least bad torsions
-    (0.5-3 such contacts per repeat unit, the closest 0.04-0.2 nm), which the
-    DPD relaxation and a minimization resolve; their dimensions follow
-    neither the local energy nor experiment and are rough (single-chain
-    <R^2>/M 0.26-1.7 times the melt value of Fetters et al. at 2-20
-    kg/mol).
-    The energy must come from a force field with realistic torsion and
-    1-4 terms; UFF energies, for example, make polyethylene about 70 % too
-    stiff. A SMIRNOFF force field requires openff-toolkit and
-    openff-interchange.
-
-    With OPLS-AA (``force_field=OPLS_AA()``), the single-chain placement C_n
-    of C40 polyethylene at 413 K is about 9 (about 11 on Sage's geometry,
-    whose C-C-C angle is 109.7 rather than 112.7 degrees), against about
-    6.5 expected: OPLS-AA over-stabilizes trans states in long alkanes (the
-    reason for L-OPLS; Siu, Pluhackova and Boeckmann, J. Chem. Theory
-    Comput. 8, 1459 (2012), doi:10.1021/ct200908r), and the placement
-    inherits it. For atactic polystyrene (20-mers, 450 K) it is about 7.3,
-    close to Sage. Sage 2.3.0 remains the validated default.
+    The chain dimensions follow the local energy: close to experiment for
+    polyethylene and polycarbonate, too compact for chains with bulky side
+    groups such as polystyrene, and rough for crowded chains such as PMMA,
+    which are placed largely with least-bad torsions. The energy needs a
+    force field with realistic torsion and 1-4 terms; Sage 2.3.0, the
+    default, is the validated one.
 
     """
 
@@ -207,7 +144,6 @@ class LocalBoltzmannSampler:
         n_grid=72,
         max_sep=4,
         r_min=0.30,
-        max_redraw=200,
         max_restarts=500,
         relax=True,
         clash_window=CLASH_WINDOW,
@@ -233,8 +169,7 @@ class LocalBoltzmannSampler:
         self.force_field = force_field
         self.n_grid = n_grid
         self.max_sep = max_sep
-        self.r_min = r_min
-        self.max_redraw = max_redraw
+        self.r_min = r_min or 0.0
         self.max_restarts = max_restarts
         self.relax = relax
         self.clash_window = clash_window
@@ -292,7 +227,7 @@ class LocalBoltzmannSampler:
         if self.relax:
             cached = (key, xyz.round(6).tobytes())
             if cached not in self._templates:
-                self._templates[cached] = relax_bonded(xyz, terms)
+                self._templates[cached] = relax_bonded(chain, self.force_field)
             xyz = self._templates[cached]
         return xyz, terms["units"]
 
@@ -312,44 +247,38 @@ class LocalBoltzmannSampler:
         """Torsion angle (radians) for junction `index`, or None (dead end)."""
         step = steps[index]
         width = 2 * np.pi / self.n_grid
-        grid = (np.arange(self.n_grid) + 0.5) * width  # cell centers
-        candidates = propose(grid)  # (n_grid, moved atoms, 3)
-        energy = _torsion_energy(step, placed, candidates)
-        energy += _lj_energy(step, placed, candidates)
-        if least_bad:
-            return self._least_bad(step, terms, placed, candidates, energy, rng)
-        weight = np.exp(-(energy - energy.min()) / self.kT)
-        for _ in range(0, self.max_redraw, 8):  # eight draws at a time
-            cells = rng.choice(self.n_grid, size=8, p=weight / weight.sum())
-            angles = (cells + rng.uniform(size=8)) * width  # anywhere in cell
-            ok = self._allowed(step, terms, placed, propose(angles))
-            if ok.any():
-                return angles[ok.argmax()]
+        cells = propose((np.arange(self.n_grid) + 0.5) * width)  # centers
+        energy = _torsion_energy(step, placed, cells)
+        energy += _lj_energy(step, placed, cells)
+        energy = np.nan_to_num(energy, nan=1e300, posinf=1e300)
+        closest = _closest(step, placed, cells)
+        pierces = _pierces_ring(step, terms, placed, cells)
+        allowed = (closest >= self.r_min) & ~pierces
+        if not allowed.any():
+            if not least_bad or pierces.all():
+                return None
+            # least bad: the cells within 0.01 nm of the farthest contact
+            allowed = ~pierces & (closest >= closest[~pierces].max() - 0.01)
+            cell = self._draw(energy, allowed, rng)
+            self.accepted[-1].append(closest[cell])
+            return (cell + 0.5) * width
+        while allowed.any():  # draw a cell, then check the angle within it
+            cell = self._draw(energy, allowed, rng)
+            angle = (cell + rng.uniform()) * width
+            x = propose(np.array([angle]))
+            if (
+                _closest(step, placed, x)[0] >= self.r_min
+                and not (_pierces_ring(step, terms, placed, x)[0])
+            ):
+                return angle
+            allowed[cell] = False
         return None
 
-    def _allowed(self, step, terms, placed, candidates):
-        """Candidates with no close contact and no bond through a ring."""
-        ok = _closest(step, placed, candidates) >= (self.r_min or 0)
-        ok[ok] = ~_threads(step, terms, placed, candidates[ok])
-        return ok
-
-    def _least_bad(self, step, terms, placed, candidates, energy, rng):
-        """Grid angle whose closest contact is about the farthest, or None.
-
-        Of the grid angles that thread no ring, those within 0.01 nm of the
-        farthest closest contact are drawn by their Boltzmann weights.
-        """
-        closest = _closest(step, placed, candidates)
-        threads = _threads(step, terms, placed, candidates)
-        if threads.all():
-            return None  # back up further
-        closest[threads] = -np.inf
-        good = closest >= closest.max() - 0.01
-        energy = np.where(good, np.nan_to_num(energy, nan=1e300), np.inf)
-        weight = np.exp(-(energy - energy.min()) / self.kT)
-        g = rng.choice(self.n_grid, p=weight / weight.sum())
-        self.accepted[-1].append(closest[g])
-        return (g + 0.5) * 2 * np.pi / self.n_grid
+    def _draw(self, energy, allowed, rng):
+        """A grid cell drawn by its Boltzmann weight among the `allowed`."""
+        weight = np.exp(-(energy - energy[allowed].min()) / self.kT)
+        weight = np.where(allowed, weight, 0.0)
+        return rng.choice(self.n_grid, p=weight / weight.sum())
 
 
 def _torsion_energy(step, placed, x):
@@ -388,8 +317,8 @@ def _ring_centers(rings, xyz):
     return corners.sum(axis=-2) / members.sum(axis=1)[:, None]
 
 
-def _threads(step, terms, placed, x, reach=0.3):
-    """Whether each candidate threads a bond through a ring of the chain.
+def _pierces_ring(step, terms, placed, x, reach=0.3):
+    """Whether each candidate pushes a bond through a ring of the chain.
 
     The bonds of the moved atoms are checked against the placed rings, and
     the placed bonds against the moved rings, where a bond's midpoint is
@@ -478,97 +407,84 @@ def _rigid_units(mol):
     return sorted(sorted(unit) for unit in nx.connected_components(graph))
 
 
-def _bond_graph(terms, atoms=None):
-    """The chain's bonds as a graph, or only those among `atoms`."""
-    graph = nx.Graph()
-    graph.add_nodes_from(range(len(terms["heavy"])) if atoms is None else atoms)
-    graph.add_edges_from(
-        (i, j) for i, j in terms["bonds"] if i in graph and j in graph
-    )
-    return graph
-
-
 def _plan(terms, junctions, max_sep, clash_window=None):
     """The `Step` of each junction, in growth order."""
-    n_atoms = len(terms["heavy"])
-    heavy = np.flatnonzero(terms["heavy"])
-    bond_graph, heavy_graph = _bond_graph(terms), _bond_graph(terms, heavy)
-    # bond separation of every atom pair at most max(max_sep, 3) bonds apart
-    separation = [
-        nx.single_source_shortest_path_length(bond_graph, i, max(max_sep, 3))
-        for i in range(n_atoms)
-    ]
-    # torsion terms by central bond, both ways round: (i, l, k, n, phase)
-    about = {}
-    for (i, j, k, m), values in terms["dihedrals"].items():
-        for a, b, c, d in ((i, j, k, m), (m, k, j, i)):
-            about.setdefault((b, c), []).extend((a, d, *t) for t in values)
+    n_atoms, heavy = len(terms["heavy"]), terms["heavy"]
+    i, j = terms["bond_array"].T
+    bond_graph = csr_matrix((np.ones(len(i)), (i, j)), shape=(n_atoms,) * 2)
+    reach = max(max_sep, 3, clash_window or 0)
     sigma = np.array([terms["sigma"][i] for i in range(n_atoms)])
     eps = np.array([terms["eps"][i] for i in range(n_atoms)])
-    placed = np.ones(n_atoms, dtype=bool)  # the first unit
-    for j in junctions:
-        placed[j.moved] = False
-    # placed, as the contact check sees it: also the atoms on the axes of
-    # the first unit's junctions, which are placed with it
-    known = placed.copy()
-    for j in junctions:
-        if j.parent == 0:
-            known[[b for _, b in j.bonds]] = True
-    counted, steps = set(), []
-    for j in junctions:
-        row = {atom: r for r, atom in enumerate(j.moved)}
-        a, b = j.bonds[0]
-        torsions = [t for t in about.get((a, b), []) if t[1] in row]
-        torsion_k, torsion_n, torsion_phase = (
-            np.array([t[2:] for t in torsions]).reshape(-1, 3).T
+    # The junction that places each atom (-1: the first unit). The contact
+    # check also counts the axis atoms of the first unit's junctions as
+    # placed, since they are placed with it.
+    placed_by = np.full(n_atoms, -1)
+    for k in reversed(range(len(junctions))):
+        placed_by[junctions[k].moved] = k
+    with_first = np.zeros(n_atoms, dtype=bool)
+    with_first[
+        [b for jn in junctions if jn.parent == 0 for _, b in jn.bonds]
+    ] = 1
+    steps = []
+    for k, junction in enumerate(junctions):
+        a, b = junction.bonds[0]
+        moved = junction.moved
+        row = {atom: r for r, atom in enumerate(moved)}
+        # bonds between each moved atom (rows) and every atom (columns)
+        sep = dijkstra(
+            bond_graph,
+            directed=False,
+            indices=moved,
+            unweighted=True,
+            limit=reach,
         )
-        # Each pair of atoms at most `max_sep` bonds apart is counted once,
-        # at the first junction that fixes their distance.
-        pairs = []
-        for m in j.moved:
-            for q, s in separation[m].items():
-                if 3 <= s <= max_sep and placed[q] and q not in row:
-                    if frozenset((m, q)) not in counted:
-                        counted.add(frozenset((m, q)))
-                        pairs.append((row[m], q, s))
-        pair_moved, pair_placed, pair_sep = (
-            np.array(pairs, dtype=int).reshape(-1, 3).T
+        placed = placed_by < k
+        placed[moved] = False
+        # proper torsions i-a-b-l about the bond, l moved
+        torsions = []
+        for (p, q, r, s), values in terms["dihedrals"].items():
+            if (r, q) == (a, b):  # written the other way round
+                p, q, r, s = s, r, q, p
+            if (q, r) == (a, b) and s in row:
+                torsions += [(p, row[s], *t) for t in values]
+        torsion_i, torsion_l, torsion_k, torsion_n, torsion_phase = (
+            np.array(torsions).reshape(-1, 5).T
         )
-        mi, pj = j.moved[pair_moved], pair_placed
+        # Lennard-Jones pairs 3 to max_sep bonds apart (1-4 pairs scaled).
+        # A pair already counted at an earlier junction has an atom on this
+        # bond's axis, so its distance, and energy, is the same at every angle.
+        pair_moved, pair_placed = np.nonzero(
+            (sep >= 3) & (sep <= max_sep) & placed
+        )
+        mi, pj = moved[pair_moved], pair_placed
         if terms.get("combining", "lorentz") == "geometric":  # e.g. OPLS
             sigma_ij = np.sqrt(sigma[mi] * sigma[pj])
         else:  # Lorentz-Berthelot, e.g. SMIRNOFF
             sigma_ij = (sigma[mi] + sigma[pj]) / 2
-        scale = np.where(pair_sep == 3, terms["scale14"], 1.0)
-        heavy_moved = [r for r, m in enumerate(j.moved) if terms["heavy"][m]]
+        scale = np.where(sep[pair_moved, pair_placed] == 3, terms["scale14"], 1)
+        # contact check: moved heavy atoms against placed heavy atoms within
+        # clash_window bonds, skipping pairs within three bonds
+        heavy_moved = np.flatnonzero(heavy[moved])
         if clash_window is None:
-            nearby = heavy  # unplaced atoms are NaN and never clash
+            nearby = np.flatnonzero(heavy)  # unplaced atoms are NaN
         else:
-            reach = nx.multi_source_dijkstra_path_length(
-                heavy_graph, set(j.moved[heavy_moved]), cutoff=clash_window
-            )
-            nearby = np.array(
-                sorted(q for q in reach if known[q] and q not in row),
-                dtype=int,
-            )
-        column = {atom: c for c, atom in enumerate(nearby)}
-        skip = [
-            (h, column[q])
-            for h, r in enumerate(heavy_moved)
-            for q, s in separation[j.moved[r]].items()
-            if s <= 3 and q in column
-        ]
-        moved = set(j.moved.tolist())
+            known = (placed_by < k) | with_first
+            known[moved] = False
+            close = sep[heavy_moved].min(axis=0, initial=np.inf) <= clash_window
+            nearby = np.flatnonzero(heavy & known & close)
+        skip = np.nonzero(sep[np.ix_(heavy_moved, nearby)] <= 3)
         rings = [
-            i for i, r in enumerate(terms["rings"]) if set(r[r >= 0]) <= moved
+            i
+            for i, r in enumerate(terms["rings"])
+            if set(r[r >= 0]) <= set(row)
         ]
         steps.append(
             Step(
                 a=a,
                 b=b,
-                moved=j.moved,
-                torsion_i=np.array([t[0] for t in torsions], dtype=int),
-                torsion_l=np.array([row[t[1]] for t in torsions], dtype=int),
+                moved=moved,
+                torsion_i=torsion_i.astype(int),
+                torsion_l=torsion_l.astype(int),
                 torsion_k=torsion_k,
                 torsion_n=torsion_n,
                 torsion_phase=torsion_phase,
@@ -576,186 +492,117 @@ def _plan(terms, junctions, max_sep, clash_window=None):
                 pair_placed=pair_placed,
                 pair_sigma2=sigma_ij**2,
                 pair_eps=scale * np.sqrt(eps[mi] * eps[pj]),
-                heavy_moved=np.array(heavy_moved, dtype=int),
+                heavy_moved=heavy_moved,
                 nearby=nearby,
-                skip=tuple(np.array(skip, dtype=int).reshape(-1, 2).T),
+                skip=skip,
                 moved_bonds=np.flatnonzero(
-                    np.isin(terms["bond_array"], j.moved).any(1)
+                    np.isin(terms["bond_array"], moved).any(1)
                 ),
                 moved_triangles=np.flatnonzero(
                     np.isin(terms["triangles"][:, 0], rings)
                 ),
             )
         )
-        placed[j.moved] = True
-        known[j.moved] = True
     return steps
 
 
-def relax_bonded(xyz, terms, tol=1.0, max_iter=None):
-    """Minimize a molecule's bonded energy: bonds, angles and torsions.
+def relax_bonded(chain, force_field="openff-2.3.0.offxml", force_tol=0.01):
+    """Minimize a chain under its force field's bonded terms with FIRE.
 
-    Nonbonded terms are left out, so the minimization only brings bond
-    lengths and angles to the force field's values and cannot invert a
-    stereocenter by a clash; a stereocenter that changes handedness anyway
-    raises ``RuntimeError``. So does a minimization that stops before the
-    largest force is below `tol`: a partly relaxed chain keeps strained
-    bond angles in its middle, which change the chain's dimensions.
+    Only the bond, angle, dihedral and improper forces are kept, so the
+    minimization brings bond lengths and angles to the force field's values
+    and cannot invert a stereocenter through a clash; a stereocenter that
+    changes handedness anyway raises ``RuntimeError``, as does a
+    minimization that does not converge. Runs a `flowermd.base.Simulation`
+    on the CPU in a temporary directory.
 
     Parameters
     ----------
-    xyz : numpy.ndarray, shape (N, 3), required
-        Coordinates (nm).
-    terms : dict, required
-        Tables as returned by `flowermd.internal.all_atom_dpd.openff_terms`
-        or `flowermd.internal.all_atom_dpd.gmso_terms`.
-    tol : float, default 1.0
-        Largest force component (kJ/(mol nm)) at convergence. Bond lengths
-        and angles are then within about 0.02 pm and 0.3 degrees of a much
-        tighter minimization; only the floppy torsions, which the sampler
-        sets anyway, are left less converged.
-    max_iter : int, optional
-        Most L-BFGS-B iterations, and energy evaluations, before giving up.
-        Defaults to 100 per atom and at least 100,000; chains of a few
-        thousand atoms need a few times 10,000.
+    chain : mbuild.Compound, required
+        All-atom chain with elements and explicit hydrogens.
+    force_field : str or BaseXMLForcefield, default "openff-2.3.0.offxml"
+        A SMIRNOFF force field, applied through
+        `flowermd.library.OpenFF_DPD` at full strength, or a FlowerMD XML
+        force field such as ``flowermd.library.OPLS_AA()``.
+    force_tol : float, default 0.01
+        FIRE's force tolerance (kJ/(mol nm), root mean square per degree
+        of freedom); the largest force left is then about 1 kJ/(mol nm),
+        which leaves bond angles within about 0.05 degrees.
 
     Returns
     -------
     numpy.ndarray, shape (N, 3)
+        Relaxed coordinates (nm) in ``chain.particles()`` order.
 
     """
-    bonds, angles, torsions = _bonded_tables(terms)
+    import hoomd
+    import mbuild as mb
+    import unyt as u
 
-    def energy(flat):
-        """Bonded energy (kJ/mol) and its gradient, flat like `flat`."""
-        x = flat.reshape(-1, 3)
-        parts = [
-            _bond_terms(x, *bonds),
-            _angle_terms(x, *angles),
-            _torsion_terms(x, *torsions),
-        ]
-        total = sum(e for e, _ in parts)
-        grad = _sum_onto_atoms(len(x), [g for _, rows in parts for g in rows])
-        return total, grad.ravel()
-
-    if max_iter is None:
-        max_iter = max(100_000, 100 * len(xyz))
-    result = minimize(
-        energy,
-        np.asarray(xyz, dtype=float).ravel(),
-        jac=True,
-        method="L-BFGS-B",
-        options={
-            "maxiter": max_iter,
-            "maxfun": max_iter,
-            "gtol": tol,
-            "ftol": 1e-15,
-        },
+    from flowermd.base import Simulation
+    from flowermd.library import OpenFF_DPD, mbuildSystem
+    from flowermd.library.simulations.phantom_walk import (
+        run_FIRE_until_converged,
     )
-    force = np.max(np.abs(result.jac))
-    if force > tol:
-        raise RuntimeError(
-            f"Relaxing a {len(xyz)}-atom chain stopped after {result.nit} "
-            f"iterations with a largest force of {force:.3g} kJ/(mol nm), "
-            f"above tol={tol} ({result.message}). Pass a larger max_iter, "
-            "or LocalBoltzmannSampler(relax=False) to sample the built "
-            "geometry."
+
+    xyz = np.asarray(chain.xyz, dtype=float)
+    compound = mb.clone(chain)
+    compound.box = mb.Box(lengths=np.ptp(xyz, axis=0) + 3.0)
+    units = dict(length=1 * u.nm, mass=1 * u.amu, energy=1 * u.Unit("kJ/mol"))
+    system = mbuildSystem(compound, base_units=units)
+    with tempfile.TemporaryDirectory() as tmp:
+        if isinstance(force_field, str):
+            force_field = OpenFF_DPD(
+                system,
+                os.path.join(tmp, "bonded.xml"),
+                force_field=force_field,
+                bonded_scale=1.0,
+                dihedral_scale=1.0,
+            )
+        system.apply_forcefield(
+            r_cut=0.35, force_field=force_field, kT=1.0, remove_charges=True
         )
-    relaxed = result.x.reshape(-1, 3)
-    if np.any(_handedness(xyz, terms) != _handedness(relaxed, terms)):
+        bonded = [
+            force
+            for force in system.hoomd_forcefield
+            if not isinstance(force, hoomd.md.pair.Pair)
+        ]
+        sim = Simulation(
+            system.hoomd_snapshot,
+            bonded,
+            dt=1e-3,
+            device=hoomd.device.CPU(),
+            gsd_file_name=os.path.join(tmp, "relax.gsd"),
+            log_file_name=os.path.join(tmp, "relax.txt"),
+        )
+        result = run_FIRE_until_converged(
+            sim,
+            n_steps=2000,
+            max_steps=1_000_000,
+            force_tol=force_tol,
+            energy_tol=1e-6,
+            angmom_tol=1e9,
+        )
+        snap = sim.state.get_snapshot()
+    if not result["converged"]:
+        raise RuntimeError(
+            f"Relaxing a {len(xyz)}-atom chain did not converge in "
+            f"{result['steps']} FIRE steps. Pass "
+            "LocalBoltzmannSampler(relax=False) to sample the built geometry."
+        )
+    box = np.asarray(snap.configuration.box[:3])
+    relaxed = snap.particles.position + snap.particles.image * box
+    relaxed = relaxed - relaxed.mean(axis=0) + xyz.mean(axis=0)
+    index = {p: i for i, p in enumerate(chain.particles())}
+    bonds = [(index[a], index[b]) for a, b in chain.bonds()]
+    if np.any(_handedness(xyz, bonds) != _handedness(relaxed, bonds)):
         raise RuntimeError("Relaxing a chain inverted a stereocenter.")
     return relaxed
 
 
-def _bonded_tables(terms):
-    """Atom indices and parameters of every bond, angle and torsion term."""
-    bond = np.array([(*ij, *p) for ij, p in terms["bonds"].items()])
-    angle = np.array([(*ijk, *p) for ijk, p in terms["angles"].items()])
-    torsion = np.array(
-        [
-            (*q, *t)
-            for kind in ("dihedrals", "impropers")
-            for q, values in terms[kind].items()
-            for t in values
-        ]
-    )
-    bond, angle, torsion = (
-        t.reshape(-1, n) for t, n in ((bond, 4), (angle, 5), (torsion, 7))
-    )
-    return (
-        (*bond[:, :2].T.astype(int), *bond[:, 2:].T),  # i, j, k, r0
-        (*angle[:, :3].T.astype(int), *angle[:, 3:].T),  # i, j, k, k, theta0
-        (*torsion[:, :4].T.astype(int), *torsion[:, 4:].T),  # i-l, k, n, phase
-    )
-
-
-def _bond_terms(x, i, j, k, r0):
-    """Harmonic bonds, E = k/2 (r - r0)**2; energy and (atoms, gradient)."""
-    d = x[j] - x[i]
-    r = np.linalg.norm(d, axis=1)
-    g = (k * (r - r0) / r)[:, None] * d  # dE/dx_j, along the bond
-    return 0.5 * np.sum(k * (r - r0) ** 2), [(j, g), (i, -g)]
-
-
-def _angle_terms(x, i, j, k, k_theta, theta0):
-    """Harmonic angles i-j-k, E = k/2 (theta - theta0)**2."""
-    u, v = x[i] - x[j], x[k] - x[j]  # arms from the vertex j
-    ru, rv = np.linalg.norm(u, axis=1), np.linalg.norm(v, axis=1)
-    cos = np.clip(np.sum(u * v, axis=1) / (ru * rv), -1.0, 1.0)
-    theta = np.arccos(cos)
-    # chain rule: dE/du = k (theta - theta0) * dtheta/dcos * dcos/du, with
-    # dtheta/dcos = -1/sin(theta); dcos/du is the part of v perpendicular
-    # to u over |u| |v|
-    f = -k_theta * (theta - theta0) / np.sqrt(np.maximum(1 - cos**2, 1e-12))
-    gu = f[:, None] * (v / (ru * rv)[:, None] - (cos / ru**2)[:, None] * u)
-    gv = f[:, None] * (u / (ru * rv)[:, None] - (cos / rv**2)[:, None] * v)
-    energy = 0.5 * np.sum(k_theta * (theta - theta0) ** 2)
-    return energy, [(i, gu), (k, gv), (j, -gu - gv)]
-
-
-def _torsion_terms(x, i, j, k, m, k_phi, n, phase):
-    """Periodic torsions i-j-k-m, E = k (1 + cos(n phi - phase)).
-
-    The gradient is that of Blondel and Karplus, J. Comput. Chem. 17,
-    1132 (1996), which stays finite at phi = 0 and 180 degrees: the end
-    atoms move along the normals of their planes, A and B, and the middle
-    atoms take the rest so that the four gradients add to zero.
-    """
-    F, G, H = x[i] - x[j], x[j] - x[k], x[m] - x[k]
-    A, B = np.cross(F, G), np.cross(H, G)  # normals of i-j-k and j-k-m
-    rg = np.linalg.norm(G, axis=1)
-    aa, bb = np.sum(A * A, axis=1), np.sum(B * B, axis=1)
-    phi = dihedrals(x[i], x[j], x[k], x[m])
-    de = -k_phi * n * np.sin(n * phi - phase)  # dE/dphi
-    gi = -(de * rg / aa)[:, None] * A
-    gm = (de * rg / bb)[:, None] * B
-    shared = de[:, None] * (
-        (np.sum(F * G, axis=1) / (aa * rg))[:, None] * A
-        - (np.sum(H * G, axis=1) / (bb * rg))[:, None] * B
-    )
-    energy = np.sum(k_phi * (1 + np.cos(n * phi - phase)))
-    return energy, [(i, gi), (m, gm), (j, shared - gi), (k, -gm - shared)]
-
-
-def _sum_onto_atoms(n_atoms, contributions):
-    """Add each term's gradient rows onto their atoms: shape (n_atoms, 3).
-
-    An atom in several terms gets the sum of its rows. (``grad[atoms] +=
-    rows`` would keep only one row per repeated atom.)
-    """
-    atoms = np.concatenate([a for a, _ in contributions])
-    rows = np.concatenate([g for _, g in contributions])
-    return np.column_stack(
-        [
-            np.bincount(atoms, weights=rows[:, c], minlength=n_atoms)
-            for c in range(3)
-        ]
-    )
-
-
-def _handedness(xyz, terms):
+def _handedness(xyz, bonds):
     """Sign of the substituent volume at every atom with four neighbors."""
-    graph = nx.Graph(list(terms["bonds"]))
+    graph = nx.Graph(list(bonds))
     quads = np.array(
         [list(graph[atom]) for atom in graph if graph.degree(atom) == 4],
         dtype=int,

@@ -19,7 +19,7 @@ from .dpd_utils import (
 )
 from .stereochemistry import (
     audit_stereochemistry,
-    find_ring_spears,
+    find_ring_piercings,
     protect_stereochemistry,
 )
 from .utils import (

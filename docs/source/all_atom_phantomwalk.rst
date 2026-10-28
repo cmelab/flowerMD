@@ -46,8 +46,8 @@ The steps:
    folding back onto itself, but only between atoms at most
    ``clash_window`` (12) bonds apart: overlaps between distant parts of a
    chain, like those between chains, are left for DPD to resolve, as a
-   melt screens excluded volume. A torsion that would thread a bond of
-   the chain through one of its rings is always rejected, since no later
+   melt screens excluded volume. A torsion that would push a bond of the
+   chain through one of its rings (ring piercing) is always rejected, since no later
    relaxation undoes it. At a dead end the growth backs up a few bonds
    rather than starting the chain again; once it has met as many dead
    ends as the chain has rotatable bonds, it takes the least bad torsion
@@ -148,8 +148,8 @@ Melts of about 4,000 atoms (5 kg/mol chains, two seeds each) of PMMA,
 polyisobutylene, poly(alpha-methylstyrene) and PTFE placed this way,
 relaxed with DPD and FIRE (``UFF_DPD``), minimized with Sage 2.3.0 and run
 for 100 ps of Sage NPT at the melt temperature kept every stereocenter,
-had no bond threaded through a ring after DPD
-(`flowermd.utils.find_ring_spears` finds a few between chains at
+had no ring piercings after DPD
+(`flowermd.utils.find_ring_piercings` finds a few between chains at
 placement, which DPD removes) and no stretched bond, and minimized to finite energies; the minimization removed 1.5-4.6
 kJ/mol per atom (10.5 for PTFE), against 1.2-1.7 for polyethylene and
 atactic polystyrene. The density after MD was within 5 % of experiment

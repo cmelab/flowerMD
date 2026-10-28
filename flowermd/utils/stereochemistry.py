@@ -4,8 +4,8 @@ DPD lets atoms pass through each other, so a stereocenter can invert and a
 later minimizer will not undo it. `protect_stereochemistry` records every
 potential tetrahedral center of a parameterized `System` and adds a
 periodic-dihedral restraint over its four substituents; `audit_stereochemistry`
-checks the handedness afterwards. Requires RDKit. `find_ring_spears`
-finds bonds threaded through rings, which no minimizer undoes either.
+checks the handedness afterwards. Requires RDKit. `find_ring_piercings`
+finds bonds piercing rings, which no minimizer undoes either.
 """
 
 import warnings
@@ -157,7 +157,7 @@ def audit_stereochemistry(reference, snapshot, planar_tolerance=0.05):
     }
 
 
-def find_ring_spears(snapshot, max_ring=8):
+def find_ring_piercings(snapshot, max_ring=8):
     """Find bonds that pass through the face of a ring.
 
     Each ring of at most `max_ring` atoms (from a cycle basis of the bond
@@ -176,7 +176,7 @@ def find_ring_spears(snapshot, max_ring=8):
     Returns
     -------
     list of tuple
-        ``((i, j), ring)`` for each bond i-j threaded through `ring`, a
+        ``((i, j), ring)`` for each bond i-j that pierces `ring`, a
         tuple of atom indices.
 
     """
