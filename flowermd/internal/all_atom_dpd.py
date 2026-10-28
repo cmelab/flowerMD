@@ -13,6 +13,20 @@ import re
 import numpy as np
 
 KINDS = ("bonds", "angles", "dihedrals", "impropers")
+
+
+def bonds_of(mol):
+    """Each bond of an RDKit molecule once, in time linear in its size.
+
+    ``bonds_of(mol)`` fetches every bond by index, which RDKit does in time
+    proportional to the number of bonds, so looping over it is quadratic.
+    """
+    for atom in mol.GetAtoms():
+        for bond in atom.GetBonds():
+            if bond.GetBeginAtomIdx() == atom.GetIdx():
+                yield bond
+
+
 KCAL = 4.184  # kJ per kcal
 
 
@@ -35,7 +49,7 @@ def write_all_atom_dpd_xml(system, file_path, terms, **settings):
     ):
         bonds = sorted(
             (b.GetBeginAtomIdx(), b.GetEndAtomIdx(), b.GetBondType())
-            for b in frag.GetBonds()
+            for b in bonds_of(frag)
         )
         key = (tuple(a.GetAtomicNum() for a in frag.GetAtoms()), tuple(bonds))
         where.append(unique.setdefault(key, frag))
@@ -68,7 +82,7 @@ def to_sanitized_rdkit(compound):
     from rdkit import Chem
 
     mol = compound.to_rdkit()
-    for bond in mol.GetBonds():
+    for bond in bonds_of(mol):
         if bond.GetBondType() == Chem.BondType.UNSPECIFIED:
             bond.SetBondType(Chem.BondType.SINGLE)
         elif bond.GetBondType() == Chem.BondType.AROMATIC:
@@ -90,7 +104,7 @@ def uff_terms(mol):
     for atom in mol.GetAtoms():
         i = atom.GetIdx()
         out["eps"][i] = uff.GetUFFVdWParams(mol, i, i)[1] * KCAL
-    for bond in mol.GetBonds():
+    for bond in bonds_of(mol):
         pair = (bond.GetBeginAtomIdx(), bond.GetEndAtomIdx())
         k, r0 = uff.GetUFFBondStretchParams(mol, *pair)
         out["bonds"][pair] = (k * KCAL * 100, r0 / 10)
@@ -113,7 +127,7 @@ def uff_terms(mol):
                         break
             # Harmonic at UFF's minimum, whose curvature is k_theta.
             out["angles"][(i, j, k)] = (k_theta * KCAL, theta0)
-    for bond in mol.GetBonds():
+    for bond in bonds_of(mol):
         quads = [q for q in _quads(bond) if uff.GetUFFTorsionParams(mol, *q)]
         for q in quads:  # UFF splits one barrier among a bond's torsions
             n, sign = _uff_torsion_form(mol, q)
@@ -310,7 +324,7 @@ def _fill_dihedrals(mol, out):
     GMSO types every dihedral of the topology, so each needs an entry.
     """
     have = out["dihedrals"]
-    for bond in mol.GetBonds():
+    for bond in bonds_of(mol):
         for q in _quads(bond):
             if q not in have and q[::-1] not in have:
                 have[q] = ((0.0, 1, 0.0),)

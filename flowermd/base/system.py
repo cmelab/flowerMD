@@ -3,6 +3,7 @@
 import pickle
 import warnings
 from abc import ABC, abstractmethod
+from contextlib import contextmanager
 from typing import List
 
 import gsd
@@ -430,17 +431,18 @@ class System(ABC):
     def _create_hoomd_forcefield(self, r_cut, kT, nlist, pppm_kwargs):
         """Create a list of HOOMD forces."""
         force_list = []
-        ff, refs = to_hoomd_forcefield(
-            top=self.gmso_system,
-            r_cut=r_cut,
-            kT=kT,
-            nlist=nlist,
-            pppm_kwargs=pppm_kwargs,
-            auto_scale=False,
-            base_units=(
-                self._reference_values if self._reference_values else None
-            ),
-        )
+        with _check_each_potential_once():
+            ff, refs = to_hoomd_forcefield(
+                top=self.gmso_system,
+                r_cut=r_cut,
+                kT=kT,
+                nlist=nlist,
+                pppm_kwargs=pppm_kwargs,
+                auto_scale=False,
+                base_units=(
+                    self._reference_values if self._reference_values else None
+                ),
+            )
         for force in ff:
             force_list.extend(ff[force])
         self._ff_refs = self._reference_values.copy()
@@ -595,6 +597,14 @@ class System(ABC):
             speedup_by_moltag=speedup_by_moltag,
             speedup_by_molgraph=speedup_by_molgraph,
         )
+        # GMSO keeps each force field's 1-4 scaling per molecule but builds
+        # the snapshot's 1-4 pair lists, in O(N^2) time, from the global
+        # scaling (0.5 unless set). Without 1-4 pairs in any molecule (as in
+        # the all-atom DPD force fields), set the global scaling to match.
+        per_molecule = list(self.gmso_system.molecule_scaling_factors.values())
+        if per_molecule and not np.any(per_molecule):
+            self.gmso_system.set_lj_scale([0.0, 0.0, 0.0])
+            self.gmso_system.set_electrostatics_scale([0.0, 0.0, 0.0])
 
         if remove_charges:
             for site in self.gmso_system.sites:
@@ -875,3 +885,39 @@ class Lattice(System):
             (system.box.Lx / 2, system.box.Ly / 2, system.box.Lz / 2)
         )
         return system
+
+
+@contextmanager
+def _check_each_potential_once():
+    """Check each distinct potential once while GMSO converts a topology.
+
+    GMSO gives every bond, angle and dihedral its own copy of its potential
+    and checks each copy against HOOMD's templates, printing and simplifying
+    its sympy expression every time, which takes minutes for systems of a
+    few 10^4 atoms. Copies with the same expression, variables and
+    parameter units get the same answer.
+    """
+    from gmso.utils import compatibility
+
+    check, answers = compatibility._check_single_potential, {}
+
+    def check_once(potential, accepted):
+        key = (
+            potential.expression,
+            frozenset(potential.independent_variables),
+            tuple(
+                (name, value.units.dimensions)
+                for name, value in sorted(potential.parameters.items())
+            ),
+            id(accepted),
+        )
+        if key not in answers:
+            match = check(potential, accepted)
+            answers[key] = next(iter(match.values())) if match else None
+        return {potential: answers[key]} if answers[key] else False
+
+    compatibility._check_single_potential = check_once
+    try:
+        yield
+    finally:
+        compatibility._check_single_potential = check

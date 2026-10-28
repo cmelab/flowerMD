@@ -26,6 +26,7 @@ from scipy.sparse.csgraph import dijkstra
 from scipy.spatial.distance import cdist
 
 from flowermd.internal.all_atom_dpd import (
+    bonds_of,
     gmso_terms,
     openff_terms,
     to_sanitized_rdkit,
@@ -394,7 +395,7 @@ def rotatable_bonds(mol):
         )
 
     out = []
-    for bond in mol.GetBonds():
+    for bond in bonds_of(mol):
         x, y = bond.GetBeginAtom(), bond.GetEndAtom()
         if (
             bond.GetBondType() != Chem.BondType.SINGLE
@@ -417,7 +418,7 @@ def _rigid_units(mol):
     graph = nx.Graph()
     graph.add_nodes_from(range(mol.GetNumAtoms()))
     graph.add_edges_from(
-        (b.GetBeginAtomIdx(), b.GetEndAtomIdx()) for b in mol.GetBonds()
+        (b.GetBeginAtomIdx(), b.GetEndAtomIdx()) for b in bonds_of(mol)
     )
     graph.remove_edges_from(rotatable_bonds(mol))
     return sorted(sorted(unit) for unit in nx.connected_components(graph))
