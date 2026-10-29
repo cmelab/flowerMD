@@ -15,6 +15,7 @@ such as `flowermd.library.OPLS_AA`.
 """
 
 import functools
+import os
 from dataclasses import dataclass
 
 import networkx as nx
@@ -566,10 +567,18 @@ def relax_bonded(xyz, terms, tolerance=1.0):
                 torsions.addTorsion(i, j, k, m, int(n), phase, k_phi)
     for force in (bonds, angles, torsions):
         system.addForce(force)
+    # OpenMM uses every core of the machine by default, not the cores this
+    # process may use (a SLURM job's, say), and oversubscribed threads spin.
+    cores = os.environ.get("OPENMM_CPU_THREADS") or (
+        len(os.sched_getaffinity(0))
+        if hasattr(os, "sched_getaffinity")
+        else os.cpu_count()
+    )
     context = openmm.Context(
         system,
         openmm.VerletIntegrator(0.001),
         openmm.Platform.getPlatformByName("CPU"),
+        {"Threads": str(cores)},
     )
     context.setPositions(np.asarray(xyz, dtype=float))
     openmm.LocalEnergyMinimizer.minimize(context, tolerance)
