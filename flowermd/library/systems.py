@@ -190,8 +190,6 @@ class AtomisticRandomWalk(RandomWalk):
         All-atom chains built from repeat units.
     density : float or unyt_quantity, required
         The target density for the system (g/cm^3 or nm^-3).
-    buffer : float, default 0.3
-        Distance (nm) between the box faces and the chain starts.
     torsion_sampler : object, optional
         Defaults to `flowermd.library.LocalBoltzmannSampler` at its default
         settings (Sage 2.3.0, 413 K), which turns every rotatable bond and
@@ -217,14 +215,12 @@ class AtomisticRandomWalk(RandomWalk):
         self,
         molecules,
         density,
-        buffer=0.3,
         torsion_sampler=None,
         n_workers=1,
         protect_stereo=True,
         **kwargs,
     ):
         self.torsion_sampler = torsion_sampler or LocalBoltzmannSampler()
-        self.buffer = buffer
         self.n_workers = n_workers
         self.protect_stereo = protect_stereo
         super(AtomisticRandomWalk, self).__init__(
@@ -248,11 +244,7 @@ class AtomisticRandomWalk(RandomWalk):
 
     def _walk_positions(self, system, box_lengths, rng):
         """Unwrapped positions of every atom, chain after chain (nm)."""
-        starts = rng.uniform(
-            self.buffer,
-            box_lengths - self.buffer,
-            size=(len(self.all_molecules), 3),
-        )
+        starts = rng.uniform(0, box_lengths, size=(len(self.all_molecules), 3))
         accepted = getattr(self.torsion_sampler, "accepted", [])
         before = len(accepted)
         streams = rng.spawn(len(starts))  # one random stream per chain
