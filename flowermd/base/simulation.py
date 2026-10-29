@@ -608,9 +608,10 @@ class Simulation(hoomd.simulation.Simulation):
             A diction of parameter:value for the integrator method used.
 
         """
-        if isinstance(self.integrator, hoomd.md.minimize.FIRE):
-            # run_FIRE left a minimizer in place; MD needs an MD integrator.
-            # Detach the minimizer first, so its forces can move over.
+        if self.integrator and type(self.integrator) is not hoomd.md.Integrator:
+            # Another integrator (FIRE from run_FIRE, say; it subclasses
+            # Integrator) is in place, and MD needs an MD integrator. Detach
+            # it first, so its forces can move over.
             self.operations.integrator = None
             self.integrator.forces.clear()
             self.integrator = None

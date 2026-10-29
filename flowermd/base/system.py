@@ -46,7 +46,7 @@ class System(ABC):
     ----------
     molecules : flowermd.Molecule or a list of Molecule objects, required
         The molecules to be placed in the system.
-    base_units : dict, default {}
+    base_units : dict, optional
         Dictionary of base units to use for scaling.
         Dictionary keys are "length", "mass", and "energy". Values should be an
         unyt array of the desired base unit.
@@ -71,18 +71,17 @@ class System(ABC):
     def __init__(
         self,
         molecules,
-        base_units=dict(),
+        base_units: dict = None,
         **kwargs,
     ):
-        if isinstance(molecules, mb.Compound):
-            molecules = [molecules]  # a Compound iterates over its children
         self._molecules = check_return_iterable(molecules)
         self.identify_connections = getattr(
             self._molecules[0], "identify_connections", True
         )
         self.all_molecules = []
         self.gmso_system = None
-        self._reference_values = dict(base_units)
+        # a copy: System fills in the reference values it derives
+        self._reference_values = (base_units or {}).copy()
         self._hoomd_snapshot = None
         self._hoomd_forcefield = []
         self._gmso_forcefields_dict = dict()
