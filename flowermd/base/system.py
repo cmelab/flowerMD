@@ -20,7 +20,7 @@ from flowermd.utils import (
     get_target_box_mass_density,
     get_target_box_number_density,
     label_sites,
-    site_order
+    site_order,
 )
 
 
@@ -626,7 +626,9 @@ class System(ABC):
         (mb.Compound.xyz) and system.gmso_system (gmso.Site.position).
         """
         positions = np.asarray(snapshot.particles.position, dtype=float)
-        if not self._check_wrapped_positions(positions, snapshot.configuration.box):
+        if not self._check_wrapped_positions(
+            positions, snapshot.configuration.box
+        ):
             raise ValueError(
                 "Snapshot positions are not wrapped into the primary box image [-L/2, L/2)."
             )
@@ -654,10 +656,12 @@ class System(ABC):
                 f"positions array has {positions.shape[0]}."
             )
         for site, pos in zip(sites, positions):
-            site.position = pos * unit   # GMSO Site.position expects a unyt quantity
-    
+            site.position = (
+                pos * unit
+            )  # GMSO Site.position expects a unyt quantity
+
     @staticmethod
-    def _box_params(self,box):
+    def _box_params(self, box):
         """Get (Lx, Ly, Lz, xy, xz, yz) from a hoomd.Box, gsd/freud-style box, or array."""
         if hasattr(box, "Lx"):  # hoomd.Box or freud.box.Box
             return (box.Lx, box.Ly, box.Lz, box.xy, box.xz, box.yz)
@@ -666,32 +670,34 @@ class System(ABC):
             return (*b, 0.0, 0.0, 0.0)
         if b.size == 6:  # gsd convention [Lx, Ly, Lz, xy, xz, yz]
             return tuple(b)
-        raise ValueError("box must be a Box object, [Lx,Ly,Lz], or [Lx,Ly,Lz,xy,xz,yz]")
+        raise ValueError(
+            "box must be a Box object, [Lx,Ly,Lz], or [Lx,Ly,Lz,xy,xz,yz]"
+        )
 
     @staticmethod
-    def _check_wrapped_positions(self,positions, box, tol=0.0):
+    def _check_wrapped_positions(self, positions, box, tol=0.0):
         """
         Check that every position lies in HOOMD's primary box image.
-    
+
         """
         pos = np.atleast_2d(np.asarray(positions, dtype=float))
         if pos.shape[1] != 3:
             raise ValueError("positions must have shape (N, 3)")
-    
+
         Lx, Ly, Lz, xy, xz, yz = self._box_params(box)
         x, y, z = pos.T
-    
+
         s_x = (x - xy * y + (xy * yz - xz) * z) / Lx
         s_y = (y - yz * z) / Ly
-    
+
         def inside(s):
             return np.all((s >= -0.5 - tol) & (s < 0.5 + tol))
-    
+
         if Lz == 0:  # 2D: z must be 0
             in_z = np.all(np.abs(z) <= tol)
         else:
             in_z = inside(z / Lz)
-    
+
         return bool(inside(s_x) and inside(s_y) and in_z)
 
     def remove_typing(self):
@@ -720,7 +726,7 @@ class System(ABC):
         """Current order of gmso site labels."""
         return site_order(self.gmso_system)
 
-    def verify_mol_id_order(self,reference_array):
+    def verify_mol_id_order(self, reference_array):
         """True if the gmso site order matches reference_array."""
         return self.site_order_array() == list(reference_array)
 

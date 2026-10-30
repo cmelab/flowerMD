@@ -21,6 +21,7 @@ from flowermd.library import (
 from flowermd.tests import BaseTest
 from flowermd.utils import gmso_positions, mbuild_positions
 
+
 def run_short_sim(system, tmp_path, n_steps=100):
     """Run a short NVT simulation and return the final HOOMD snapshot."""
     sim = Simulation.from_system(
@@ -31,6 +32,7 @@ def run_short_sim(system, tmp_path, n_steps=100):
     )
     sim.run_NVT(n_steps=n_steps, kT=1.0, tau_kt=0.01)
     return sim.state.get_snapshot()
+
 
 class TestSystem(BaseTest):
     def test_single_mol_type(self, benzene_molecule):
@@ -1037,7 +1039,7 @@ class TestSystem(BaseTest):
         new_pos = np.random.default_rng(42).uniform(
             -L / 2, L / 2, (system.n_particles, 3)
         )
-        system.update_positions(run_short_sim(system,tmp_path="test.gsd"))
+        system.update_positions(run_short_sim(system, tmp_path="test.gsd"))
         assert np.allclose(mbuild_positions(system.all_molecules), new_pos)
         assert np.allclose(gmso_positions(system.gmso_system), new_pos)
 
@@ -1088,13 +1090,12 @@ class TestSystem(BaseTest):
 
         # bond lengths before the update (unwrapped mbuild/gmso positions)
         before = gmso_positions(system.gmso_system)
-        expected = np.linalg.norm(before[bonds[:, 1]] - before[bonds[:, 0]], axis=1)
+        expected = np.linalg.norm(
+            before[bonds[:, 1]] - before[bonds[:, 0]], axis=1
+        )
 
         system.update_positions(snap)
         after = gmso_positions(system.gmso_system)
         dr = after[bonds[:, 1]] - after[bonds[:, 0]]
         dr -= L * np.round(dr / L)  # minimum image
         assert np.allclose(np.linalg.norm(dr, axis=1), expected, atol=1e-3)
-
-
-    
