@@ -1084,3 +1084,13 @@ class TestSystemInputs(BaseTest):
         a, b = np.asarray(snap.bonds.group).T
         lengths = np.linalg.norm(unwrapped[a] - unwrapped[b], axis=1)
         assert lengths.max() < 0.16
+
+    def test_other_snapshots_have_no_images(self, benzene_molecule):
+        # Only AtomisticRandomWalk wraps; other systems keep GMSO's snapshot.
+        system = Lattice(
+            molecules=benzene_molecule(n_mols=2), x=1.5, y=1.5, n=1
+        )
+        system.apply_forcefield(
+            r_cut=2.5, force_field=OPLS_AA(), auto_scale=True
+        )
+        assert system.hoomd_snapshot.particles.image is None

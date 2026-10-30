@@ -457,14 +457,6 @@ class System(ABC):
             ),
         )
         self._snap_refs = self._reference_values.copy()
-        # Wrap unwrapped positions (e.g. all-atom random walks) into the box
-        # and keep the image flags, so molecules stay whole when unwrapped.
-        box = np.asarray(snap.configuration.box)
-        if np.all(box[:3] > 0) and not np.any(box[3:]):  # 3D orthorhombic
-            box = box[:3]
-            image = np.floor(snap.particles.position / box + 0.5)
-            snap.particles.position = snap.particles.position - image * box
-            snap.particles.image = image.astype(np.int32)
         return snap
 
     def _validate_forcefield(self, input_forcefield):

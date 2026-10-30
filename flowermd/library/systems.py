@@ -242,6 +242,19 @@ class AtomisticRandomWalk(RandomWalk):
         if self.protect_stereo and isinstance(force_field, UFF_DPD):
             protect_stereochemistry(self)  # OpenFF_DPD is a UFF_DPD too
 
+    def _create_hoomd_snapshot(self):
+        """`System`'s snapshot, wrapped into the box with image flags.
+
+        The walk leaves chains unwrapped; the image flags let them be put
+        back together after the relaxation.
+        """
+        snap = super(AtomisticRandomWalk, self)._create_hoomd_snapshot()
+        box = np.asarray(snap.configuration.box[:3])
+        image = np.floor(snap.particles.position / box + 0.5)
+        snap.particles.position = snap.particles.position - image * box
+        snap.particles.image = image.astype(np.int32)
+        return snap
+
     def _walk_positions(self, system, box_lengths, rng):
         """Unwrapped positions of every atom, chain after chain (nm)."""
         starts = rng.uniform(0, box_lengths, size=(len(self.all_molecules), 3))
