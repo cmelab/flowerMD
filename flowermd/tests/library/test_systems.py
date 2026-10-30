@@ -1,16 +1,33 @@
+import sys
+import time
+
+import gsd.hoomd
+import mbuild as mb
 import numpy as np
 import pytest
 import unyt as u
 
+from flowermd.base import Molecule, Polymer
+from flowermd.internal.local_boltzmann import _plan, relax_bonded
+from flowermd.internal.placement import (
+    chain_junctions,
+    random_chain_conformation,
+    repeat_units,
+)
 from flowermd.library import (
+    OPLS_AA,
+    AtomisticRandomWalk,
     EllipsoidChainRand,
     LJChain,
+    LocalBoltzmannSampler,
     PolyEthylene,
     RandomWalk,
     SingleChainSystem,
+    UniformTorsion,
     mbuildSystem,
 )
 from flowermd.tests import BaseTest
+from flowermd.utils import find_ring_piercings
 
 
 class TestSystems(BaseTest):
@@ -110,3 +127,437 @@ class TestSystems(BaseTest):
             np.testing.assert_array_equal(
                 system1.gmso_system.positions, system2.gmso_system.positions
             )
+
+
+def _geometry(chain, xyz):
+    """Bond lengths, bond-angle cosines and signed volumes at 4-fold atoms."""
+    index = {p: i for i, p in enumerate(chain.particles())}
+    bonds = np.array([(index[a], index[b]) for a, b in chain.bonds()])
+    nbr = [[] for _ in xyz]
+    for a, b in bonds:
+        nbr[a].append(b)
+        nbr[b].append(a)
+    unit = [(xyz[n] - xyz[j]) for j, n in enumerate(nbr)]
+    unit = [v / np.linalg.norm(v, axis=1)[:, None] for v in unit]
+    cosines = np.concatenate(
+        [(v @ v.T)[np.triu_indices(len(v), 1)] for v in unit]
+    )
+    volumes = [np.linalg.det(v[:3]) for v in unit if len(v) == 4]
+    lengths = np.linalg.norm(xyz[bonds[:, 0]] - xyz[bonds[:, 1]], axis=1)
+    return lengths, cosines, np.array(volumes)
+
+
+def _angle(xyz, ijk):
+    u, v = xyz[ijk[0]] - xyz[ijk[1]], xyz[ijk[2]] - xyz[ijk[1]]
+    return np.arccos(u @ v / np.linalg.norm(u) / np.linalg.norm(v))
+
+
+def _ladder():
+    """Three two-atom units: a two-bond (ring) junction, then a single bond."""
+    chain = mb.Compound()
+    units = []
+    for x in range(3):
+        unit = mb.Compound()
+        unit.add(mb.Particle(name="C", pos=[0.15 * x, 0.0, 0.0]))
+        unit.add(mb.Particle(name="C", pos=[0.15 * x, 0.15, 0.0]))
+        unit.add_bond(list(unit.particles()))
+        chain.add(unit)
+        units.append(list(unit.particles()))
+    chain.add_bond([units[0][0], units[1][0]])
+    chain.add_bond([units[0][1], units[1][1]])
+    chain.add_bond([units[1][0], units[2][0]])
+    return chain
+
+
+class TestAtomisticRandomWalk:
+    @pytest.fixture(autouse=True)
+    def initdir(self, tmpdir):
+        tmpdir.chdir()
+
+    def test_keeps_geometry_and_handedness(self):
+        chain = PolyEthylene(lengths=8, num_mols=1).molecules[0]
+        new = random_chain_conformation(
+            chain, np.zeros(3), np.random.default_rng(0)
+        )
+        for before, after in zip(
+            _geometry(chain, chain.xyz), _geometry(chain, new)
+        ):
+            np.testing.assert_allclose(after, before, atol=1e-6)
+        assert not np.allclose(new, chain.xyz)
+
+    def test_repeat_units_and_junctions(self):
+        chain = PolyEthylene(lengths=5, num_mols=1).molecules[0]
+        units = repeat_units(chain)
+        assert len(units) == 5
+        assert sorted(sum(units, [])) == list(range(chain.n_particles))
+        index = {p: i for i, p in enumerate(chain.particles())}
+        bonds = [(index[a], index[b]) for a, b in chain.bonds()]
+        junctions = chain_junctions(units, bonds, chain.n_particles)
+        assert len(junctions) == 4 and all(j.torsion for j in junctions)
+
+    def test_ladder_junction_keeps_built_pose(self):
+        chain = _ladder()
+        junctions = chain_junctions(
+            [[0, 1], [2, 3], [4, 5]],
+            [(0, 1), (2, 3), (4, 5), (0, 2), (1, 3), (2, 4)],
+            6,
+        )
+        assert [j.torsion for j in junctions] == [False, True]
+        new = random_chain_conformation(
+            chain, np.zeros(3), np.random.default_rng(1)
+        )
+        built = np.linalg.norm(
+            chain.xyz[:4, None] - chain.xyz[None, :4], axis=2
+        )
+        placed = np.linalg.norm(new[:4, None] - new[None, :4], axis=2)
+        np.testing.assert_allclose(placed, built, atol=1e-9)
+
+    def test_torsion_sampler(self):
+        calls = []
+
+        class NoTurn(UniformTorsion):
+            def choose(self, index, placed, propose, rng):
+                calls.append(propose(np.zeros(1)))
+                return 0.0
+
+        chain = PolyEthylene(lengths=6, num_mols=1).molecules[0]
+        new = random_chain_conformation(
+            chain, np.zeros(3), np.random.default_rng(2), NoTurn()
+        )
+        assert len(calls) == 5
+        distances = np.linalg.norm(chain.xyz[:, None] - chain.xyz, axis=2)
+        np.testing.assert_allclose(
+            np.linalg.norm(new[:, None] - new, axis=2), distances, atol=1e-6
+        )
+
+    def test_dead_end(self):
+        calls = []
+
+        class DeadEnd(UniformTorsion):
+            def choose(self, index, placed, propose, rng, least_bad=False):
+                calls.append((index, least_bad))
+                if index == 6 and not least_bad:
+                    return None
+                return rng.uniform(0.0, 2 * np.pi)
+
+        chain = PolyEthylene(lengths=8, num_mols=1).molecules[0]
+        rng = np.random.default_rng(0)
+        new = random_chain_conformation(chain, np.zeros(3), rng, DeadEnd())
+        # the dead end took the least bad angle, and nothing was revisited
+        assert [c for c in calls if c[0] == 6] == [(6, False), (6, True)]
+        assert len(calls) == len({c[0] for c in calls}) + 1
+        for before, after in zip(
+            _geometry(chain, chain.xyz), _geometry(chain, new)
+        ):
+            np.testing.assert_allclose(after, before, atol=1e-6)
+
+        class Stuck(UniformTorsion):
+            max_restarts = 2
+
+            def choose(self, index, placed, propose, rng, least_bad=False):
+                return None if index == 6 else 0.0
+
+        with pytest.raises(RuntimeError, match="3 attempts"):
+            random_chain_conformation(chain, np.zeros(3), rng, Stuck())
+
+    def test_parallel_placement(self):
+        def build(n_workers):
+            return AtomisticRandomWalk(
+                PolyEthylene(lengths=6, num_mols=4),
+                density=0.85,
+                seed=3,
+                torsion_sampler=UniformTorsion(),
+                n_workers=n_workers,
+            ).system.xyz
+
+        np.testing.assert_allclose(build(1), build(3))
+
+    def test_system(self):
+        chains = PolyEthylene(lengths=6, num_mols=4)
+        uniform = UniformTorsion()
+        system = AtomisticRandomWalk(
+            chains, density=0.85, seed=3, torsion_sampler=uniform
+        )
+        again = AtomisticRandomWalk(
+            PolyEthylene(lengths=6, num_mols=4),
+            density=0.85,
+            seed=3,
+            torsion_sampler=uniform,
+        )
+        np.testing.assert_allclose(system.system.xyz, again.system.xyz)
+        assert system.n_particles == 4 * 38
+        index = {p: i for i, p in enumerate(system.system.particles())}
+        xyz = system.system.xyz
+        lengths = [
+            np.linalg.norm(xyz[index[a]] - xyz[index[b]])
+            for a, b in system.system.bonds()
+        ]
+        assert max(lengths) < 0.16
+
+
+class TestLocalBoltzmannSampler:
+    @pytest.fixture(scope="class")
+    def sampler(self):
+        pytest.importorskip("openff.interchange")
+        return LocalBoltzmannSampler()
+
+    def test_rigid_units(self, sampler):
+        # Every C-C bond with a carbon beyond each end turns, so PE5 has
+        # 8 rigid units: the two ethyl ends and six CH2 groups.
+        chain = PolyEthylene(lengths=5, num_mols=1).molecules[0]
+        xyz, units = sampler.template(chain)
+        assert len(units) == 8
+        # In 2,2'-bithiophene only the bond between the rings turns.
+        chain = Polymer(
+            lengths=2,
+            num_mols=1,
+            smiles="c1ccsc1",
+            bond_indices=[7, 8],
+            bond_length=0.145,
+            bond_orientation=[None, None],
+        ).molecules[0]
+        assert len(sampler.template(chain)[1]) == 2
+
+    def test_keeps_template_geometry_and_handedness(self, sampler):
+        ps = "CC(c1ccccc1)CC(c1ccccc1)CC(c1ccccc1)C"
+        chain = Molecule(num_mols=1, smiles=ps).molecules[0]
+        xyz, units = sampler.template(chain)
+        assert len(units) == 8  # 5 backbone pieces and 3 phenyls
+        new = random_chain_conformation(
+            chain, np.zeros(3), np.random.default_rng(0), sampler
+        )
+        for before, after in zip(_geometry(chain, xyz), _geometry(chain, new)):
+            np.testing.assert_allclose(after, before, atol=1e-6)
+        built = _geometry(chain, chain.xyz)
+        assert np.all(np.sign(built[2]) == np.sign(_geometry(chain, new)[2]))
+        # the template has the force field's bond lengths
+        bonds = sampler._topology(chain)[1]["bonds"]
+        r = [
+            np.linalg.norm(xyz[i] - xyz[j]) - r0
+            for (i, j), (_, r0) in bonds.items()
+        ]
+        assert np.max(np.abs(r)) < 2e-3
+
+    def test_statistics(self, sampler):
+        chain = PolyEthylene(lengths=10, num_mols=1).molecules[0]
+        carbons = [i for i, p in enumerate(chain.particles()) if p.name == "C"]
+        rng = np.random.default_rng(1)
+        ree2 = [
+            np.sum(np.diff(x[carbons][[0, -1]], axis=0) ** 2)
+            for x in (
+                random_chain_conformation(chain, np.zeros(3), rng, sampler)
+                for _ in range(100)
+            )
+        ]
+        # C_n of a C20 chain at 413 K is about 5 (rotational isomeric state
+        # theory); a uniform walk over every torsion would give about 2.
+        assert 4.3 < np.mean(ree2) / (19 * 0.154**2) < 6.0
+
+    def test_clash_window(self, sampler):
+        nx = pytest.importorskip("networkx")
+        ps = "CC(c1ccccc1)CC(c1ccccc1)CC(c1ccccc1)CC(c1ccccc1)C"
+        chain = Molecule(num_mols=1, smiles=ps).molecules[0]
+        terms = sampler._topology(chain)[1]
+        heavy = terms["heavy"]
+        graph = nx.Graph(
+            [(i, j) for i, j in terms["bonds"] if heavy[i] and heavy[j]]
+        )
+        bonds_apart = dict(nx.all_pairs_shortest_path_length(graph))
+        junctions = chain_junctions(
+            terms["units"], list(terms["bonds"]), len(heavy)
+        )
+        placed = set(terms["units"][0]) | {
+            b for j in junctions if j.parent == 0 for _, b in j.bonds
+        }
+        everywhere = _plan(terms, junctions, 4, None)
+        for j, step, far in zip(
+            junctions, _plan(terms, junctions, 4, 6), everywhere
+        ):
+            np.testing.assert_array_equal(far.nearby, np.flatnonzero(heavy))
+            moved = j.moved[step.heavy_moved]
+            expect = {
+                q
+                for q in placed - set(j.moved)
+                if heavy[q] and min(bonds_apart[m][q] for m in moved) <= 6
+            }
+            assert set(step.nearby) == expect
+            placed |= set(j.moved)
+        new = random_chain_conformation(
+            chain, np.zeros(3), np.random.default_rng(0), sampler
+        )
+        assert np.all(np.isfinite(new))
+
+    def test_relax_converges(self, sampler):
+        chain = PolyEthylene(lengths=100, num_mols=1).molecules[0]
+        terms = sampler._topology(chain)[1]
+        relaxed = relax_bonded(np.asarray(chain.xyz, dtype=float), terms)
+        # Mid-chain C-C-C angles reach the force field's equilibrium.
+        carbon = [p.element.symbol == "C" for p in chain.particles()]
+        middle = len(carbon) // 4, 3 * len(carbon) // 4
+        error = [
+            np.degrees(_angle(relaxed, ijk) - theta0)
+            for ijk, (_, theta0) in terms["angles"].items()
+            if all(carbon[i] and middle[0] < i < middle[1] for i in ijk)
+        ]
+        assert len(error) > 50
+        assert np.max(np.abs(error)) < 0.3
+
+    def test_tight_contact_check(self):
+        # Every bond is a dead end; each takes its least bad angle at once.
+        pytest.importorskip("openff.interchange")
+        sampler = LocalBoltzmannSampler(r_min=0.6)
+        chain = PolyEthylene(lengths=10, num_mols=1).molecules[0]
+        start = time.perf_counter()
+        new = random_chain_conformation(
+            chain, np.zeros(3), np.random.default_rng(0), sampler
+        )
+        assert np.all(np.isfinite(new))
+        assert len(sampler.accepted[-1]) > 0
+        assert time.perf_counter() - start < 60
+
+
+class TestLocalBoltzmannSamplerOPLS:
+    @pytest.fixture
+    def no_openff(self, monkeypatch):
+        """Make every openff import fail."""
+        for name in [m for m in sys.modules if m.startswith("openff")]:
+            monkeypatch.setitem(sys.modules, name, None)
+        for name in ("openff", "openff.toolkit", "openff.interchange"):
+            monkeypatch.setitem(sys.modules, name, None)
+
+    def test_without_openff(self, no_openff):
+        with pytest.raises(ImportError, match="OPLS_AA"):
+            LocalBoltzmannSampler()
+        sampler = LocalBoltzmannSampler(force_field=OPLS_AA())
+        assert LocalBoltzmannSampler(force_field="oplsaa").force_field.name
+        ps = "CC(c1ccccc1)CC(c1ccccc1)CC(c1ccccc1)C"
+        chain = Molecule(num_mols=1, smiles=ps).molecules[0]
+        xyz, units = sampler.template(chain)
+        assert len(units) == 8
+        new = random_chain_conformation(
+            chain, np.zeros(3), np.random.default_rng(0), sampler
+        )
+        for before, after in zip(_geometry(chain, xyz), _geometry(chain, new)):
+            np.testing.assert_allclose(after, before, atol=1e-6)
+        built = _geometry(chain, chain.xyz)
+        assert np.all(np.sign(built[2]) == np.sign(_geometry(chain, new)[2]))
+        chain = PolyEthylene(lengths=5, num_mols=1).molecules[0]
+        x = random_chain_conformation(
+            chain, np.zeros(3), np.random.default_rng(1), sampler
+        )
+        assert np.all(np.isfinite(x))
+
+    def test_torsion_and_lj_terms(self):
+        sampler = LocalBoltzmannSampler(force_field=OPLS_AA())
+        chain = PolyEthylene(lengths=3, num_mols=1).molecules[0]  # hexane
+        terms = sampler._topology(chain)[1]
+        carbon = [p.element.symbol == "C" for p in chain.particles()]
+        # OPLS-AA Ryckaert-Bellemans coefficients (kJ/mol), psi = phi - pi
+        rb = {True: (2.9288, -1.4644, 0.2092, -1.6736)}  # CT-CT-CT-CT
+        rb[False] = (0.6276, 1.8828, 0.0, -2.5104)  # with an HC end
+        phi = np.linspace(-np.pi, np.pi, 37)
+        for quad, values in terms["dihedrals"].items():
+            mine = sum(k * (1 + np.cos(n * phi - p)) for k, n, p in values)
+            c = rb[all(carbon[i] for i in quad)]
+            ref = sum(c[m] * np.cos(phi - np.pi) ** m for m in range(4))
+            np.testing.assert_allclose(mine - mine[0], ref - ref[0], atol=1e-9)
+        assert terms["scale14"] == 0.5 and terms["combining"] == "geometric"
+        sigma = {True: 0.35, False: 0.25}
+        eps = {True: 0.276144, False: 0.125520}
+        junctions = chain_junctions(
+            terms["units"], list(terms["bonds"]), len(carbon)
+        )
+        for j, step in zip(junctions, _plan(terms, junctions, 4)):
+            rows, cols = j.moved[step.pair_moved], step.pair_placed
+            si = np.array([sigma[carbon[i]] for i in rows])
+            sj = np.array([sigma[carbon[i]] for i in cols])
+            np.testing.assert_allclose(step.pair_sigma2, si * sj)
+            ei = np.array([eps[carbon[i]] for i in rows])
+            ej = np.array([eps[carbon[i]] for i in cols])
+            assert np.all(
+                np.isclose(step.pair_eps, np.sqrt(ei * ej))
+                | np.isclose(step.pair_eps, 0.5 * np.sqrt(ei * ej))
+            )
+
+
+class TestLeastBad:
+    @pytest.fixture(autouse=True)
+    def openff(self):
+        pytest.importorskip("openff.interchange")
+
+    def test_crowded_chain(self):
+        # PMMA: every torsion at one of the first junctions brings two heavy
+        # atoms closer than r_min.
+        pmma = Polymer(
+            lengths=5,
+            num_mols=3,
+            smiles="CC(C)(C(=O)OC)",
+            bond_indices=[7, 10],
+            bond_length=0.154,
+            bond_orientation=[None, None],
+        )
+        chain = pmma.molecules[0]
+        sampler = LocalBoltzmannSampler()
+        xyz, _ = sampler.template(chain)
+        new = random_chain_conformation(
+            chain, np.zeros(3), np.random.default_rng(0), sampler
+        )
+        for before, after in zip(_geometry(chain, xyz), _geometry(chain, new)):
+            np.testing.assert_allclose(after, before, atol=1e-6)
+        assert 0 < min(sampler.accepted[-1]) < sampler.r_min
+        with pytest.warns(UserWarning, match="dead ends") as record:
+            AtomisticRandomWalk(
+                pmma, density=0.5, seed=1, torsion_sampler=sampler
+            )
+        assert sum("dead ends" in str(w.message) for w in record) == 1
+
+    def test_ring_spinning_on_its_axis(self):
+        # Turning a phenyl about the bond to its ring spins the ring about
+        # its own axis; if a placed bond lies across it, every angle pierces
+        # it. That bond takes its least bad angle instead of restarting the
+        # chain, so a long polystyrene chain is placed at the first attempt.
+        chains = Polymer(
+            lengths=50,
+            num_mols=1,
+            smiles="CCc1ccccc1",
+            bond_indices=[8, 11],
+            bond_length=0.154,
+            bond_orientation=[None, None],
+        )
+        sampler = LocalBoltzmannSampler(max_restarts=0)
+        new = random_chain_conformation(  # this seed meets such a bond
+            chains.molecules[0], np.zeros(3), np.random.default_rng(3), sampler
+        )
+        assert np.all(np.isfinite(new))
+
+    def test_ring_piercing_check_off(self, monkeypatch):
+        from flowermd.internal import local_boltzmann
+
+        def fail(*args, **kwargs):
+            raise AssertionError("the ring-piercing check ran")
+
+        monkeypatch.setattr(local_boltzmann, "_pierces_ring", fail)
+        ps = "C" + "C(c1ccccc1)C" * 4 + "C"
+        chain = Molecule(num_mols=1, smiles=ps).molecules[0]
+        sampler = LocalBoltzmannSampler(reject_ring_piercing=False)
+        x = random_chain_conformation(
+            chain, np.zeros(3), np.random.default_rng(0), sampler
+        )
+        assert np.all(np.isfinite(x))
+
+    def test_no_pierced_rings(self):
+        ps = "C" + "C(c1ccccc1)C" * 12 + "C"
+        chain = Molecule(num_mols=1, smiles=ps).molecules[0]
+        sampler = LocalBoltzmannSampler(clash_window=4)
+        index = {p: i for i, p in enumerate(chain.particles())}
+        frame = gsd.hoomd.Frame()
+        frame.particles.N = chain.n_particles
+        frame.configuration.box = [100, 100, 100, 0, 0, 0]
+        frame.bonds.group = [(index[a], index[b]) for a, b in chain.bonds()]
+        frame.bonds.N = len(frame.bonds.group)
+        rng = np.random.default_rng(0)
+        for _ in range(5):
+            frame.particles.position = random_chain_conformation(
+                chain, np.zeros(3), rng, sampler
+            )
+            assert find_ring_piercings(frame) == []

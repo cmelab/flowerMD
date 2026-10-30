@@ -3,6 +3,7 @@
 import pickle
 import warnings
 from abc import ABC, abstractmethod
+from contextlib import contextmanager
 from typing import List
 
 import gsd
@@ -10,6 +11,7 @@ import mbuild as mb
 import numpy as np
 import unyt as u
 from gmso.external import from_mbuild, to_gsd_snapshot, to_hoomd_forcefield
+from gmso.external.convert_hoomd import get_cell_nlist
 from gmso.parameterization import apply
 
 from flowermd.base.forcefield import BaseHOOMDForcefield, BaseXMLForcefield
@@ -44,7 +46,7 @@ class System(ABC):
     ----------
     molecules : flowermd.Molecule or a list of Molecule objects, required
         The molecules to be placed in the system.
-    base_units : dict, default {}
+    base_units : dict, optional
         Dictionary of base units to use for scaling.
         Dictionary keys are "length", "mass", and "energy". Values should be an
         unyt array of the desired base unit.
@@ -69,14 +71,17 @@ class System(ABC):
     def __init__(
         self,
         molecules,
-        base_units=dict(),
+        base_units: dict = None,
         **kwargs,
     ):
         self._molecules = check_return_iterable(molecules)
-        self.identify_connections = self._molecules[0].identify_connections
+        self.identify_connections = getattr(
+            self._molecules[0], "identify_connections", True
+        )
         self.all_molecules = []
         self.gmso_system = None
-        self._reference_values = base_units
+        # a copy: System fills in the reference values it derives
+        self._reference_values = (base_units or {}).copy()
         self._hoomd_snapshot = None
         self._hoomd_forcefield = []
         self._gmso_forcefields_dict = dict()
@@ -113,11 +118,18 @@ class System(ABC):
             elif isinstance(mol_item, mb.Compound):
                 mol_item.name = str(self.n_mol_types)
                 self.all_molecules.append(mol_item)
+                self._mol_type_idx.extend(
+                    [self.n_mol_types] * mol_item.n_particles
+                )
+                self.n_mol_types += 1
             elif isinstance(mol_item, List):
                 for sub_mol in mol_item:
                     if isinstance(sub_mol, mb.Compound):
                         sub_mol.name = str(self.n_mol_types)
                         self.all_molecules.append(sub_mol)
+                        self._mol_type_idx.extend(
+                            [self.n_mol_types] * sub_mol.n_particles
+                        )
                     else:
                         raise MoleculeLoadError(
                             msg=f"Unsupported compound type {type(sub_mol)}. "
@@ -418,17 +430,18 @@ class System(ABC):
     def _create_hoomd_forcefield(self, r_cut, kT, nlist, pppm_kwargs):
         """Create a list of HOOMD forces."""
         force_list = []
-        ff, refs = to_hoomd_forcefield(
-            top=self.gmso_system,
-            r_cut=r_cut,
-            kT=kT,
-            nlist=nlist,
-            pppm_kwargs=pppm_kwargs,
-            auto_scale=False,
-            base_units=(
-                self._reference_values if self._reference_values else None
-            ),
-        )
+        with _check_each_potential_once():
+            ff, refs = to_hoomd_forcefield(
+                top=self.gmso_system,
+                r_cut=r_cut,
+                kT=kT,
+                nlist=nlist,
+                pppm_kwargs=pppm_kwargs,
+                auto_scale=False,
+                base_units=(
+                    self._reference_values if self._reference_values else None
+                ),
+            )
         for force in ff:
             force_list.extend(ff[force])
         self._ff_refs = self._reference_values.copy()
@@ -545,7 +558,8 @@ class System(ABC):
         nlist : hoomd.md.nlist.Neighborlist, default None
             Neighborlist instance for simulation cell.
             If None, a cell nlist will be created by default using the
-            exclusions set by the foyer/GMSO forcefield.
+            exclusions set by the foyer/GMSO forcefield, and the
+            forcefield's ``nlist_buffer`` if it has one.
             see gmso.externl.convert_hoomd.py
         speedup_by_molgraph: bool, optional, default=False
             A flag to determine whether or not to search the system for repeated disconnected
@@ -574,6 +588,14 @@ class System(ABC):
             speedup_by_moltag=speedup_by_moltag,
             speedup_by_molgraph=speedup_by_molgraph,
         )
+        # GMSO keeps each force field's 1-4 scaling per molecule but builds
+        # the snapshot's 1-4 pair lists, in O(N^2) time, from the global
+        # scaling (0.5 unless set). Without 1-4 pairs in any molecule (as in
+        # the all-atom DPD force fields), set the global scaling to match.
+        per_molecule = list(self.gmso_system.molecule_scaling_factors.values())
+        if per_molecule and not np.any(per_molecule):
+            self.gmso_system.set_lj_scale([0.0, 0.0, 0.0])
+            self.gmso_system.set_electrostatics_scale([0.0, 0.0, 0.0])
 
         if remove_charges:
             for site in self.gmso_system.sites:
@@ -582,6 +604,18 @@ class System(ABC):
         if scale_charges and not remove_charges:
             self._scale_charges()
 
+        site_params = self.gmso_system.sites[0].atom_type.parameters
+        if not self._reference_values and "epsilon" not in site_params:
+            # No Lennard-Jones (e.g. DPD only): nothing to infer units from,
+            # so use the force field's own units.
+            if self.auto_scale:
+                warnings.warn(
+                    "auto_scale needs Lennard-Jones atom types; using units "
+                    "of kJ/mol, nm and amu instead."
+                )
+            self._reference_values.update(
+                energy=1 * u.Unit("kJ/mol"), length=1 * u.nm, mass=1 * u.amu
+            )
         if not self._reference_values:
             epsilons = [
                 s.atom_type.parameters["epsilon"]
@@ -607,6 +641,9 @@ class System(ABC):
         if remove_hydrogens:
             self.remove_hydrogens()
 
+        buffer = getattr(force_field, "nlist_buffer", None)
+        if nlist is None and buffer is not None:
+            nlist = get_cell_nlist(self.gmso_system, buffer=buffer)
         pppm_kwargs = {"resolution": pppm_resolution, "order": pppm_order}
         self._ff_kwargs = {
             "r_cut": r_cut,
@@ -839,3 +876,39 @@ class Lattice(System):
             (system.box.Lx / 2, system.box.Ly / 2, system.box.Lz / 2)
         )
         return system
+
+
+@contextmanager
+def _check_each_potential_once():
+    """Check each distinct potential once while GMSO converts a topology.
+
+    GMSO gives every bond, angle and dihedral its own copy of its potential
+    and checks each copy against HOOMD's templates, printing and simplifying
+    its sympy expression every time, which takes minutes for systems of a
+    few 10^4 atoms. Copies with the same expression, variables and
+    parameter units get the same answer.
+    """
+    from gmso.utils import compatibility
+
+    check, answers = compatibility._check_single_potential, {}
+
+    def check_once(potential, accepted):
+        key = (
+            potential.expression,
+            frozenset(potential.independent_variables),
+            tuple(
+                (name, value.units.dimensions)
+                for name, value in sorted(potential.parameters.items())
+            ),
+            id(accepted),
+        )
+        if key not in answers:
+            match = check(potential, accepted)
+            answers[key] = next(iter(match.values())) if match else None
+        return {potential: answers[key]} if answers[key] else False
+
+    compatibility._check_single_potential = check_once
+    try:
+        yield
+    finally:
+        compatibility._check_single_potential = check

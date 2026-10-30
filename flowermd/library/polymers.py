@@ -25,13 +25,21 @@ class PolyEthylene(Polymer):
         parameter with polydisperse systems, or other
         mixtures. This helps improve performance
         for large systems.
+    bond_length : float, default 0.154
+        Length (nm) of the C-C bonds between repeat units.
 
     """
 
-    def __init__(self, lengths, num_mols, name="polyethylene", **kwargs):
+    def __init__(
+        self,
+        lengths,
+        num_mols,
+        name="polyethylene",
+        bond_length=0.154,
+        **kwargs,
+    ):
         smiles = "CC"
         bond_indices = [2, 6]
-        bond_length = 0.145
         bond_orientation = [None, None]
         super(PolyEthylene, self).__init__(
             lengths=lengths,

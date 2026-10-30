@@ -2,6 +2,7 @@ import os
 
 import gmso
 import hoomd
+import mbuild as mb
 import numpy as np
 import pytest
 import unyt as u
@@ -1018,3 +1019,78 @@ class TestSystem(BaseTest):
         benzene_mol = benzene_molecule(n_mols=100)
         system = Pack(molecules=[benzene_mol], density=0.8 * u.g / u.cm**3)
         assert system.n_particles == 100 * 12
+
+
+class TestSystemInputs(BaseTest):
+    def test_compound_input(self):
+        from flowermd.base import Molecule
+        from flowermd.library import mbuildSystem
+
+        compound = mb.Compound(Molecule(num_mols=2, smiles="CCCC").molecules)
+        compound.box = mb.Box([3, 3, 3])
+        system = mbuildSystem(compound)
+        assert system.n_mol_types == 1
+        assert len(system._mol_type_idx) == system.n_particles == 28
+
+    def test_base_units_not_shared(self, benzene_molecule):
+        units = {"length": 1 * u.nm}
+        system = Lattice(
+            molecules=benzene_molecule(n_mols=4),
+            x=1,
+            y=1,
+            n=2,
+            base_units=units,
+        )
+        system.reference_energy = 1 * u.Unit("kJ/mol")
+        assert units == {"length": 1 * u.nm}
+
+    @pytest.mark.parametrize("auto_scale", [True, False])
+    def test_no_lennard_jones_units(self, auto_scale):
+        from flowermd.base import Molecule
+        from flowermd.library import UFF_DPD
+
+        system = Lattice(
+            molecules=Molecule(num_mols=2, smiles="CC"), x=1.5, y=1.5, n=1
+        )
+        ff = UFF_DPD(system)
+        if auto_scale:
+            with pytest.warns(UserWarning, match="auto_scale"):
+                system.apply_forcefield(
+                    r_cut=0.35, force_field=ff, kT=1.0, auto_scale=True
+                )
+        else:
+            system.apply_forcefield(r_cut=0.35, force_field=ff, kT=1.0)
+        assert system.reference_length == 1 * u.nm
+        assert system.reference_energy == 1 * u.Unit("kJ/mol")
+        assert system.reference_mass == 1 * u.amu
+
+    def test_snapshot_wraps_with_images(self):
+        from flowermd.library import (
+            AtomisticRandomWalk,
+            PolyEthylene,
+            UniformTorsion,
+        )
+
+        system = AtomisticRandomWalk(
+            PolyEthylene(lengths=6, num_mols=4),
+            density=0.85,
+            seed=3,
+            torsion_sampler=UniformTorsion(),
+        )
+        snap = system.hoomd_snapshot
+        box = snap.configuration.box[:3]
+        assert np.all(np.abs(snap.particles.position) <= box / 2 + 1e-6)
+        unwrapped = snap.particles.position + snap.particles.image * box
+        a, b = np.asarray(snap.bonds.group).T
+        lengths = np.linalg.norm(unwrapped[a] - unwrapped[b], axis=1)
+        assert lengths.max() < 0.16
+
+    def test_other_snapshots_have_no_images(self, benzene_molecule):
+        # Only AtomisticRandomWalk wraps; other systems keep GMSO's snapshot.
+        system = Lattice(
+            molecules=benzene_molecule(n_mols=2), x=1.5, y=1.5, n=1
+        )
+        system.apply_forcefield(
+            r_cut=2.5, force_field=OPLS_AA(), auto_scale=True
+        )
+        assert system.hoomd_snapshot.particles.image is None

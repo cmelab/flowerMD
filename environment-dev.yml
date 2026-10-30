@@ -1,4 +1,4 @@
-name: flowermd-dev-test
+name: flowermd-dev
 channels:
   - conda-forge
 dependencies:
@@ -9,12 +9,19 @@ dependencies:
   - hoomd>=5.0,!=5.3.0
   - numpy >=2.0
   - openbabel >=3
+  - openmm
+  - openff-forcefields
+  - openff-interchange-base
+  - openff-toolkit-base
   - pip
   - pre-commit
   - py3Dmol
   - pytest
   - pytest-cov
+  - rdkit
+  - scipy >=1.15
   - nbmake
+  - networkx
   - python >=3.11, <3.14
   - fresnel >=0.13.5
   - cmeutils >=1.3

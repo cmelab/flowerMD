@@ -575,10 +575,15 @@ class Polymer(Molecule):
         return chain
 
     def _generate(self):
+        # Polymer's own builder gives identical chains of one length, so build
+        # one and copy it; subclasses may build each chain differently.
+        copy = type(self)._build is Polymer._build
         for idx, length in enumerate(self.lengths):
+            chain = self._build(length=length)
             for i in range(self.n_mols[idx]):
-                mol = self._build(length=length)
-                self._molecules.append(mol)
+                if i:
+                    chain = mb.clone(chain) if copy else self._build(length)
+                self._molecules.append(chain)
 
 
 class CoPolymer(Molecule):
