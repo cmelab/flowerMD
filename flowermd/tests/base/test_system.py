@@ -8,7 +8,7 @@ import unyt as u
 from cmeutils.geometry import get_backbone_vector
 from unyt import Unit
 
-from flowermd import Lattice, Pack
+from flowermd import Lattice, Pack, Simulation
 from flowermd.internal.exceptions import ForceFieldError, ReferenceUnitError
 from flowermd.library import (
     OPLS_AA,
@@ -19,7 +19,18 @@ from flowermd.library import (
     LJChain,
 )
 from flowermd.tests import BaseTest
+from flowermd.utils import gmso_positions, mbuild_positions
 
+def run_short_sim(system, tmp_path, n_steps=100):
+    """Run a short NVT simulation and return the final HOOMD snapshot."""
+    sim = Simulation.from_system(
+        system,
+        dt=0.0001,
+        gsd_file_name=str(tmp_path / "trajectory.gsd"),
+        log_file_name=str(tmp_path / "log.txt"),
+    )
+    sim.run_NVT(n_steps=n_steps, kT=1.0, tau_kt=0.01)
+    return sim.state.get_snapshot()
 
 class TestSystem(BaseTest):
     def test_single_mol_type(self, benzene_molecule):
@@ -1018,3 +1029,72 @@ class TestSystem(BaseTest):
         benzene_mol = benzene_molecule(n_mols=100)
         system = Pack(molecules=[benzene_mol], density=0.8 * u.g / u.cm**3)
         assert system.n_particles == 100 * 12
+
+    def test_positions_updater(self, polyethylene):
+        polyethylene = polyethylene(lengths=5, num_mols=3)
+        system = Pack(molecules=[polyethylene], density=1.0)
+        L = system.gmso_system.box.lengths.to_value(u.nm)
+        new_pos = np.random.default_rng(42).uniform(
+            -L / 2, L / 2, (system.n_particles, 3)
+        )
+        system.update_positions(run_short_sim(system,tmp_path="test.gsd"))
+        assert np.allclose(mbuild_positions(system.all_molecules), new_pos)
+        assert np.allclose(gmso_positions(system.gmso_system), new_pos)
+
+    @pytest.mark.parametrize(
+        "molgraph, moltag", [(False, False), (True, False), (False, True)]
+    )
+    def test_molecule_order_ff_kwargs(self, polyethylene, molgraph, moltag):
+        polyethylene = polyethylene(lengths=5, num_mols=3)
+        system = Pack(molecules=[polyethylene], density=1.0)
+        reference = system.index_gmso_sites()
+        system.apply_forcefield(
+            r_cut=2.5,
+            force_field=[OPLS_AA()],
+            auto_scale=False,
+            speedup_by_molgraph=molgraph,
+            speedup_by_moltag=moltag,
+        )
+        assert system.verify_mol_id_order(reference)
+
+    def test_remove_typing(self, polyethylene):
+        polyethylene = polyethylene(lengths=5, num_mols=3)
+        system = Pack(molecules=[polyethylene], density=1.0)
+        system.apply_forcefield(
+            r_cut=2.5, force_field=[OPLS_AA()], auto_scale=False
+        )
+        assert system.gmso_system.is_typed()
+        system.remove_typing()
+        assert not system.gmso_system.is_typed()
+        system.apply_forcefield(
+            r_cut=2.5, force_field=[OPLS_AA()], auto_scale=False
+        )
+        assert system.gmso_system.is_typed()
+
+    def test_pbcs(self, polyethylene):
+        check = Pack._check_wrapped_positions
+        box = [10.0, 10.0, 10.0]
+        assert check(positions=[[-5.0, 0, 0]], box=box)  # -L/2 is inside
+        assert not check(positions=[[5.0, 0, 0]], box=box)  # +L/2 is outside
+
+        polyethylene = polyethylene(lengths=5, num_mols=3)
+        system = Pack(molecules=[polyethylene], density=1.0)
+        system.apply_forcefield(
+            r_cut=2.5, force_field=[OPLS_AA()], auto_scale=False
+        )
+        snap = system.hoomd_snapshot
+        bonds = np.asarray(snap.bonds.group)
+        L = np.asarray(snap.configuration.box[:3])
+
+        # bond lengths before the update (unwrapped mbuild/gmso positions)
+        before = gmso_positions(system.gmso_system)
+        expected = np.linalg.norm(before[bonds[:, 1]] - before[bonds[:, 0]], axis=1)
+
+        system.update_positions(snap)
+        after = gmso_positions(system.gmso_system)
+        dr = after[bonds[:, 1]] - after[bonds[:, 0]]
+        dr -= L * np.round(dr / L)  # minimum image
+        assert np.allclose(np.linalg.norm(dr, axis=1), expected, atol=1e-3)
+
+
+    

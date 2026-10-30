@@ -151,3 +151,33 @@ def _calculate_box_length(density, mass=None, n_beads=None, fixed_L=None):
         if fixed_L.size == 1:  # L is units of area
             L = L ** (1 / 2)
     return L
+
+def mbuild_positions(molecules):
+    """Concatenated (N, 3) positions of a list of mb.Compound molecules, in order."""
+    return np.concatenate([np.atleast_2d(mol.xyz) for mol in molecules])
+
+
+def gmso_positions(top, unit=u.nm):
+    """(N, 3) positions of a gmso.Topology's sites, in topology.sites order."""
+    return np.array([site.position.to_value(unit) for site in top.sites])
+
+
+def label_sites(top):
+    """Write each site's original index into gmso.Site.label and return the label order."""
+    for i, site in enumerate(top.sites):
+        site.label = f"{site.name}__idx{i:03d}"
+    return site_order(top)
+
+
+def site_order(top):
+    """List of site labels, in topology.sites order."""
+    return [site.label for site in top.sites]
+
+
+def first_order_diff(baseline, other):
+    """Index of the first difference between two orderings, or None if they're identical."""
+    if list(baseline) == list(other):
+        return None
+    i = next((k for k, (a, b) in enumerate(zip(baseline, other)) if a != b), None)
+    return min(len(baseline), len(other)) if i is None else i
+

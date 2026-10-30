@@ -19,6 +19,8 @@ from flowermd.internal.exceptions import ForceFieldError, MoleculeLoadError
 from flowermd.utils import (
     get_target_box_mass_density,
     get_target_box_number_density,
+    label_sites,
+    site_order
 )
 
 
@@ -408,29 +410,6 @@ class System(ABC):
         with gsd.hoomd.open(file_name, "w") as traj:
             traj.append(self.hoomd_snapshot)
 
-    def update_system_positions(self, snapshot):
-        """Push positions from a HOOMD snapshot (or a raw positions array) back
-        onto each mb.Compound in ``system.all_molecules``, vectorized per-molecule."""
-
-        molecules = self.all_molecules
-        positions = snapshot.particles.position
-
-        if len(molecules) == 1:
-            molecules[0].xyz = positions
-            return
-
-        n_particles = np.array([mol.n_particles for mol in molecules])
-        if n_particles.sum() != positions.shape[0]:
-            raise ValueError(
-                f"Total particle count mismatch: molecules have "
-                f"{n_particles.sum()} beads, positions array has {pos.shape[0]}."
-            )
-
-        bounds = np.concatenate([[0], np.cumsum(n_particles)])
-
-        for mol, start, end in zip(molecules, bounds[:-1], bounds[1:]):
-            mol.xyz = positions[start:end]
-
     def _convert_to_gmso(self):
         """Convert the mbuild system to a gmso system."""
         topology = from_mbuild(self.system)
@@ -641,6 +620,109 @@ class System(ABC):
             r_cut=r_cut, kT=kT, nlist=nlist, pppm_kwargs=pppm_kwargs
         )
         self._hoomd_snapshot = self._create_hoomd_snapshot()
+
+    def update_positions(self, snapshot):
+        """Push wrapped positions from a HOOMD snapshot onto system.all_molecules
+        (mb.Compound.xyz) and system.gmso_system (gmso.Site.position).
+        """
+        positions = np.asarray(snapshot.particles.position, dtype=float)
+        if not self._check_wrapped_positions(positions, snapshot.configuration.box):
+            raise ValueError(
+                "Snapshot positions are not wrapped into the primary box image [-L/2, L/2)."
+            )
+
+        molecules = self.all_molecules
+        n_particles = np.array([mol.n_particles for mol in molecules])
+        if n_particles.sum() != positions.shape[0]:
+            raise ValueError(
+                f"Total particle count mismatch: molecules have "
+                f"{n_particles.sum()} beads, positions array has {positions.shape[0]}."
+            )
+
+        self._update_gmso_positions(positions=positions)
+        bounds = np.concatenate([[0], np.cumsum(n_particles)])
+        for mol, start, end in zip(molecules, bounds[:-1], bounds[1:]):
+            mol.xyz = positions[start:end]
+
+    def _update_gmso_positions(self, positions, unit=u.nm):
+        """Vectorized position update for a gmso.Topology."""
+        gmso_system = self.gmso_system
+        sites = list(gmso_system.sites)
+        if len(sites) != positions.shape[0]:
+            raise ValueError(
+                f"Site count mismatch: topology has {len(sites)} sites, "
+                f"positions array has {positions.shape[0]}."
+            )
+        for site, pos in zip(sites, positions):
+            site.position = pos * unit   # GMSO Site.position expects a unyt quantity
+    
+    @staticmethod
+    def _box_params(self,box):
+        """Get (Lx, Ly, Lz, xy, xz, yz) from a hoomd.Box, gsd/freud-style box, or array."""
+        if hasattr(box, "Lx"):  # hoomd.Box or freud.box.Box
+            return (box.Lx, box.Ly, box.Lz, box.xy, box.xz, box.yz)
+        b = np.asarray(box, dtype=float).ravel()
+        if b.size == 3:  # orthorhombic [Lx, Ly, Lz]
+            return (*b, 0.0, 0.0, 0.0)
+        if b.size == 6:  # gsd convention [Lx, Ly, Lz, xy, xz, yz]
+            return tuple(b)
+        raise ValueError("box must be a Box object, [Lx,Ly,Lz], or [Lx,Ly,Lz,xy,xz,yz]")
+
+    @staticmethod
+    def _check_wrapped_positions(self,positions, box, tol=0.0):
+        """
+        Check that every position lies in HOOMD's primary box image.
+    
+        """
+        pos = np.atleast_2d(np.asarray(positions, dtype=float))
+        if pos.shape[1] != 3:
+            raise ValueError("positions must have shape (N, 3)")
+    
+        Lx, Ly, Lz, xy, xz, yz = self._box_params(box)
+        x, y, z = pos.T
+    
+        s_x = (x - xy * y + (xy * yz - xz) * z) / Lx
+        s_y = (y - yz * z) / Ly
+    
+        def inside(s):
+            return np.all((s >= -0.5 - tol) & (s < 0.5 + tol))
+    
+        if Lz == 0:  # 2D: z must be 0
+            in_z = np.all(np.abs(z) <= tol)
+        else:
+            in_z = inside(z / Lz)
+    
+        return bool(inside(s_x) and inside(s_y) and in_z)
+
+    def remove_typing(self):
+        """Remove typing from gmso.apply so that another forcefield can be applied to the system."""
+
+        if self.gmso_system.is_typed():
+            top = self.gmso_system
+            for site in top.sites:
+                site.atom_type = None
+            for bond in top.bonds:
+                bond.bond_type = None
+            for angle in top.angles:
+                angle.angle_type = None
+            for dihedral in top.dihedrals:
+                dihedral.dihedral_type = None
+            for improper in top.impropers:
+                improper.improper_type = None
+            top.pairpotential_types.clear()
+            self._gmso_forcefields_dict = {}
+
+    def index_gmso_sites(self):
+        """Label each gmso site with its original index."""
+        return label_sites(self.gmso_system)
+
+    def site_order_array(self):
+        """Current order of gmso site labels."""
+        return site_order(self.gmso_system)
+
+    def verify_mol_id_order(self,reference_array):
+        """True if the gmso site order matches reference_array."""
+        return self.site_order_array() == list(reference_array)
 
     def visualize(self):
         """Visualize the system."""
