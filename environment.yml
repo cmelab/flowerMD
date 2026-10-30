@@ -13,6 +13,9 @@ dependencies:
   - numpy >=2.0
   - openbabel >=3
   - openmm
+  - openff-forcefields
+  - openff-interchange-base
+  - openff-toolkit-base
   - pip
   - py3Dmol
   - python >=3.11, <3.14

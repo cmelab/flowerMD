@@ -92,6 +92,20 @@ The steps:
    run. ``check_stereo=False`` and ``check_ring_piercing=False`` skip
    the checks.
 
+Handing the melt to a force field
+---------------------------------
+
+The relaxed coordinates are meant to be minimized and then simulated with a
+production force field. In our runs that is Sage 2.3.0 through OpenFF
+Interchange. Unwrap the positions first with the snapshot's image flags,
+because bonds must not cross the box. Sage 2.3.0 assigns partial charges
+with a graph neural network (NAGL), so building a Sage 2.3.0 system needs
+``openff-nagl`` and ``openff-nagl-models`` from conda-forge. FlowerMD does
+not install them, because NAGL depends on PyTorch: about 260 MB more to
+download on a CPU-only machine, and about 1 GB with CUDA. The placement and
+DPD stages never need charges (DPD has no electrostatics), so FlowerMD runs
+without NAGL.
+
 Defaults
 --------
 
