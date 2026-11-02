@@ -12,7 +12,16 @@ from .actions import (
 )
 from .base_types import HOOMDThermostats
 from .constraints import create_rigid_ellipsoid_chain, set_bond_constraints
-from .dpd_utils import compute_closest_rdf, random_walk_positions_from_bonds
+from .dpd_utils import (
+    EnergyStationarity,
+    compute_closest_rdf,
+    random_walk_positions_from_bonds,
+)
+from .stereochemistry import (
+    audit_stereochemistry,
+    find_ring_piercings,
+    protect_stereochemistry,
+)
 from .utils import (
     _calculate_box_length,
     get_target_box_mass_density,

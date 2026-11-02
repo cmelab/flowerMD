@@ -1,6 +1,8 @@
 """Examples for the Systems class."""
 
+import multiprocessing
 import warnings
+from concurrent.futures import ProcessPoolExecutor
 
 import mbuild as mb
 import numpy as np
@@ -8,9 +10,13 @@ import unyt as u
 from scipy.spatial.distance import pdist
 
 from flowermd.base.system import System
+from flowermd.internal.local_boltzmann import LocalBoltzmannSampler
+from flowermd.internal.placement import random_chain_conformation
+from flowermd.library.forcefields import UFF_DPD
 from flowermd.utils import (
     get_target_box_mass_density,
     get_target_box_number_density,
+    protect_stereochemistry,
     random_walk_positions_from_bonds,
 )
 
@@ -143,19 +149,151 @@ class RandomWalk(System):
         system = mb.Compound()
         system.add(self.all_molecules)
 
+        positions = self._walk_positions(system, box_lengths, rng)
+        system.xyz = positions
+        system.box = mb.box.Box(box_lengths)
+        return system
+
+    def _walk_positions(self, system, box_lengths, rng):
+        """Positions (nm) of every particle in `system`, one row each."""
         particles = list(system.particles())
         idx_map = {p: i for i, p in enumerate(particles)}
         bonds = np.array(
             [(idx_map[b[0]], idx_map[b[1]]) for b in system.bonds()], dtype=int
         )
 
-        positions = random_walk_positions_from_bonds(
+        return random_walk_positions_from_bonds(
             bonds=bonds,
             n_particles=len(particles),
             bond_length=self.bond_length,
             box_lengths=box_lengths[0],
             rng=rng,
         )
-        system.xyz = positions
-        system.box = mb.box.Box(box_lengths)
-        return system
+
+
+class AtomisticRandomWalk(RandomWalk):
+    """Places all-atom chains in the system as random coils.
+
+    Box sizing, seeding and assembly are `RandomWalk`'s; only the walk
+    differs. Each chain gets a random start and orientation and is grown
+    rigid unit by rigid unit, with the torsion of each free bond
+    chosen by `torsion_sampler` (see
+    `flowermd.internal.placement.random_chain_conformation`). Bond lengths,
+    bond angles and stereocenters stay as in the sampler's template, and
+    chains overlap freely; relax them with `flowermd.library.PhantomWalk`.
+    Positions are left unwrapped and wrapped with image flags in
+    `hoomd_snapshot`.
+
+    Parameters
+    ----------
+    molecules : flowermd.base.Polymer, required
+        All-atom chains built from repeat units.
+    density : float or unyt_quantity, required
+        The target density for the system (g/cm^3 or nm^-3).
+    torsion_sampler : object, optional
+        Defaults to `flowermd.library.LocalBoltzmannSampler` at its default
+        settings (Sage 2.3.0, 413 K), which turns every rotatable bond and
+        needs OpenFF. `flowermd.library.UniformTorsion` turns only the bonds
+        between repeat units and needs no force field, but its chain
+        dimensions depend on how the repeat unit was built.
+    n_workers : int, default 1
+        Processes that place chains in parallel (forked, so Linux and
+        macOS). Each chain has its own random stream, so a seed gives the
+        same system with any number of workers.
+    protect_stereo : bool, default True
+        When `apply_forcefield` applies `flowermd.library.UFF_DPD` or
+        `flowermd.library.OpenFF_DPD`, restrain every stereocenter with
+        `flowermd.utils.protect_stereochemistry`, so that DPD does not
+        invert it.
+    **kwargs
+        ``base_units``, ``seed`` and ``unique_molecules``, as in
+        `RandomWalk`.
+
+    """
+
+    def __init__(
+        self,
+        molecules,
+        density,
+        torsion_sampler=None,
+        n_workers=1,
+        protect_stereo=True,
+        **kwargs,
+    ):
+        self.torsion_sampler = torsion_sampler or LocalBoltzmannSampler()
+        self.n_workers = n_workers
+        self.protect_stereo = protect_stereo
+        super(AtomisticRandomWalk, self).__init__(
+            molecules=molecules,
+            bond_length=None,
+            density=density,
+            **kwargs,
+        )
+
+    def apply_forcefield(self, r_cut, force_field=None, **kwargs):
+        """Apply the force field as `System` does, then protect stereocenters.
+
+        See `System.apply_forcefield` for the parameters, and
+        `protect_stereo`.
+        """
+        super(AtomisticRandomWalk, self).apply_forcefield(
+            r_cut=r_cut, force_field=force_field, **kwargs
+        )
+        if self.protect_stereo and isinstance(force_field, UFF_DPD):
+            protect_stereochemistry(self)  # OpenFF_DPD is a UFF_DPD too
+
+    def _create_hoomd_snapshot(self):
+        """`System`'s snapshot, wrapped into the box with image flags.
+
+        The walk leaves chains unwrapped; the image flags let them be put
+        back together after the relaxation.
+        """
+        snap = super(AtomisticRandomWalk, self)._create_hoomd_snapshot()
+        box = np.asarray(snap.configuration.box[:3])
+        image = np.floor(snap.particles.position / box + 0.5)
+        snap.particles.position = snap.particles.position - image * box
+        snap.particles.image = image.astype(np.int32)
+        return snap
+
+    def _walk_positions(self, system, box_lengths, rng):
+        """Unwrapped positions of every atom, chain after chain (nm)."""
+        starts = rng.uniform(0, box_lengths, size=(len(self.all_molecules), 3))
+        accepted = getattr(self.torsion_sampler, "accepted", [])
+        before = len(accepted)
+        streams = rng.spawn(len(starts))  # one random stream per chain
+        _JOB["chains"] = (self.all_molecules, starts, streams)
+        _JOB["sampler"] = self.torsion_sampler
+        first, _ = _place_chain(0)  # also fills the sampler's caches
+        positions = [first]
+        if self.n_workers > 1:
+            context = multiprocessing.get_context("fork")
+            with ProcessPoolExecutor(
+                self.n_workers, mp_context=context
+            ) as pool:
+                placed = list(pool.map(_place_chain, range(1, len(starts))))
+            positions += [x for x, _ in placed]
+            accepted.extend(a for _, a in placed)  # recorded in the workers
+        else:
+            positions += [_place_chain(i)[0] for i in range(1, len(starts))]
+        closest = [d for chain in accepted[before:] for d in chain]
+        if closest:
+            warnings.warn(
+                f"{len(closest)} torsions in "
+                f"{sum(map(bool, accepted[before:]))} of {len(positions)} "
+                "chains were set at dead ends of the contact check, with "
+                "heavy atoms closer than r_min (closest "
+                f"{min(closest):.3f} nm); PhantomWalk relaxes them."
+            )
+        return np.concatenate(positions) - box_lengths / 2
+
+
+_JOB = {}  # the chains and sampler being placed, shared with forked workers
+
+
+def _place_chain(i):
+    """Positions of chain `i` of `_JOB`, and its dead-end contacts."""
+    chains, starts, streams = _JOB["chains"]
+    sampler = _JOB["sampler"]
+    x = random_chain_conformation(chains[i], starts[i], streams[i], sampler)
+    accepted = getattr(sampler, "accepted", None)
+    return x, accepted[-1] if accepted else []

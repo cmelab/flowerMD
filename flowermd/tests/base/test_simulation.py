@@ -239,6 +239,26 @@ class TestSimulate(BaseTest):
         sim.run_NVE(n_steps=500)
         assert isinstance(sim.method, hoomd.md.methods.ConstantVolume)
 
+    def test_run_FIRE_passes_fire_parameters(self, benzene_system):
+        sim = Simulation.from_system(benzene_system)
+        sim.run_FIRE(n_steps=10, dt=1e-4, finc_dt=1.2, alpha_start=0.2)
+        assert np.isclose(sim.integrator.dt, 1e-4)
+        assert np.isclose(sim.integrator.finc_dt, 1.2)
+        assert np.isclose(sim.integrator.alpha_start, 0.2)
+
+    def test_MD_after_run_FIRE(self, benzene_system):
+        sim = Simulation.from_system(benzene_system)
+        sim.run_NVE(n_steps=10)
+        energy_before = sum(f.energy for f in sim.forces)
+        sim.run_FIRE(n_steps=200, dt=1e-4, force_tol=1e-6)
+        assert sum(f.energy for f in sim.forces) <= energy_before
+        # the next MD run gets an MD integrator back, with every force
+        sim.run_NVT(n_steps=10, kT=1.0, tau_kt=sim.dt * 100)
+        assert type(sim.integrator) is hoomd.md.Integrator
+        assert sim.operations.integrator is sim.integrator
+        assert sim.method.thermostat is not None
+        assert len(sim.integrator.forces) == len(sim._forcefield)
+
     def test_displacement_cap(self, benzene_system):
         sim = Simulation.from_system(benzene_system)
         sim.run_displacement_cap(n_steps=500, maximum_displacement=1e-4)

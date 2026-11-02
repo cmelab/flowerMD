@@ -103,3 +103,61 @@ def random_walk_positions_from_bonds(
     positions %= box_lengths
     positions -= box_lengths / 2
     return positions
+
+
+class EnergyStationarity:
+    """Stop criterion: every force's energy has stopped changing.
+
+    Each call compares the per-particle energy of each force (averaged
+    over the samples taken since the last call) with the previous call, and
+    returns True once `consecutive` comparisons in a row changed by at most
+    `tol` (relative). A non-finite energy restarts the count.
+
+    Parameters
+    ----------
+    tol : float, default 0.02
+        Largest allowed relative change, ``|new - old| / max(|new|, |old|)``.
+    consecutive : int, default 2
+        Passing comparisons in a row required.
+    forces : list of hoomd.md.force.Force, optional
+        Forces to monitor. Defaults to every force of the simulation.
+
+    Notes
+    -----
+    ``history`` holds the energies compared at each call. Call `reset`
+    before reusing an instance for another run.
+
+    """
+
+    def __init__(self, tol=0.02, consecutive=2, forces=None):
+        if tol <= 0 or consecutive < 1:
+            raise ValueError("tol must be positive and consecutive >= 1.")
+        self.tol = tol
+        self.consecutive = consecutive
+        self.forces = forces
+        self.reset()
+
+    def reset(self):
+        """Forget the energies, samples and passes seen so far."""
+        self.history, self._samples, self._passes = [], [], 0
+
+    def sample(self, sim):
+        """Record the current energies; the next call averages them."""
+        n = sim.state.N_particles
+        forces = sim.forces if self.forces is None else self.forces
+        self._samples.append([force.energy / n for force in forces])
+
+    def __call__(self, sim):
+        """Return True when the energies are stationary."""
+        self.sample(sim)
+        current = np.mean(self._samples, axis=0)
+        self._samples = []
+        if not np.all(np.isfinite(current)):
+            self._passes = 0
+        elif self.history and np.all(np.isfinite(self.history[-1])):
+            old = self.history[-1]
+            scale = np.maximum(np.abs(current), np.abs(old))
+            change = np.abs(current - old) / np.maximum(scale, 1e-300)
+            self._passes = self._passes + 1 if np.all(change <= self.tol) else 0
+        self.history.append(current)
+        return self._passes >= self.consecutive

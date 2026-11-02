@@ -17,3 +17,4 @@ Library
    polymers
    forcefields
    simulations
+   all_atom_phantomwalk

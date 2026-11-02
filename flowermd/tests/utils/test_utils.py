@@ -1,3 +1,4 @@
+import mbuild as mb
 import numpy as np
 import pytest
 import unyt as u
@@ -14,6 +15,8 @@ from flowermd.utils import (
 class TestUtils:
     def test_check_return_iterable(self):
         assert check_return_iterable("test") == ["test"]
+        compound = mb.Compound(subcompounds=[mb.Compound(), mb.Compound()])
+        assert check_return_iterable(compound) == [compound]
         assert check_return_iterable(["test"]) == ["test"]
         assert check_return_iterable({"test": "test"}) == [{"test": "test"}]
         assert check_return_iterable(1) == [1]

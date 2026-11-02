@@ -1,3 +1,4 @@
+import mbuild as mb
 import unyt as u
 
 from flowermd.internal.exceptions import ReferenceUnitError
@@ -8,10 +9,8 @@ from flowermd.internal.exceptions import ReferenceUnitError
 
 
 def check_return_iterable(obj):
-    if isinstance(obj, dict):
-        return [obj]
-    if isinstance(obj, str):
-        return [obj]
+    if isinstance(obj, (dict, str, mb.Compound)):  # a Compound iterates
+        return [obj]  # over its children
     try:
         iter(obj)
         return obj
