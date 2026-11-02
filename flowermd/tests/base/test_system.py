@@ -1101,6 +1101,7 @@ class TestSystem(BaseTest):
         dr -= L * np.round(dr / L)  # minimum image
         assert np.allclose(np.linalg.norm(dr, axis=1), expected, atol=1e-3)
 
+
 class TestSystemInputs(BaseTest):
     def test_compound_input(self):
         from flowermd.base import Molecule
