@@ -698,7 +698,7 @@ class System(ABC):
             )  # GMSO Site.position expects a unyt quantity
 
     @staticmethod
-    def _box_params(self, box):
+    def _box_params(box):
         """Get (Lx, Ly, Lz, xy, xz, yz) from a hoomd.Box, gsd/freud-style box, or array."""
         if hasattr(box, "Lx"):  # hoomd.Box or freud.box.Box
             return (box.Lx, box.Ly, box.Lz, box.xy, box.xz, box.yz)
