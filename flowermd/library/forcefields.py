@@ -12,7 +12,12 @@ from flowermd.base import (
     BaseHOOMDForcefield,
     BaseXMLForcefield,
 )
-from flowermd.internal.all_atom_dpd import openff_terms, uff_terms
+from flowermd.internal.all_atom_dpd import (
+    gmso_terms,
+    openff_terms,
+    rdkit_to_mbuild,
+    uff_terms,
+)
 
 
 class GAFF(BaseXMLForcefield):
@@ -178,6 +183,50 @@ class OpenFF_DPD(BaseAllAtomDPDForcefield):
 
     def _terms(self, mol):
         return openff_terms(mol, self.force_field)
+
+
+class XML_DPD(BaseAllAtomDPDForcefield):
+    """All-atom DPD forcefield with the bonded terms of an XML forcefield.
+
+    Each distinct molecule is typed with `force_field` as
+    `flowermd.base.System` types it (GMSO, impropers ignored), and its
+    bonds, angles and dihedrals, with the atom types' Lennard-Jones well
+    depths, become the scaled bonded terms and DPD weights. The force
+    field's Lennard-Jones and Coulomb terms themselves are not used.
+    Ryckaert-Bellemans and OPLS dihedrals are rewritten as periodic ones.
+    See `flowermd.base.BaseAllAtomDPDForcefield` for the scaling, the pair
+    force and the units.
+
+    Parameters
+    ----------
+    system : flowermd.base.System or mbuild.Compound, required
+        All-atom system with elements and explicit hydrogens.
+    force_field : flowermd.base.BaseXMLForcefield or gmso.ForceField, required
+        The forcefield to take the terms from, such as
+        `flowermd.library.OPLS_AA` or ``FF_from_file("my_ff.xml")``.
+    file_path : str, default "xml_dpd.xml"
+        Where to write the XML file.
+    **kwargs
+        ``A``, ``gamma``, ``r_cut``, ``bonded_scale``, ``dihedral_scale``,
+        ``epsilon_weighting``, ``pair_overrides`` and ``nlist_buffer``, as
+        in `flowermd.base.BaseAllAtomDPDForcefield`.
+
+    Notes
+    -----
+    OPLS-AA gives some hydrogens (on O, N and S) a zero well depth. With
+    ``epsilon_weighting=True`` their pairs are weighted as if they had the
+    smallest nonzero well depth in the system; set their repulsion with
+    ``pair_overrides`` instead if needed.
+
+    """
+
+    def __init__(self, system, force_field, file_path="xml_dpd.xml", **kwargs):
+        self.force_field = getattr(force_field, "gmso_ff", force_field)
+        super(XML_DPD, self).__init__(system, file_path, **kwargs)
+        self.description = "All-atom DPD forcefield with XML bonded terms."
+
+    def _terms(self, mol):
+        return gmso_terms(rdkit_to_mbuild(mol), self.force_field)
 
 
 class KremerGrestBeadSpring(BaseHOOMDForcefield):

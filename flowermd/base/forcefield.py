@@ -34,7 +34,8 @@ class BaseAllAtomDPDForcefield(BaseXMLForcefield, ABC):
     terms, weights a DPD pair force by the well depths, writes the result
     as a GMSO XML file at `file_path` and loads it. Atom types are named
     ``_<element><nnn>``, and the particles of `system` are renamed to
-    match. See `flowermd.library.UFF_DPD` and `flowermd.library.OpenFF_DPD`.
+    match. See `flowermd.library.UFF_DPD`, `flowermd.library.OpenFF_DPD`
+    and `flowermd.library.XML_DPD`.
 
     Notes
     -----
@@ -83,7 +84,9 @@ class BaseAllAtomDPDForcefield(BaseXMLForcefield, ABC):
         into each other, which the soft repulsion cannot undo.
     epsilon_weighting : bool, default True
         Weight ``A`` and ``gamma`` of each pair by
-        ``sqrt(eps_i * eps_j) / eps_max``.
+        ``sqrt(eps_i * eps_j) / eps_max``. Atom types with a zero well
+        depth are weighted as if they had the smallest nonzero one, with
+        a warning.
     pair_overrides : dict, optional
         ``{(type_i, type_j): A_ij}`` replacing the repulsion of those pairs.
     nlist_buffer : float, default 0.04
