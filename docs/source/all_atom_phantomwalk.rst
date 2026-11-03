@@ -64,8 +64,9 @@ The steps:
    from FlowerMD's OPLS-AA instead, typed with GMSO as `System` types it
    (geometric combining rule, 1-4 Lennard-Jones halved); see the
    polyethylene caveat below.
-2. **Force field**: `UFF_DPD` (RDKit UFF) or `OpenFF_DPD` (a SMIRNOFF
-   force field, through OpenFF Interchange) writes a GMSO XML file for the
+2. **Force field**: `UFF_DPD` (RDKit UFF), `OpenFF_DPD` (a SMIRNOFF
+   force field, through OpenFF Interchange) or `XML_DPD` (any FlowerMD XML
+   force field, such as `OPLS_AA`) writes a GMSO XML file for the
    system: bonded terms scaled by ``bonded_scale`` (30; proper torsions by
    ``dihedral_scale``, also 30) and a DPD pair
    force whose ``A`` and ``gamma`` are weighted by
@@ -91,6 +92,47 @@ The steps:
    ring piercings (warning if there are any), and returns a record of the
    run. ``check_stereo=False`` and ``check_ring_piercing=False`` skip
    the checks.
+
+Using your own force field
+--------------------------
+
+`XML_DPD` takes the bonded terms and Lennard-Jones well depths from any
+FlowerMD XML force field, typed with GMSO as `System` types it:
+
+.. code-block:: python
+
+    from flowermd.library import FF_from_file, XML_DPD
+
+    ff = XML_DPD(system, force_field=FF_from_file("opls_pps.xml"))
+    system.apply_forcefield(r_cut=0.35, force_field=ff, kT=4.184)
+
+The force field's Lennard-Jones and Coulomb terms are not used: each atom
+type's well depth only weights the DPD pair force, and charges are dropped.
+Impropers are not typed, and Ryckaert-Bellemans and OPLS dihedrals are
+rewritten as periodic ones. Atom types with a zero well depth (OPLS-AA's
+hydrogens on O, N and S) are weighted as if they had the smallest nonzero
+one in the system, with a warning, since a zero weight would leave them with
+no repulsion and a friction that HOOMD rejects.
+
+For other parameter sources, subclass `flowermd.base.BaseAllAtomDPDForcefield`
+and implement ``_terms``, which returns the terms of one molecule (an RDKit
+molecule) in kJ/mol, nm and rad; the base class handles the scaling, the
+atom types, the DPD pair force and the XML file:
+
+.. code-block:: python
+
+    from flowermd.base import BaseAllAtomDPDForcefield
+    from flowermd.internal.all_atom_dpd import uff_terms
+
+    class SoftHydrogens(BaseAllAtomDPDForcefield):
+        def _terms(self, mol):
+            terms = uff_terms(mol)
+            for atom in mol.GetAtoms():
+                if atom.GetSymbol() == "H":
+                    terms["eps"][atom.GetIdx()] *= 0.5
+            return terms
+
+    ff = SoftHydrogens(system, file_path="soft_h.xml")
 
 Handing the melt to a force field
 ---------------------------------
@@ -185,6 +227,9 @@ validated default.
 
 API
 ---
+
+.. autoclass:: flowermd.base.BaseAllAtomDPDForcefield
+   :noindex:
 
 .. autoclass:: flowermd.library.AtomisticRandomWalk
    :noindex:
