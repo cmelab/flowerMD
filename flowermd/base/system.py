@@ -692,10 +692,9 @@ class System(ABC):
                 f"Site count mismatch: topology has {len(sites)} sites, "
                 f"positions array has {positions.shape[0]}."
             )
+        unit = self.reference_length if self.reference_length is not None else unit
         for site, pos in zip(sites, positions):
-            site.position = (
-                pos * unit
-            )  # GMSO Site.position expects a unyt quantity
+            site.position = pos * unit
 
     @staticmethod
     def _box_params(box):
@@ -712,7 +711,7 @@ class System(ABC):
         )
 
     @staticmethod
-    def _check_wrapped_positions(self, positions, box, tol=0.0):
+    def _check_wrapped_positions(positions, box, tol=0.0):
         """
         Check that every position lies in HOOMD's primary box image.
 
@@ -721,7 +720,7 @@ class System(ABC):
         if pos.shape[1] != 3:
             raise ValueError("positions must have shape (N, 3)")
 
-        Lx, Ly, Lz, xy, xz, yz = self._box_params(box)
+        Lx, Ly, Lz, xy, xz, yz = System._box_params(box)
         x, y, z = pos.T
 
         s_x = (x - xy * y + (xy * yz - xz) * z) / Lx

@@ -23,13 +23,13 @@ from flowermd.tests import BaseTest
 from flowermd.utils import gmso_positions, mbuild_positions
 
 
-def run_short_sim(system, tmp_path, n_steps=100):
+def run_short_sim(system, n_steps=100):
     """Run a short NVT simulation and return the final HOOMD snapshot."""
     sim = Simulation.from_system(
         system,
         dt=0.0001,
-        gsd_file_name=str(tmp_path / "trajectory.gsd"),
-        log_file_name=str(tmp_path / "log.txt"),
+        gsd_file_name=str("sys-test-traj.gsd"),
+        log_file_name=str("sys-test-log.txt"),
     )
     sim.run_NVT(n_steps=n_steps, kT=1.0, tau_kt=0.01)
     return sim.state.get_snapshot()
@@ -1036,11 +1036,16 @@ class TestSystem(BaseTest):
     def test_positions_updater(self, polyethylene):
         polyethylene = polyethylene(lengths=5, num_mols=3)
         system = Pack(molecules=[polyethylene], density=1.0)
-        L = system.gmso_system.box.lengths.to_value(u.nm)
+        system.apply_forcefield(
+             r_cut=1.01, force_field=OPLS_AA(), kT=1.0
+        )
+        L, Ly, Lz, xy, xz, yz = system._box_params(system.box)
         new_pos = np.random.default_rng(42).uniform(
             -L / 2, L / 2, (system.n_particles, 3)
         )
-        system.update_positions(run_short_sim(system, tmp_path="test.gsd"))
+        snapshot = run_short_sim(system)
+        snapshot.particles.position[:] = new_pos
+        system.update_positions(snapshot)
         assert np.allclose(mbuild_positions(system.all_molecules), new_pos)
         assert np.allclose(gmso_positions(system.gmso_system), new_pos)
 
