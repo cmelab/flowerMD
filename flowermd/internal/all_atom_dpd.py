@@ -238,9 +238,12 @@ def gmso_terms(compound, force_field):
     ``combining``, the force field's combining rule. Torsions are written
     exactly as sums of ``k (1 + cos(n phi - phase))``, up to a constant.
     """
+    import mbuild as mb
     from gmso.external import from_mbuild
     from gmso.parameterization import apply
 
+    if compound.parent is not None:  # GMSO converts only top-level compounds
+        compound = mb.clone(compound)
     top = apply(from_mbuild(compound), force_field, identify_connections=True)
     index = {site: i for i, site in enumerate(top.sites)}
 
