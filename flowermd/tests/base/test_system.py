@@ -1036,9 +1036,7 @@ class TestSystem(BaseTest):
     def test_positions_updater(self, polyethylene):
         polyethylene = polyethylene(lengths=5, num_mols=3)
         system = Pack(molecules=[polyethylene], density=1.0)
-        system.apply_forcefield(
-             r_cut=1.01, force_field=OPLS_AA(), kT=1.0
-        )
+        system.apply_forcefield(r_cut=1.01, force_field=OPLS_AA(), kT=1.0)
         L, Ly, Lz, xy, xz, yz = system._box_params(system.box)
         new_pos = np.random.default_rng(42).uniform(
             -L / 2, L / 2, (system.n_particles, 3)

@@ -692,7 +692,9 @@ class System(ABC):
                 f"Site count mismatch: topology has {len(sites)} sites, "
                 f"positions array has {positions.shape[0]}."
             )
-        unit = self.reference_length if self.reference_length is not None else unit
+        unit = (
+            self.reference_length if self.reference_length is not None else unit
+        )
         for site, pos in zip(sites, positions):
             site.position = pos * unit
 
