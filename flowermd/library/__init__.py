@@ -12,6 +12,7 @@ from .forcefields import (
     OPLS_AA_DIMETHYLETHER,
     OPLS_AA_PPS,
     UFF_DPD,
+    BaseAllAtomDPDForcefield,
     BaseHOOMDForcefield,
     BaseXMLForcefield,
     Bead_Spring_DPD,

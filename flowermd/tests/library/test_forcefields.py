@@ -6,7 +6,8 @@ import pytest
 import unyt as u
 
 from flowermd.assets import FF_DIR
-from flowermd.base import Lattice, Molecule
+from flowermd.base import BaseAllAtomDPDForcefield, Lattice, Molecule
+from flowermd.internal.all_atom_dpd import uff_terms
 from flowermd.library import (
     DPD,
     GAFF,
@@ -387,3 +388,34 @@ class TestAllAtomDPD(BaseTest):
         assert system.hoomd_snapshot.impropers.N > 0
         periodic = hoomd.md.dihedral.Periodic
         assert any(isinstance(f, periodic) for f in system.hoomd_forcefield)
+
+    def test_base_is_abstract(self):
+        system = Lattice(
+            molecules=Molecule(num_mols=2, smiles="CC"), x=1.5, y=1.5, n=1
+        )
+        with pytest.raises(TypeError):
+            BaseAllAtomDPDForcefield(system)
+
+    def test_custom_subclass(self, tmp_path):
+        class EqualWells(BaseAllAtomDPDForcefield):
+            def _terms(self, mol):
+                terms = uff_terms(mol)
+                terms["eps"] = {i: 1.0 for i in terms["eps"]}
+                return terms
+
+        system = Lattice(
+            molecules=Molecule(num_mols=2, smiles=self.PS), x=1.5, y=1.5, n=1
+        )
+        ff = EqualWells(system, file_path=str(tmp_path / "equal.xml"), A=10.0)
+        system.apply_forcefield(r_cut=0.35, force_field=ff, kT=4.184)
+        dpd = self.force(system, hoomd.md.pair.DPD)
+        assert {p["A"] for p in dpd.params.values()} == {10.0}
+
+        class NoMasses(BaseAllAtomDPDForcefield):
+            def _terms(self, mol):
+                terms = uff_terms(mol)
+                del terms["mass"]
+                return terms
+
+        with pytest.raises(ValueError, match="mass"):
+            NoMasses(system, file_path=str(tmp_path / "bad.xml"))
