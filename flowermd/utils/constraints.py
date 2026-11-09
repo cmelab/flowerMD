@@ -132,7 +132,7 @@ def create_rigid_ellipsoid_chain(snapshot, lpar, lperp):
     """
     bead_len = 4  # Number of particles belonging to 1 rigid body
     typeids = snapshot.particles.typeid.reshape(-1, bead_len)
-    matches = np.where((typeids == typeids))
+    matches = np.where(typeids == typeids)
     rigid_const_idx = (matches[0] * bead_len + matches[1]).reshape(-1, bead_len)
     n_rigid = rigid_const_idx.shape[0]  # number of ellipsoid monomers
 

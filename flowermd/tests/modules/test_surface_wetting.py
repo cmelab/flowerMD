@@ -16,9 +16,11 @@ from flowermd.tests.base_test import BaseTest
 
 hoomd_version = hoomd.version.version
 
-if int(hoomd_version[0]) == 5 and int(hoomd_version[2]) > 2:
-    hoomd_greater_than_52 = True
-elif int(hoomd_version[0]) > 5:
+if (
+    int(hoomd_version[0]) == 5
+    and int(hoomd_version[2]) > 2
+    or int(hoomd_version[0]) > 5
+):
     hoomd_greater_than_52 = True
 else:
     hoomd_greater_than_52 = False
@@ -187,7 +189,7 @@ class TestInterfaceBuilder(BaseTest):
                 )[2]
                 - np.min(
                     interface.hoomd_snapshot.particles.position[
-                        surface_snapshot.particles.N :  # noqa: E203
+                        surface_snapshot.particles.N :
                     ],
                     axis=0,
                 )[2]
