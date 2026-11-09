@@ -91,7 +91,7 @@ class Graphene(System):
         surface.add(layers)
         surface.freud_generate_bonds("C", "C", dmin=0.14, dmax=0.145)
         surface_mol = Molecule(num_mols=1, compound=surface)
-        super(Graphene, self).__init__(
+        super().__init__(
             molecules=[surface_mol],
             base_units=base_units,
         )

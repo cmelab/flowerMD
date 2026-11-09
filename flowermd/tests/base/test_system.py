@@ -28,8 +28,8 @@ def run_short_sim(system, n_steps=100):
     sim = Simulation.from_system(
         system,
         dt=0.0001,
-        gsd_file_name=str("sys-test-traj.gsd"),
-        log_file_name=str("sys-test-log.txt"),
+        gsd_file_name="sys-test-traj.gsd",
+        log_file_name="sys-test-log.txt",
     )
     sim.run_NVT(n_steps=n_steps, kT=1.0, tau_kt=0.01)
     return sim.state.get_snapshot()

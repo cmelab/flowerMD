@@ -36,7 +36,7 @@ class Tensile(Simulation):
         log_file_name="log.txt",
         thermostat=HOOMDThermostats.MTTK,
     ):
-        super(Tensile, self).__init__(
+        super().__init__(
             initial_state=initial_state,
             forcefield=forcefield,
             reference_values=reference_values,
