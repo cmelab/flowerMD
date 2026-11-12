@@ -1071,8 +1071,6 @@ class Simulation(hoomd.simulation.Simulation):
         new_method = integrator_method(**method_kwargs)
         fire.methods.append(new_method)
         fire.forces.extend(self._forcefield)
-        if self.integrator:
-            self.integrator.methods.remove(self.method)
         self.integrator = fire
         self.operations.integrator = self.integrator
         self.operations.integrator.methods = [new_method]
