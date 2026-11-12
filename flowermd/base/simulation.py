@@ -1064,6 +1064,9 @@ class Simulation(hoomd.simulation.Simulation):
             A dictionary of parameter:value for the integrator method used.
 
         """
+        if self.integrator:
+            self.integrator.methods.remove(self.method)
+            self.integrator.forces.clear()
         fire = hoomd.md.minimize.FIRE(**{"dt": self.dt, **fire_kwargs})
         new_method = integrator_method(**method_kwargs)
         fire.methods.append(new_method)
