@@ -1067,6 +1067,11 @@ class Simulation(hoomd.simulation.Simulation):
         fire = hoomd.md.minimize.FIRE(**{"dt": self.dt, **fire_kwargs})
         new_method = integrator_method(**method_kwargs)
         fire.methods.append(new_method)
+        if self.integrator:
+            # A force can belong to only one integrator (HOOMD 5.x enforces
+            # this), so detach the forces from the current one before handing
+            # them to FIRE.
+            self.integrator.forces.clear()
         fire.forces.extend(self._forcefield)
         if self.integrator:
             self.integrator.methods.remove(self.method)
