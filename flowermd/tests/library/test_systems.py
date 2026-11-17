@@ -16,6 +16,9 @@ from flowermd.internal.placement import (
 )
 from flowermd.library import (
     OPLS_AA,
+    OPLS_AA_PPS,
+    PPS,
+    XML_DPD,
     AtomisticRandomWalk,
     EllipsoidChainRand,
     LJChain,
@@ -478,6 +481,26 @@ class TestLocalBoltzmannSamplerOPLS:
                 np.isclose(step.pair_eps, np.sqrt(ei * ej))
                 | np.isclose(step.pair_eps, 0.5 * np.sqrt(ei * ej))
             )
+
+    def test_xml_forcefield_workflow(self, tmp_path):
+        # The sampler types chains that are children of a system, and
+        # XML_DPD types chains too long for RDKit to embed in 3D.
+        opls = OPLS_AA_PPS()
+        system = AtomisticRandomWalk(
+            PPS(lengths=20, num_mols=2),
+            density=1.3,
+            seed=1,
+            torsion_sampler=LocalBoltzmannSampler(
+                temperature=600, force_field=opls
+            ),
+        )
+        with pytest.warns(UserWarning, match="zero Lennard-Jones"):
+            ff = XML_DPD(
+                system, force_field=opls, file_path=str(tmp_path / "pps.xml")
+            )
+        system.apply_forcefield(r_cut=0.35, force_field=ff, kT=4.184)
+        assert system.hoomd_snapshot.particles.N == 2 * 222
+        assert np.all(np.isfinite(system.system.xyz))
 
 
 class TestLeastBad:

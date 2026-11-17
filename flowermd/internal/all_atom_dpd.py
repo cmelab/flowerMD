@@ -9,6 +9,7 @@ nm and amu.
 import itertools
 import math
 import re
+import warnings
 
 import numpy as np
 
@@ -237,9 +238,12 @@ def gmso_terms(compound, force_field):
     ``combining``, the force field's combining rule. Torsions are written
     exactly as sums of ``k (1 + cos(n phi - phase))``, up to a constant.
     """
+    import mbuild as mb
     from gmso.external import from_mbuild
     from gmso.parameterization import apply
 
+    if compound.parent is not None:  # GMSO converts only top-level compounds
+        compound = mb.clone(compound)
     top = apply(from_mbuild(compound), force_field, identify_connections=True)
     index = {site: i for i, site in enumerate(top.sites)}
 
@@ -372,6 +376,28 @@ def _rounded(value):
     return float(f"{value:.10g}") if isinstance(value, float) else value
 
 
+def rdkit_to_mbuild(mol):
+    """An mbuild compound with the atoms (in order) and bonds of `mol`.
+
+    Positions are left at the origin; it is meant for typing, which needs
+    only elements and bonds. Unlike `mbuild.conversion.from_rdkit` it
+    does not embed coordinates, which RDKit cannot do for long chains.
+    """
+    import mbuild as mb
+
+    compound = mb.Compound()
+    atoms = [
+        mb.Compound(name=a.GetSymbol(), element=a.GetSymbol())
+        for a in mol.GetAtoms()
+    ]
+    compound.add(atoms)
+    for bond in bonds_of(mol):
+        compound.add_bond(
+            (atoms[bond.GetBeginAtomIdx()], atoms[bond.GetEndAtomIdx()])
+        )
+    return compound
+
+
 def _refine(frags, data):
     """Atom type names that make every bonded parameter a function of types.
 
@@ -426,6 +452,26 @@ def _refine(frags, data):
         [names.setdefault(x, f"_{x[0]}{len(names):03d}") for x in lab]
         for lab in labels
     ]
+
+
+def _fill_zero_epsilons(eps):
+    """Give atom types with a zero well depth the smallest nonzero one.
+
+    Weighting by ``sqrt(eps_i eps_j)`` would leave their pairs with no
+    repulsion and a zero friction, which HOOMD's DPD rejects. Force fields
+    such as OPLS-AA give hydrogens on O, N and S a zero well depth.
+    """
+    zero = sorted(name for name, value in eps.items() if value == 0)
+    nonzero = [value for value in eps.values() if value > 0]
+    if not zero or not nonzero:
+        return eps
+    floor = min(nonzero)
+    warnings.warn(
+        f"Atom types {zero} have a zero Lennard-Jones well depth; their DPD "
+        f"pairs are weighted as if it were {floor:.4g} kJ/mol, the smallest "
+        "nonzero one. Use pair_overrides to set their repulsion instead."
+    )
+    return {name: value or floor for name, value in eps.items()}
 
 
 def _emit(
@@ -503,6 +549,8 @@ def _emit(
                     parameters=params,
                 )
     ff.to_xml(file_path, overwrite=True)
+    if epsilon_weighting:
+        eps = _fill_zero_epsilons(eps)
     # GMSO 0.17 workarounds. Its writer has no DPD pair potentials, and it
     # writes the null atom-type expression as expression="None" and drops
     # the element tag that name-matched types need; its reader accepts
