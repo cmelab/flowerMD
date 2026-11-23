@@ -156,7 +156,7 @@ class LocalBoltzmannSampler:
             force_field = OPLS_AA()
         if isinstance(force_field, str):
             try:
-                import openff.interchange  # noqa: F401
+                import openff.interchange
                 import openff.toolkit  # noqa: F401
             except ImportError as error:
                 raise ImportError(

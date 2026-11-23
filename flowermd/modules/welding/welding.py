@@ -206,7 +206,7 @@ class SlabSimulation(Simulation):
         log_file_name="log.txt",
         thermostat=HOOMDThermostats.MTTK,
     ):
-        super(SlabSimulation, self).__init__(
+        super().__init__(
             initial_state=initial_state,
             forcefield=forcefield,
             reference_values=reference_values,
@@ -255,7 +255,7 @@ class WeldSimulation(Simulation):
         log_file_name="sim_data.txt",
         thermostat=HOOMDThermostats.MTTK,
     ):
-        super(WeldSimulation, self).__init__(
+        super().__init__(
             initial_state=initial_state,
             forcefield=forcefield,
             reference_values=reference_values,
