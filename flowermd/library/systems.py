@@ -37,9 +37,7 @@ class SingleChainSystem(System):
 
     def __init__(self, molecules, base_units=dict(), buffer=1.05):
         self.buffer = buffer
-        super(SingleChainSystem, self).__init__(
-            molecules=molecules, base_units=base_units
-        )
+        super().__init__(molecules=molecules, base_units=base_units)
 
     def _build_system(self):
         if len(self.all_molecules) > 1:
@@ -67,9 +65,7 @@ class mbuildSystem(System):
 
     def __init__(self, molecules, base_units=dict()):
         self.box_temp = molecules.box
-        super(mbuildSystem, self).__init__(
-            molecules=molecules, base_units=base_units
-        )
+        super().__init__(molecules=molecules, base_units=base_units)
 
     def _build_system(self):
         chain = self.all_molecules
@@ -121,9 +117,7 @@ class RandomWalk(System):
         self.seed = seed
         self.unique_molecules = unique_molecules
         self.bond_length = bond_length
-        super(RandomWalk, self).__init__(
-            molecules=molecules, base_units=base_units, **kwargs
-        )
+        super().__init__(molecules=molecules, base_units=base_units, **kwargs)
 
     def _build_system(self, **kwargs):
         mass_density = u.Unit("kg") / u.Unit("m**3")
@@ -223,7 +217,7 @@ class AtomisticRandomWalk(RandomWalk):
         self.torsion_sampler = torsion_sampler or LocalBoltzmannSampler()
         self.n_workers = n_workers
         self.protect_stereo = protect_stereo
-        super(AtomisticRandomWalk, self).__init__(
+        super().__init__(
             molecules=molecules,
             bond_length=None,
             density=density,
@@ -236,9 +230,7 @@ class AtomisticRandomWalk(RandomWalk):
         See `System.apply_forcefield` for the parameters, and
         `protect_stereo`.
         """
-        super(AtomisticRandomWalk, self).apply_forcefield(
-            r_cut=r_cut, force_field=force_field, **kwargs
-        )
+        super().apply_forcefield(r_cut=r_cut, force_field=force_field, **kwargs)
         if self.protect_stereo and isinstance(force_field, UFF_DPD):
             protect_stereochemistry(self)  # OpenFF_DPD is a UFF_DPD too
 
@@ -248,7 +240,7 @@ class AtomisticRandomWalk(RandomWalk):
         The walk leaves chains unwrapped; the image flags let them be put
         back together after the relaxation.
         """
-        snap = super(AtomisticRandomWalk, self)._create_hoomd_snapshot()
+        snap = super()._create_hoomd_snapshot()
         box = np.asarray(snap.configuration.box[:3])
         image = np.floor(snap.particles.position / box + 0.5)
         snap.particles.position = snap.particles.position - image * box
