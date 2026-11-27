@@ -334,7 +334,7 @@ class BeadSpring(BaseHOOMDForcefield):
         The cutoff radius for the LJ potential.
     beads : dict, required
         A dictionary of bead types. Each bead type should be a dictionary with
-        the keys "epsilon" and "sigma" that correspond to the LJ parameters.
+r_cut        the keys "epsilon" and "sigma" that correspond to the LJ parameters.
     bonds : dict, default None
         A dictionary of bond types separated by a dash. Each bond type should
         be a dictionary with the keys "r0" and "k" that correspond to the
@@ -987,6 +987,9 @@ class DPD(BaseHOOMDForcefield):
         Temperature used in pair-wise drag force
     r_cut : float, required
         Cut off radius for pair interactions
+    bead_name : string, default _A
+	Name given to harmonic bond used for pair
+	and angle forces
     bond_k : float, default 100
         Spring constant in harmonic bond.
     bond_r0: float, deault 1.0
@@ -1009,6 +1012,7 @@ class DPD(BaseHOOMDForcefield):
         gamma,
         kT,
         r_cut,
+	bead_name="_A",
         bond_k=100,
         bond_r0=1.0,
         angle_k=None,
@@ -1020,10 +1024,14 @@ class DPD(BaseHOOMDForcefield):
         self.gamma = gamma
         self.kT = kT
         self.r_cut = r_cut
+	self.bead_name = bead_name
         self.angle_k = angle_k
         self.angle_theta0 = angle_theta0
         self.bond_k = bond_k
         self.bond_r0 = bond_r0
+	self.pair = (self.bead_name, self.bead_name)
+	self.bond_type = f"{self.bead_name}-{self.bead_name}"
+	self.angle_type = f"{self.bead_name}-{self.bead_name}-{self.bead_name}"
         self.nlist = nlist
         self.nlist_buffer = nlist_buffer
         hoomd_forces = self._create_forcefield()
@@ -1033,11 +1041,11 @@ class DPD(BaseHOOMDForcefield):
         forces = []
         # Bonds
         bond = hoomd.md.bond.Harmonic()
-        bond.params["_A-_A"] = dict(k=self.bond_k, r0=self.bond_r0)
+        bond.params[self.bond_type] = dict(k=self.bond_k, r0=self.bond_r0)
         # Angles
         if all([self.angle_k, self.angle_theta0]):
             angle = hoomd.md.angle.Harmonic()
-            angle.params["_A-_A-_A"] = dict(
+            angle.params[self.angle_type] = dict(
                 k=self.angle_k, t0=self.angle_theta0
             )
         # DPD Pairs
@@ -1045,7 +1053,7 @@ class DPD(BaseHOOMDForcefield):
         dpd = hoomd.md.pair.DPD(
             nlist=nlist, kT=self.kT, default_r_cut=self.r_cut
         )
-        dpd.params[("_A", "_A")] = dict(A=self.A, gamma=self.gamma)
+        dpd.params[self.pair] = dict(A=self.A, gamma=self.gamma)
         forces.append(dpd)
         forces.append(bond)
         if all([self.angle_k, self.angle_theta0]):
